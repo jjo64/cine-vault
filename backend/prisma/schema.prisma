@@ -1,0 +1,234 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model diary_entries {
+  id           Int        @id @default(autoincrement())
+  user_id      Int
+  movie_id     Int
+  watched_date DateTime?  @db.Date
+  users        users      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "diary_entries_ibfk_1")
+  movies_ref   movies_ref @relation(fields: [movie_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "diary_entries_ibfk_2")
+
+  @@index([movie_id], map: "movie_id")
+  @@index([user_id], map: "user_id")
+}
+
+model favorites {
+  id            Int         @id @default(autoincrement())
+  user_id       Int?
+  movie_id      Int?
+  rank_position Int?
+  users         users?      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "favorites_ibfk_1")
+  movies_ref    movies_ref? @relation(fields: [movie_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "favorites_ibfk_2")
+
+  @@index([movie_id], map: "movie_id")
+  @@index([user_id], map: "user_id")
+}
+
+model follows {
+  id                                Int    @id @default(autoincrement())
+  follower_id                       Int?
+  following_id                      Int?
+  users_follows_follower_idTousers  users? @relation("follows_follower_idTousers", fields: [follower_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "follows_ibfk_1")
+  users_follows_following_idTousers users? @relation("follows_following_idTousers", fields: [following_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "follows_ibfk_2")
+
+  @@unique([follower_id, following_id], map: "follower_id")
+  @@index([following_id], map: "following_id")
+}
+
+model movies_ref {
+  id            Int             @id @default(autoincrement())
+  tmdb_id       Int             @unique(map: "tmdb_id")
+  diary_entries diary_entries[]
+  favorites     favorites[]
+  reviews       reviews[]
+  vault         vault[]
+  watchlist     watchlist[]
+}
+
+model news {
+  id         Int            @id @default(autoincrement())
+  title      String?        @db.VarChar(255)
+  content    String?        @db.Text
+  category   news_category?
+  created_at DateTime       @default(now()) @db.Timestamp(0)
+}
+
+model payments {
+  id                  Int                      @id @default(autoincrement())
+  user_id             Int
+  subscription_id     Int?
+  amount              Decimal?                 @db.Decimal(6, 2)
+  currency            String?                  @default("EUR") @db.VarChar(10)
+  provider            payments_provider?
+  payment_status      payments_payment_status? @default(pending)
+  provider_payment_id String?                  @db.VarChar(255)
+  created_at          DateTime                 @default(now()) @db.Timestamp(0)
+  users               users                    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "payments_ibfk_1")
+  subscriptions       subscriptions?           @relation(fields: [subscription_id], references: [id], onUpdate: Restrict, map: "payments_ibfk_2")
+
+  @@index([subscription_id], map: "subscription_id")
+  @@index([user_id], map: "user_id")
+}
+
+model reports {
+  id          Int             @id @default(autoincrement())
+  reporter_id Int?
+  review_id   Int?
+  reason      String?         @db.Text
+  status      reports_status? @default(pending)
+  created_at  DateTime        @default(now()) @db.Timestamp(0)
+  users       users?          @relation(fields: [reporter_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "reports_ibfk_1")
+  reviews     reviews?        @relation(fields: [review_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "reports_ibfk_2")
+
+  @@index([reporter_id], map: "reporter_id")
+  @@index([review_id], map: "review_id")
+}
+
+model reviews {
+  id         Int        @id @default(autoincrement())
+  user_id    Int
+  movie_id   Int
+  content    String?    @db.Text
+  rating     Decimal?   @db.Decimal(2, 1)
+  likes      Int?       @default(0)
+  created_at DateTime   @default(now()) @db.Timestamp(0)
+  reports    reports[]
+  users      users      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "reviews_ibfk_1")
+  movies_ref movies_ref @relation(fields: [movie_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "reviews_ibfk_2")
+
+  @@index([movie_id], map: "movie_id")
+  @@index([user_id], map: "user_id")
+}
+
+model subscriptions {
+  id                       Int                     @id @default(autoincrement())
+  user_id                  Int
+  plan                     subscriptions_plan?     @default(free)
+  start_date               DateTime?               @db.Date
+  end_date                 DateTime?               @db.Date
+  status                   subscriptions_status?   @default(active)
+  provider                 subscriptions_provider? @default(stripe)
+  provider_subscription_id String?                 @db.VarChar(255)
+  payments                 payments[]
+  users                    users                   @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "subscriptions_ibfk_1")
+
+  @@index([user_id], map: "user_id")
+}
+
+model user_activity {
+  id         Int      @id @default(autoincrement())
+  user_id    Int?
+  action     String?  @db.VarChar(100)
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  users      users?   @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "user_activity_ibfk_1")
+
+  @@index([user_id], map: "user_id")
+}
+
+model users {
+  id                                  Int               @id @default(autoincrement())
+  username                            String            @unique(map: "username") @db.VarChar(50)
+  email                               String            @unique(map: "email") @db.VarChar(100)
+  password                            String            @db.VarChar(255)
+  avatar_url                          String?           @db.Text
+  bio                                 String?           @db.Text
+  role                                users_role?       @default(user)
+  membership                          users_membership? @default(free)
+  created_at                          DateTime          @default(now()) @db.Timestamp(0)
+  diary_entries                       diary_entries[]
+  favorites                           favorites[]
+  follows_follows_follower_idTousers  follows[]         @relation("follows_follower_idTousers")
+  follows_follows_following_idTousers follows[]         @relation("follows_following_idTousers")
+  payments                            payments[]
+  reports                             reports[]
+  reviews                             reviews[]
+  subscriptions                       subscriptions[]
+  user_activity                       user_activity[]
+  vault                               vault[]
+  watchlist                           watchlist[]
+}
+
+model vault {
+  id         Int        @id @default(autoincrement())
+  user_id    Int
+  movie_id   Int
+  added_at   DateTime   @default(now()) @db.Timestamp(0)
+  users      users      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "vault_ibfk_1")
+  movies_ref movies_ref @relation(fields: [movie_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "vault_ibfk_2")
+
+  @@unique([user_id, movie_id], map: "user_id")
+  @@index([movie_id], map: "movie_id")
+}
+
+model watchlist {
+  id         Int        @id @default(autoincrement())
+  user_id    Int
+  movie_id   Int
+  added_at   DateTime   @default(now()) @db.Timestamp(0)
+  users      users      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "watchlist_ibfk_1")
+  movies_ref movies_ref @relation(fields: [movie_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "watchlist_ibfk_2")
+
+  @@unique([user_id, movie_id], map: "user_id")
+  @@index([movie_id], map: "movie_id")
+}
+
+enum subscriptions_plan {
+  free
+  vip
+  pro
+}
+
+enum news_category {
+  estrenos
+  premios
+  actores
+  directores
+  streaming
+}
+
+enum reports_status {
+  pending
+  resolved
+  rejected
+}
+
+enum payments_provider {
+  stripe
+  paypal
+}
+
+enum subscriptions_status {
+  active
+  expired
+  cancelled
+}
+
+enum payments_payment_status {
+  pending
+  paid
+  failed
+  refunded
+}
+
+enum subscriptions_provider {
+  stripe
+  paypal
+}
+
+enum users_role {
+  admin
+  editor
+  user
+}
+
+enum users_membership {
+  free
+  vip
+  pro
+}
