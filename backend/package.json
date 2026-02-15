@@ -6,6 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "cross-env NODE_OPTIONS=\"--loader ts-node/esm --no-warnings\" nodemon src/server.ts",
+    "build": "tsc",
+    "start": "node dist/src/server.js",
     "test": "node --watch index.js",
     "kill-node": "taskkill /F /IM node.exe /T || exit 0",
     "stop": "npm run kill-node"
