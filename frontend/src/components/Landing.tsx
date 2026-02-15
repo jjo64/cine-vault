@@ -44,7 +44,7 @@ const Landing: React.FC = () => {
         if (debouncedQuery.trim()) {
             // Realizamos la búsqueda cuando `debouncedQuery` cambia
             console.log('Buscando:', debouncedQuery);
-            fetch(`http://localhost:4000/api/search?q=${encodeURIComponent(debouncedQuery)}`)
+            fetch(`${import.meta.env.VITE_API_URL}/api/search?q=${encodeURIComponent(debouncedQuery)}`)
                 .then(response => response.json())
                 .then(data => {
                     setSearchResults(data.results || []);

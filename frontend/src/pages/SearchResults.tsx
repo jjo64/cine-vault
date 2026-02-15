@@ -19,7 +19,7 @@ const SearchResults: React.FC = () => {
 
     useEffect(() => {
         if (query) {
-            fetch(`http://localhost:4000/api/search?q=${encodeURIComponent(query)}&page=${currentPage}`)
+            fetch(`${import.meta.env.VITE_API_URL}/api/search?q=${encodeURIComponent(query)}&page=${currentPage}`)
                 .then(res => res.json())
                 .then(data => {
                     setResults(data.results || []);

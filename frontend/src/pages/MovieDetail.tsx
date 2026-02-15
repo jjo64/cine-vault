@@ -11,7 +11,7 @@ const MovieDetail: React.FC = () => {
 
     useEffect(() => {
         setLoading(true);
-        fetch(`http://localhost:4000/api/movies/${slugOrId}`)
+        fetch(`${import.meta.env.VITE_API_URL}/api/movies/${slugOrId}`)
             .then(res => res.json())
             .then(data => {
                 setMovie(data);
