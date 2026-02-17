@@ -1,33 +1,49 @@
 import { Request, Response, NextFunction } from "express"
-import { prisma } from "../lib/prisma.js"
 import jwt from "jsonwebtoken"
 
-interface JwtPayload {
-  id: string
-  username: string
+// Interfaces para los payloads de los tokens
+export interface AccessPayload {
+  user_id: number
+  role: 'admin' | 'editor' | 'user'
 }
 
-// Extiende Request para usar user
+export interface RefreshPayload {
+  id_session: string
+  user_id: number
+}
+
+// Extensión de la interfaz Request de Express para incluir los datos del usuario
 export interface IAuthRequest extends Request {
-  user?: JwtPayload
+  user?: AccessPayload
 }
 
+/**
+ * Middleware de Autenticación
+ * Verifica si la petición tiene un token de acceso válido en los headers.
+ * Si es válido, inyecta la información del usuario en `req.user`.
+ */
 export const authMiddleware = (
   req: IAuthRequest,
   res: Response,
   next: NextFunction
 ) => {
+  // Intentar obtener el header de autorización
   const authHeader = req.headers["authorization"]
-  const token = authHeader && authHeader.split(" ")[1]
+  const token = authHeader && authHeader.split(" ")[1] // Formato: "Bearer [token]"
 
-  if (!token) return res.status(401).json({ message: "No token provided" })
+  // Si no hay token, denegar acceso inmediatamente
+  if (!token) return res.status(401).json({ message: "No se proporcionó token de acceso" })
 
   try {
-    const secret = process.env.JWT_SECRET || "secret123"
-    const payload = jwt.verify(token, secret) as JwtPayload
+    // Verificar firma y expiración del token
+    const secret = process.env.JWT_SECRET || "secret_fallback_dev" // Fallback solo para desarrollo local
+    const payload = jwt.verify(token, secret) as AccessPayload
+    
+    // Adjuntar payload a la request para usarlo en los controladores
     req.user = payload
     next()
   } catch (err) {
-    res.status(401).json({ message: "Invalid token" })
+    // Token inválido o expirado
+    res.status(403).json({ message: "Token inválido o expirado" })
   }
 }

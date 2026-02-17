@@ -521,6 +521,19 @@ button:focus-visible {
   /* Compensa el navbar para que el backdrop empiece arriba */
 }
 
+.static-navbar {
+  position: absolute;
+  background: transparent;
+  border-bottom: none;
+  z-index: 100;
+}
+
+.static-navbar .nav-logo,
+.static-navbar .nav-menu a,
+.static-navbar .nav-search-btn {
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
 .backdrop-overlay {
   position: absolute;
   top: 0;

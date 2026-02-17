@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-const Navbar: React.FC = () => {
+interface NavbarProps {
+    className?: string;
+}
+
+const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [showUserMenu, setShowUserMenu] = useState(false);
     const navigate = useNavigate();
@@ -35,7 +39,7 @@ const Navbar: React.FC = () => {
     };
 
     return (
-        <nav className="subpage-navbar">
+        <nav className={`subpage-navbar ${className}`}>
             <div className="nav-container">
                 <div className="nav-left">
                     <Link to="/" className="nav-logo">🎬 Cinevault</Link>

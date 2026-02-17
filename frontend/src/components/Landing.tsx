@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import TextType from '../pages/TextType';
+import InfiniteSlider from './InfiniteSlider';
+import AuthModal from './AuthModal';
+import MovieSection from './MovieSection';
 
 const createSlug = (title: string) => title.toLowerCase().replace(/[^a-z0-0]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
 
@@ -8,6 +12,13 @@ const Landing: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState(''); // Estado para el valor del input
     const [debouncedQuery, setDebouncedQuery] = useState(''); // Estado para el valor con debounce
     const [searchResults, setSearchResults] = useState([]); // Estado para los resultados de la búsqueda
+    const [isAuthModalOpen, setAuthModalOpen] = useState(false);
+    const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+
+    const openAuth = (mode: 'login' | 'register') => {
+        setAuthMode(mode);
+        setAuthModalOpen(true);
+    };
 
     // Esta función se ejecuta cada vez que el usuario escribe
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -60,8 +71,8 @@ const Landing: React.FC = () => {
             <nav id="nav-home">
                 <h1 className="site-logo">🎬 Cinevault</h1>
                 <div className="nav-links">
-                    <a href="">Sign in</a>
-                    <a href="">Create Account</a>
+                    <a href="#" onClick={(e) => { e.preventDefault(); openAuth('login'); }}>Sign in</a>
+                    <a href="#" onClick={(e) => { e.preventDefault(); openAuth('register'); }}>Create Account</a>
                     <a href="">Films</a>
                     <a href="">Lists</a>
                     <a href="">Members</a>
@@ -116,8 +127,30 @@ const Landing: React.FC = () => {
                 </div>
             </nav>
             <div className="hero-content">
-                <button className="cta-button">Empezar ahora</button>
+                <TextType
+                    text={["Tus películas. Tu vault.\nTus pendientes. Tus elecciones.\nTu comunidad. Tus recomendaciones."]}
+                    typingSpeed={75}
+                    pauseDuration={1500}
+                    showCursor={true}
+                    cursorCharacter="_"
+                    deletingSpeed={50}
+                    cursorBlinkDuration={0.5}
+                />
+                <button className="cta-button" onClick={() => openAuth('register')}>Empezar ahora</button>
             </div>
+
+            <InfiniteSlider />
+
+            <div style={{ background: '#14181c', position: 'relative', zIndex: 10, marginTop: '-50px', paddingTop: '50px' }}>
+                <MovieSection title="Aclamados por la crítica" endpoint="/api/movies/top-rated" />
+                <MovieSection title="Pronto en cines" endpoint="/api/movies/upcoming" />
+            </div>
+
+            <AuthModal
+                isOpen={isAuthModalOpen}
+                onClose={() => setAuthModalOpen(false)}
+                initialMode={authMode}
+            />
         </section>
     );
 };

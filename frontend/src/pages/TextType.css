@@ -1,0 +1,21 @@
+.text-type {
+  display: inline-block;
+  position: relative;
+  font-family: inherit;
+  white-space: pre-wrap; /* Permite saltos de línea \n */
+}
+
+.text-type__content {
+  display: inline;
+}
+
+.text-type__cursor {
+  display: inline-block;
+  margin-left: 2px;
+  font-weight: 400;
+  opacity: 1;
+}
+
+.text-type__cursor--hidden {
+  display: none;
+}

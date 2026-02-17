@@ -1,0 +1,171 @@
+.movie-actions-panel {
+    background: #2c3440;
+    border-radius: 4px;
+    padding: 15px 0;
+    width: 250px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    color: #9ab;
+    font-family: 'Inter', sans-serif;
+    text-align: center;
+}
+
+.action-icons {
+    display: flex;
+    justify-content: space-around;
+    padding-bottom: 10px;
+}
+
+.action-icon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    gap: 5px;
+    transition: transform 0.2s;
+}
+
+.action-icon:hover {
+    transform: translateY(-2px);
+    color: #fff;
+}
+
+.action-icon svg {
+    width: 28px;
+    height: 28px;
+    transition: all 0.2s;
+}
+
+.action-icon span {
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.action-icon.active {
+    color: #fff;
+}
+
+.panel-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 10px 0;
+}
+
+.rating-section {
+    padding: 5px 0;
+}
+
+.rating-label {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 8px;
+    color: #678;
+}
+
+.stars-container {
+    font-size: 28px;
+    cursor: pointer;
+    position: relative;
+    display: inline-block;
+}
+
+.star {
+    color: #456;
+    transition: color 0.2s, transform 0.2s;
+    display: inline-block;
+}
+
+.star.filled {
+    color: #00e054;
+    /* Green like Letterboxd/Cinevault */
+    text-shadow: 0 0 5px rgba(0, 224, 84, 0.4);
+}
+
+.star:hover {
+    transform: scale(1.2);
+}
+
+.action-menu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.action-menu li a {
+    display: block;
+    padding: 8px 15px;
+    color: #9ab;
+    text-decoration: none;
+    font-size: 13px;
+    transition: background 0.2s, color 0.2s;
+}
+
+.action-menu li a:hover {
+    background: #445566;
+    color: #fff;
+}
+
+.promo-link {
+    font-size: 12px;
+    padding: 5px 0;
+}
+
+.badge-patron {
+    background: #00b020;
+    color: #fff;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-weight: bold;
+    font-size: 10px;
+}
+
+.share-btn {
+    font-size: 13px;
+    cursor: pointer;
+    padding: 5px;
+}
+
+.share-btn:hover {
+    color: #fff;
+}
+
+/* Vault Animation */
+.vault-animation {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    pointer-events: none;
+    z-index: 10;
+    opacity: 0;
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.vault-lock {
+    font-size: 40px;
+    filter: drop-shadow(0 0 20px gold);
+}
+
+.vault-animation.active {
+    transform: translate(-50%, -50%) scale(1.5);
+    opacity: 1;
+    animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+
+    0%,
+    100% {
+        transform: translate(-50%, -50%) scale(1.5);
+    }
+
+    50% {
+        transform: translate(-50%, -50%) scale(1.7);
+    }
+}
+
+.star.vault-trigger.filled {
+    color: gold !important;
+    text-shadow: 0 0 10px gold;
+}

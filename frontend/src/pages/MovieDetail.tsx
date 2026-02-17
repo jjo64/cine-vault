@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import UserNavbar from '../components/UserNavbar';
 import Footer from '../components/Footer';
+import MovieActionsPanel from '../components/MovieActionsPanel';
 
 const MovieDetail: React.FC = () => {
     const { slugOrId } = useParams<{ slugOrId: string }>();
@@ -37,7 +39,7 @@ const MovieDetail: React.FC = () => {
 
     return (
         <div className="letterboxd-layout">
-            <Navbar />
+            {localStorage.getItem('token') ? <UserNavbar /> : <Navbar />}
 
             <div
                 className="movie-hero"
@@ -143,18 +145,6 @@ const MovieDetail: React.FC = () => {
                                 <span>4.729 me gusta</span>
                             </div>
                         </div>
-                        <div className="review-card">
-                            <div className="review-header">
-                                <img src="https://i.pravatar.cc/30?u=kayla" className="friend-avatar" style={{ width: '24px', height: '24px' }} alt="Author" />
-                                <span className="review-author">kayla</span>
-                                <span className="review-rating">★★★★½</span>
-                            </div>
-                            <p className="review-content">No me importa lo que diga la pestaña de equipo, estoy convencida de que la misma persona que hace las cámaras de The Office también trabaja para Lars a veces.</p>
-                            <div className="review-meta">
-                                <span>❤ Me gusta</span>
-                                <span>2.971 me gusta</span>
-                            </div>
-                        </div>
                     </div>
                 </section>
 
@@ -167,6 +157,8 @@ const MovieDetail: React.FC = () => {
                                 style={{ width: '100%', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 20px 40px rgba(0,0,0,0.6)' }}
                             />
                         </div>
+
+                        {localStorage.getItem('token') && <MovieActionsPanel />}
 
                         <div className="where-to-watch">
                             <div className="watch-header">

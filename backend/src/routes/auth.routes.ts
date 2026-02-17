@@ -1,37 +1,17 @@
-import { Router, Response } from "express"
-import { authMiddleware, IAuthRequest } from "../middlewares/auth.middlewares.js"
-import { login, register } from "../controllers/AuthController.js"
+import { Router } from "express"
+import { authMiddleware } from "../middlewares/auth.middlewares.js"
+import { login, register, refreshToken, logout, verifyToken } from "../controllers/AuthController.js"
 import { asyncHandler } from "../middlewares/error.middlewares.js"
 
 const router = Router()
 
-// Solo para probar
-router.get("/me", authMiddleware, asyncHandler((req: IAuthRequest, res: Response) => {
-  res.json({
-    id: req.user?.id,
-    username: req.user?.username
-  })
-}))
-
-// Refresh token
-router.post("/refresh", authMiddleware, asyncHandler((req: IAuthRequest, res: Response) => {
-  res.json({
-    id: req.user?.id,
-    username: req.user?.username
-  })
-}))
-
-// Logout
-router.post("/logout", authMiddleware, asyncHandler(async (req: IAuthRequest, res: Response) => {
-  res.json({
-    id: req.user?.id,
-    username: req.user?.username
-  })
-}))
-
-// Register
+// Rutas de autenticación
 router.post("/register", asyncHandler(register))
-// Login
 router.post('/login', asyncHandler(login))
-
+router.post("/refresh", authMiddleware, asyncHandler(refreshToken))
+router.post("/logout", authMiddleware, asyncHandler(logout))
+//router.post('verify-email', asyncHandler(verifyEmail))
+//router.post('forgot-password', asyncHandler(forgotPassword))
+//router.post('reset-password', asyncHandler(resetPassword))
+router.get("/verify", authMiddleware, asyncHandler(verifyToken)) // Endpoint para verificar sesión y obtener datos del usuario
 export default router
