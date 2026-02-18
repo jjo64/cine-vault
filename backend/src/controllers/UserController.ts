@@ -89,7 +89,7 @@ export const getFollowing = async (req: Request, res: Response) => {
 
 // Arreglar esto, posible conflicto con el middleware auth
 export const unfollowUser = async (req: IAuthRequest, res: Response) => {
-    const userId = Number(req.user!.id) // usuario logueado (middleware auth)
+    const userId = Number(req.user!) // usuario logueado (middleware auth)
     const userToUnfollowId = Number(req.params.id) // usuario a dejar de seguir
     try {
     const deleted = await prisma.follows.deleteMany({
@@ -114,7 +114,7 @@ export const unfollowUser = async (req: IAuthRequest, res: Response) => {
 
 // Arreglar esto, posible conflicto con el middleware auth
 export const followUser = async (req: IAuthRequest, res: Response) => {
-    const userId = Number(req.user!.id)
+    const userId = Number(req.user!)
     const userToFollowId = Number(req.params.id)
 
     if (userId === userToFollowId) {
@@ -144,7 +144,7 @@ export const followUser = async (req: IAuthRequest, res: Response) => {
 }
 
 export const updateProfile = async (req: IAuthRequest, res: Response) => {
-  const userId = Number(req.user!.id)
+  const userId = Number(req.user!)
   const { username, avatar_url, bio } = req.body
 
   try {
