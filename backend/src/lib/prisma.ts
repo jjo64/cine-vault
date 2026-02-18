@@ -1,6 +1,6 @@
-import "dotenv/config";
-import { PrismaMariaDb } from '@prisma/adapter-mariadb';
-import { PrismaClient } from '@prisma/client';
+import "dotenv/config"
+import { PrismaMariaDb } from "@prisma/adapter-mariadb"
+import { PrismaClient } from "@prisma/client"
 
 const adapter = new PrismaMariaDb({
   host: process.env.DATABASE_HOST || "localhost",
@@ -8,9 +8,9 @@ const adapter = new PrismaMariaDb({
   user: process.env.DATABASE_USER || "root",
   password: process.env.DATABASE_PASSWORD || "",
   database: process.env.DATABASE_NAME || "cinevault",
-  connectionLimit: 5
-});
+  connectionLimit: 5,
+})
 
-const prisma = new PrismaClient({ adapter });
+const prisma = new PrismaClient({ adapter })
 
-export { adapter, prisma };
+export { adapter, prisma }

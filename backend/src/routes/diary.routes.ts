@@ -1,15 +1,15 @@
 import { Router } from "express"
 import { createDiary, getDiary } from "../controllers/DiaryController.js"
-import { authMiddleware } from "../middlewares/auth.middlewares.js"
-import { asyncHandler } from "../middlewares/error.middlewares.js"
+import { middlewareAutenticacion } from "../middlewares/auth.middlewares.js"
+import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
 
 const router = Router()
 
 /**
- * Rutas del Diario protegidas con autenticación y centralizadas con asyncHandler.
+ * Rutas del Diario protegidas con autenticación y centralizadas con manejadorAsincrono.
  */
-router.get('/:id', asyncHandler(getDiary))
-router.post('/add', authMiddleware, asyncHandler(createDiary))
-// router.delete('/remove/:id', authMiddleware, removeDiary)
+router.get("/:id", manejadorAsincrono(getDiary))
+router.post("/add", middlewareAutenticacion, manejadorAsincrono(createDiary))
+// router.delete('/remove/:id', middlewareAutenticacion, removeDiary)
 
 export default router

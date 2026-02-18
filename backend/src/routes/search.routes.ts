@@ -1,54 +1,72 @@
-import { Router, Request, Response } from "express";
-import { fetchTMDB } from "../helpers/fetchTMDB.js";
-import { asyncHandler } from "../middlewares/error.middlewares.js"; // Importamos el envoltorio de errores
-import pMap from "p-map"; // Importamos p-map para controlar la concurrencia
+import { Router, Request, Response } from "express"
+import { consultarTMDB } from "../helpers/fetchTMDB.js"
+import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
+import pMap from "p-map" // Control de concurrencia para peticiones a TMDB
 
-const router = Router();
+const router = Router()
 
 // Ruta principal de búsqueda
-// Usamos asyncHandler para no tener que escribir try/catch aquí
-router.get('/', asyncHandler(async (req: Request, res: Response) => {
-  const q = req.query.q as string;
-  const page = Number(req.query.page) || 1;
+// Usamos manejadorAsincrono para no tener que escribir try/catch aquí
+router.get(
+  "/",
+  manejadorAsincrono(async (req: Request, res: Response) => {
+    const q = req.query.q as string
+    const pagina = Number(req.query.page) || 1
 
-  if (!q) {
-    return res.status(400).json({ error: 'Debe proporcionar un término de búsqueda.' });
-  }
+    if (!q) {
+      return res
+        .status(400)
+        .json({ error: "Debe proporcionar un término de búsqueda." })
+    }
 
-  const data: any = await fetchTMDB('search/movie', { query: q, page });
-  console.log(`Búsqueda para "${q}": TMDB devolvió ${data.results?.length || 0} resultados.`);
+    const datos: any = await consultarTMDB("search/movie", {
+      query: q,
+      page: pagina,
+    })
+    console.log(
+      `Búsqueda para "${q}": TMDB devolvió ${datos.results?.length || 0} resultados.`
+    )
 
-  // Filtrar resultados con poster y overview (calidad mínima)
-  const rawResults = (data.results || []).filter(
-    (movie: any) => movie.poster_path && movie.overview
-  );
+    // Filtrar resultados con poster y overview (calidad mínima)
+    const resultadosCrudos = (datos.results || []).filter(
+      (pelicula: any) => pelicula.poster_path && pelicula.overview
+    )
 
-  /**
-   * CONTROL DE CONCURRENCIA:
-   * Usamos pMap para procesar los detalles de las películas de 5 en 5.
-   * Esto evita saturar la API de TMDB con demasiadas peticiones simultáneas.
-   */
-  const resultsWithExtraInfo = await pMap(rawResults, async (movie: any) => {
-    // Para cada película, traemos créditos y títulos alternativos en paralelo
-    const [credits, titles]: any[] = await Promise.all([
-      fetchTMDB(`movie/${movie.id}/credits`),
-      fetchTMDB(`movie/${movie.id}/alternative_titles`, { language: '' })
-    ]);
+    /**
+     * CONTROL DE CONCURRENCIA:
+     * Usamos pMap para procesar los detalles de las películas de 5 en 5.
+     * Esto evita saturar la API de TMDB con demasiadas peticiones simultáneas.
+     */
+    const resultadosConInfo = await pMap(
+      resultadosCrudos,
+      async (pelicula: any) => {
+        // Para cada película, traemos créditos y títulos alternativos en paralelo
+        const [creditos, titulos]: any[] = await Promise.all([
+          consultarTMDB(`movie/${pelicula.id}/credits`),
+          consultarTMDB(`movie/${pelicula.id}/alternative_titles`, {
+            language: "",
+          }),
+        ])
 
-    const director = credits.crew?.find((person: any) => person.job === 'Director')?.name;
-    return { 
-      ...movie, 
-      director, 
-      alternative_titles: titles.titles || [] 
-    };
-  }, { concurrency: 5 }); // Máximo 5 películas procesándose a la vez
+        const director = creditos.crew?.find(
+          (persona: any) => persona.job === "Director"
+        )?.name
+        return {
+          ...pelicula,
+          director,
+          alternative_titles: titulos.titles || [],
+        }
+      },
+      { concurrency: 5 }
+    ) // Máximo 5 películas procesándose a la vez
 
-  res.status(200).json({
-    results: resultsWithExtraInfo,
-    total_pages: data.total_pages,
-    total_results: data.total_results,
-    page: data.page
-  });
-}));
+    res.status(200).json({
+      results: resultadosConInfo,
+      total_pages: datos.total_pages,
+      total_results: datos.total_results,
+      page: datos.page,
+    })
+  })
+)
 
-export default router;
+export default router

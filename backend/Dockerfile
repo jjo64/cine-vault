@@ -1,21 +1,21 @@
-# Base image
+# Imagen base para compilación
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install dependencies
+# Instalar dependencias
 COPY package*.json ./
 COPY prisma ./prisma/
 RUN npm install
 
-# Copy source code
+# Copiar código fuente
 COPY . .
 
-# Generate Prisma client and build
+# Generar cliente Prisma y compilar TypeScript
 RUN npx prisma generate
 RUN npm run build
 
-# Production image
+# Imagen de producción (ligera)
 FROM node:20-alpine
 
 WORKDIR /app

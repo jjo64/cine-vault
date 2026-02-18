@@ -1,22 +1,36 @@
-import { z } from 'zod';
+import { z } from "zod"
 
-const userSchema = z.object({
-    username: z.string().trim().min(3, "El nombre de usuario debe tener al menos 3 caracteres"),
-    email: z.email("El correo debe tener un formato válido").trim(),
-    password: z.string().trim().min(6, "La contraseña debe tener al menos 6 caracteres")
-});
+// Esquema de validación para registro de usuario
+const esquemaUsuario = z.object({
+  username: z
+    .string()
+    .trim()
+    .min(3, "El nombre de usuario debe tener al menos 3 caracteres"),
+  email: z.email("El correo debe tener un formato válido").trim(),
+  password: z
+    .string()
+    .min(8, "La contraseña debe tener al menos 8 caracteres")
+    .refine(
+      (val) => val.trim().length > 0,
+      "La contraseña no puede ser solo espacios en blanco"
+    ),
+})
 
-function validateUser(data: any) {
-    const result = userSchema.safeParse(data);
+/**
+ * Valida los datos del usuario usando el esquema Zod.
+ * Devuelve los datos parseados si son válidos, o los mensajes de error si no.
+ */
+function validarUsuario(data: unknown) {
+  const resultado = esquemaUsuario.safeParse(data)
 
-    if (!result.success) {
-        return { 
-            success: false, 
-            errorMessages: result.error.issues.map(err => err.message) 
-        };
+  if (!resultado.success) {
+    return {
+      success: false,
+      errorMessages: resultado.error.issues.map((err) => err.message),
     }
+  }
 
-    return { success: true, data: result.data };
+  return { success: true, data: resultado.data }
 }
 
-export { validateUser };
+export { validarUsuario }

@@ -1,21 +1,27 @@
-// Helper para centralizar las peticiones a TMDB
-export const fetchTMDB = async (endpoint: string, params: Record<string, any> = {}) => {
-  const urlParams = new URLSearchParams({
-    language: 'es-ES',
-    ...params
-  });
-  const url = `https://api.themoviedb.org/3/${endpoint}?${urlParams.toString()}`;
-  const options = {
-    method: 'GET',
+/**
+ * Helper para centralizar las peticiones a la API de TMDB.
+ * Todas las respuestas se solicitan en español (es-ES) por defecto.
+ */
+export const consultarTMDB = async (
+  endpoint: string,
+  params: Record<string, any> = {}
+) => {
+  const parametrosUrl = new URLSearchParams({
+    language: "es-ES",
+    ...params,
+  })
+  const url = `https://api.themoviedb.org/3/${endpoint}?${parametrosUrl.toString()}`
+  const opciones = {
+    method: "GET",
     headers: {
-      accept: 'application/json',
-      Authorization: `Bearer ${process.env.API_KEY_TMDB}`
-    }
-  };
-
-  const response = await fetch(url, options);
-  if (!response.ok) {
-    throw new Error(`TMDB error! Status: ${response.status}`);
+      accept: "application/json",
+      Authorization: `Bearer ${process.env.API_KEY_TMDB}`,
+    },
   }
-  return response.json();
-};
+
+  const respuesta = await fetch(url, opciones)
+  if (!respuesta.ok) {
+    throw new Error(`Error de TMDB. Estado: ${respuesta.status}`)
+  }
+  return respuesta.json()
+}
