@@ -1,16 +1,22 @@
-import { getReviews, addReview, removeReview, getReviewsByMovieId, removeLikeReview, likeReview } from "../controllers/ReviewsController.js"
+import {
+  getReviews,
+  addReview,
+  removeReview,
+  getReviewsByMovieId,
+  removeLikeReview,
+  likeReview,
+} from "../controllers/ReviewsController.js"
 import { Router } from "express"
-import { asyncHandler } from "../middlewares/error.middlewares.js"
+import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
 
 const router = Router()
 
-// Rutas para las reviews
-// Rutas para las reviews envueltas en asyncHandler
-router.get('/', asyncHandler(getReviews))
-router.get('/:movieId', asyncHandler(getReviewsByMovieId))
-router.post('/', asyncHandler(addReview))
-router.post('/:reviewId/like', asyncHandler(likeReview))
-router.delete('/:reviewId', asyncHandler(removeReview))
-router.delete('/:reviewId/like', asyncHandler(removeLikeReview))
+// Rutas para las reseñas envueltas en manejadorAsincrono
+router.get("/", manejadorAsincrono(getReviews))
+router.get("/:movieId", manejadorAsincrono(getReviewsByMovieId))
+router.post("/", manejadorAsincrono(addReview))
+router.post("/:reviewId/like", manejadorAsincrono(likeReview))
+router.delete("/:reviewId", manejadorAsincrono(removeReview))
+router.delete("/:reviewId/like", manejadorAsincrono(removeLikeReview))
 
 export default router
