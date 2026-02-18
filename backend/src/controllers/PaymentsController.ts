@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import Stripe from "stripe"
 import { Request, Response } from "express"
 import { IAuthRequest } from "../middlewares/auth.middlewares.js"
