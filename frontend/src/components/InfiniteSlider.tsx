@@ -131,7 +131,7 @@ function horizontalLoop(items: any[], config: any) {
     tl.times = times;
     tl.progress(1, true).progress(0, true); // pre-render for performance
     if (config.reversed) {
-        tl.vars.onReverseComplete();
+        tl.vars.onReverseComplete?.();
         tl.reverse();
     }
     return tl;

@@ -158,7 +158,7 @@ const MovieDetail: React.FC = () => {
                             />
                         </div>
 
-                        {localStorage.getItem('token') && <MovieActionsPanel />}
+                        {localStorage.getItem('token') && <MovieActionsPanel movieTitle={movie.title} />}
 
                         <div className="where-to-watch">
                             <div className="watch-header">
