@@ -28,3 +28,4 @@ logs
 *.njsproj
 *.sln
 *.sw?
+.agents/
