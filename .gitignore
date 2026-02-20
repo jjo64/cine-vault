@@ -29,3 +29,4 @@ logs
 *.sln
 *.sw?
 .agents/
+.agent/
