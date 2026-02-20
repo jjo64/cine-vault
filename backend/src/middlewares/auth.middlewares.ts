@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken"
 export interface PayloadAcceso {
   user_id: number
   role: "admin" | "editor" | "user"
+  is_verified: boolean
 }
 
 export interface PayloadRefresco {
@@ -39,8 +40,7 @@ export const middlewareAutenticacion = (
 
   try {
     // Verificar firma y expiración del token
-    const secret = process.env.JWT_SECRET || "secret_fallback_dev" // Fallback solo para desarrollo local
-    const payload = jwt.verify(token, secret) as PayloadAcceso
+    const payload = jwt.verify(token, process.env.JWT_SECRET!) as PayloadAcceso
 
     // Adjuntar payload a la request para usarlo en los controladores
     req.user = payload

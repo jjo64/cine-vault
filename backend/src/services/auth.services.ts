@@ -15,10 +15,15 @@ const DIAS_EXPIRACION_TOKEN_REFRESCO = 7
  * @param idUsuario ID del usuario
  * @param rol Rol del usuario
  */
-export const crearTokenAcceso = (idUsuario: number, rol: string) => {
+export const crearTokenAcceso = (
+  idUsuario: number,
+  rol: string,
+  isVerified: boolean
+) => {
   const payload: PayloadAcceso = {
     user_id: idUsuario,
     role: rol as PayloadAcceso["role"],
+    is_verified: isVerified,
   }
   return jwt.sign(payload, process.env.JWT_SECRET!, {
     expiresIn: EXPIRACION_TOKEN_ACCESO,

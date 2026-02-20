@@ -3,6 +3,7 @@ import express from "express"
 import cors from "cors"
 import helmet from "helmet"
 import cookieParser from "cookie-parser"
+import cron from "node-cron"
 
 // Importación de rutas
 import rutasAuth from "./routes/auth.routes.js"
@@ -16,6 +17,9 @@ import rutasPagos from "./routes/payments.routes.js"
 
 // Middlewares
 import { manejadorErrores } from "./middlewares/error.middlewares.js"
+
+// Importación de helpers
+import { limpiarUsuariosNoVerificados } from "./helpers/authOptions.js"
 
 // Configuración inicial
 const app = express()
@@ -50,6 +54,7 @@ app.use(
 app.use(express.json({ limit: "10mb" })) // Parseo de JSON body con límite
 app.use(cookieParser()) // Parseo de cookies
 app.disable("x-powered-by") // Ocultar tecnología del servidor por seguridad
+cron.schedule("0 * * * *", limpiarUsuariosNoVerificados)
 
 /* ==========================================================================
    RUTA RAÍZ DE PRUEBA (ANTES del manejador de errores)

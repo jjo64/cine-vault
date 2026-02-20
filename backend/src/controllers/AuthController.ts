@@ -3,6 +3,7 @@ import { prisma } from "../lib/prisma.js"
 import {
   SolicitudAutenticada,
   PayloadRefresco,
+  PayloadAcceso,
 } from "../middlewares/auth.middlewares.js"
 import jwt from "jsonwebtoken"
 import { validarUsuario } from "../schemas/user.js"
@@ -13,7 +14,10 @@ import {
   verificarTokenRefresco,
   compararContrasena,
 } from "../services/auth.services.js"
-import { COOKIE_OPTIONS } from "../helpers/authOptions.js"
+import {
+  COOKIE_OPTIONS,
+  enviarCorreoVerificacion,
+} from "../helpers/authOptions.js"
 
 // Mensajes de respuesta constantes para consistencia
 const MENSAJES = {
@@ -63,8 +67,18 @@ export const iniciarSesion = async (
     if (!contrasenaValida)
       return res.status(401).json({ message: MENSAJES.ERROR_CREDENCIALES })
 
+    // Aquí ya tienes el usuario de la DB → puedes leer is_verified
+    if (!usuario.is_verified)
+      return res
+        .status(403)
+        .json({ message: "Debes verificar tu email antes de iniciar sesión" })
+
     // Generar tokens
-    const tokenAcceso = crearTokenAcceso(usuario.id, usuario.role as string)
+    const tokenAcceso = crearTokenAcceso(
+      usuario.id,
+      usuario.role as string,
+      usuario.is_verified
+    )
     const { token: tokenRefresco } = await crearTokenRefresco(usuario.id)
 
     // Configurar cookie segura httpOnly para el refresh token
@@ -100,6 +114,10 @@ export const registrar = async (req: SolicitudAutenticada, res: Response) => {
 
     // Crear usuario con contraseña hasheada
     const contrasenaHasheada = await hashearContrasena(password)
+
+    // Aca registramos el usuario en la base de datos pero con el is_verified en false
+    // y se tiene que generar un token para verificar el email
+
     const nuevoUsuario = await prisma.users.create({
       data: {
         email,
@@ -108,14 +126,121 @@ export const registrar = async (req: SolicitudAutenticada, res: Response) => {
       },
     })
 
-    res
-      .status(201)
-      .json({
-        message: "Usuario registrado exitosamente",
-        userId: nuevoUsuario.id,
-      })
+    // Aca se tiene que enviar un correo para verificar la cuenta
+    const tokenVerificacion = jwt.sign(
+      { user_id: nuevoUsuario.id },
+      process.env.VERIFY_EMAIL_SECRET!,
+      { expiresIn: "1h" }
+    )
+
+    await prisma.auth_tokens.create({
+      data: {
+        id: crypto.randomUUID(),
+        user_id: nuevoUsuario.id,
+        token: tokenVerificacion,
+        type: "VERIFY_EMAIL",
+        expires_at: new Date(Date.now() + 60 * 60 * 1000), // 1 hora
+      },
+    })
+
+    // Aca se tiene que enviar un correo para verificar la cuenta
+    await enviarCorreoVerificacion(nuevoUsuario.email, tokenVerificacion)
+
+    res.status(201).json({
+      message: "Usuario registrado exitosamente",
+      userId: nuevoUsuario.id,
+    })
   } catch (error) {
     console.error("Error en registro:", error)
+    res.status(500).json({ message: MENSAJES.ERROR_SERVIDOR })
+  }
+}
+
+export const verificarEmail = async (
+  req: SolicitudAutenticada,
+  res: Response
+) => {
+  try {
+    const token = String(req.params.token)
+    if (!token) return res.status(400).json({ message: "Token requerido" })
+
+    type PayloadVerificacion = { user_id: number }
+    const payload = jwt.verify(
+      token,
+      process.env.VERIFY_EMAIL_SECRET!
+    ) as PayloadVerificacion
+    const tokenEnDb = await prisma.auth_tokens.findFirst({
+      where: { token, user_id: payload.user_id, type: "VERIFY_EMAIL" },
+      include: { users: true },
+    })
+
+    if (!tokenEnDb || tokenEnDb.expires_at < new Date())
+      return res
+        .status(410)
+        .json({ message: "El enlace ha expirado. Solicita uno nuevo." })
+
+    if (!tokenEnDb.users)
+      return res.status(404).json({ message: "Usuario no encontrado" })
+
+    await prisma.users.update({
+      where: { id: tokenEnDb.users.id },
+      data: { is_verified: true },
+    })
+    await prisma.auth_tokens.deleteMany({
+      where: { user_id: tokenEnDb.users.id, type: "VERIFY_EMAIL" },
+    })
+    res.json({ message: "Email verificado exitosamente" })
+  } catch (error) {
+    console.error("Error al verificar email:", error)
+    res.status(500).json({ message: MENSAJES.ERROR_SERVIDOR })
+  }
+}
+
+export const reenviarVerificacion = async (
+  req: SolicitudAutenticada,
+  res: Response
+) => {
+  try {
+    const { email } = req.body
+    if (!email) return res.status(400).json({ message: "Email requerido" })
+
+    const usuario = await prisma.users.findUnique({ where: { email } })
+
+    // Siempre responder igual para no revelar si el email existe
+    if (!usuario || usuario.is_verified)
+      return res.json({
+        message:
+          "Si el correo existe y no está verificado, recibirás un email.",
+      })
+
+    // Invalidar tokens anteriores
+    await prisma.auth_tokens.deleteMany({
+      where: { user_id: usuario.id, type: "VERIFY_EMAIL" },
+    })
+
+    // Generar nuevo token de verificación
+    const tokenVerificacion = jwt.sign(
+      { user_id: usuario.id },
+      process.env.VERIFY_EMAIL_SECRET!,
+      { expiresIn: "1h" }
+    )
+
+    await prisma.auth_tokens.create({
+      data: {
+        id: crypto.randomUUID(),
+        user_id: usuario.id,
+        token: tokenVerificacion,
+        type: "VERIFY_EMAIL",
+        expires_at: new Date(Date.now() + 60 * 60 * 1000), // 1 hora
+      },
+    })
+
+    await enviarCorreoVerificacion(usuario.email, tokenVerificacion)
+    res.json({
+      message: "Si el correo existe y no está verificado, recibirás un email.",
+    })
+  } catch (error) {
+    console.error("Error al reenviar verificación:", error)
     res.status(500).json({ message: MENSAJES.ERROR_SERVIDOR })
   }
 }
@@ -142,7 +267,11 @@ export const renovarToken = async (
       return res.status(404).json({ message: MENSAJES.USUARIO_NO_ENCONTRADO })
 
     // Generar nuevo access token
-    const tokenAcceso = crearTokenAcceso(usuario.id, usuario.role as string)
+    const tokenAcceso = crearTokenAcceso(
+      usuario.id,
+      usuario.role as string,
+      usuario.is_verified
+    )
     res.json({ accessToken: tokenAcceso })
   } catch (err) {
     // Si el refresh token no es válido, limpiar cookie y rechazar

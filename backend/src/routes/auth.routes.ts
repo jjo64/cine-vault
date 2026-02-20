@@ -6,6 +6,8 @@ import {
   renovarToken,
   cerrarSesion,
   verificarToken,
+  verificarEmail,
+  reenviarVerificacion,
 } from "../controllers/AuthController.js"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
 
@@ -24,7 +26,8 @@ router.post(
   middlewareAutenticacion,
   manejadorAsincrono(cerrarSesion)
 )
-//router.post('verify-email', manejadorAsincrono(verificarEmail))
+router.post("/verify-email/:token", manejadorAsincrono(verificarEmail))
+router.post("/resend-verification", manejadorAsincrono(reenviarVerificacion))
 //router.post('forgot-password', manejadorAsincrono(olvidarContrasena))
 //router.post('reset-password', manejadorAsincrono(resetearContrasena))
 router.get(

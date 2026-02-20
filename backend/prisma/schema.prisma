@@ -161,6 +161,10 @@ model users {
   user_activity                       user_activity[]
   vault                               vault[]
   watchlist                           watchlist[]
+  @@index([is_verified, created_at])  // cron de limpieza
+  @@index([locked_until])             // verificar bloqueos en login
+  @@index([membership])               // filtrar usuarios por plan
+  @@index([role])                     // filtrar por rol en panel admin
 }
 
 model vault {
