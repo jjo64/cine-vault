@@ -4,7 +4,7 @@
  */
 export const consultarTMDB = async (
   endpoint: string,
-  params: Record<string, any> = {}
+  params: Record<string, string> = {}
 ) => {
   const parametrosUrl = new URLSearchParams({
     language: "es-ES",

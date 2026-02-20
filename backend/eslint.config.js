@@ -1,15 +1,21 @@
-import tsParser from "@typescript-eslint/parser"
-import tsPlugin from "@typescript-eslint/eslint-plugin"
+import tseslint from "typescript-eslint"
+import globals from "globals"
+import prettier from "eslint-config-prettier"
 
 export default [
+  ...tseslint.configs.recommended,
+  prettier,
   {
     files: ["**/*.ts"],
-    languageOptions: { parser: tsParser },
-    plugins: { "@typescript-eslint": tsPlugin },
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
     rules: {
-      quotes: ["error", "double"],          // o "single", elige uno
-      semi: ["error", "never"],
-      "@typescript-eslint/no-explicit-any": "warn"
-    }
-  }
+      "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+      "@typescript-eslint/explicit-function-return-type": "off",
+      "no-console": "off",
+    },
+  },
 ]

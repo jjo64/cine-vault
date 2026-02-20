@@ -7,6 +7,7 @@ import { Request, Response, NextFunction, RequestHandler } from "express"
  */
 export const manejadorAsincrono =
   (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     fn: RequestHandler | ((req: any, res: any, next: any) => Promise<any>)
   ): RequestHandler =>
   (req, res, next) => {
@@ -18,6 +19,7 @@ export const manejadorAsincrono =
  * Captura todos los errores de la aplicación y los devuelve en un formato JSON limpio.
  */
 export const manejadorErrores = (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   err: any,
   req: Request,
   res: Response,

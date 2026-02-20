@@ -1,8 +1,9 @@
 import "dotenv/config"
 import Stripe from "stripe"
-import { Request, Response } from "express"
+import { Response } from "express"
 import { SolicitudAutenticada } from "../middlewares/auth.middlewares.js"
 import { prisma } from "../lib/prisma.js"
+import { obtenerMensajeError } from "../helpers/errores.js"
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string)
 
@@ -52,9 +53,8 @@ export const createCheckoutSession = async (
     })
 
     res.json({ url: sesion.url })
-  } catch (error: any) {
-    console.error("Error de Stripe:", error.message)
-    console.error(error)
-    res.status(500).json({ error: error.message })
+  } catch (error: unknown) {
+    console.error("Error de Stripe:", obtenerMensajeError(error))
+    res.status(500).json({ error: obtenerMensajeError(error) })
   }
 }

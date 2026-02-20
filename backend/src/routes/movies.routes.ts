@@ -68,6 +68,7 @@ router.get(
           consultarTMDB(`movie/${idPelicula}/images`, {
             include_image_language: "en,null",
           }),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ])) as [any, any, any, any, any]
 
       res.status(200).json({

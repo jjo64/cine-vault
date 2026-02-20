@@ -14,9 +14,7 @@ export interface PayloadRefresco {
 }
 
 // Extensión de la interfaz Request de Express para incluir los datos del usuario autenticado
-export interface SolicitudAutenticada extends Request {
-  user?: PayloadAcceso
-}
+export type SolicitudAutenticada = Request
 
 /**
  * Middleware de Autenticación
@@ -45,8 +43,14 @@ export const middlewareAutenticacion = (
     // Adjuntar payload a la request para usarlo en los controladores
     req.user = payload
     next()
-  } catch (err) {
+  } catch (err: unknown) {
     // Token inválido o expirado
     res.status(403).json({ message: "Token inválido o expirado" })
+  }
+}
+
+declare module "express-serve-static-core" {
+  interface Request {
+    user?: PayloadAcceso
   }
 }

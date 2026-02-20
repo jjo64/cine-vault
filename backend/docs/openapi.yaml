@@ -1,0 +1,187 @@
+openapi: 3.1.0
+info:
+  title: API CineVault
+  description: Documentación oficial de la API de CineVault. Red social para amantes del cine.
+  version: 1.0.0
+  contact:
+    name: Equipo CineVault
+
+servers:
+  - url: http://localhost:3000/api
+    description: Servidor de Desarrollo
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: refresh_token
+
+  schemas:
+    Usuario:
+      type: object
+      properties:
+        id: { type: integer }
+        username: { type: string }
+        email: { type: string, format: email }
+        role: { type: string, enum: [USER, ADMIN] }
+        avatar_url: { type: string, format: uri, nullable: true }
+        bio: { type: string, maxLength: 160, nullable: true }
+
+    Pelicula:
+      type: object
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        overview: { type: string }
+        poster_path: { type: string }
+        release_date: { type: string, format: date }
+
+    Error:
+      type: object
+      properties:
+        message: { type: string }
+        error: { type: string }
+
+paths:
+  /auth/register:
+    post:
+      tags: [Autenticación]
+      summary: Registrar un nuevo usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, email, password]
+              properties:
+                username: { type: string, minLength: 3 }
+                email: { type: string, format: email }
+                password: { type: string, minLength: 8 }
+      responses:
+        '201':
+          description: Registro exitoso
+        '400':
+          description: Error de validación o usuario duplicado
+
+  /auth/login:
+    post:
+      tags: [Autenticación]
+      summary: Iniciar sesión
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string }
+                password: { type: string }
+      responses:
+        '200':
+          description: OK. Devuelve AccessToken y establece Cookie de refresco.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken: { type: string }
+
+  /movies/popular:
+    get:
+      tags: [Películas]
+      summary: Obtener películas populares (TMDB)
+      responses:
+        '200':
+          description: Lista de películas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items: { $ref: '#/components/schemas/Pelicula' }
+
+  /users/profile:
+    patch:
+      tags: [Usuarios]
+      summary: Actualizar perfil propio
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username: { type: string }
+                avatar_url: { type: string }
+                bio: { type: string }
+      responses:
+        '200':
+          description: Perfil actualizado
+
+  /payments/checkout:
+    post:
+      tags: [Pagos]
+      summary: Crear sesión de Stripe
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId, plan]
+              properties:
+                userId: { type: integer }
+                plan: { type: string, enum: [vip, pro] }
+      responses:
+        '200':
+          description: URL de Stripe generada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url: { type: string, format: uri }
+
+  /search:
+    get:
+      tags: [Búsqueda]
+      summary: Buscar películas en TMDB
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string }
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+      responses:
+        '200':
+          description: Resultados de búsqueda
+
+  /reviews:
+    get:
+      tags: [Reseñas]
+      summary: Feed global de reseñas
+      responses:
+        '200':
+          description: Lista de reseñas
+    post:
+      tags: [Reseñas]
+      summary: Crear una nueva reseña
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: Creada

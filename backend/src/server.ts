@@ -4,6 +4,8 @@ import cors from "cors"
 import helmet from "helmet"
 import cookieParser from "cookie-parser"
 import cron from "node-cron"
+import "./config/passport.config.js"
+import passport from "passport"
 
 // Importación de rutas
 import rutasAuth from "./routes/auth.routes.js"
@@ -55,6 +57,7 @@ app.use(express.json({ limit: "10mb" })) // Parseo de JSON body con límite
 app.use(cookieParser()) // Parseo de cookies
 app.disable("x-powered-by") // Ocultar tecnología del servidor por seguridad
 cron.schedule("0 * * * *", limpiarUsuariosNoVerificados)
+app.use(passport.initialize())
 
 /* ==========================================================================
    RUTA RAÍZ DE PRUEBA (ANTES del manejador de errores)
