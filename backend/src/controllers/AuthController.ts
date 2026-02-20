@@ -1,4 +1,4 @@
-import { Request, Response } from "express"
+import { Response } from "express"
 import { prisma } from "../lib/prisma.js"
 import {
   SolicitudAutenticada,
@@ -340,5 +340,35 @@ export const verificarToken = async (
   } catch (error) {
     console.error("Error al verificar token:", error)
     res.status(500).json({ message: MENSAJES.ERROR_SERVIDOR })
+  }
+}
+
+export const controladorCallback = async (
+  req: SolicitudAutenticada,
+  res: Response
+) => {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const usuario = req.user as any // passport inyecta el usuario aquí
+
+    const tokenAcceso = crearTokenAcceso(
+      usuario.id,
+      usuario.role as string,
+      usuario.is_verified
+    )
+    const { token: tokenRefresco } = await crearTokenRefresco(usuario.id)
+
+    res.cookie("refresh_token", tokenRefresco, COOKIE_OPTIONS)
+    res.cookie("access_token", tokenAcceso, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 60 * 1000, // 1 minuto, solo para el handshake
+      sameSite: "lax",
+    })
+
+    res.redirect(`${process.env.FRONTEND_URL}/auth/callback`)
+  } catch (error) {
+    console.error("Error en callback de Google:", error)
+    res.redirect(`${process.env.FRONTEND_URL}/auth/error`)
   }
 }

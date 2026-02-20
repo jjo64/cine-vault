@@ -11,7 +11,7 @@ router.get(
   "/",
   manejadorAsincrono(async (req: Request, res: Response) => {
     const q = req.query.q as string
-    const pagina = Number(req.query.page) || 1
+    const pagina = String(req.query.page) || "1"
 
     if (!q) {
       return res
@@ -19,9 +19,10 @@ router.get(
         .json({ error: "Debe proporcionar un término de búsqueda." })
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const datos: any = await consultarTMDB("search/movie", {
       query: q,
-      page: pagina,
+      page: String(pagina),
     })
     console.log(
       `Búsqueda para "${q}": TMDB devolvió ${datos.results?.length || 0} resultados.`
@@ -29,6 +30,7 @@ router.get(
 
     // Filtrar resultados con poster y overview (calidad mínima)
     const resultadosCrudos = (datos.results || []).filter(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (pelicula: any) => pelicula.poster_path && pelicula.overview
     )
 
@@ -39,8 +41,10 @@ router.get(
      */
     const resultadosConInfo = await pMap(
       resultadosCrudos,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       async (pelicula: any) => {
         // Para cada película, traemos créditos y títulos alternativos en paralelo
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const [creditos, titulos]: any[] = await Promise.all([
           consultarTMDB(`movie/${pelicula.id}/credits`),
           consultarTMDB(`movie/${pelicula.id}/alternative_titles`, {
@@ -49,6 +53,7 @@ router.get(
         ])
 
         const director = creditos.crew?.find(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (persona: any) => persona.job === "Director"
         )?.name
         return {

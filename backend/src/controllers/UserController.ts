@@ -1,6 +1,7 @@
 import { Request, Response } from "express"
 import { prisma } from "../lib/prisma.js"
 import { SolicitudAutenticada } from "../middlewares/auth.middlewares.js"
+import { obtenerCodigoPrisma, obtenerMensajeError } from "../helpers/errores.js"
 
 // Tipo tipado para la actualización de perfil (reemplaza `any`)
 type ActualizarPerfil = {
@@ -180,16 +181,13 @@ export const seguirUsuario = async (
     })
 
     return res.json({ message: "Usuario seguido correctamente" })
-  } catch (error: any) {
-    // Error de clave única en Prisma
-    if (error.code === "P2002") {
+  } catch (error: unknown) {
+    if (obtenerCodigoPrisma(error) === "P2002") {
       return res
         .status(400)
         .json({ error: "Ya estás siguiendo a este usuario" })
     }
-
-    console.error(error)
-    return res.status(500).json({ error: "Error al seguir al usuario" })
+    res.status(500).json({ error: obtenerMensajeError(error) })
   }
 }
 
@@ -241,14 +239,12 @@ export const actualizarPerfil = async (
     })
 
     return res.json({ message: "Perfil actualizado correctamente" })
-  } catch (error: any) {
-    if (error.code === "P2002") {
+  } catch (error: unknown) {
+    if (obtenerCodigoPrisma(error) === "P2002") {
       return res
         .status(409)
         .json({ error: "El nombre de usuario ya está en uso" })
     }
-
-    console.error(error)
     return res.status(500).json({ error: "Error interno del servidor" })
   }
 }

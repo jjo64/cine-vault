@@ -8,14 +8,25 @@ import {
   verificarToken,
   verificarEmail,
   reenviarVerificacion,
+  controladorCallback,
 } from "../controllers/AuthController.js"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
+import passport from "passport"
 
 const router = Router()
 
 // Rutas de autenticación
 router.post("/register", manejadorAsincrono(registrar))
 router.post("/login", manejadorAsincrono(iniciarSesion))
+router.get(
+  "/google",
+  passport.authenticate("google", { scope: ["profile", "email"] })
+)
+router.get(
+  "/google/callback",
+  passport.authenticate("google", { failureRedirect: "/api/auth/google" }),
+  controladorCallback
+)
 router.post(
   "/refresh",
   middlewareAutenticacion,
