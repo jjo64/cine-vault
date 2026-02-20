@@ -3,6 +3,7 @@ import { prisma } from "../lib/prisma.js"
 import {
   SolicitudAutenticada,
   PayloadRefresco,
+  PayloadAcceso,
 } from "../middlewares/auth.middlewares.js"
 import jwt from "jsonwebtoken"
 import { validarUsuario } from "../schemas/user.js"
