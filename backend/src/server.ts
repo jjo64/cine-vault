@@ -19,6 +19,7 @@ import rutasPagos from "./routes/payments.routes.js"
 
 // Middlewares
 import { manejadorErrores } from "./middlewares/error.middlewares.js"
+import { limitadorGlobal } from "./middlewares/rateLimit.middleware.js"
 
 // Importación de helpers
 import { limpiarUsuariosNoVerificados } from "./helpers/authOptions.js"
@@ -53,6 +54,7 @@ app.use(
   })
 )
 
+app.use(limitadorGlobal)
 app.use(express.json({ limit: "10mb" })) // Parseo de JSON body con límite
 app.use(cookieParser()) // Parseo de cookies
 app.disable("x-powered-by") // Ocultar tecnología del servidor por seguridad

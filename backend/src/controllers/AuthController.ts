@@ -1,703 +1,182 @@
 import { Response } from "express"
-import { prisma } from "../lib/prisma.js"
-import {
-  SolicitudAutenticada,
-  PayloadRefresco,
-} from "../middlewares/auth.middlewares.js"
-import jwt from "jsonwebtoken"
-import { validarUsuario } from "../schemas/user.js"
-import {
-  crearTokenAcceso,
-  crearTokenRefresco,
-  hashearContrasena,
-  verificarTokenRefresco,
-  compararContrasena,
-  crearTOTP,
-  encriptarSecreto,
-  desencriptarSecreto,
-} from "../services/auth.services.js"
-import {
-  COOKIE_OPTIONS,
-  enviarCorreoVerificacion,
-  enviarCorreoResetPassword,
-} from "../helpers/authOptions.js"
-import * as OTPAuth from "otpauth"
-import QRCode from "qrcode"
-
-// Mensajes de respuesta constantes para consistencia
-const MENSAJES = {
-  ERROR_CREDENCIALES: "Credenciales incorrectas",
-  USUARIO_EXISTE: "El usuario ya está registrado",
-  ERROR_VALIDACION: "Error de validación",
-  TOKEN_REQUERIDO: "Token de acceso requerido",
-  REFRESH_REQUERIDO: "No se proporcionó refresh token",
-  TOKEN_INVALIDO: "Token inválido o expirado",
-  USUARIO_NO_ENCONTRADO: "Usuario no encontrado",
-  SESION_CERRADA: "Sesión cerrada exitosamente",
-  ERROR_SERVIDOR: "Error interno del servidor",
-}
+import { SolicitudAutenticada } from "../middlewares/auth.middlewares.js"
+import { COOKIE_OPTIONS } from "../helpers/authOptions.js"
+import * as authService from "../services/auth.services.js"
+import { UnauthorizedError } from "../errors/AppErrors.js"
 
 /* ==========================================================================
    CONTROLADOR DE AUTENTICACIÓN
    --------------------------------------------------------------------------
-   Maneja el inicio de sesión, registro, renovación de tokens y cierre de sesión.
+   Responsabilidad ÚNICA: desempacar req, llamar al servicio, devolver res.
+   Sin lógica de negocio. Sin importaciones de Prisma. Sin bcrypt. Sin JWT.
+   Los errores se lanzan desde el servicio y el manejadorErrores global
+   los intercepta automáticamente gracias al manejadorAsincrono.
    ========================================================================== */
 
-/**
- * Inicia sesión de usuario.
- * Valida credenciales, genera tokens de acceso y refresco, y establece la cookie segura.
- */
 export const iniciarSesion = async (
   req: SolicitudAutenticada,
   res: Response
 ) => {
-  try {
-    const { username, password } = req.body
+  const { username, password } = req.body
+  const resultado = await authService.iniciarSesionService(username, password)
 
-    // Validación básica de entrada
-    if (!username || !password) {
-      return res.status(400).json({ message: MENSAJES.ERROR_CREDENCIALES })
-    }
-
-    // Buscar usuario en DB
-    const usuario = await prisma.users.findUnique({ where: { username } })
-    if (!usuario)
-      return res.status(401).json({ message: MENSAJES.ERROR_CREDENCIALES })
-
-    // Si es cuenta de Google no puede entrar por aquí
-    if (usuario.google_id) {
-      return res
-        .status(401)
-        .json({ message: "Esta cuenta usa Google para iniciar sesión" })
-    }
-
-    // Verificar email antes de comparar contraseña (evita trabajo innecesario)
-    if (!usuario.is_verified) {
-      return res
-        .status(403)
-        .json({ message: "Debes verificar tu email antes de iniciar sesión" })
-    }
-
-    //Verificar contraseña usando bcrypt (seguro)
-    const contrasenaValida = await compararContrasena(
-      password,
-      usuario.password
-    )
-    // const contrasenaValida = password === usuario.password
-    if (!contrasenaValida)
-      return res.status(401).json({ message: MENSAJES.ERROR_CREDENCIALES })
-
-    if (usuario.two_factor_enabled) {
-      // Token temporal de corta duración solo para el paso 2FA
-      const tokenTemporal = jwt.sign(
-        { user_id: usuario.id, two_factor_pending: true },
-        process.env.JWT_SECRET!,
-        { expiresIn: "5m" }
-      )
-      return res.json({ two_factor_required: true, tokenTemporal })
-    }
-
-    // Si no tiene 2FA, flujo normal
-
-    // Generar tokens
-    const tokenAcceso = crearTokenAcceso(
-      usuario.id,
-      usuario.role as string,
-      usuario.is_verified
-    )
-    const { token: tokenRefresco } = await crearTokenRefresco(usuario.id)
-
-    // Configurar cookie segura httpOnly para el refresh token
-    res.cookie("refresh_token", tokenRefresco, COOKIE_OPTIONS)
-    res.json({ accessToken: tokenAcceso })
-  } catch (error) {
-    console.error("Error en inicio de sesión:", error)
-    res.status(500).json({ message: MENSAJES.ERROR_SERVIDOR })
+  if ("two_factor_required" in resultado) {
+    return res.json(resultado)
   }
+
+  res.cookie("refresh_token", resultado.tokenRefresco, COOKIE_OPTIONS)
+  res.json({ accessToken: resultado.tokenAcceso })
 }
 
-/**
- * Registra un nuevo usuario.
- * Valida datos con Zod, hashea la contraseña y guarda en BD.
- */
 export const registrar = async (req: SolicitudAutenticada, res: Response) => {
-  try {
-    // Validar esquema de datos
-    const validacion = validarUsuario(req.body)
-    if (!validacion.success || !validacion.data) {
-      return res.status(400).json({
-        message: MENSAJES.ERROR_VALIDACION,
-        errors: validacion.errorMessages || ["Datos inválidos"],
-      })
-    }
-
-    const { email, username, password } = validacion.data
-
-    // Verificar si el usuario ya existe
-    const usuarioExistente = await prisma.users.findUnique({ where: { email } })
-    if (usuarioExistente)
-      return res.status(400).json({ message: MENSAJES.USUARIO_EXISTE })
-
-    // Crear usuario con contraseña hasheada
-    const contrasenaHasheada = await hashearContrasena(password)
-
-    // Aca registramos el usuario en la base de datos pero con el is_verified en false
-    // y se tiene que generar un token para verificar el email
-
-    const nuevoUsuario = await prisma.users.create({
-      data: {
-        email,
-        username,
-        password: contrasenaHasheada,
-      },
-    })
-
-    // Aca se tiene que enviar un correo para verificar la cuenta
-    const tokenVerificacion = jwt.sign(
-      { user_id: nuevoUsuario.id },
-      process.env.VERIFY_EMAIL_SECRET!,
-      { expiresIn: "1h" }
-    )
-
-    await prisma.auth_tokens.create({
-      data: {
-        id: crypto.randomUUID(),
-        user_id: nuevoUsuario.id,
-        token: tokenVerificacion,
-        type: "VERIFY_EMAIL",
-        expires_at: new Date(Date.now() + 60 * 60 * 1000), // 1 hora
-      },
-    })
-
-    // Aca se tiene que enviar un correo para verificar la cuenta
-    await enviarCorreoVerificacion(nuevoUsuario.email, tokenVerificacion)
-
-    res.status(201).json({
-      message: "Usuario registrado exitosamente",
-      userId: nuevoUsuario.id,
-    })
-  } catch (error) {
-    console.error("Error en registro:", error)
-    res.status(500).json({ message: MENSAJES.ERROR_SERVIDOR })
-  }
+  const { userId } = await authService.registrarService(req.body)
+  res.status(201).json({ message: "Usuario registrado exitosamente", userId })
 }
 
 export const verificarEmail = async (
   req: SolicitudAutenticada,
   res: Response
 ) => {
-  try {
-    const token = String(req.params.token)
-    if (!token) return res.status(400).json({ message: "Token requerido" })
-
-    type PayloadVerificacion = { user_id: number }
-    const payload = jwt.verify(
-      token,
-      process.env.VERIFY_EMAIL_SECRET!
-    ) as PayloadVerificacion
-    const tokenEnDb = await prisma.auth_tokens.findFirst({
-      where: { token, user_id: payload.user_id, type: "VERIFY_EMAIL" },
-      include: { users: true },
-    })
-
-    if (!tokenEnDb || tokenEnDb.expires_at < new Date())
-      return res
-        .status(410)
-        .json({ message: "El enlace ha expirado. Solicita uno nuevo." })
-
-    if (!tokenEnDb.users)
-      return res.status(404).json({ message: "Usuario no encontrado" })
-
-    await prisma.users.update({
-      where: { id: tokenEnDb.users.id },
-      data: { is_verified: true },
-    })
-    await prisma.auth_tokens.deleteMany({
-      where: { user_id: tokenEnDb.users.id, type: "VERIFY_EMAIL" },
-    })
-    res.json({ message: "Email verificado exitosamente" })
-  } catch (error) {
-    console.error("Error al verificar email:", error)
-    res.status(500).json({ message: MENSAJES.ERROR_SERVIDOR })
-  }
+  const token = String(req.params.token)
+  await authService.verificarEmailService(token)
+  res.json({ message: "Email verificado exitosamente" })
 }
 
 export const reenviarVerificacion = async (
   req: SolicitudAutenticada,
   res: Response
 ) => {
-  try {
-    const { email } = req.body
-    if (!email) return res.status(400).json({ message: "Email requerido" })
-
-    const usuario = await prisma.users.findUnique({ where: { email } })
-
-    // Siempre responder igual para no revelar si el email existe
-    if (!usuario || usuario.is_verified)
-      return res.json({
-        message:
-          "Si el correo existe y no está verificado, recibirás un email.",
-      })
-
-    // Invalidar tokens anteriores
-    await prisma.auth_tokens.deleteMany({
-      where: { user_id: usuario.id, type: "VERIFY_EMAIL" },
-    })
-
-    // Generar nuevo token de verificación
-    const tokenVerificacion = jwt.sign(
-      { user_id: usuario.id },
-      process.env.VERIFY_EMAIL_SECRET!,
-      { expiresIn: "1h" }
-    )
-
-    await prisma.auth_tokens.create({
-      data: {
-        id: crypto.randomUUID(),
-        user_id: usuario.id,
-        token: tokenVerificacion,
-        type: "VERIFY_EMAIL",
-        expires_at: new Date(Date.now() + 60 * 60 * 1000), // 1 hora
-      },
-    })
-
-    await enviarCorreoVerificacion(usuario.email, tokenVerificacion)
-    res.json({
-      message: "Si el correo existe y no está verificado, recibirás un email.",
-    })
-  } catch (error) {
-    console.error("Error al reenviar verificación:", error)
-    res.status(500).json({ message: MENSAJES.ERROR_SERVIDOR })
-  }
+  const { email } = req.body
+  await authService.reenviarVerificacionService(email)
+  // Respuesta genérica siempre (el servicio maneja internamente si el usuario existe)
+  res.json({
+    message: "Si el correo existe y no está verificado, recibirás un email.",
+  })
 }
 
-/**
- * Renueva el token de acceso usando el refresh token (cookie).
- */
 export const renovarToken = async (
   req: SolicitudAutenticada,
   res: Response
 ) => {
   const token = req.cookies.refresh_token
-  if (!token)
-    return res.status(401).json({ message: MENSAJES.REFRESH_REQUERIDO })
-
-  try {
-    // Verificar validez del refresh token y la sesión en DB
-    const payload = await verificarTokenRefresco(token)
-
-    const usuario = await prisma.users.findUnique({
-      where: { id: payload.user_id },
-    })
-    if (!usuario)
-      return res.status(404).json({ message: MENSAJES.USUARIO_NO_ENCONTRADO })
-
-    // Generar nuevo access token
-    const tokenAcceso = crearTokenAcceso(
-      usuario.id,
-      usuario.role as string,
-      usuario.is_verified
-    )
-    res.json({ accessToken: tokenAcceso })
-  } catch (err) {
-    // Si el refresh token no es válido, limpiar cookie y rechazar
-    console.error("Error al renovar token:", err)
-    res.clearCookie("refresh_token")
-    return res.status(401).json({ message: MENSAJES.TOKEN_INVALIDO })
-  }
+  if (!token) throw new UnauthorizedError("No se proporcionó refresh token") // ← línea nueva
+  const tokenAcceso = await authService.renovarTokenService(token)
+  res.json({ accessToken: tokenAcceso })
 }
 
-/**
- * Cierra la sesión del usuario.
- * Elimina la sesión de la BD y borra la cookie.
- */
 export const cerrarSesion = async (
   req: SolicitudAutenticada,
   res: Response
 ) => {
-  try {
-    const token = req.cookies.refresh_token
-    if (token) {
-      try {
-        // Intentar borrar la sesión de la BD
-        const payload = jwt.verify(
-          token,
-          process.env.REFRESH_SECRET!
-        ) as PayloadRefresco
-        await prisma.sessions
-          .delete({ where: { id: payload.id_session } })
-          .catch(() => null) // Ignorar error si no existe
-      } catch (err) {
-        // Token inválido, procedemos a limpiar cookie de todas formas
-        console.warn("Advertencia: Token inválido o sesión ya borrada")
-      }
-    }
-
-    // Siempre limpiar la cookie
-    res.clearCookie("refresh_token")
-    res.json({ message: MENSAJES.SESION_CERRADA })
-  } catch (error) {
-    res.status(500).json({ message: MENSAJES.ERROR_SERVIDOR })
-  }
+  await authService.cerrarSesionService(req.cookies.refresh_token)
+  res.clearCookie("refresh_token")
+  res.json({ message: "Sesión cerrada exitosamente" })
 }
 
-/**
- * Verifica el token de acceso actual y devuelve los datos del usuario.
- * Usado por el frontend para persistir el login.
- */
 export const verificarToken = async (
   req: SolicitudAutenticada,
   res: Response
 ) => {
-  try {
-    // req.user ya está poblado por el middleware 'middlewareAutenticacion'
-    if (!req.user)
-      return res.status(401).json({ message: MENSAJES.TOKEN_REQUERIDO })
-
-    const usuario = await prisma.users.findUnique({
-      where: { id: req.user.user_id },
-      select: { id: true, username: true, email: true, role: true }, // Solo devolver campos seguros
-    })
-
-    if (!usuario)
-      return res.status(404).json({ message: MENSAJES.USUARIO_NO_ENCONTRADO })
-
-    res.json(usuario)
-  } catch (error) {
-    console.error("Error al verificar token:", error)
-    res.status(500).json({ message: MENSAJES.ERROR_SERVIDOR })
-  }
+  if (!req.user) throw new UnauthorizedError("Token de acceso requerido") // ← línea nueva
+  const usuario = await authService.verificarTokenService(req.user.user_id)
+  res.json(usuario)
 }
 
 export const controladorCallback = async (
   req: SolicitudAutenticada,
   res: Response
 ) => {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const usuario = req.user as any // passport inyecta el usuario aquí
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const usuarioPassport = req.user as any
+  const { tokenAcceso, tokenRefresco } =
+    await authService.googleCallbackService(usuarioPassport)
 
-    const tokenAcceso = crearTokenAcceso(
-      usuario.id,
-      usuario.role as string,
-      usuario.is_verified
-    )
-    const { token: tokenRefresco } = await crearTokenRefresco(usuario.id)
+  res.cookie("refresh_token", tokenRefresco, COOKIE_OPTIONS)
+  res.cookie("access_token", tokenAcceso, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 60 * 1000,
+    sameSite: "lax",
+  })
 
-    res.cookie("refresh_token", tokenRefresco, COOKIE_OPTIONS)
-    res.cookie("access_token", tokenAcceso, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 60 * 1000, // 1 minuto, solo para el handshake
-      sameSite: "lax",
-    })
-
-    res.redirect(`${process.env.FRONTEND_URL}/auth/callback`)
-  } catch (error) {
-    console.error("Error en callback de Google:", error)
-    res.redirect(`${process.env.FRONTEND_URL}/auth/error`)
-  }
+  res.redirect(`${process.env.FRONTEND_URL}/auth/callback`)
 }
 
 export const activar2FA = async (req: SolicitudAutenticada, res: Response) => {
-  try {
-    const idUsuario = req.user?.user_id
-
-    // Generar secreto TOTP
-    const totp = new OTPAuth.TOTP({
-      issuer: "CineVault",
-      label: req.user!.user_id.toString(),
-      algorithm: "SHA1",
-      digits: 6,
-      period: 30,
-      secret: new OTPAuth.Secret(),
-    })
-
-    const secreto = totp.secret.base32
-    const uri = totp.toString()
-
-    // Guardar secreto temporal en DB (aún no activado)
-    await prisma.users.update({
-      where: { id: idUsuario },
-      data: { two_factor_secret: encriptarSecreto(secreto) }
-    })
-
-    // Generar QR en base64 para mandarlo al frontend
-    const qr = await QRCode.toDataURL(uri)
-
-    res.json({ qr, secreto })
-  } catch (error) {
-    console.error("Error al activar 2FA:", error)
-    res.status(500).json({ message: MENSAJES.ERROR_SERVIDOR })
-  }
+  const resultado = await authService.activar2FAService(req.user!.user_id)
+  res.json(resultado)
 }
 
 export const confirmar2FA = async (
   req: SolicitudAutenticada,
   res: Response
 ) => {
-  try {
-    const idUsuario = req.user?.user_id
-    const { codigo } = req.body
-
-    if (!codigo) return res.status(400).json({ message: "Codigo requerido" })
-    // Obtener el secreto guardado en la BD
-    const usuario = await prisma.users.findUnique({ where: { id: idUsuario } })
-    if (!usuario?.two_factor_secret)
-      return res.status(400).json({ message: "Primero debes generar el QR" })
-    //Verificar el codigo que ingresó el usuario
-    const secretoReal = desencriptarSecreto(usuario.two_factor_secret)
-    const totp = crearTOTP(secretoReal)
-    const delta = totp.validate({ token: codigo, window: 1 })
-    if (delta === null)
-      return res.status(400).json({ message: "Codigo incorrecto" })
-
-    // Activar 2FA definitivamente
-    await prisma.users.update({
-      where: { id: idUsuario },
-      data: { two_factor_enabled: true },
-    })
-
-    res.json({ message: "2FA activado correctamente" })
-  } catch (error) {
-    console.error("Error al confirmar 2FA:", error)
-    res.status(500).json({ message: MENSAJES.ERROR_SERVIDOR })
-  }
+  const { codigo } = req.body
+  await authService.confirmar2FAService(req.user!.user_id, codigo)
+  res.json({ message: "2FA activado correctamente" })
 }
 
 export const verificar2FA = async (
   req: SolicitudAutenticada,
   res: Response
 ) => {
-  try {
-    const { codigo, tokenTemporal } = req.body
+  const { codigo, tokenTemporal } = req.body
+  const { tokenAcceso, tokenRefresco } = await authService.verificar2FAService(
+    codigo,
+    tokenTemporal
+  )
 
-    if (!codigo || !tokenTemporal)
-      return res.status(400).json({ message: "Datos requeridos" })
-
-    //Verificar el token temporal
-    const payload = jwt.verify(tokenTemporal, process.env.JWT_SECRET!) as {
-      user_id: number
-      two_factor_pending: boolean
-    }
-
-    if (!payload.two_factor_pending)
-      return res.status(401).json({ message: "Token invalido" })
-
-    const usuario = await prisma.users.findUnique({
-      where: { id: payload.user_id },
-    })
-
-    if (!usuario?.two_factor_secret)
-      return res.status(400).json({ message: "No se ha configurado 2FA" })
-
-    // Verificar código
-    const secretoReal = desencriptarSecreto(usuario.two_factor_secret)
-    const totp = crearTOTP(secretoReal)
-    const delta = totp.validate({ token: codigo, window: 1 })
-
-    if (delta === null)
-      return res.status(401).json({ message: "Código incorrecto" })
-    // Código correcto → generar tokens reales
-    const tokenAcceso = crearTokenAcceso(
-      usuario.id,
-      usuario.role as string,
-      usuario.is_verified
-    )
-    const { token: tokenRefresco } = await crearTokenRefresco(usuario.id)
-
-    res.cookie("refresh_token", tokenRefresco, COOKIE_OPTIONS)
-    res.json({ accessToken: tokenAcceso })
-  } catch (error) {
-    console.error("Error al verificar 2FA:", error)
-    res.status(500).json({ message: MENSAJES.ERROR_SERVIDOR })
-  }
+  res.cookie("refresh_token", tokenRefresco, COOKIE_OPTIONS)
+  res.json({ accessToken: tokenAcceso })
 }
 
-export const olvidarContrasena = async (req: SolicitudAutenticada, res: Response) => {
-  try {
-    const { email } = req.body
-    if (!email) return res.status(400).json({ message: "Email requerido" })
-
-    const usuario = await prisma.users.findUnique({ where: { email } })
-
-    // Siempre responder igual para no revelar si el email existe
-    if (!usuario || usuario.google_id) {
-      return res.json({ message: "Si el correo existe, recibirás un email." })
-    }
-
-    // Invalidar tokens anteriores
-    await prisma.auth_tokens.deleteMany({
-      where: { user_id: usuario.id, type: "RESET_PASSWORD" },
-    })
-
-    const token = jwt.sign(
-      { user_id: usuario.id },
-      process.env.VERIFY_EMAIL_SECRET!,
-      { expiresIn: "15m" }
-    )
-
-    await prisma.auth_tokens.create({
-      data: {
-        id: crypto.randomUUID(),
-        user_id: usuario.id,
-        token,
-        type: "RESET_PASSWORD",
-        expires_at: new Date(Date.now() + 15 * 60 * 1000),
-      },
-    })
-
-    // Enviar correo con el link
-    await enviarCorreoResetPassword(usuario.email, token)
-
-    res.json({ message: "Si el correo existe, recibirás un email." })
-  } catch (error) {
-    console.error("Error en forgot password:", error)
-    res.status(500).json({ message: MENSAJES.ERROR_SERVIDOR })
-  }
+export const olvidarContrasena = async (
+  req: SolicitudAutenticada,
+  res: Response
+) => {
+  const { email } = req.body
+  await authService.olvidarContrasenaService(email)
+  res.json({ message: "Si el correo existe, recibirás un email." })
 }
 
-export const resetearContrasena = async (req: SolicitudAutenticada, res: Response) => {
-  try {
-    const { token, password } = req.body
-    if (!token || !password) return res.status(400).json({ message: "Datos requeridos" })
-
-    type PayloadReset = { user_id: number }
-    const payload = jwt.verify(token, process.env.VERIFY_EMAIL_SECRET!) as PayloadReset
-
-    const tokenEnDb = await prisma.auth_tokens.findFirst({
-      where: { token, user_id: payload.user_id, type: "RESET_PASSWORD" },
-    })
-
-    if (!tokenEnDb || tokenEnDb.expires_at < new Date()) {
-      return res.status(410).json({ message: "El enlace ha expirado. Solicita uno nuevo." })
-    }
-
-    const contrasenaHasheada = await hashearContrasena(password)
-
-    await prisma.users.update({
-      where: { id: payload.user_id },
-      data: { password: contrasenaHasheada },
-    })
-
-    // Invalidar token y todas las sesiones activas
-    await prisma.auth_tokens.deleteMany({
-      where: { user_id: payload.user_id, type: "RESET_PASSWORD" },
-    })
-    await prisma.sessions.deleteMany({
-      where: { user_id: payload.user_id },
-    })
-
-    res.json({ message: "Contraseña actualizada correctamente" })
-  } catch (error) {
-    console.error("Error en reset password:", error)
-    res.status(500).json({ message: MENSAJES.ERROR_SERVIDOR })
-  }
+export const resetearContrasena = async (
+  req: SolicitudAutenticada,
+  res: Response
+) => {
+  const { token, password } = req.body
+  await authService.resetearContrasenaService(token, password)
+  res.json({ message: "Contraseña actualizada correctamente" })
 }
 
-export const desactivar2FA = async (req: SolicitudAutenticada, res: Response) => {
-  try {
-    const idUsuario = req.user!.user_id
-    const { codigo } = req.body
-
-    if (!codigo) return res.status(400).json({ message: "Código requerido" })
-
-    const usuario = await prisma.users.findUnique({ where: { id: idUsuario } })
-
-    if (!usuario?.two_factor_enabled) {
-      return res.status(400).json({ message: "No tenés 2FA activado" })
-    }
-
-    // Verificar el código antes de desactivar
-    const secretoReal = desencriptarSecreto(usuario.two_factor_secret!)
-    const totp = crearTOTP(secretoReal)
-    const delta = totp.validate({ token: codigo, window: 1 })
-
-    if (delta === null) return res.status(401).json({ message: "Código incorrecto" })
-
-    await prisma.users.update({
-      where: { id: idUsuario },
-      data: {
-        two_factor_enabled: false,
-        two_factor_secret: null,
-      },
-    })
-
-    res.json({ message: "2FA desactivado correctamente" })
-  } catch (error) {
-    console.error("Error al desactivar 2FA:", error)
-    res.status(500).json({ message: MENSAJES.ERROR_SERVIDOR })
-  }
+export const desactivar2FA = async (
+  req: SolicitudAutenticada,
+  res: Response
+) => {
+  const { codigo } = req.body
+  await authService.desactivar2FAService(req.user!.user_id, codigo)
+  res.json({ message: "2FA desactivado correctamente" })
 }
 
-export const cambiarContrasena = async (req: SolicitudAutenticada, res: Response) => {
-  try {
-    const idUsuario = req.user!.user_id
-    const { contrasenaActual, contrasenaNueva } = req.body
-
-    if (!contrasenaActual || !contrasenaNueva) {
-      return res.status(400).json({ message: "Datos requeridos" })
-    }
-
-    const usuario = await prisma.users.findUnique({ where: { id: idUsuario } })
-    if (!usuario) return res.status(404).json({ message: MENSAJES.USUARIO_NO_ENCONTRADO })
-
-    // No puede cambiar contraseña si se registró con Google
-    if (usuario.google_id) {
-      return res.status(400).json({ message: "Las cuentas de Google no tienen contraseña" })
-    }
-
-    // Verificar contraseña actual
-    const contrasenaValida = await compararContrasena(contrasenaActual, usuario.password)
-    if (!contrasenaValida) {
-      return res.status(401).json({ message: "La contraseña actual es incorrecta" })
-    }
-
-    // Que la nueva no sea igual a la actual
-    const mismaContrasena = await compararContrasena(contrasenaNueva, usuario.password)
-    if (mismaContrasena) {
-      return res.status(400).json({ message: "La nueva contraseña debe ser diferente a la actual" })
-    }
-
-    const contrasenaHasheada = await hashearContrasena(contrasenaNueva)
-
-    await prisma.users.update({
-      where: { id: idUsuario },
-      data: { password: contrasenaHasheada },
-    })
-
-    // Cerrar todas las sesiones menos la actual
-    const refreshToken = req.cookies.refresh_token
-    if (refreshToken) {
-      const payload = jwt.verify(refreshToken, process.env.REFRESH_SECRET!) as PayloadRefresco
-      await prisma.sessions.deleteMany({
-        where: {
-          user_id: idUsuario,
-          NOT: { id: payload.id_session }
-        },
-      })
-    }
-
-    res.json({ message: "Contraseña actualizada correctamente" })
-  } catch (error) {
-    console.error("Error al cambiar contraseña:", error)
-    res.status(500).json({ message: MENSAJES.ERROR_SERVIDOR })
-  }
+export const cambiarContrasena = async (
+  req: SolicitudAutenticada,
+  res: Response
+) => {
+  const { contrasenaActual, contrasenaNueva } = req.body
+  await authService.cambiarContrasenaService(
+    req.user!.user_id,
+    contrasenaActual,
+    contrasenaNueva,
+    req.cookies.refresh_token
+  )
+  res.json({ message: "Contraseña actualizada correctamente" })
 }
 
-export const revocarSesiones = async (req: SolicitudAutenticada, res: Response) => {
-  try {
-    const idUsuario = req.user!.user_id
-
-    await prisma.sessions.deleteMany({
-      where: { user_id: idUsuario },
-    })
-
-    // Limpiar cookie de la sesión actual también
-    res.clearCookie("refresh_token")
-    res.json({ message: "Todas las sesiones han sido cerradas" })
-  } catch (error) {
-    console.error("Error al revocar sesiones:", error)
-    res.status(500).json({ message: MENSAJES.ERROR_SERVIDOR })
-  }
+export const revocarSesiones = async (
+  req: SolicitudAutenticada,
+  res: Response
+) => {
+  await authService.revocarSesionesService(req.user!.user_id)
+  res.clearCookie("refresh_token")
+  res.json({ message: "Todas las sesiones han sido cerradas" })
 }
+
