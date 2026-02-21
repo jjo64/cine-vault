@@ -58,3 +58,29 @@ export async function limpiarUsuariosNoVerificados() {
     // No relanzamos el error — si falla, el próximo ciclo lo intentará
   }
 }
+
+export const enviarCorreoResetPassword = async (email: string, token: string) => {
+  const transporter = nodemailer.createTransport({
+    host: process.env.EMAIL_HOST,
+    port: Number(process.env.EMAIL_PORT),
+    secure: false,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  })
+  const link = `${process.env.FRONTEND_URL}/reset-password?token=${token}`
+
+  await transporter.sendMail({
+    from: `"CineVault" <${process.env.EMAIL_USER}>`,
+    to: email,
+    subject: "Restablecer contraseña",
+    html: `
+      <h2>Restablecer contraseña</h2>
+      <p>Recibimos una solicitud para restablecer tu contraseña.</p>
+      <p>El enlace expira en <strong>15 minutos</strong>.</p>
+      <a href="${link}">Restablecer contraseña</a>
+      <p>Si no solicitaste esto, ignorá este correo.</p>
+    `,
+  })
+}

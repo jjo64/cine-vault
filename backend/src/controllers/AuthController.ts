@@ -3,7 +3,6 @@ import { prisma } from "../lib/prisma.js"
 import {
   SolicitudAutenticada,
   PayloadRefresco,
-  PayloadAcceso,
 } from "../middlewares/auth.middlewares.js"
 import jwt from "jsonwebtoken"
 import { validarUsuario } from "../schemas/user.js"
@@ -13,11 +12,17 @@ import {
   hashearContrasena,
   verificarTokenRefresco,
   compararContrasena,
+  crearTOTP,
+  encriptarSecreto,
+  desencriptarSecreto,
 } from "../services/auth.services.js"
 import {
   COOKIE_OPTIONS,
   enviarCorreoVerificacion,
+  enviarCorreoResetPassword,
 } from "../helpers/authOptions.js"
+import * as OTPAuth from "otpauth"
+import QRCode from "qrcode"
 
 // Mensajes de respuesta constantes para consistencia
 const MENSAJES = {
@@ -59,19 +64,40 @@ export const iniciarSesion = async (
     if (!usuario)
       return res.status(401).json({ message: MENSAJES.ERROR_CREDENCIALES })
 
-    // Verificar contraseña usando bcrypt (seguro)
+    // Si es cuenta de Google no puede entrar por aquí
+    if (usuario.google_id) {
+      return res
+        .status(401)
+        .json({ message: "Esta cuenta usa Google para iniciar sesión" })
+    }
+
+    // Verificar email antes de comparar contraseña (evita trabajo innecesario)
+    if (!usuario.is_verified) {
+      return res
+        .status(403)
+        .json({ message: "Debes verificar tu email antes de iniciar sesión" })
+    }
+
+    //Verificar contraseña usando bcrypt (seguro)
     const contrasenaValida = await compararContrasena(
       password,
       usuario.password
     )
+    // const contrasenaValida = password === usuario.password
     if (!contrasenaValida)
       return res.status(401).json({ message: MENSAJES.ERROR_CREDENCIALES })
 
-    // Aquí ya tienes el usuario de la DB → puedes leer is_verified
-    if (!usuario.is_verified)
-      return res
-        .status(403)
-        .json({ message: "Debes verificar tu email antes de iniciar sesión" })
+    if (usuario.two_factor_enabled) {
+      // Token temporal de corta duración solo para el paso 2FA
+      const tokenTemporal = jwt.sign(
+        { user_id: usuario.id, two_factor_pending: true },
+        process.env.JWT_SECRET!,
+        { expiresIn: "5m" }
+      )
+      return res.json({ two_factor_required: true, tokenTemporal })
+    }
+
+    // Si no tiene 2FA, flujo normal
 
     // Generar tokens
     const tokenAcceso = crearTokenAcceso(
@@ -370,5 +396,308 @@ export const controladorCallback = async (
   } catch (error) {
     console.error("Error en callback de Google:", error)
     res.redirect(`${process.env.FRONTEND_URL}/auth/error`)
+  }
+}
+
+export const activar2FA = async (req: SolicitudAutenticada, res: Response) => {
+  try {
+    const idUsuario = req.user?.user_id
+
+    // Generar secreto TOTP
+    const totp = new OTPAuth.TOTP({
+      issuer: "CineVault",
+      label: req.user!.user_id.toString(),
+      algorithm: "SHA1",
+      digits: 6,
+      period: 30,
+      secret: new OTPAuth.Secret(),
+    })
+
+    const secreto = totp.secret.base32
+    const uri = totp.toString()
+
+    // Guardar secreto temporal en DB (aún no activado)
+    await prisma.users.update({
+      where: { id: idUsuario },
+      data: { two_factor_secret: encriptarSecreto(secreto) }
+    })
+
+    // Generar QR en base64 para mandarlo al frontend
+    const qr = await QRCode.toDataURL(uri)
+
+    res.json({ qr, secreto })
+  } catch (error) {
+    console.error("Error al activar 2FA:", error)
+    res.status(500).json({ message: MENSAJES.ERROR_SERVIDOR })
+  }
+}
+
+export const confirmar2FA = async (
+  req: SolicitudAutenticada,
+  res: Response
+) => {
+  try {
+    const idUsuario = req.user?.user_id
+    const { codigo } = req.body
+
+    if (!codigo) return res.status(400).json({ message: "Codigo requerido" })
+    // Obtener el secreto guardado en la BD
+    const usuario = await prisma.users.findUnique({ where: { id: idUsuario } })
+    if (!usuario?.two_factor_secret)
+      return res.status(400).json({ message: "Primero debes generar el QR" })
+    //Verificar el codigo que ingresó el usuario
+    const secretoReal = desencriptarSecreto(usuario.two_factor_secret)
+    const totp = crearTOTP(secretoReal)
+    const delta = totp.validate({ token: codigo, window: 1 })
+    if (delta === null)
+      return res.status(400).json({ message: "Codigo incorrecto" })
+
+    // Activar 2FA definitivamente
+    await prisma.users.update({
+      where: { id: idUsuario },
+      data: { two_factor_enabled: true },
+    })
+
+    res.json({ message: "2FA activado correctamente" })
+  } catch (error) {
+    console.error("Error al confirmar 2FA:", error)
+    res.status(500).json({ message: MENSAJES.ERROR_SERVIDOR })
+  }
+}
+
+export const verificar2FA = async (
+  req: SolicitudAutenticada,
+  res: Response
+) => {
+  try {
+    const { codigo, tokenTemporal } = req.body
+
+    if (!codigo || !tokenTemporal)
+      return res.status(400).json({ message: "Datos requeridos" })
+
+    //Verificar el token temporal
+    const payload = jwt.verify(tokenTemporal, process.env.JWT_SECRET!) as {
+      user_id: number
+      two_factor_pending: boolean
+    }
+
+    if (!payload.two_factor_pending)
+      return res.status(401).json({ message: "Token invalido" })
+
+    const usuario = await prisma.users.findUnique({
+      where: { id: payload.user_id },
+    })
+
+    if (!usuario?.two_factor_secret)
+      return res.status(400).json({ message: "No se ha configurado 2FA" })
+
+    // Verificar código
+    const secretoReal = desencriptarSecreto(usuario.two_factor_secret)
+    const totp = crearTOTP(secretoReal)
+    const delta = totp.validate({ token: codigo, window: 1 })
+
+    if (delta === null)
+      return res.status(401).json({ message: "Código incorrecto" })
+    // Código correcto → generar tokens reales
+    const tokenAcceso = crearTokenAcceso(
+      usuario.id,
+      usuario.role as string,
+      usuario.is_verified
+    )
+    const { token: tokenRefresco } = await crearTokenRefresco(usuario.id)
+
+    res.cookie("refresh_token", tokenRefresco, COOKIE_OPTIONS)
+    res.json({ accessToken: tokenAcceso })
+  } catch (error) {
+    console.error("Error al verificar 2FA:", error)
+    res.status(500).json({ message: MENSAJES.ERROR_SERVIDOR })
+  }
+}
+
+export const olvidarContrasena = async (req: SolicitudAutenticada, res: Response) => {
+  try {
+    const { email } = req.body
+    if (!email) return res.status(400).json({ message: "Email requerido" })
+
+    const usuario = await prisma.users.findUnique({ where: { email } })
+
+    // Siempre responder igual para no revelar si el email existe
+    if (!usuario || usuario.google_id) {
+      return res.json({ message: "Si el correo existe, recibirás un email." })
+    }
+
+    // Invalidar tokens anteriores
+    await prisma.auth_tokens.deleteMany({
+      where: { user_id: usuario.id, type: "RESET_PASSWORD" },
+    })
+
+    const token = jwt.sign(
+      { user_id: usuario.id },
+      process.env.VERIFY_EMAIL_SECRET!,
+      { expiresIn: "15m" }
+    )
+
+    await prisma.auth_tokens.create({
+      data: {
+        id: crypto.randomUUID(),
+        user_id: usuario.id,
+        token,
+        type: "RESET_PASSWORD",
+        expires_at: new Date(Date.now() + 15 * 60 * 1000),
+      },
+    })
+
+    // Enviar correo con el link
+    await enviarCorreoResetPassword(usuario.email, token)
+
+    res.json({ message: "Si el correo existe, recibirás un email." })
+  } catch (error) {
+    console.error("Error en forgot password:", error)
+    res.status(500).json({ message: MENSAJES.ERROR_SERVIDOR })
+  }
+}
+
+export const resetearContrasena = async (req: SolicitudAutenticada, res: Response) => {
+  try {
+    const { token, password } = req.body
+    if (!token || !password) return res.status(400).json({ message: "Datos requeridos" })
+
+    type PayloadReset = { user_id: number }
+    const payload = jwt.verify(token, process.env.VERIFY_EMAIL_SECRET!) as PayloadReset
+
+    const tokenEnDb = await prisma.auth_tokens.findFirst({
+      where: { token, user_id: payload.user_id, type: "RESET_PASSWORD" },
+    })
+
+    if (!tokenEnDb || tokenEnDb.expires_at < new Date()) {
+      return res.status(410).json({ message: "El enlace ha expirado. Solicita uno nuevo." })
+    }
+
+    const contrasenaHasheada = await hashearContrasena(password)
+
+    await prisma.users.update({
+      where: { id: payload.user_id },
+      data: { password: contrasenaHasheada },
+    })
+
+    // Invalidar token y todas las sesiones activas
+    await prisma.auth_tokens.deleteMany({
+      where: { user_id: payload.user_id, type: "RESET_PASSWORD" },
+    })
+    await prisma.sessions.deleteMany({
+      where: { user_id: payload.user_id },
+    })
+
+    res.json({ message: "Contraseña actualizada correctamente" })
+  } catch (error) {
+    console.error("Error en reset password:", error)
+    res.status(500).json({ message: MENSAJES.ERROR_SERVIDOR })
+  }
+}
+
+export const desactivar2FA = async (req: SolicitudAutenticada, res: Response) => {
+  try {
+    const idUsuario = req.user!.user_id
+    const { codigo } = req.body
+
+    if (!codigo) return res.status(400).json({ message: "Código requerido" })
+
+    const usuario = await prisma.users.findUnique({ where: { id: idUsuario } })
+
+    if (!usuario?.two_factor_enabled) {
+      return res.status(400).json({ message: "No tenés 2FA activado" })
+    }
+
+    // Verificar el código antes de desactivar
+    const secretoReal = desencriptarSecreto(usuario.two_factor_secret!)
+    const totp = crearTOTP(secretoReal)
+    const delta = totp.validate({ token: codigo, window: 1 })
+
+    if (delta === null) return res.status(401).json({ message: "Código incorrecto" })
+
+    await prisma.users.update({
+      where: { id: idUsuario },
+      data: {
+        two_factor_enabled: false,
+        two_factor_secret: null,
+      },
+    })
+
+    res.json({ message: "2FA desactivado correctamente" })
+  } catch (error) {
+    console.error("Error al desactivar 2FA:", error)
+    res.status(500).json({ message: MENSAJES.ERROR_SERVIDOR })
+  }
+}
+
+export const cambiarContrasena = async (req: SolicitudAutenticada, res: Response) => {
+  try {
+    const idUsuario = req.user!.user_id
+    const { contrasenaActual, contrasenaNueva } = req.body
+
+    if (!contrasenaActual || !contrasenaNueva) {
+      return res.status(400).json({ message: "Datos requeridos" })
+    }
+
+    const usuario = await prisma.users.findUnique({ where: { id: idUsuario } })
+    if (!usuario) return res.status(404).json({ message: MENSAJES.USUARIO_NO_ENCONTRADO })
+
+    // No puede cambiar contraseña si se registró con Google
+    if (usuario.google_id) {
+      return res.status(400).json({ message: "Las cuentas de Google no tienen contraseña" })
+    }
+
+    // Verificar contraseña actual
+    const contrasenaValida = await compararContrasena(contrasenaActual, usuario.password)
+    if (!contrasenaValida) {
+      return res.status(401).json({ message: "La contraseña actual es incorrecta" })
+    }
+
+    // Que la nueva no sea igual a la actual
+    const mismaContrasena = await compararContrasena(contrasenaNueva, usuario.password)
+    if (mismaContrasena) {
+      return res.status(400).json({ message: "La nueva contraseña debe ser diferente a la actual" })
+    }
+
+    const contrasenaHasheada = await hashearContrasena(contrasenaNueva)
+
+    await prisma.users.update({
+      where: { id: idUsuario },
+      data: { password: contrasenaHasheada },
+    })
+
+    // Cerrar todas las sesiones menos la actual
+    const refreshToken = req.cookies.refresh_token
+    if (refreshToken) {
+      const payload = jwt.verify(refreshToken, process.env.REFRESH_SECRET!) as PayloadRefresco
+      await prisma.sessions.deleteMany({
+        where: {
+          user_id: idUsuario,
+          NOT: { id: payload.id_session }
+        },
+      })
+    }
+
+    res.json({ message: "Contraseña actualizada correctamente" })
+  } catch (error) {
+    console.error("Error al cambiar contraseña:", error)
+    res.status(500).json({ message: MENSAJES.ERROR_SERVIDOR })
+  }
+}
+
+export const revocarSesiones = async (req: SolicitudAutenticada, res: Response) => {
+  try {
+    const idUsuario = req.user!.user_id
+
+    await prisma.sessions.deleteMany({
+      where: { user_id: idUsuario },
+    })
+
+    // Limpiar cookie de la sesión actual también
+    res.clearCookie("refresh_token")
+    res.json({ message: "Todas las sesiones han sido cerradas" })
+  } catch (error) {
+    console.error("Error al revocar sesiones:", error)
+    res.status(500).json({ message: MENSAJES.ERROR_SERVIDOR })
   }
 }
