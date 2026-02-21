@@ -179,3 +179,4 @@ export const revocarSesiones = async (
   res.clearCookie("refresh_token")
   res.json({ message: "Todas las sesiones han sido cerradas" })
 }
+
