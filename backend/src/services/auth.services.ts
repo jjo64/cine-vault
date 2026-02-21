@@ -1,3 +1,4 @@
+import crypto from "crypto"
 import jwt from "jsonwebtoken"
 import bcrypt from "bcrypt"
 import { prisma } from "../lib/prisma.js"
@@ -5,6 +6,10 @@ import {
   PayloadAcceso,
   PayloadRefresco,
 } from "../middlewares/auth.middlewares.js"
+import * as OTPAuth from "otpauth"
+
+const ENCRYPTION_KEY = process.env.TWO_FACTOR_ENCRYPTION_KEY! // 32 chars
+const IV_LENGTH = 16
 
 // Configuración de expiración de tokens
 const EXPIRACION_TOKEN_ACCESO = "15m"
@@ -86,3 +91,25 @@ export const hashearContrasena = (password: string) => bcrypt.hash(password, 10)
  */
 export const compararContrasena = (password: string, hash: string) =>
   bcrypt.compare(password, hash)
+
+export const crearTOTP = (secreto: string) =>
+  new OTPAuth.TOTP({
+    issuer: "CineVault",
+    algorithm: "SHA1",
+    digits: 6,
+    period: 30,
+    secret: OTPAuth.Secret.fromBase32(secreto),
+  })
+
+export const encriptarSecreto = (texto: string) => {
+  const iv = crypto.randomBytes(IV_LENGTH)
+  const cipher = crypto.createCipheriv("aes-256-cbc", ENCRYPTION_KEY, iv)
+  const encriptado = Buffer.concat([cipher.update(texto), cipher.final()])
+  return `${iv.toString("hex")}:${encriptado.toString("hex")}`
+}
+
+export const desencriptarSecreto = (texto: string) => {
+  const [iv, encriptado] = texto.split(":")
+  const decipher = crypto.createDecipheriv("aes-256-cbc", ENCRYPTION_KEY, Buffer.from(iv, "hex"))
+  return Buffer.concat([decipher.update(Buffer.from(encriptado, "hex")), decipher.final()]).toString()
+}
