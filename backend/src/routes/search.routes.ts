@@ -1,17 +1,19 @@
 import { Router, Request, Response } from "express"
 import { consultarTMDB } from "../helpers/fetchTMDB.js"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
-import pMap from "p-map" // Control de concurrencia para peticiones a TMDB
+import { getOSet } from "../config/redis.js"
+import pMap from "p-map"
 
 const router = Router()
 
-// Ruta principal de búsqueda
-// Usamos manejadorAsincrono para no tener que escribir try/catch aquí
+// 2 horas — las búsquedas de TMDB no cambian entre requests
+const TTL_BUSQUEDA = 60 * 60 * 2
+
 router.get(
   "/",
   manejadorAsincrono(async (req: Request, res: Response) => {
     const q = req.query.q as string
-    const pagina = String(req.query.page) || "1"
+    const pagina = String(req.query.page || "1")
 
     if (!q) {
       return res
@@ -19,58 +21,64 @@ router.get(
         .json({ error: "Debe proporcionar un término de búsqueda." })
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const datos: any = await consultarTMDB("search/movie", {
-      query: q,
-      page: String(pagina),
-    })
-    console.log(
-      `Búsqueda para "${q}": TMDB devolvió ${datos.results?.length || 0} resultados.`
-    )
+    // La clave incluye query + página para que cada combinación tenga su propio caché
+    const cacheKey = `tmdb:search:${q.toLowerCase().trim()}:p${pagina}`
 
-    // Filtrar resultados con poster y overview (calidad mínima)
-    const resultadosCrudos = (datos.results || []).filter(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (pelicula: any) => pelicula.poster_path && pelicula.overview
-    )
-
-    /**
-     * CONTROL DE CONCURRENCIA:
-     * Usamos pMap para procesar los detalles de las películas de 5 en 5.
-     * Esto evita saturar la API de TMDB con demasiadas peticiones simultáneas.
-     */
-    const resultadosConInfo = await pMap(
-      resultadosCrudos,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      async (pelicula: any) => {
-        // Para cada película, traemos créditos y títulos alternativos en paralelo
+    const resultado = await getOSet(
+      cacheKey,
+      async () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const [creditos, titulos]: any[] = await Promise.all([
-          consultarTMDB(`movie/${pelicula.id}/credits`),
-          consultarTMDB(`movie/${pelicula.id}/alternative_titles`, {
-            language: "",
-          }),
-        ])
+        const datos: any = await consultarTMDB("search/movie", {
+          query: q,
+          page: pagina,
+        })
 
-        const director = creditos.crew?.find(
+        console.log(
+          `Búsqueda para "${q}": TMDB devolvió ${datos.results?.length || 0} resultados.`
+        )
+
+        const resultadosCrudos = (datos.results || []).filter(
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (persona: any) => persona.job === "Director"
-        )?.name
+          (pelicula: any) => pelicula.poster_path && pelicula.overview
+        )
+
+        const resultadosConInfo = await pMap(
+          resultadosCrudos,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          async (pelicula: any) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const [creditos, titulos]: any[] = await Promise.all([
+              consultarTMDB(`movie/${pelicula.id}/credits`),
+              consultarTMDB(`movie/${pelicula.id}/alternative_titles`, {
+                language: "",
+              }),
+            ])
+
+            const director = creditos.crew?.find(
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (persona: any) => persona.job === "Director"
+            )?.name
+
+            return {
+              ...pelicula,
+              director,
+              alternative_titles: titulos.titles || [],
+            }
+          },
+          { concurrency: 5 }
+        )
+
         return {
-          ...pelicula,
-          director,
-          alternative_titles: titulos.titles || [],
+          results: resultadosConInfo,
+          total_pages: datos.total_pages,
+          total_results: datos.total_results,
+          page: datos.page,
         }
       },
-      { concurrency: 5 }
-    ) // Máximo 5 películas procesándose a la vez
+      TTL_BUSQUEDA
+    )
 
-    res.status(200).json({
-      results: resultadosConInfo,
-      total_pages: datos.total_pages,
-      total_results: datos.total_results,
-      page: datos.page,
-    })
+    res.status(200).json(resultado)
   })
 )
 

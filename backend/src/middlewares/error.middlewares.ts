@@ -1,40 +1,63 @@
-import { Request, Response, NextFunction, RequestHandler } from "express"
+import { Request, Response, NextFunction } from "express"
+import { ApplicationError } from "../errors/AppErrors.js"
 
-/**
- * manejadorAsincrono: Un envoltorio para funciones asíncronas.
- * Evita tener que escribir try/catch en cada ruta.
- * Si ocurre un error, lo envía automáticamente al manejador global con next(err).
- */
-export const manejadorAsincrono =
-  (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    fn: RequestHandler | ((req: any, res: any, next: any) => Promise<any>)
-  ): RequestHandler =>
-  (req, res, next) => {
-    Promise.resolve(fn(req, res, next)).catch(next)
+/* ==========================================================================
+   MANEJADOR DE ERRORES GLOBAL
+   --------------------------------------------------------------------------
+   Debe registrarse ÚLTIMO en Express (después de todas las rutas).
+   Intercepta cualquier error lanzado desde los servicios y devuelve
+   un JSON limpio con el statusCode correcto.
+
+   Uso en server.ts:
+     app.use(manejadorErrores)
+   ========================================================================== */
+export const manejadorErrores = (
+  err: Error,
+  _req: Request,
+  res: Response,
+  _next: NextFunction
+) => {
+  // Errores personalizados de la app → usar su statusCode y code
+  if (err instanceof ApplicationError) {
+    return res.status(err.statusCode).json({
+      error: {
+        code: err.code,
+        message: err.message,
+      },
+    })
   }
 
-/**
- * manejadorErrores: Manejador de errores global.
- * Captura todos los errores de la aplicación y los devuelve en un formato JSON limpio.
- */
-export const manejadorErrores = (
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  err: any,
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  console.error("--- ERROR CAPTURADO ---")
-  console.error(err)
+  // Errores de JWT (token inválido/expirado)
+  if (err.name === "JsonWebTokenError" || err.name === "TokenExpiredError") {
+    return res.status(401).json({
+      error: {
+        code: "TOKEN_INVALIDO",
+        message: "Token inválido o expirado",
+      },
+    })
+  }
 
-  const status = err.status || 500
-  const message = err.message || "Error interno del servidor"
-
-  res.status(status).json({
-    status,
-    message,
-    // Solo enviamos el stack trace en desarrollo si fuera necesario,
-    // pero para este proyecto mantenemos simplicidad profesional.
+  // Error genérico no controlado
+  console.error("[ERROR NO CONTROLADO]", err)
+  return res.status(500).json({
+    error: {
+      code: "INTERNAL_ERROR",
+      message: "Error interno del servidor",
+    },
   })
 }
+
+/* ==========================================================================
+   MANEJADOR ASÍNCRONO
+   --------------------------------------------------------------------------
+   Envuelve los controladores async para que los errores lleguen al
+   manejadorErrores global sin necesidad de try/catch en cada ruta.
+
+   Uso en routes:
+     router.post("/login", manejadorAsincrono(iniciarSesion))
+   ========================================================================== */
+export const manejadorAsincrono =
+  (fn: (req: Request, res: Response, next: NextFunction) => Promise<unknown>) =>
+  (req: Request, res: Response, next: NextFunction) => {
+    Promise.resolve(fn(req, res, next)).catch(next)
+  }
