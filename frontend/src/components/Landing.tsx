@@ -105,7 +105,7 @@ const Landing: React.FC = () => {
                                 searchResults.slice(0, 10).map((movie: any) => (
                                     <Link
                                         key={movie.id}
-                                        to={`/movie/${createSlug(movie.title)}`}
+                                        to={`/movie/${movie.id}-${createSlug(movie.title)}`}
                                         className="search-result-item"
                                         style={{ textDecoration: 'none' }}
                                     >

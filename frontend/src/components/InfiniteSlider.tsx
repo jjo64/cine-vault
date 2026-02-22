@@ -52,7 +52,7 @@ const InfiniteSlider: React.FC = () => {
             <div ref={containerRef} style={{ width: '100%', overflow: 'hidden', maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)' }}>
                 <div ref={wrapperRef} className="slider-wrapper" style={{ display: 'flex', gap: '20px', width: 'max-content' }}>
                     {movies.map((movie) => (
-                        <Link key={movie.id} to={`/movie/${createSlug(movie.title)}`} className="slider-card" style={{ flexShrink: 0, textDecoration: 'none', position: 'relative' }}>
+                        <Link key={movie.id} to={`/movie/${movie.id}-${createSlug(movie.title)}`} className="slider-card" style={{ flexShrink: 0, textDecoration: 'none', position: 'relative' }}>
                             <img
                                 src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
                                 alt={movie.title}
