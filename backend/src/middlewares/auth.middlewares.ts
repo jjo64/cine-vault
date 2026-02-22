@@ -1,11 +1,16 @@
 import { Request, Response, NextFunction } from "express"
 import jwt from "jsonwebtoken"
+import { UnauthorizedError } from "../errors/AppErrors.js"
 
-// Interfaces para los payloads de los tokens JWT
+/* ==========================================================================
+   INTERFACES DE AUTENTICACIÓN
+   ========================================================================== */
+
 export interface PayloadAcceso {
   user_id: number
   role: "admin" | "editor" | "user"
   is_verified: boolean
+  membership?: string // inyectado por verificarPermiso del RBAC
 }
 
 export interface PayloadRefresco {
@@ -13,44 +18,39 @@ export interface PayloadRefresco {
   user_id: number
 }
 
-// Extensión de la interfaz Request de Express para incluir los datos del usuario autenticado
-export type SolicitudAutenticada = Request
-
-/**
- * Middleware de Autenticación
- * Verifica si la petición tiene un token de acceso válido en los headers.
- * Si es válido, inyecta la información del usuario en `req.user`.
- */
-export const middlewareAutenticacion = (
-  req: SolicitudAutenticada,
-  res: Response,
-  next: NextFunction
-) => {
-  // Intentar obtener el header de autorización
-  const authHeader = req.headers["authorization"]
-  const token = authHeader && authHeader.split(" ")[1] // Formato: "Bearer [token]"
-
-  // Si no hay token, denegar acceso inmediatamente
-  if (!token)
-    return res
-      .status(401)
-      .json({ message: "No se proporcionó token de acceso" })
-
-  try {
-    // Verificar firma y expiración del token
-    const payload = jwt.verify(token, process.env.JWT_SECRET!) as PayloadAcceso
-
-    // Adjuntar payload a la request para usarlo en los controladores
-    req.user = payload
-    next()
-  } catch (err: unknown) {
-    // Token inválido o expirado
-    res.status(403).json({ message: "Token inválido o expirado" })
-  }
-}
-
+// Extiende Request globalmente — req.user disponible en toda la app
 declare module "express-serve-static-core" {
   interface Request {
     user?: PayloadAcceso
+  }
+}
+
+// Alias semántico — úsalo en controllers que SIEMPRE tienen middlewareAutenticacion antes
+export type SolicitudAutenticada = Request
+
+/* ==========================================================================
+   MIDDLEWARE DE AUTENTICACIÓN
+   ========================================================================== */
+
+export const middlewareAutenticacion = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const authHeader = req.headers["authorization"]
+  const token = authHeader && authHeader.split(" ")[1]
+
+  if (!token) {
+    return res.status(401).json({
+      error: { code: "UNAUTHORIZED", message: "No se proporcionó token de acceso" },
+    })
+  }
+
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET!) as PayloadAcceso
+    req.user = payload
+    next()
+  } catch {
+    next(new UnauthorizedError("Token inválido o expirado"))
   }
 }
