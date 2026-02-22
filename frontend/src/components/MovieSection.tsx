@@ -62,7 +62,7 @@ const MovieSection: React.FC<MovieSectionProps> = ({ title, endpoint }) => {
                 {movies.slice(0, 10).map(movie => (
                     <Link
                         key={movie.id}
-                        to={`/movie/${createSlug(movie.title)}`}
+                        to={`/movie/${movie.id}-${createSlug(movie.title)}`}
                         className="movie-card"
                         style={{
                             flex: '0 0 auto',
