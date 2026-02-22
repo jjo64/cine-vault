@@ -13,7 +13,8 @@ const MovieDetail: React.FC = () => {
 
     useEffect(() => {
         setLoading(true);
-        fetch(`${import.meta.env.VITE_API_URL}/api/movies/${slugOrId}`)
+        const id = slugOrId?.split("-")[0]
+        fetch(`${import.meta.env.VITE_API_URL}/api/movies/${id}`)
             .then(res => res.json())
             .then(data => {
                 setMovie(data);

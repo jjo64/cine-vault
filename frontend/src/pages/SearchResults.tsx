@@ -42,7 +42,9 @@ const SearchResults: React.FC = () => {
 
                     <div className="movie-list-container">
                         {results.map((movie: any) => (
-                            <Link key={movie.id} to={`/movie/${createSlug(movie.title)}`} className="movie-list-item">
+                            <Link key={movie.id} 
+                                // ✅ ID + título
+                                to={`/movie/${movie.id}-${createSlug(movie.title)}`} className="movie-list-item">
                                 <img
                                     className="movie-poster-large"
                                     src={movie.poster_path ? `https://image.tmdb.org/t/p/w185${movie.poster_path}` : 'https://via.placeholder.com/185x278?text=No+Poster'}
