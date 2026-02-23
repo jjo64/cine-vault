@@ -23,7 +23,7 @@ import { manejadorErrores } from "./middlewares/error.middlewares.js"
 import { limitadorGlobal } from "./middlewares/rateLimit.middleware.js"
 
 // Importación de helpers
-import { limpiarUsuariosNoVerificados } from "./helpers/authOptions.js"
+import { limpiarUsuariosNoVerificados } from "./lib/jobs.js"
 
 // Configuración inicial
 const app = express()
