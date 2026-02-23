@@ -2,18 +2,9 @@ import { prisma } from "../lib/prisma.js"
 import jwt from "jsonwebtoken"
 import * as OTPAuth from "otpauth"
 import QRCode from "qrcode"
-import {
-  crearTokenAcceso,
-  crearTokenRefresco,
-  hashearContrasena,
-  verificarTokenRefresco,
-  compararContrasena,
-  crearTOTP,
-  encriptarSecreto,
-  desencriptarSecreto,
-  enviarCorreoVerificacion,
-  enviarCorreoResetPassword,
-} from "../helpers/authOptions.js"
+import { crearTokenAcceso, crearTokenRefresco, verificarTokenRefresco } from "../lib/tokens.js"
+import { hashearContrasena, compararContrasena, encriptarSecreto, desencriptarSecreto, crearTOTP } from "../lib/crypto.js"
+import { enviarCorreoVerificacion, enviarCorreoResetPassword } from "../lib/email.js"
 import { validarUsuario } from "../schemas/user.js"
 import {
   UnauthorizedError,
