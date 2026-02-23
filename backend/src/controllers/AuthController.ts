@@ -1,5 +1,5 @@
 import { Request, Response } from "express"
-import { COOKIE_OPTIONS } from "../helpers/authOptions.js"
+import { COOKIE_OPTIONS } from "../lib/tokens.js"
 import * as authService from "../services/auth.services.js"
 import { UnauthorizedError } from "../errors/AppErrors.js"
 
