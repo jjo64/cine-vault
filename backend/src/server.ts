@@ -17,6 +17,7 @@ import rutasResenas from "./routes/reviews.routes.js"
 import rutasBusqueda from "./routes/search.routes.js"
 import rutasPagos from "./routes/payments.routes.js"
 import rutasRbac from "./routes/rbac.routes.js"
+import rutasInformacion from "./routes/information.routes.js"
 
 // Middlewares
 import { manejadorErrores } from "./middlewares/error.middlewares.js"
@@ -86,6 +87,7 @@ app.use("/api/watchlist", rutasWatchlist)
 app.use("/api/reviews", rutasResenas)
 app.use("/api/payments", rutasPagos)
 app.use("/api/rbac", rutasRbac)
+app.use("/api/information", rutasInformacion)
 
 /* ==========================================================================
    MIDDLEWARE DE MANEJO DE ERRORES (SIEMPRE AL FINAL)

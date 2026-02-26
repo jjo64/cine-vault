@@ -18,14 +18,11 @@ const router = Router()
  * Todas envueltas en manejadorAsincrono para centralizar errores.
  */
 
+//Rutas publicas
 router.get("/", middlewareAutenticacion, manejadorAsincrono(obtenerUsuarios))
 router.get("/:id", manejadorAsincrono(obtenerUsuarioPorId))
-router.patch(
-  "/profile",
-  middlewareAutenticacion,
-  manejadorAsincrono(actualizarPerfil)
-)
 
+//Rutas privadas
 router.post(
   "/follow/:id",
   middlewareAutenticacion,
@@ -38,5 +35,8 @@ router.delete(
 )
 router.get("/:id/followers", manejadorAsincrono(obtenerSeguidores))
 router.get("/:id/following", manejadorAsincrono(obtenerSiguiendo))
+
+//router.post('/block/:id', middlewareAutenticacion, manejadorAsincrono(blockUser))
+//router.delete('/unblock/:id', middlewareAutenticacion, manejadorAsincrono(unblockUser))
 
 export default router
