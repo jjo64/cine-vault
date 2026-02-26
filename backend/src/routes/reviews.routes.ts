@@ -7,16 +7,24 @@ import {
   likeReview,
 } from "../controllers/ReviewsController.js"
 import { Router } from "express"
+import { middlewareAutenticacion } from "../middlewares/auth.middlewares.js"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
 
 const router = Router()
 
-// Rutas para las reseñas envueltas en manejadorAsincrono
+// Rutas públicas
 router.get("/", manejadorAsincrono(getReviews))
 router.get("/:movieId", manejadorAsincrono(getReviewsByMovieId))
-router.post("/", manejadorAsincrono(addReview))
-router.post("/:reviewId/like", manejadorAsincrono(likeReview))
-router.delete("/:reviewId", manejadorAsincrono(removeReview))
-router.delete("/:reviewId/like", manejadorAsincrono(removeLikeReview))
 
+// Reseñas (privadas)
+router.post("/", middlewareAutenticacion, manejadorAsincrono(addReview))
+router.delete("/:reviewId", middlewareAutenticacion, manejadorAsincrono(removeReview))
+
+// Likes (privadas)
+router.post("/:reviewId/like", middlewareAutenticacion, manejadorAsincrono(likeReview))
+router.delete("/:reviewId/like", middlewareAutenticacion, manejadorAsincrono(removeLikeReview))
+
+// Comentarios (privados) — cuando los implementes
+// router.post("/:reviewId/comment", middlewareAutenticacion, manejadorAsincrono(addComment))
+// router.delete("/:reviewId/comment/:commentId", middlewareAutenticacion, manejadorAsincrono(removeComment))
 export default router
