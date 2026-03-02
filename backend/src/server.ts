@@ -40,11 +40,14 @@ if (!process.env.API_KEY_TMDB) throw new Error("API_KEY_TMDB no definido")
 app.use(helmet()) // Seguridad HTTP headers
 
 // Configuración de CORS
+const allowedOrigins = process.env.FRONTEND_URLS
+  ? process.env.FRONTEND_URLS.split(",").map(url => url.trim())
+  : []
 app.use(
   cors({
     origin: (origin, callback) => {
       // Permitir solicitudes sin origen (como herramientas locales o scripts) y desde el frontend permitido
-      if (!origin || origin === process.env.FRONTEND_URL) {
+      if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true)
       } else {
         console.warn("Bloqueo CORS para origen:", origin)
