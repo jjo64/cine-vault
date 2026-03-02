@@ -20,21 +20,21 @@ const router = Router()
 
 //Rutas publicas
 router.get("/", middlewareAutenticacion, manejadorAsincrono(obtenerUsuarios))
-router.get("/:id", manejadorAsincrono(obtenerUsuarioPorId))
+router.get("/:id", manejadorAsincrono(obtenerUsuarioPorId)) // Datos del pefil (nombre, bio, avatar, stats)
 
 //Rutas privadas
 router.post(
   "/follow/:id",
   middlewareAutenticacion,
-  manejadorAsincrono(seguirUsuario)
+  manejadorAsincrono(seguirUsuario) //seguir usuario
 )
 router.delete(
   "/unfollow/:id",
   middlewareAutenticacion,
-  manejadorAsincrono(dejarDeSeguirUsuario)
+  manejadorAsincrono(dejarDeSeguirUsuario) // dejar de seguir usuario
 )
-router.get("/:id/followers", manejadorAsincrono(obtenerSeguidores))
-router.get("/:id/following", manejadorAsincrono(obtenerSiguiendo))
+router.get("/:id/followers", manejadorAsincrono(obtenerSeguidores)) // seguidores
+router.get("/:id/following", manejadorAsincrono(obtenerSiguiendo)) // siguiendo
 
 //router.post('/block/:id', middlewareAutenticacion, manejadorAsincrono(blockUser))
 //router.delete('/unblock/:id', middlewareAutenticacion, manejadorAsincrono(unblockUser))
