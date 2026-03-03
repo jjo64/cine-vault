@@ -8,8 +8,9 @@ const router = Router()
 /**
  * Rutas del Diario protegidas con autenticación y centralizadas con manejadorAsincrono.
  */
-router.get("/:id", manejadorAsincrono(getDiary))
-router.post("/add", middlewareAutenticacion, manejadorAsincrono(createDiary))
+router.get("/", middlewareAutenticacion, manejadorAsincrono(getDiary)) // obtener diario del usuario
+router.get("/:id", manejadorAsincrono(getDiary)) // obtener diario de otro usuario
+router.post("/add", middlewareAutenticacion, manejadorAsincrono(createDiary)) // crear diario
 // router.delete('/remove/:id', middlewareAutenticacion, removeDiary)
 
 export default router
