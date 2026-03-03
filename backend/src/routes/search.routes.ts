@@ -1,15 +1,19 @@
 import { Router } from "express"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
-import { getSearch, getMultiSearch, getMovieSearch, getPersonSearch, getTVSearch, personInformation, personInformationCombined } from "../controllers/SearchController.js"
+import {
+  getSearch,
+  getMultiSearch,
+  getMovieSearch,
+  getPersonSearch,
+  getTVSearch,
+} from "../controllers/SearchController.js"
 
 const router = Router()
 
-router.get("/", manejadorAsincrono(getSearch))
-router.get("/multi", manejadorAsincrono(getMultiSearch))
-router.get("/movie", manejadorAsincrono(getMovieSearch))
-router.get("/person", manejadorAsincrono(getPersonSearch))
-router.get("/tv", manejadorAsincrono(getTVSearch))
-router.get("/person/:id", manejadorAsincrono(personInformation))
-router.get("/person/:id/combined_credits", manejadorAsincrono(personInformationCombined))
+router.get("/", manejadorAsincrono(getSearch)) // busqueda general
+router.get("/multi", manejadorAsincrono(getMultiSearch)) // busqueda general
+router.get("/movie", manejadorAsincrono(getMovieSearch)) // busqueda películas
+router.get("/person", manejadorAsincrono(getPersonSearch)) // busqueda personas
+router.get("/tv", manejadorAsincrono(getTVSearch)) // busqueda series
 
 export default router

@@ -1,10 +1,23 @@
-import { prisma } from "../lib/prisma.js"
 import jwt from "jsonwebtoken"
 import * as OTPAuth from "otpauth"
 import QRCode from "qrcode"
-import { crearTokenAcceso, crearTokenRefresco, verificarTokenRefresco } from "../lib/tokens.js"
-import { hashearContrasena, compararContrasena, encriptarSecreto, desencriptarSecreto, crearTOTP } from "../lib/crypto.js"
-import { enviarCorreoVerificacion, enviarCorreoResetPassword } from "../lib/email.js"
+import crypto from "crypto"
+import {
+  crearTokenAcceso,
+  crearTokenRefresco,
+  verificarTokenRefresco,
+} from "../lib/tokens.js"
+import {
+  hashearContrasena,
+  compararContrasena,
+  encriptarSecreto,
+  desencriptarSecreto,
+  crearTOTP,
+} from "../lib/crypto.js"
+import {
+  enviarCorreoVerificacion,
+  enviarCorreoResetPassword,
+} from "../lib/email.js"
 import { validarUsuario } from "../schemas/user.js"
 import {
   UnauthorizedError,
@@ -15,6 +28,10 @@ import {
   GoneError,
 } from "../errors/AppErrors.js"
 import { PayloadRefresco } from "../middlewares/auth.middlewares.js"
+import { userRepository } from "../repositories/UserRepository.js"
+import { authTokenRepository } from "../repositories/AuthTokenRepository.js"
+import { sessionRepository } from "../repositories/SessionRepository.js"
+import { LoginResult } from "../types/auth.js"
 
 /* ==========================================================================
    AUTH SERVICE
@@ -31,12 +48,12 @@ import { PayloadRefresco } from "../middlewares/auth.middlewares.js"
 export const iniciarSesionService = async (
   username: string,
   password: string
-) => {
+): Promise<LoginResult> => {
   if (!username || !password) {
     throw new UnauthorizedError("Credenciales incorrectas")
   }
 
-  const usuario = await prisma.users.findUnique({ where: { username } })
+  const usuario = await userRepository.findByUsername(username)
   if (!usuario) throw new UnauthorizedError("Credenciales incorrectas")
 
   if (usuario.google_id) {
@@ -57,10 +74,9 @@ export const iniciarSesionService = async (
       process.env.JWT_SECRET!,
       { expiresIn: "5m" }
     )
-    return { two_factor_required: true, tokenTemporal }
+    return { type: "2FA_REQUIRED", tokenTemporal }
   }
 
-  // Flujo normal
   const tokenAcceso = crearTokenAcceso(
     usuario.id,
     usuario.role as string,
@@ -68,7 +84,7 @@ export const iniciarSesionService = async (
   )
   const { token: tokenRefresco } = await crearTokenRefresco(usuario.id)
 
-  return { tokenAcceso, tokenRefresco }
+  return { type: "OK", tokenAcceso, tokenRefresco }
 }
 
 // ---------------------------------------------------------------------------
@@ -84,12 +100,14 @@ export const registrarService = async (body: unknown) => {
 
   const { email, username, password } = validacion.data
 
-  const usuarioExistente = await prisma.users.findUnique({ where: { email } })
+  const usuarioExistente = await userRepository.findByEmail(email)
   if (usuarioExistente) throw new ConflictError("El usuario ya está registrado")
 
   const contrasenaHasheada = await hashearContrasena(password)
-  const nuevoUsuario = await prisma.users.create({
-    data: { email, username, password: contrasenaHasheada },
+  const nuevoUsuario = await userRepository.create({
+    email,
+    username,
+    password: contrasenaHasheada,
   })
 
   const tokenVerificacion = jwt.sign(
@@ -98,14 +116,12 @@ export const registrarService = async (body: unknown) => {
     { expiresIn: "1h" }
   )
 
-  await prisma.auth_tokens.create({
-    data: {
-      id: crypto.randomUUID(),
-      user_id: nuevoUsuario.id,
-      token: tokenVerificacion,
-      type: "VERIFY_EMAIL",
-      expires_at: new Date(Date.now() + 60 * 60 * 1000),
-    },
+  await authTokenRepository.create({
+    id: crypto.randomUUID(),
+    users: { connect: { id: nuevoUsuario.id } },
+    token: tokenVerificacion,
+    type: "VERIFY_EMAIL",
+    expires_at: new Date(Date.now() + 60 * 60 * 1000),
   })
 
   await enviarCorreoVerificacion(nuevoUsuario.email, tokenVerificacion)
@@ -124,24 +140,24 @@ export const verificarEmailService = async (token: string) => {
     process.env.VERIFY_EMAIL_SECRET!
   ) as PayloadVerificacion
 
-  const tokenEnDb = await prisma.auth_tokens.findFirst({
-    where: { token, user_id: payload.user_id, type: "VERIFY_EMAIL" },
-    include: { users: true },
+  const tokenEnDb = await authTokenRepository.findFirst({
+    token,
+    user_id: payload.user_id,
+    type: "VERIFY_EMAIL",
   })
 
   if (!tokenEnDb || tokenEnDb.expires_at < new Date()) {
     throw new GoneError("El enlace ha expirado. Solicita uno nuevo.")
   }
 
-  if (!tokenEnDb.users) throw new NotFoundError("Usuario no encontrado")
+  const usuario = await userRepository.findById(payload.user_id)
+  if (!usuario) throw new NotFoundError("Usuario no encontrado")
 
-  await prisma.users.update({
-    where: { id: tokenEnDb.users.id },
-    data: { is_verified: true },
-  })
+  await userRepository.update(usuario.id, { is_verified: true })
 
-  await prisma.auth_tokens.deleteMany({
-    where: { user_id: tokenEnDb.users.id, type: "VERIFY_EMAIL" },
+  await authTokenRepository.deleteMany({
+    user_id: usuario.id,
+    type: "VERIFY_EMAIL",
   })
 }
 
@@ -151,13 +167,14 @@ export const verificarEmailService = async (token: string) => {
 export const reenviarVerificacionService = async (email: string) => {
   if (!email) throw new ValidationError("Email requerido")
 
-  const usuario = await prisma.users.findUnique({ where: { email } })
+  const usuario = await userRepository.findByEmail(email)
 
   // Respuesta genérica para no revelar si el email existe
   if (!usuario || usuario.is_verified) return
 
-  await prisma.auth_tokens.deleteMany({
-    where: { user_id: usuario.id, type: "VERIFY_EMAIL" },
+  await authTokenRepository.deleteMany({
+    user_id: usuario.id,
+    type: "VERIFY_EMAIL",
   })
 
   const tokenVerificacion = jwt.sign(
@@ -166,14 +183,12 @@ export const reenviarVerificacionService = async (email: string) => {
     { expiresIn: "1h" }
   )
 
-  await prisma.auth_tokens.create({
-    data: {
-      id: crypto.randomUUID(),
-      user_id: usuario.id,
-      token: tokenVerificacion,
-      type: "VERIFY_EMAIL",
-      expires_at: new Date(Date.now() + 60 * 60 * 1000),
-    },
+  await authTokenRepository.create({
+    id: crypto.randomUUID(),
+    users: { connect: { id: usuario.id } },
+    token: tokenVerificacion,
+    type: "VERIFY_EMAIL",
+    expires_at: new Date(Date.now() + 60 * 60 * 1000),
   })
 
   await enviarCorreoVerificacion(usuario.email, tokenVerificacion)
@@ -185,9 +200,7 @@ export const reenviarVerificacionService = async (email: string) => {
 export const renovarTokenService = async (refreshToken: string) => {
   const payload = await verificarTokenRefresco(refreshToken)
 
-  const usuario = await prisma.users.findUnique({
-    where: { id: payload.user_id },
-  })
+  const usuario = await userRepository.findById(payload.user_id)
   if (!usuario) throw new NotFoundError("Usuario no encontrado")
 
   return crearTokenAcceso(
@@ -209,9 +222,7 @@ export const cerrarSesionService = async (refreshToken: string | undefined) => {
       process.env.REFRESH_SECRET!
     ) as PayloadRefresco
 
-    await prisma.sessions
-      .delete({ where: { id: payload.id_session } })
-      .catch(() => null)
+    await sessionRepository.deleteById(payload.id_session)
   } catch {
     // Token inválido: igual limpiamos la cookie desde el controller
   }
@@ -221,10 +232,7 @@ export const cerrarSesionService = async (refreshToken: string | undefined) => {
 // VERIFICAR TOKEN (persistir login en el frontend)
 // ---------------------------------------------------------------------------
 export const verificarTokenService = async (userId: number) => {
-  const usuario = await prisma.users.findUnique({
-    where: { id: userId },
-    select: { id: true, username: true, email: true, role: true },
-  })
+  const usuario = await userRepository.getSafeProfile(userId)
 
   if (!usuario) throw new NotFoundError("Usuario no encontrado")
   return usuario
@@ -263,9 +271,8 @@ export const activar2FAService = async (userId: number) => {
   const secreto = totp.secret.base32
   const uri = totp.toString()
 
-  await prisma.users.update({
-    where: { id: userId },
-    data: { two_factor_secret: encriptarSecreto(secreto) },
+  await userRepository.update(userId, {
+    two_factor_secret: encriptarSecreto(secreto),
   })
 
   const qr = await QRCode.toDataURL(uri)
@@ -278,7 +285,7 @@ export const activar2FAService = async (userId: number) => {
 export const confirmar2FAService = async (userId: number, codigo: string) => {
   if (!codigo) throw new ValidationError("Código requerido")
 
-  const usuario = await prisma.users.findUnique({ where: { id: userId } })
+  const usuario = await userRepository.findById(userId)
   if (!usuario?.two_factor_secret) {
     throw new ValidationError("Primero debes generar el QR")
   }
@@ -289,10 +296,7 @@ export const confirmar2FAService = async (userId: number, codigo: string) => {
 
   if (delta === null) throw new UnauthorizedError("Código incorrecto")
 
-  await prisma.users.update({
-    where: { id: userId },
-    data: { two_factor_enabled: true },
-  })
+  await userRepository.update(userId, { two_factor_enabled: true })
 }
 
 // ---------------------------------------------------------------------------
@@ -311,9 +315,7 @@ export const verificar2FAService = async (
 
   if (!payload.two_factor_pending) throw new UnauthorizedError("Token inválido")
 
-  const usuario = await prisma.users.findUnique({
-    where: { id: payload.user_id },
-  })
+  const usuario = await userRepository.findById(payload.user_id)
   if (!usuario?.two_factor_secret) {
     throw new ValidationError("No se ha configurado 2FA")
   }
@@ -340,13 +342,14 @@ export const verificar2FAService = async (
 export const olvidarContrasenaService = async (email: string) => {
   if (!email) throw new ValidationError("Email requerido")
 
-  const usuario = await prisma.users.findUnique({ where: { email } })
+  const usuario = await userRepository.findByEmail(email)
 
   // Respuesta genérica para no revelar si el email existe
   if (!usuario || usuario.google_id) return
 
-  await prisma.auth_tokens.deleteMany({
-    where: { user_id: usuario.id, type: "RESET_PASSWORD" },
+  await authTokenRepository.deleteMany({
+    user_id: usuario.id,
+    type: "RESET_PASSWORD",
   })
 
   const token = jwt.sign(
@@ -355,14 +358,12 @@ export const olvidarContrasenaService = async (email: string) => {
     { expiresIn: "15m" }
   )
 
-  await prisma.auth_tokens.create({
-    data: {
-      id: crypto.randomUUID(),
-      user_id: usuario.id,
-      token,
-      type: "RESET_PASSWORD",
-      expires_at: new Date(Date.now() + 15 * 60 * 1000),
-    },
+  await authTokenRepository.create({
+    id: crypto.randomUUID(),
+    users: { connect: { id: usuario.id } },
+    token,
+    type: "RESET_PASSWORD",
+    expires_at: new Date(Date.now() + 15 * 60 * 1000),
   })
 
   await enviarCorreoResetPassword(usuario.email, token)
@@ -383,8 +384,10 @@ export const resetearContrasenaService = async (
     process.env.VERIFY_EMAIL_SECRET!
   ) as PayloadReset
 
-  const tokenEnDb = await prisma.auth_tokens.findFirst({
-    where: { token, user_id: payload.user_id, type: "RESET_PASSWORD" },
+  const tokenEnDb = await authTokenRepository.findFirst({
+    token,
+    user_id: payload.user_id,
+    type: "RESET_PASSWORD",
   })
 
   if (!tokenEnDb || tokenEnDb.expires_at < new Date()) {
@@ -393,17 +396,13 @@ export const resetearContrasenaService = async (
 
   const contrasenaHasheada = await hashearContrasena(password)
 
-  await prisma.users.update({
-    where: { id: payload.user_id },
-    data: { password: contrasenaHasheada },
-  })
+  await userRepository.update(payload.user_id, { password: contrasenaHasheada })
 
-  await prisma.auth_tokens.deleteMany({
-    where: { user_id: payload.user_id, type: "RESET_PASSWORD" },
+  await authTokenRepository.deleteMany({
+    user_id: payload.user_id,
+    type: "RESET_PASSWORD",
   })
-  await prisma.sessions.deleteMany({
-    where: { user_id: payload.user_id },
-  })
+  await sessionRepository.deleteManyByUser(payload.user_id)
 }
 
 // ---------------------------------------------------------------------------
@@ -412,7 +411,7 @@ export const resetearContrasenaService = async (
 export const desactivar2FAService = async (userId: number, codigo: string) => {
   if (!codigo) throw new ValidationError("Código requerido")
 
-  const usuario = await prisma.users.findUnique({ where: { id: userId } })
+  const usuario = await userRepository.findById(userId)
 
   if (!usuario?.two_factor_enabled) {
     throw new ValidationError("No tenés 2FA activado")
@@ -424,9 +423,9 @@ export const desactivar2FAService = async (userId: number, codigo: string) => {
 
   if (delta === null) throw new UnauthorizedError("Código incorrecto")
 
-  await prisma.users.update({
-    where: { id: userId },
-    data: { two_factor_enabled: false, two_factor_secret: null },
+  await userRepository.update(userId, {
+    two_factor_enabled: false,
+    two_factor_secret: null,
   })
 }
 
@@ -443,7 +442,7 @@ export const cambiarContrasenaService = async (
     throw new ValidationError("Datos requeridos")
   }
 
-  const usuario = await prisma.users.findUnique({ where: { id: userId } })
+  const usuario = await userRepository.findById(userId)
   if (!usuario) throw new NotFoundError("Usuario no encontrado")
 
   if (usuario.google_id) {
@@ -469,10 +468,7 @@ export const cambiarContrasenaService = async (
 
   const contrasenaHasheada = await hashearContrasena(contrasenaNueva)
 
-  await prisma.users.update({
-    where: { id: userId },
-    data: { password: contrasenaHasheada },
-  })
+  await userRepository.update(userId, { password: contrasenaHasheada })
 
   // Cerrar todas las sesiones menos la actual
   if (refreshToken) {
@@ -480,9 +476,7 @@ export const cambiarContrasenaService = async (
       refreshToken,
       process.env.REFRESH_SECRET!
     ) as PayloadRefresco
-    await prisma.sessions.deleteMany({
-      where: { user_id: userId, NOT: { id: payload.id_session } },
-    })
+    await sessionRepository.deleteManyByUserExcept(userId, payload.id_session)
   }
 }
 
@@ -490,5 +484,5 @@ export const cambiarContrasenaService = async (
 // REVOCAR TODAS LAS SESIONES
 // ---------------------------------------------------------------------------
 export const revocarSesionesService = async (userId: number) => {
-  await prisma.sessions.deleteMany({ where: { user_id: userId } })
+  await sessionRepository.deleteManyByUser(userId)
 }

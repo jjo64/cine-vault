@@ -26,6 +26,16 @@ import { limitadorGlobal } from "./middlewares/rateLimit.middleware.js"
 // Importación de helpers
 import { limpiarUsuariosNoVerificados } from "./lib/jobs.js"
 
+// Swagger & Documentación
+import swaggerUi from "swagger-ui-express"
+import fs from "fs"
+import path from "path"
+import yaml from "yaml"
+import { fileURLToPath } from "url"
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
 // Configuración inicial
 const app = express()
 const PUERTO = process.env.PORT || 3000
@@ -33,15 +43,11 @@ if (!process.env.JWT_SECRET)
   throw new Error("JWT_SECRET no definido. Detén la app.")
 if (!process.env.API_KEY_TMDB) throw new Error("API_KEY_TMDB no definido")
 
-/* ==========================================================================
-   CONFIGURACIÓN DE MIDDLEWARES GLOBALES
-   ========================================================================== */
-
 app.use(helmet()) // Seguridad HTTP headers
 
 // Configuración de CORS robusta
 const allowedOrigins = process.env.FRONTEND_URLS
-  ? process.env.FRONTEND_URLS.split(",").map(url => url.trim())
+  ? process.env.FRONTEND_URLS.split(",").map((url) => url.trim())
   : []
 
 app.use(
@@ -84,6 +90,21 @@ app.get("/", (req, res) => {
    RUTAS DE LA API
    ========================================================================== */
 
+/* ==========================================================================   
+   DOCUMENTACIÓN API (OpenAPI)
+   ========================================================================== */
+try {
+  const swaggerPath = path.join(__dirname, "../docs", "openapi.yaml")
+  const swaggerFile = fs.readFileSync(swaggerPath, "utf8")
+  const swaggerDocument = yaml.parse(swaggerFile)
+
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument))
+} catch (error) {
+  console.warn(
+    "No se pudo cargar la documentación Swagger OpenAPI en /api-docs. Verifica que backend/docs/openapi.yaml exista."
+  )
+  console.error(error)
+}
 app.use("/api/auth", rutasAuth)
 app.use("/api/users", rutasUsuarios)
 app.use("/api/movies", rutasPeliculas)

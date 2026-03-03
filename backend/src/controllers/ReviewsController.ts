@@ -40,7 +40,10 @@ export const addReview = async (req: SolicitudAutenticada, res: Response) => {
 /**
  * Elimina una reseña existente.
  */
-export const removeReview = async (req: SolicitudAutenticada, res: Response) => {
+export const removeReview = async (
+  req: SolicitudAutenticada,
+  res: Response
+) => {
   const user_id = req.user!.user_id
   const review_id = Number(req.params.reviewId)
 
@@ -55,7 +58,9 @@ export const removeReview = async (req: SolicitudAutenticada, res: Response) => 
   }
 
   if (review_found.user_id !== user_id) {
-    return res.status(403).json({ message: "No tienes permiso para eliminar esta reseña" })
+    return res
+      .status(403)
+      .json({ message: "No tienes permiso para eliminar esta reseña" })
   }
 
   const review = await prisma.reviews.delete({
@@ -106,23 +111,26 @@ export const likeReview = async (req: SolicitudAutenticada, res: Response) => {
   }
 
   // Usar transacción para que ambas operaciones sean atómicas
-    const [like, review] = await prisma.$transaction([
-      prisma.review_likes.create({
-        data: { user_id, review_id },
-      }),
-      prisma.reviews.update({
-        where: { id: review_id },
-        data: { likes: { increment: 1 } },
-      }),
-    ])
+  const [like, review] = await prisma.$transaction([
+    prisma.review_likes.create({
+      data: { user_id, review_id },
+    }),
+    prisma.reviews.update({
+      where: { id: review_id },
+      data: { likes: { increment: 1 } },
+    }),
+  ])
 
-    res.status(201).json({ review, like })
+  res.status(201).json({ review, like })
 }
 
 /**
  * Decrementa el contador de "likes" de una reseña.
  */
-export const removeLikeReview = async (req: SolicitudAutenticada, res: Response) => {
+export const removeLikeReview = async (
+  req: SolicitudAutenticada,
+  res: Response
+) => {
   const user_id = req.user!.user_id
   const review_id = Number(req.params.reviewId)
 

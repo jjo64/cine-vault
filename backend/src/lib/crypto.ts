@@ -12,8 +12,7 @@ const IV_LENGTH = 16
 /**
  * Hashea una contraseña con bcrypt (10 rondas).
  */
-export const hashearContrasena = (password: string) =>
-  bcrypt.hash(password, 10)
+export const hashearContrasena = (password: string) => bcrypt.hash(password, 10)
 
 /**
  * Compara una contraseña en texto plano con su hash bcrypt.

@@ -146,7 +146,9 @@ export const verificarRol = (...roles: string[]) => {
       const { role } = await obtenerRolYMembresia(user_id)
 
       if (!roles.includes(role)) {
-        return next(new ForbiddenError("No tenés el rol necesario para esta acción"))
+        return next(
+          new ForbiddenError("No tenés el rol necesario para esta acción")
+        )
       }
 
       req.user!.role = role as "admin" | "editor" | "user"

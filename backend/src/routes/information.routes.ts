@@ -1,11 +1,16 @@
 import { Router } from "express"
-import { middlewareAutenticacion } from "../middlewares/auth.middlewares.js"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
-import { obtenerInformacion, obtenerInformacionCombinada } from "../controllers/InformationController.js"
+import {
+  personInformation,
+  personInformationCombined,
+} from "../controllers/InformationController.js"
 
 const router = Router()
 
-router.get("/:id", middlewareAutenticacion, manejadorAsincrono(obtenerInformacion)) // Información de una persona
-router.get("/:id/credits", middlewareAutenticacion, manejadorAsincrono(obtenerInformacionCombinada)) // Información de una persona pero con sus trabajos
+router.get("/person/:id", manejadorAsincrono(personInformation)) // informacion de una persona
+router.get(
+  "/person/:id/combined_credits",
+  manejadorAsincrono(personInformationCombined)
+)
 
 export default router
