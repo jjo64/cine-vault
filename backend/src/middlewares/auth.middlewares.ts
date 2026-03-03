@@ -42,7 +42,10 @@ export const middlewareAutenticacion = (
 
   if (!token) {
     return res.status(401).json({
-      error: { code: "UNAUTHORIZED", message: "No se proporcionó token de acceso" },
+      error: {
+        code: "UNAUTHORIZED",
+        message: "No se proporcionó token de acceso",
+      },
     })
   }
 

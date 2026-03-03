@@ -5,6 +5,20 @@ import { prisma } from "../lib/prisma.js"
  * Obtiene la lista de seguimiento de un usuario.
  * El manejo de errores (try/catch) ahora es automático gracias al Global Error Handler.
  */
+export const getMyWatchlist = async (req: Request, res: Response) => {
+  const { id } = req.params
+
+  const watchlist = await prisma.watchlist.findMany({
+    where: { user_id: Number(id) },
+    select: {
+      movie_id: true,
+      added_at: true,
+    },
+  })
+
+  return res.json(watchlist)
+}
+
 export const getWatchlistByUser = async (req: Request, res: Response) => {
   const { id_user } = req.params
 

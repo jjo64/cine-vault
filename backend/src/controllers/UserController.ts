@@ -14,15 +14,30 @@ export const obtenerSeguidores = async (req: Request, res: Response) => {
 export const obtenerSiguiendo = async (req: Request, res: Response) => {
   res.json(await userService.obtenerSiguiendoService(Number(req.params.id)))
 }
-export const actualizarPerfil = async (req: SolicitudAutenticada, res: Response) => {
+export const actualizarPerfil = async (
+  req: SolicitudAutenticada,
+  res: Response
+) => {
   await userService.actualizarPerfilService(req.user!.user_id, req.body)
   res.json({ message: "Perfil actualizado correctamente" })
 }
-export const seguirUsuario = async (req: SolicitudAutenticada, res: Response) => {
-  await userService.seguirUsuarioService(req.user!.user_id, Number(req.params.id))
+export const seguirUsuario = async (
+  req: SolicitudAutenticada,
+  res: Response
+) => {
+  await userService.seguirUsuarioService(
+    req.user!.user_id,
+    Number(req.params.id)
+  )
   res.json({ message: "Usuario seguido correctamente" })
 }
-export const dejarDeSeguirUsuario = async (req: SolicitudAutenticada, res: Response) => {
-  await userService.dejarDeSeguirUsuarioService(req.user!.user_id, Number(req.params.id))
+export const dejarDeSeguirUsuario = async (
+  req: SolicitudAutenticada,
+  res: Response
+) => {
+  await userService.dejarDeSeguirUsuarioService(
+    req.user!.user_id,
+    Number(req.params.id)
+  )
   res.json({ message: "Has dejado de seguir al usuario correctamente" })
 }

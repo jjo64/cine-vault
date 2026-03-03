@@ -18,11 +18,23 @@ router.get("/:movieId", manejadorAsincrono(getReviewsByMovieId))
 
 // Reseñas (privadas)
 router.post("/", middlewareAutenticacion, manejadorAsincrono(addReview))
-router.delete("/:reviewId", middlewareAutenticacion, manejadorAsincrono(removeReview))
+router.delete(
+  "/:reviewId",
+  middlewareAutenticacion,
+  manejadorAsincrono(removeReview)
+)
 
 // Likes (privadas)
-router.post("/:reviewId/like", middlewareAutenticacion, manejadorAsincrono(likeReview))
-router.delete("/:reviewId/like", middlewareAutenticacion, manejadorAsincrono(removeLikeReview))
+router.post(
+  "/:reviewId/like",
+  middlewareAutenticacion,
+  manejadorAsincrono(likeReview)
+)
+router.delete(
+  "/:reviewId/like",
+  middlewareAutenticacion,
+  manejadorAsincrono(removeLikeReview)
+)
 
 // Comentarios (privados) — cuando los implementes
 // router.post("/:reviewId/comment", middlewareAutenticacion, manejadorAsincrono(addComment))
