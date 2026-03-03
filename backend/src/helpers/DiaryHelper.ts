@@ -41,7 +41,7 @@ export const buildDiaryResponse = async (userId: number) => {
 
     const tmdbResults = await Promise.allSettled(
       movies.map((movie) =>
-        consultarTMDB(`movie/${movie.tmdb_id}`).then((data) => ({
+        consultarTMDB(`movie/${movie.tmdb_id}`).then((data: any) => ({
           title: data.title,
           poster_path: data.poster_path,
         }))
