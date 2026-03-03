@@ -39,4 +39,7 @@ router.get("/:id/following", manejadorAsincrono(obtenerSiguiendo)) // siguiendo
 //router.post('/block/:id', middlewareAutenticacion, manejadorAsincrono(blockUser))
 //router.delete('/unblock/:id', middlewareAutenticacion, manejadorAsincrono(unblockUser))
 
+//router.post('/block/:id', middlewareAutenticacion, manejadorAsincrono(blockUser))
+//router.delete('/unblock/:id', middlewareAutenticacion, manejadorAsincrono(unblockUser))
+
 export default router
