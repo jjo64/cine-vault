@@ -21,7 +21,10 @@ const crearTransporter = () =>
 /**
  * Envía el email de verificación de cuenta al registrarse.
  */
-export const enviarCorreoVerificacion = async (email: string, token: string) => {
+export const enviarCorreoVerificacion = async (
+  email: string,
+  token: string
+) => {
   const transporter = crearTransporter()
   const link = `${process.env.FRONTEND_URL}/verify-email?token=${token}`
 
@@ -47,7 +50,10 @@ export const enviarCorreoVerificacion = async (email: string, token: string) => 
 /**
  * Envía el email para restablecer la contraseña.
  */
-export const enviarCorreoResetPassword = async (email: string, token: string) => {
+export const enviarCorreoResetPassword = async (
+  email: string,
+  token: string
+) => {
   const transporter = crearTransporter()
   const link = `${process.env.FRONTEND_URL}/reset-password?token=${token}`
 

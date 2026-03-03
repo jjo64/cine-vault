@@ -16,7 +16,9 @@ export const limpiarUsuariosNoVerificados = async () => {
       },
     })
     if (eliminados.count > 0) {
-      console.log(`Limpieza: ${eliminados.count} usuarios no verificados eliminados`)
+      console.log(
+        `Limpieza: ${eliminados.count} usuarios no verificados eliminados`
+      )
     }
   } catch (error) {
     console.error("Error en limpieza de usuarios no verificados:", error)

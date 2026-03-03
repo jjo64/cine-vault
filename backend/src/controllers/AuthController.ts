@@ -16,8 +16,11 @@ export const iniciarSesion = async (req: Request, res: Response) => {
   const { username, password } = req.body
   const resultado = await authService.iniciarSesionService(username, password)
 
-  if ("two_factor_required" in resultado) {
-    return res.json(resultado)
+  if (resultado.type === "2FA_REQUIRED") {
+    return res.json({
+      two_factor_required: true,
+      tokenTemporal: resultado.tokenTemporal,
+    })
   }
 
   res.cookie("refresh_token", resultado.tokenRefresco, COOKIE_OPTIONS)
@@ -38,7 +41,9 @@ export const verificarEmail = async (req: Request, res: Response) => {
 export const reenviarVerificacion = async (req: Request, res: Response) => {
   const { email } = req.body
   await authService.reenviarVerificacionService(email)
-  res.json({ message: "Si el correo existe y no está verificado, recibirás un email." })
+  res.json({
+    message: "Si el correo existe y no está verificado, recibirás un email.",
+  })
 }
 
 export const renovarToken = async (req: Request, res: Response) => {
@@ -63,7 +68,8 @@ export const verificarToken = async (req: Request, res: Response) => {
 export const controladorCallback = async (req: Request, res: Response) => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const usuarioPassport = req.user as any
-  const { tokenAcceso, tokenRefresco } = await authService.googleCallbackService(usuarioPassport)
+  const { tokenAcceso, tokenRefresco } =
+    await authService.googleCallbackService(usuarioPassport)
 
   res.cookie("refresh_token", tokenRefresco, COOKIE_OPTIONS)
   res.cookie("access_token", tokenAcceso, {
@@ -89,7 +95,10 @@ export const confirmar2FA = async (req: Request, res: Response) => {
 
 export const verificar2FA = async (req: Request, res: Response) => {
   const { codigo, tokenTemporal } = req.body
-  const { tokenAcceso, tokenRefresco } = await authService.verificar2FAService(codigo, tokenTemporal)
+  const { tokenAcceso, tokenRefresco } = await authService.verificar2FAService(
+    codigo,
+    tokenTemporal
+  )
 
   res.cookie("refresh_token", tokenRefresco, COOKIE_OPTIONS)
   res.json({ accessToken: tokenAcceso })

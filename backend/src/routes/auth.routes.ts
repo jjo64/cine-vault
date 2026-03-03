@@ -19,7 +19,10 @@ import {
   revocarSesiones,
 } from "../controllers/AuthController.js"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
-import { limitadorAuth, limitadorEmail } from "../middlewares/rateLimit.middleware.js"
+import {
+  limitadorAuth,
+  limitadorEmail,
+} from "../middlewares/rateLimit.middleware.js"
 import passport from "passport"
 
 const router = Router()
@@ -35,8 +38,16 @@ router.post("/register", limitadorAuth, manejadorAsincrono(registrar))
 router.post("/2fa/verificar", limitadorAuth, manejadorAsincrono(verificar2FA))
 
 // Emails → máximo 3 por hora para evitar spam
-router.post("/resend-verification", limitadorEmail, manejadorAsincrono(reenviarVerificacion))
-router.post("/forgot-password", limitadorEmail, manejadorAsincrono(olvidarContrasena))
+router.post(
+  "/resend-verification",
+  limitadorEmail,
+  manejadorAsincrono(reenviarVerificacion)
+)
+router.post(
+  "/forgot-password",
+  limitadorEmail,
+  manejadorAsincrono(olvidarContrasena)
+)
 
 // ---------------------------------------------------------------------------
 // RUTAS PÚBLICAS SIN LIMIT ESTRICTO
@@ -61,12 +72,40 @@ router.get(
 // ---------------------------------------------------------------------------
 // RUTAS PROTEGIDAS (requieren token)
 // ---------------------------------------------------------------------------
-router.post("/logout", middlewareAutenticacion, manejadorAsincrono(cerrarSesion))
-router.get("/verify", middlewareAutenticacion, manejadorAsincrono(verificarToken))
-router.post("/cambiar-contrasena", middlewareAutenticacion, manejadorAsincrono(cambiarContrasena))
-router.post("/revocar-sesiones", middlewareAutenticacion, manejadorAsincrono(revocarSesiones))
-router.post("/2fa/activar", middlewareAutenticacion, manejadorAsincrono(activar2FA))
-router.post("/2fa/desactivar", middlewareAutenticacion, manejadorAsincrono(desactivar2FA))
-router.post("/2fa/confirmar", middlewareAutenticacion, manejadorAsincrono(confirmar2FA))
+router.post(
+  "/logout",
+  middlewareAutenticacion,
+  manejadorAsincrono(cerrarSesion)
+)
+router.get(
+  "/verify",
+  middlewareAutenticacion,
+  manejadorAsincrono(verificarToken)
+)
+router.post(
+  "/cambiar-contrasena",
+  middlewareAutenticacion,
+  manejadorAsincrono(cambiarContrasena)
+)
+router.post(
+  "/revocar-sesiones",
+  middlewareAutenticacion,
+  manejadorAsincrono(revocarSesiones)
+)
+router.post(
+  "/2fa/activar",
+  middlewareAutenticacion,
+  manejadorAsincrono(activar2FA)
+)
+router.post(
+  "/2fa/desactivar",
+  middlewareAutenticacion,
+  manejadorAsincrono(desactivar2FA)
+)
+router.post(
+  "/2fa/confirmar",
+  middlewareAutenticacion,
+  manejadorAsincrono(confirmar2FA)
+)
 
 export default router

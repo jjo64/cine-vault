@@ -20,8 +20,8 @@ import { redis } from "../config/redis.js"
 // ---------------------------------------------------------------------------
 export const limitadorGlobal = rateLimit({
   windowMs: 15 * 60 * 1000, // ventana de 15 minutos
-  max: 200,                  // máximo 200 requests por IP en esa ventana
-  standardHeaders: true,     // devuelve info en headers RateLimit-*
+  max: 200, // máximo 200 requests por IP en esa ventana
+  standardHeaders: true, // devuelve info en headers RateLimit-*
   legacyHeaders: false,
   message: {
     error: {
@@ -38,10 +38,10 @@ export const limitadorGlobal = rateLimit({
 // ---------------------------------------------------------------------------
 const limiterRedis = new RateLimiterRedis({
   storeClient: redis,
-  keyPrefix: "rl:auth",      // prefijo en Redis para identificar estas keys
-  points: 5,                 // 5 intentos permitidos
-  duration: 15 * 60,         // por cada 15 minutos
-  blockDuration: 15 * 60,    // si supera el límite, bloquear 15 minutos
+  keyPrefix: "rl:auth", // prefijo en Redis para identificar estas keys
+  points: 5, // 5 intentos permitidos
+  duration: 15 * 60, // por cada 15 minutos
+  blockDuration: 15 * 60, // si supera el límite, bloquear 15 minutos
 })
 
 export const limitadorAuth = async (
@@ -59,7 +59,8 @@ export const limitadorAuth = async (
     res.status(429).json({
       error: {
         code: "BRUTE_FORCE_BLOCKED",
-        message: "Demasiados intentos fallidos. Tu IP fue bloqueada por 15 minutos.",
+        message:
+          "Demasiados intentos fallidos. Tu IP fue bloqueada por 15 minutos.",
       },
     })
   }
@@ -72,8 +73,8 @@ export const limitadorAuth = async (
 const limiterEmail = new RateLimiterRedis({
   storeClient: redis,
   keyPrefix: "rl:email",
-  points: 3,           // 3 emails permitidos
-  duration: 60 * 60,   // por hora
+  points: 3, // 3 emails permitidos
+  duration: 60 * 60, // por hora
   blockDuration: 60 * 60,
 })
 

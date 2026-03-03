@@ -1,7 +1,10 @@
-import { prisma } from "../lib/prisma.js"
-import { PayloadAcceso, PayloadRefresco } from "../middlewares/auth.middlewares.js"
+import {
+  PayloadAcceso,
+  PayloadRefresco,
+} from "../middlewares/auth.middlewares.js"
 import jwt from "jsonwebtoken"
 import crypto from "crypto"
+import { sessionRepository } from "../repositories/SessionRepository.js"
 
 const EXPIRACION_TOKEN_ACCESO = "15m"
 const DIAS_EXPIRACION_TOKEN_REFRESCO = 7
@@ -50,16 +53,14 @@ export const crearTokenRefresco = async (idUsuario: number) => {
     { expiresIn: `${DIAS_EXPIRACION_TOKEN_REFRESCO}d` }
   )
 
-  await prisma.sessions.create({
-    data: {
-      id: idSesion,
-      refresh_token: token,
-      token_hash: hashearToken(token),
-      user_id: idUsuario,
-      expires_at: new Date(
-        Date.now() + DIAS_EXPIRACION_TOKEN_REFRESCO * 24 * 60 * 60 * 1000
-      ),
-    },
+  await sessionRepository.create({
+    id: idSesion,
+    refresh_token: token,
+    token_hash: hashearToken(token),
+    users: { connect: { id: idUsuario } },
+    expires_at: new Date(
+      Date.now() + DIAS_EXPIRACION_TOKEN_REFRESCO * 24 * 60 * 60 * 1000
+    ),
   })
 
   return { token, idSesion }
@@ -70,14 +71,15 @@ export const crearTokenRefresco = async (idUsuario: number) => {
  * Si la sesión fue revocada, lanza error aunque el JWT sea válido.
  */
 export const verificarTokenRefresco = async (token: string) => {
-  const payload = jwt.verify(token, process.env.REFRESH_SECRET!) as PayloadRefresco
+  const payload = jwt.verify(
+    token,
+    process.env.REFRESH_SECRET!
+  ) as PayloadRefresco
 
-  const sesion = await prisma.sessions.findFirst({
-    where: {
-      token_hash: hashearToken(token),
-      id: payload.id_session,
-    },
-  })
+  const sesion = await sessionRepository.findByHashAndId(
+    payload.id_session,
+    hashearToken(token)
+  )
 
   if (!sesion) throw new Error("Sesión inválida o revocada")
 

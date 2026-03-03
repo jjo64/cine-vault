@@ -30,3 +30,4 @@ logs
 *.sw?
 .agents/
 .agent/
+skills-lock.json
