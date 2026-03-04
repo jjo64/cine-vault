@@ -4,10 +4,7 @@ import { Response } from "express"
 import bcrypt from "bcrypt"
 import cloudinary from "../config/claudinary.config.js"
 
-export const actualizarPerfil = async (
-  req: SolicitudAutenticada,
-  res: Response
-) => {
+export const actualizarPerfil = async (req: SolicitudAutenticada, res: Response) => {
   interface perfilActualizar {
     username?: string
     email?: string
@@ -48,10 +45,7 @@ export const actualizarPerfil = async (
   }
 }
 
-export const actualizarAuth = async (
-  req: SolicitudAutenticada,
-  res: Response
-) => {
+export const actualizarAuth = async (req: SolicitudAutenticada, res: Response) => {
   interface authActualizar {
     password_actual?: string
     password_nueva?: string
@@ -144,10 +138,7 @@ export const actualizarAvatar = async (
   res.status(200).json(user)
 }
 
-export const eliminarCuenta = async (
-  req: SolicitudAutenticada,
-  res: Response
-) => {
+export const eliminarCuenta = async (req: SolicitudAutenticada, res: Response) => {
   const user_id = req.user!.user_id
   const user = await prisma.users.delete({
     where: { id: user_id },
