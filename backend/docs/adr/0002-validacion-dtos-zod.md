@@ -1,7 +1,7 @@
 # ADR 0002: Estandarizar DTOs y validación con Zod en capa de entrada
 
 ## Estado
-Propuesto
+Aceptado — implementado en refactor 2026-03-04
 
 ## Contexto
 Los controladores están mezclando extracción de `req.body`/`req.params` sin un punto único de validación, lo que dificulta:

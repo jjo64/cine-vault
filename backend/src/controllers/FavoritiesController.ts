@@ -1,68 +1,40 @@
 import { Request, Response } from "express"
-import { prisma } from "../lib/prisma.js"
+import * as favoritiesService from "../services/favorities.services.js"
+
+/* ==========================================================================
+   CONTROLADOR DE FAVORITOS
+   --------------------------------------------------------------------------
+   Responsabilidad ÚNICA: extraer datos del request, llamar al servicio y
+   devolver res. Sin Prisma directo.
+   ========================================================================== */
 
 export const getFavorites = async (req: Request, res: Response) => {
-  const userId = req.user!.user_id
-  const favorites = await prisma.favorites.findMany({
-    where: { user_id: userId },
-    select: {
-      movie_id: true,
-      rank_position: true,
-    },
-  })
-
-  if (favorites.length === 0) {
-    return res.status(404).json({ error: "No tienes favoritos" })
-  }
-
-  return res.json(favorites)
+  const favoritos = await favoritiesService.obtenerFavoritosService(
+    req.user!.user_id
+  )
+  res.json(favoritos)
 }
 
 export const getFavoritesByUserId = async (req: Request, res: Response) => {
-  const { userId } = req.params
-  const favorites = await prisma.favorites.findMany({
-    where: { user_id: Number(userId) },
-    select: {
-      movie_id: true,
-      rank_position: true,
-    },
-  })
-
-  if (favorites.length === 0) {
-    return res.status(404).json({ error: "Favoritos no encontrados" })
-  }
-
-  return res.json(favorites)
+  const favoritos = await favoritiesService.obtenerFavoritosPorUsuarioService(
+    Number(req.params.userId)
+  )
+  res.json(favoritos)
 }
 
 export const addMovieToFavorites = async (req: Request, res: Response) => {
-  const userId = req.user!.user_id
-  const { movieId, rank_position } = req.body
-
-  const favorite = await prisma.favorites.create({
-    data: {
-      user_id: userId,
-      movie_id: Number(movieId),
-      rank_position: rank_position ?? null,
-    },
-  })
-
-  return res.status(201).json(favorite)
+  const favorito = await favoritiesService.agregarFavoritoService(
+    req.user!.user_id,
+    req.body
+  )
+  res.status(201).json(favorito)
 }
 
 export const removeMovieFromFavorites = async (req: Request, res: Response) => {
-  const userId = req.user!.user_id
-  const { movieId } = req.params
-
-  const favorite = await prisma.favorites.findFirst({
-    where: { user_id: userId, movie_id: Number(movieId) },
-  })
-
-  if (!favorite) {
-    return res.status(404).json({ error: "Favorito no encontrado" })
-  }
-
-  await prisma.favorites.delete({ where: { id: favorite.id } })
-
-  return res.json({ message: "Eliminado de favoritos" })
+  await favoritiesService.eliminarFavoritoService(
+    req.user!.user_id,
+    Number(req.params.movieId)
+  )
+  res.json({ message: "Eliminado de favoritos" })
 }
+

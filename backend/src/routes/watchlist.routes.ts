@@ -1,4 +1,6 @@
 import { Router } from "express"
+import { validarBody } from "../middlewares/validation.middleware.js"
+import { agregarWatchlistSchema } from "../schemas/watchlist.js"
 import {
   getWatchlistByUser,
   addMovieToWatchlist,
@@ -115,6 +117,7 @@ router.get("/:id_user", manejadorAsincrono(getWatchlistByUser)) // obtener la wa
 router.post(
   "/",
   middlewareAutenticacion,
+  validarBody(agregarWatchlistSchema),
   manejadorAsincrono(addMovieToWatchlist)
 ) // añadir película a la watchlist
 
