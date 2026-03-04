@@ -15,6 +15,7 @@ import {
 } from "../middlewares/rbac.middleware.js"
 import { PERMISOS } from "../config/permisos.js"
 import { prisma } from "../lib/prisma.js"
+import { emitirNotificacion } from "../controllers/NotificationsController.js"
 
 /**
  * @swagger
@@ -257,11 +258,22 @@ router.patch(
   middlewareAutenticacion,
   verificarPermiso(PERMISOS.GESTIONAR_REPORTES),
   manejadorAsincrono(async (req, res) => {
-    const { status } = req.body // "resolved" | "rejected"
+    const { status } = req.body
     const reporte = await prisma.reports.update({
       where: { id: Number(req.params.id) },
       data: { status },
+      include: { users: true },
     })
+
+    // Notificar al reportador si el reporte fue resuelto
+    if (status === "resolved" && reporte.reporter_id) {
+      await emitirNotificacion({
+        user_id: reporte.reporter_id,
+        sender_id: req.user!.user_id,
+        type: "report_resolved",
+      })
+    }
+
     res.json(reporte)
   })
 )

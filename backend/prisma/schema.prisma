@@ -19,23 +19,23 @@ model diary_entries {
 }
 
 model favorites {
-  id            Int         @id @default(autoincrement())
-  user_id       Int?
-  movie_id      Int?
+  id            Int        @id @default(autoincrement())
+  user_id       Int
+  movie_id      Int
   rank_position Int?
-  users         users?      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "favorites_ibfk_1")
-  movies_ref    movies_ref? @relation(fields: [movie_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "favorites_ibfk_2")
+  users         users      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "favorites_ibfk_1")
+  movies_ref    movies_ref @relation(fields: [movie_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "favorites_ibfk_2")
 
   @@index([movie_id], map: "movie_id")
   @@index([user_id], map: "user_id")
 }
 
 model follows {
-  id                                Int    @id @default(autoincrement())
-  follower_id                       Int?
-  following_id                      Int?
-  users_follows_follower_idTousers  users? @relation("follows_follower_idTousers", fields: [follower_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "follows_ibfk_1")
-  users_follows_following_idTousers users? @relation("follows_following_idTousers", fields: [following_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "follows_ibfk_2")
+  id                                Int   @id @default(autoincrement())
+  follower_id                       Int
+  following_id                      Int
+  users_follows_follower_idTousers  users @relation("follows_follower_idTousers", fields: [follower_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "follows_ibfk_1")
+  users_follows_following_idTousers users @relation("follows_following_idTousers", fields: [following_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "follows_ibfk_2")
 
   @@unique([follower_id, following_id], map: "follower_id")
   @@index([following_id], map: "following_id")
@@ -57,6 +57,20 @@ model news {
   content    String?        @db.Text
   category   news_category?
   created_at DateTime       @default(now()) @db.Timestamp(0)
+}
+
+model notifications {
+  id         Int                @id @default(autoincrement())
+  user_id    Int
+  sender_id  Int?
+  type       notifications_type
+  read       Boolean            @default(false)
+  created_at DateTime           @default(now()) @db.Timestamp(0)
+  receiver   users              @relation("notifications_receiver", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  sender     users?             @relation("notifications_sender", fields: [sender_id], references: [id], onDelete: SetNull, onUpdate: Restrict)
+
+  @@index([user_id], map: "idx_notifications_user_id")
+  @@index([read], map: "idx_notifications_read")
 }
 
 model payments {
@@ -154,6 +168,8 @@ model users {
   favorites                           favorites[]
   follows_follows_follower_idTousers  follows[]         @relation("follows_follower_idTousers")
   follows_follows_following_idTousers follows[]         @relation("follows_following_idTousers")
+  notifications_received              notifications[]   @relation("notifications_receiver")
+  notifications_sent                  notifications[]   @relation("notifications_sender")
   payments                            payments[]
   reports                             reports[]
   review_likes                        review_likes[]
@@ -234,6 +250,13 @@ model review_likes {
   @@unique([user_id, review_id], map: "unique_user_review_like")
   @@index([review_id], map: "idx_review_id")
   @@index([user_id], map: "idx_user_id")
+}
+
+enum notifications_type {
+  follow
+  like
+  comment
+  report_resolved
 }
 
 enum subscriptions_plan {

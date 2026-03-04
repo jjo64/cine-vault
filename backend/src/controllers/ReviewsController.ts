@@ -1,6 +1,7 @@
 import { Request, Response } from "express"
 import { prisma } from "../lib/prisma.js"
 import type { SolicitudAutenticada } from "../middlewares/auth.middlewares.js"
+import { emitirNotificacion } from "./NotificationsController.js"
 
 /**
  * Obtiene todas las reseñas de mi usuario.
@@ -50,7 +51,7 @@ export const getReviewsByUserId = async (req: Request, res: Response) => {
 /**
  * Agrega una nueva reseña.
  */
-export const addReview = async (req: SolicitudAutenticada, res: Response) => {
+export const addReview = async (req: Request, res: Response) => {
   const user_id = req.user!.user_id
   const review = await prisma.reviews.create({
     data: {
@@ -66,10 +67,7 @@ export const addReview = async (req: SolicitudAutenticada, res: Response) => {
 /**
  * Elimina una reseña existente.
  */
-export const removeReview = async (
-  req: SolicitudAutenticada,
-  res: Response
-) => {
+export const removeReview = async (req: Request, res: Response) => {
   const user_id = req.user!.user_id
   const review_id = Number(req.params.reviewId)
 
@@ -124,7 +122,7 @@ export const getReviewsByMovieId = async (req: Request, res: Response) => {
 /**
  * Incrementa el contador de "likes" de una reseña.
  */
-export const likeReview = async (req: SolicitudAutenticada, res: Response) => {
+export const likeReview = async (req: Request, res: Response) => {
   const user_id = req.user!.user_id
   const review_id = Number(req.params.reviewId)
 
@@ -151,6 +149,15 @@ export const likeReview = async (req: SolicitudAutenticada, res: Response) => {
       data: { likes: { increment: 1 } },
     }),
   ])
+
+  // Notificar al dueño de la reseña si no es el mismo usuario
+  if (review.user_id !== user_id) {
+    await emitirNotificacion({
+      user_id: review.user_id,
+      sender_id: user_id,
+      type: "like",
+    })
+  }
 
   res.status(201).json({ review, like })
 }
@@ -197,10 +204,7 @@ export const removeLikeReview = async (
   res.status(200).json({ review, like })
 }
 
-export const updateReview = async (
-  req: SolicitudAutenticada,
-  res: Response
-) => {
+export const updateReview = async (req: Request, res: Response) => {
   const user_id = req.user!.user_id
   const review_id = Number(req.params.reviewId)
 
@@ -233,10 +237,7 @@ export const updateReview = async (
   res.status(200).json(review)
 }
 
-export const reportReview = async (
-  req: SolicitudAutenticada,
-  res: Response
-) => {
+export const reportReview = async (req: Request, res: Response) => {
   const user_id = req.user!.user_id
   const review_id = Number(req.params.reviewId)
   const reason = req.body.reason
