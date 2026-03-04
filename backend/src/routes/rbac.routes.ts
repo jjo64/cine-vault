@@ -16,12 +16,39 @@ import {
 import { PERMISOS } from "../config/permisos.js"
 import { prisma } from "../lib/prisma.js"
 
+/**
+ * @swagger
+ * tags:
+ *   name: RBAC
+ *   description: Rutas de administración con control de acceso por roles
+ */
+
 const router = Router()
 
 /* ==========================================================================
    REVIEWS — el dueño puede borrar la suya, el admin cualquiera
    ========================================================================== */
 
+/**
+ * @swagger
+ * /rbac/reviews/{id}:
+ *   delete:
+ *     summary: Eliminar review (propietario o admin)
+ *     tags: [RBAC]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Review eliminada correctamente
+ *       403:
+ *         description: Sin permisos suficientes
+ */
 router.delete(
   "/reviews/:id",
   middlewareAutenticacion,
@@ -45,6 +72,35 @@ router.delete(
    NOTICIAS — solo admin y editor pueden crear/editar/borrar
    ========================================================================== */
 
+/**
+ * @swagger
+ * /rbac/news:
+ *   post:
+ *     summary: Crear noticia (admin y editor)
+ *     tags: [RBAC]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [title, content, category]
+ *             properties:
+ *               title:
+ *                 type: string
+ *               content:
+ *                 type: string
+ *               category:
+ *                 type: string
+ *                 enum: [estrenos, premios, actores, directores, streaming]
+ *     responses:
+ *       201:
+ *         description: Noticia creada
+ *       403:
+ *         description: Sin permisos suficientes
+ */
 // Crear noticia — admin y editor
 router.post(
   "/news",
@@ -59,6 +115,54 @@ router.post(
   })
 )
 
+/**
+ * @swagger
+ * /rbac/news/{id}:
+ *   patch:
+ *     summary: Editar noticia (admin y editor)
+ *     tags: [RBAC]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               content:
+ *                 type: string
+ *               category:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Noticia actualizada
+ *       403:
+ *         description: Sin permisos suficientes
+ *   delete:
+ *     summary: Borrar noticia (admin y editor)
+ *     tags: [RBAC]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Noticia eliminada correctamente
+ *       403:
+ *         description: Sin permisos suficientes
+ */
 // Editar noticia — admin y editor
 router.patch(
   "/news/:id",
@@ -88,6 +192,20 @@ router.delete(
    REPORTES — admin gestiona, editor solo ve
    ========================================================================== */
 
+/**
+ * @swagger
+ * /rbac/reports:
+ *   get:
+ *     summary: Ver reportes (admin y editor)
+ *     tags: [RBAC]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de reportes
+ *       403:
+ *         description: Sin permisos suficientes
+ */
 // Ver reportes — admin y editor
 router.get(
   "/reports",
@@ -102,6 +220,37 @@ router.get(
   })
 )
 
+/**
+ * @swagger
+ * /rbac/reports/{id}:
+ *   patch:
+ *     summary: Resolver o rechazar reporte (solo admin)
+ *     tags: [RBAC]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [status]
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [resolved, rejected]
+ *     responses:
+ *       200:
+ *         description: Reporte actualizado
+ *       403:
+ *         description: Sin permisos suficientes
+ */
 // Resolver/rechazar reporte — solo admin
 router.patch(
   "/reports/:id",
@@ -121,6 +270,37 @@ router.patch(
    USUARIOS — solo admin puede cambiar roles y ver actividad
    ========================================================================== */
 
+/**
+ * @swagger
+ * /rbac/users/{id}/role:
+ *   patch:
+ *     summary: Cambiar rol de un usuario (solo admin)
+ *     tags: [RBAC]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [role]
+ *             properties:
+ *               role:
+ *                 type: string
+ *                 enum: [admin, editor, user]
+ *     responses:
+ *       200:
+ *         description: Rol actualizado
+ *       403:
+ *         description: Sin permisos suficientes
+ */
 // Cambiar rol de un usuario — solo admin
 router.patch(
   "/users/:id/role",
@@ -137,6 +317,20 @@ router.patch(
   })
 )
 
+/**
+ * @swagger
+ * /rbac/users/activity:
+ *   get:
+ *     summary: Ver actividad de todos los usuarios (solo admin)
+ *     tags: [RBAC]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de actividad de usuarios
+ *       403:
+ *         description: Sin permisos suficientes
+ */
 // Ver actividad de todos los usuarios — solo admin
 router.get(
   "/users/activity",
@@ -152,6 +346,20 @@ router.get(
   })
 )
 
+/**
+ * @swagger
+ * /rbac/payments:
+ *   get:
+ *     summary: Ver todos los pagos (solo admin)
+ *     tags: [RBAC]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de pagos
+ *       403:
+ *         description: Sin permisos suficientes
+ */
 // Ver todos los pagos — solo admin
 router.get(
   "/payments",

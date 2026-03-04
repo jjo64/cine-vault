@@ -3,7 +3,7 @@ import { prisma } from "../lib/prisma.js"
 import type { SolicitudAutenticada } from "../middlewares/auth.middlewares.js"
 
 /**
- * Obtiene todas las reseñas del feed global.
+ * Obtiene todas las reseñas de mi usuario.
  */
 export const getReviews = async (req: Request, res: Response) => {
   const user_id = req.user!.user_id
@@ -94,7 +94,7 @@ export const removeReview = async (
       id: Number(req.params.reviewId),
     },
   })
-  res.status(200).json(review)
+  res.status(200).json({ message: "Reseña eliminada correctamente" })
 }
 
 /**
@@ -197,7 +197,10 @@ export const removeLikeReview = async (
   res.status(200).json({ review, like })
 }
 
-export const updateReview = async (req: SolicitudAutenticada, res: Response) => {
+export const updateReview = async (
+  req: SolicitudAutenticada,
+  res: Response
+) => {
   const user_id = req.user!.user_id
   const review_id = Number(req.params.reviewId)
 
@@ -230,7 +233,10 @@ export const updateReview = async (req: SolicitudAutenticada, res: Response) => 
   res.status(200).json(review)
 }
 
-export const reportReview = async (req: SolicitudAutenticada, res: Response) => {
+export const reportReview = async (
+  req: SolicitudAutenticada,
+  res: Response
+) => {
   const user_id = req.user!.user_id
   const review_id = Number(req.params.reviewId)
   const reason = req.body.reason

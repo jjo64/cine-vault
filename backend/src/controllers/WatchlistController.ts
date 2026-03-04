@@ -41,7 +41,7 @@ export const addMovieToWatchlist = async (req: Request, res: Response) => {
       data: { user_id: userId, movie_id },
     })
 
-    return res.json(watchlist)
+    return res.status(201).json({ message: "Película " + movie_id + " añadida a la watchlist" })
   } catch (error) {
     console.error("Error addMovieToWatchlist:", error)
     return res
@@ -62,7 +62,7 @@ export const removeMovieFromWatchlist = async (req: Request, res: Response) => {
       where: { user_id: userId, movie_id: movie_id },
     })
 
-    return res.json(watchlist)
+    return res.json({ message: "Película eliminada de la watchlist" })
   } catch (error) {
     console.error("Error removeMovieFromWatchlist:", error)
     return res

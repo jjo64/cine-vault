@@ -2,55 +2,67 @@ import { Request, Response } from "express"
 import { prisma } from "../lib/prisma.js"
 
 export const getFavorites = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params
-    const favorites = await prisma.favorites.findUnique({
-      where: { id: Number(id) },
-    })
+  const userId = req.user!.user_id
+  const favorites = await prisma.favorites.findMany({
+    where: { user_id: userId },
+    select: {
+      movie_id: true,
+      rank_position: true,
+    },
+  })
 
-    if (!favorites) {
-      return res.status(404).json({ error: "Favorites no encontrados" })
-    }
-
-    return res.json(favorites)
-  } catch (error) {
-    console.error(error)
-    return res.status(500).json({ error: "Error al obtener los favoritos" })
+  if (favorites.length === 0) {
+    return res.status(404).json({ error: "No tienes favoritos" })
   }
+
+  return res.json(favorites)
+}
+
+export const getFavoritesByUserId = async (req: Request, res: Response) => {
+  const { userId } = req.params
+  const favorites = await prisma.favorites.findMany({
+    where: { user_id: Number(userId) },
+    select: {
+      movie_id: true,
+      rank_position: true,
+    },
+  })
+
+  if (favorites.length === 0) {
+    return res.status(404).json({ error: "Favoritos no encontrados" })
+  }
+
+  return res.json(favorites)
 }
 
 export const addMovieToFavorites = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params
-    const favorites = await prisma.favorites.create({
-      data: { id: Number(id) },
-    })
+  const userId = req.user!.user_id
+  const { movieId, rank_position } = req.body
 
-    if (!favorites) {
-      return res.status(404).json({ error: "Favorites no encontrados" })
-    }
+  const favorite = await prisma.favorites.create({
+    data: {
+      user_id: userId,
+      movie_id: Number(movieId),
+      rank_position: rank_position ?? null,
+    },
+  })
 
-    return res.json(favorites)
-  } catch (error) {
-    console.error(error)
-    return res.status(500).json({ error: "Error al obtener los favoritos" })
-  }
+  return res.status(201).json(favorite)
 }
 
 export const removeMovieFromFavorites = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params
-    const favorites = await prisma.favorites.delete({
-      where: { id: Number(id) },
-    })
+  const userId = req.user!.user_id
+  const { movieId } = req.params
 
-    if (!favorites) {
-      return res.status(404).json({ error: "Favorites no encontrados" })
-    }
+  const favorite = await prisma.favorites.findFirst({
+    where: { user_id: userId, movie_id: Number(movieId) },
+  })
 
-    return res.json(favorites)
-  } catch (error) {
-    console.error(error)
-    return res.status(500).json({ error: "Error al obtener los favoritos" })
+  if (!favorite) {
+    return res.status(404).json({ error: "Favorito no encontrado" })
   }
+
+  await prisma.favorites.delete({ where: { id: favorite.id } })
+
+  return res.json({ message: "Eliminado de favoritos" })
 }
