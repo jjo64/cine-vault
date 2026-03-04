@@ -105,17 +105,18 @@ model reports {
 }
 
 model reviews {
-  id           Int            @id @default(autoincrement())
-  user_id      Int
-  movie_id     Int
-  content      String?        @db.Text
-  rating       Decimal?       @db.Decimal(2, 1)
-  likes        Int?           @default(0)
-  created_at   DateTime       @default(now()) @db.Timestamp(0)
-  reports      reports[]
-  review_likes review_likes[]
-  users        users          @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "reviews_ibfk_1")
-  movies_ref   movies_ref     @relation(fields: [movie_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "reviews_ibfk_2")
+  id              Int               @id @default(autoincrement())
+  user_id         Int
+  movie_id        Int
+  content         String?           @db.Text
+  rating          Decimal?          @db.Decimal(2, 1)
+  likes           Int?              @default(0)
+  created_at      DateTime          @default(now()) @db.Timestamp(0)
+  reports         reports[]
+  review_comments review_comments[]
+  review_likes    review_likes[]
+  users           users             @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "reviews_ibfk_1")
+  movies_ref      movies_ref        @relation(fields: [movie_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "reviews_ibfk_2")
 
   @@index([movie_id], map: "movie_id")
   @@index([user_id], map: "user_id")
@@ -172,6 +173,7 @@ model users {
   notifications_sent                  notifications[]   @relation("notifications_sender")
   payments                            payments[]
   reports                             reports[]
+  review_comments                     review_comments[]
   review_likes                        review_likes[]
   reviews                             reviews[]
   sessions                            sessions[]
@@ -250,6 +252,19 @@ model review_likes {
   @@unique([user_id, review_id], map: "unique_user_review_like")
   @@index([review_id], map: "idx_review_id")
   @@index([user_id], map: "idx_user_id")
+}
+
+model review_comments {
+  id         Int      @id @default(autoincrement())
+  review_id  Int
+  user_id    Int
+  content    String   @db.Text
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  reviews    reviews  @relation(fields: [review_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+
+  @@index([review_id], map: "idx_review_comments_review_id")
+  @@index([user_id], map: "idx_review_comments_user_id")
 }
 
 enum notifications_type {

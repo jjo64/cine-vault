@@ -30,6 +30,10 @@ const router = Router()
  *         description: Lista de notificaciones
  *         content:
  *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Notificacion'
  *             example:
  *               - id: 1
  *                 user_id: 1
@@ -83,6 +87,8 @@ router.get(
  *         description: Todas marcadas como leídas
  *         content:
  *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/MensajeResponse'
  *             example:
  *               message: "Todas las notificaciones marcadas como leídas"
  *       401:
@@ -114,6 +120,8 @@ router.patch(
  *         description: Notificación marcada como leída
  *         content:
  *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/MensajeResponse'
  *             example:
  *               message: "Notificación marcada como leída"
  *       401:
