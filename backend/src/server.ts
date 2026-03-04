@@ -41,6 +41,7 @@ import { swaggerSpec } from "../docs/swagger.js"
 
 // Configuración inicial
 const app = express()
+app.set("trust proxy", 1)
 const PUERTO = process.env.PORT || 3000
 if (!process.env.JWT_SECRET)
   throw new Error("JWT_SECRET no definido. Detén la app.")
