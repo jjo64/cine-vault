@@ -96,6 +96,47 @@ const options = {
             end_date: { type: "string", format: "date" },
           },
         },
+        Comentario: {
+          type: "object",
+          properties: {
+            id: { type: "integer" },
+            review_id: { type: "integer" },
+            user_id: { type: "integer" },
+            content: { type: "string" },
+            created_at: { type: "string", format: "date-time" },
+            users: {
+              type: "object",
+              properties: {
+                id: { type: "integer" },
+                username: { type: "string" },
+                avatar_url: { type: "string", nullable: true },
+              },
+            },
+          },
+        },
+        Notificacion: {
+          type: "object",
+          properties: {
+            id: { type: "integer" },
+            user_id: { type: "integer" },
+            sender_id: { type: "integer", nullable: true },
+            type: {
+              type: "string",
+              enum: ["follow", "like", "comment", "report_resolved"],
+            },
+            read: { type: "boolean" },
+            created_at: { type: "string", format: "date-time" },
+            sender: {
+              type: "object",
+              nullable: true,
+              properties: {
+                id: { type: "integer" },
+                username: { type: "string" },
+                avatar_url: { type: "string", nullable: true },
+              },
+            },
+          },
+        },
         TokenResponse: {
           type: "object",
           properties: {

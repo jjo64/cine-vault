@@ -9,6 +9,12 @@ import {
   updateReview,
   reportReview,
 } from "../controllers/ReviewsController.js"
+import {
+  getCommentsByReviewId,
+  addComment,
+  removeComment,
+  updateComment,
+} from "../controllers/ReviewCommentsController.js"
 import { Router } from "express"
 import { middlewareAutenticacion } from "../middlewares/auth.middlewares.js"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
@@ -380,8 +386,162 @@ router.post(
   manejadorAsincrono(reportReview)
 ) // Reportar una review
 
-// Comentarios (privados) — cuando los implementes
-// router.post("/:reviewId/comment", middlewareAutenticacion, manejadorAsincrono(addComment))
-// router.delete("/:reviewId/comment/:commentId", middlewareAutenticacion, manejadorAsincrono(removeComment))
+// Comentarios
+/**
+ * @swagger
+ * /reviews/{reviewId}/comments:
+ *   get:
+ *     summary: Obtener comentarios de una reseña
+ *     tags: [Reseñas]
+ *     parameters:
+ *       - in: path
+ *         name: reviewId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 1
+ *     responses:
+ *       200:
+ *         description: Lista de comentarios
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Comentario'
+ *             example:
+ *               - id: 1
+ *                 review_id: 1
+ *                 content: "Totalmente de acuerdo con tu reseña"
+ *                 created_at: "2026-03-04T10:00:00.000Z"
+ *                 users:
+ *                   id: 2
+ *                   username: "maria"
+ *                   avatar_url: null
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *   post:
+ *     summary: Añadir comentario a una reseña
+ *     tags: [Reseñas]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: reviewId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 1
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           example:
+ *             content: "Totalmente de acuerdo con tu reseña"
+ *     responses:
+ *       201:
+ *         description: Comentario creado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Comentario'
+ *             example:
+ *               id: 1
+ *               review_id: 1
+ *               content: "Totalmente de acuerdo con tu reseña"
+ *               created_at: "2026-03-04T10:00:00.000Z"
+ *               users:
+ *                 id: 1
+ *                 username: "josue"
+ *                 avatar_url: null
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.get("/:reviewId/comments", manejadorAsincrono(getCommentsByReviewId))
+router.post("/:reviewId/comments", middlewareAutenticacion, manejadorAsincrono(addComment))
+
+/**
+ * @swagger
+ * /reviews/{reviewId}/comments/{commentId}:
+ *   patch:
+ *     summary: Editar un comentario
+ *     tags: [Reseñas]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: reviewId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *       - in: path
+ *         name: commentId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           example:
+ *             content: "Editando mi comentario"
+ *     responses:
+ *       200:
+ *         description: Comentario actualizado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Comentario'
+ *             example:
+ *               id: 1
+ *               review_id: 1
+ *               content: "Editando mi comentario"
+ *               created_at: "2026-03-04T10:00:00.000Z"
+ *               users:
+ *                 id: 1
+ *                 username: "josue"
+ *                 avatar_url: null
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *   delete:
+ *     summary: Eliminar un comentario
+ *     tags: [Reseñas]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: reviewId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *       - in: path
+ *         name: commentId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Comentario eliminado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/MensajeResponse'
+ *             example:
+ *               message: "Comentario eliminado correctamente"
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.patch("/:reviewId/comments/:commentId", middlewareAutenticacion, manejadorAsincrono(updateComment))
+router.delete("/:reviewId/comments/:commentId", middlewareAutenticacion, manejadorAsincrono(removeComment))
 
 export default router
