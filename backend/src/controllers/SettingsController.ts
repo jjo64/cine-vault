@@ -37,7 +37,9 @@ export const actualizarPerfil = async (req: SolicitudAutenticada, res: Response)
       return res.status(404).json({ message: "Usuario no encontrado" })
     }
     if (error.code === "P2002") {
-      return res.status(409).json({ message: "El username o email ya está en uso" })
+      return res
+        .status(409)
+        .json({ message: "El username o email ya está en uso" })
     }
     throw error // que lo capture el manejadorAsincrono
   }
@@ -100,14 +102,18 @@ export const actualizarAvatar = async (
   const formatosPermitidos = ["image/jpeg", "image/png", "image/webp"]
   const match = avatar.match(/^data:(.+);base64,/)
   if (!match || !formatosPermitidos.includes(match[1])) {
-    return res.status(400).json({ message: "Formato no permitido. Usa JPG, PNG o WEBP" })
+    return res
+      .status(400)
+      .json({ message: "Formato no permitido. Usa JPG, PNG o WEBP" })
   }
 
   // Validar tamaño máximo 5MB
   const tamanoBytes = (avatar.length * 3) / 4
   const maxBytes = 5 * 1024 * 1024
   if (tamanoBytes > maxBytes) {
-    return res.status(400).json({ message: "La imagen no puede superar los 5MB" })
+    return res
+      .status(400)
+      .json({ message: "La imagen no puede superar los 5MB" })
   }
 
   // Subir original a Cloudinary sin transformaciones

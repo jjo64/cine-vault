@@ -241,8 +241,16 @@ router.post("/", middlewareAutenticacion, manejadorAsincrono(addReview)) // Crea
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.patch("/:reviewId", middlewareAutenticacion, manejadorAsincrono(updateReview)) // Actualizar una review
-router.delete("/:reviewId", middlewareAutenticacion, manejadorAsincrono(removeReview)) // Eliminar una review
+router.patch(
+  "/:reviewId",
+  middlewareAutenticacion,
+  manejadorAsincrono(updateReview)
+) // Actualizar una review
+router.delete(
+  "/:reviewId",
+  middlewareAutenticacion,
+  manejadorAsincrono(removeReview)
+) // Eliminar una review
 
 // Likes (privadas)
 /**
@@ -316,8 +324,16 @@ router.delete("/:reviewId", middlewareAutenticacion, manejadorAsincrono(removeRe
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
  */
-router.post("/:reviewId/like", middlewareAutenticacion, manejadorAsincrono(likeReview)) // Dar like a una review
-router.delete("/:reviewId/like", middlewareAutenticacion, manejadorAsincrono(removeLikeReview)) // Quitar like a una review
+router.post(
+  "/:reviewId/like",
+  middlewareAutenticacion,
+  manejadorAsincrono(likeReview)
+) // Dar like a una review
+router.delete(
+  "/:reviewId/like",
+  middlewareAutenticacion,
+  manejadorAsincrono(removeLikeReview)
+) // Quitar like a una review
 
 // Reportes (privadas)
 /**
@@ -358,7 +374,11 @@ router.delete("/:reviewId/like", middlewareAutenticacion, manejadorAsincrono(rem
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.post("/:reviewId/report", middlewareAutenticacion, manejadorAsincrono(reportReview)) // Reportar una review
+router.post(
+  "/:reviewId/report",
+  middlewareAutenticacion,
+  manejadorAsincrono(reportReview)
+) // Reportar una review
 
 // Comentarios (privados) — cuando los implementes
 // router.post("/:reviewId/comment", middlewareAutenticacion, manejadorAsincrono(addComment))

@@ -138,7 +138,15 @@ router.get("/user/:userId", manejadorAsincrono(getFavoritesByUserId)) // Obtener
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.post("/:movieId", middlewareAutenticacion, manejadorAsincrono(addMovieToFavorites)) // Añadir una película a favoritos
-router.delete("/:movieId", middlewareAutenticacion, manejadorAsincrono(removeMovieFromFavorites)) // Eliminar una película de favoritos
+router.post(
+  "/:movieId",
+  middlewareAutenticacion,
+  manejadorAsincrono(addMovieToFavorites)
+) // Añadir una película a favoritos
+router.delete(
+  "/:movieId",
+  middlewareAutenticacion,
+  manejadorAsincrono(removeMovieFromFavorites)
+) // Eliminar una película de favoritos
 
 export default router

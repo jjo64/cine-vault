@@ -116,7 +116,11 @@ router.get("/:id", manejadorAsincrono(obtenerUsuarioPorId)) // Datos del pefil (
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.post("/follow/:id", middlewareAutenticacion, manejadorAsincrono(seguirUsuario)) //seguir usuario
+router.post(
+  "/follow/:id",
+  middlewareAutenticacion,
+  manejadorAsincrono(seguirUsuario)
+) //seguir usuario
 
 /**
  * @swagger
@@ -145,7 +149,11 @@ router.post("/follow/:id", middlewareAutenticacion, manejadorAsincrono(seguirUsu
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.delete("/unfollow/:id", middlewareAutenticacion, manejadorAsincrono(dejarDeSeguirUsuario)) // dejar de seguir usuario
+router.delete(
+  "/unfollow/:id",
+  middlewareAutenticacion,
+  manejadorAsincrono(dejarDeSeguirUsuario)
+) // dejar de seguir usuario
 
 /**
  * @swagger
