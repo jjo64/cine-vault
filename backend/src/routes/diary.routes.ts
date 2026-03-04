@@ -7,6 +7,8 @@ import {
 } from "../controllers/DiaryController.js"
 import { middlewareAutenticacion } from "../middlewares/auth.middlewares.js"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
+import { validarBody } from "../middlewares/validation.middleware.js"
+import { crearEntradaDiarioSchema } from "../schemas/diary.js"
 
 /**
  * @swagger
@@ -137,7 +139,7 @@ router.get("/:id_user", manejadorAsincrono(getDiaryUser)) // obtener diario de o
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
  */
-router.post("/", middlewareAutenticacion, manejadorAsincrono(createDiary)) // crear diario
+router.post("/", middlewareAutenticacion, validarBody(crearEntradaDiarioSchema), manejadorAsincrono(createDiary)) // crear diario
 
 /**
  * @swagger

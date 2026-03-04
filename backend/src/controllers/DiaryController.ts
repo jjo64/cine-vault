@@ -1,71 +1,38 @@
 import { Request, Response } from "express"
-import { prisma } from "../lib/prisma.js"
-import { buildDiaryResponse } from "../helpers/DiaryHelper.js"
+import * as diaryService from "../services/diary.services.js"
 
-/**
- * Crea una entrada en el diario.
- */
+/* ==========================================================================
+   CONTROLADOR DE DIARIO
+   --------------------------------------------------------------------------
+   Responsabilidad ÚNICA: extraer datos del request, llamar al servicio y
+   devolver res. Sin try/catch manuales — el manejadorErrores global se ocupa.
+   ========================================================================== */
+
 export const createDiary = async (req: Request, res: Response) => {
-  try {
-    const userId = req.user!.user_id
-    const { movie_id } = req.body
-    const diary = await prisma.diary_entries.create({
-      data: { movie_id, user_id: userId },
-    })
-    res.json(diary)
-  } catch (error) {
-    console.error("Error createDiary:", error)
-    res.status(500).json({ error: "Error al crear la entrada" })
-  }
+  const entry = await diaryService.crearEntradaDiarioService(
+    req.user!.user_id,
+    req.body
+  )
+  res.status(201).json(entry)
 }
 
-/**
- * Obtiene una entrada específica del diario.
- */
 export const getMyDiary = async (req: Request, res: Response) => {
-  const userId = req.user!.user_id
-  try {
-    const diary = await buildDiaryResponse(userId)
-    if (!diary)
-      return res
-        .status(404)
-        .json({ error: "No se encontraron entradas de diario" })
-    res.json({ diary })
-  } catch (error) {
-    console.error("Error getMyDiary:", error)
-    res.status(500).json({ error: "Error al obtener el diario" })
-  }
+  const diario = await diaryService.obtenerDiarioService(req.user!.user_id)
+  res.json({ diary: diario })
 }
 
 export const getDiaryUser = async (req: Request, res: Response) => {
-  const { id_user } = req.params
-  try {
-    const diary = await buildDiaryResponse(Number(id_user))
-    if (!diary)
-      return res
-        .status(404)
-        .json({ error: "No se encontraron entradas de diario" })
-    res.json({ diary })
-  } catch (error) {
-    console.error("Error getMyDiary:", error)
-    res.status(500).json({ error: "Error al obtener el diario" })
-  }
+  const diario = await diaryService.obtenerDiarioService(
+    Number(req.params.id_user)
+  )
+  res.json({ diary: diario })
 }
 
 export const removeDiary = async (req: Request, res: Response) => {
-  try {
-    const userId = req.user!.user_id
-    const { id } = req.params
-    const entry = await prisma.diary_entries.findUnique({
-      where: { id: Number(id) },
-    })
-    if (!entry) return res.status(404).json({ error: "No encontrada" })
-    if (entry.user_id !== userId)
-      return res.status(403).json({ error: "Prohibido" })
-    await prisma.diary_entries.delete({ where: { id: Number(id) } })
-    res.json({ message: "Eliminada exitosamente" })
-  } catch (error) {
-    console.error("Error removeDiary:", error)
-    res.status(500).json({ error: "Error al eliminar la entrada" })
-  }
+  await diaryService.eliminarEntradaDiarioService(
+    req.user!.user_id,
+    Number(req.params.id)
+  )
+  res.json({ message: "Eliminada exitosamente" })
 }
+

@@ -7,6 +7,12 @@ import {
   actualizarAvatar,
   eliminarCuenta,
 } from "../controllers/SettingsController.js"
+import { validarBody } from "../middlewares/validation.middleware.js"
+import {
+  actualizarPerfilSchema,
+  actualizarAuthSchema,
+  actualizarAvatarSchema,
+} from "../schemas/settings.js"
 
 /**
  * @swagger
@@ -78,7 +84,7 @@ const router = Router()
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
  */
-router.patch("/", middlewareAutenticacion, manejadorAsincrono(actualizarPerfil)) // Panel principal del settings donde se podra actualizar todos los campos del user
+router.patch("/", middlewareAutenticacion, validarBody(actualizarPerfilSchema), manejadorAsincrono(actualizarPerfil)) // Panel principal del settings donde se podra actualizar todos los campos del user
 router.delete("/", middlewareAutenticacion, manejadorAsincrono(eliminarCuenta))
 
 /**
@@ -132,6 +138,7 @@ router.delete("/", middlewareAutenticacion, manejadorAsincrono(eliminarCuenta))
 router.patch(
   "/auth",
   middlewareAutenticacion,
+  validarBody(actualizarAuthSchema),
   manejadorAsincrono(actualizarAuth)
 )
 
@@ -181,109 +188,7 @@ router.patch(
 router.patch(
   "/avatar",
   middlewareAutenticacion,
-  manejadorAsincrono(actualizarAvatar)
-)
-
-/**
- * @swagger
- * /settings/auth:
- *   patch:
- *     summary: Cambiar contraseña
- *     tags: [Ajustes]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [password_actual, password_nueva, password_confirmacion]
- *             properties:
- *               password_actual:
- *                 type: string
- *               password_nueva:
- *                 type: string
- *               password_confirmacion:
- *                 type: string
- *           example:
- *             password_actual: "miContraseña123"
- *             password_nueva: "nuevaContraseña456"
- *             password_confirmacion: "nuevaContraseña456"
- *     responses:
- *       200:
- *         description: Contraseña actualizada correctamente
- *         content:
- *           application/json:
- *             example:
- *               message: "Contraseña actualizada correctamente"
- *       400:
- *         description: Campos requeridos o contraseñas no coinciden
- *         content:
- *           application/json:
- *             example:
- *               message: "Las contraseñas no coinciden"
- *       401:
- *         description: Contraseña actual incorrecta
- *         content:
- *           application/json:
- *             example:
- *               message: "Contraseña actual incorrecta"
- *       404:
- *         $ref: '#/components/responses/NotFound'
- */
-router.patch(
-  "/auth",
-  middlewareAutenticacion,
-  manejadorAsincrono(actualizarAuth)
-)
-
-/**
- * @swagger
- * /settings/avatar:
- *   patch:
- *     summary: Actualizar avatar
- *     tags: [Ajustes]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [avatar]
- *             properties:
- *               avatar:
- *                 type: string
- *                 description: Imagen en base64 (JPG, PNG o WEBP, máx 5MB)
- *           example:
- *             avatar: "data:image/jpeg;base64,/9j/4AAQSkZJRgAB..."
- *     responses:
- *       200:
- *         description: Avatar actualizado correctamente
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/UsuarioPublico'
- *             example:
- *               id: 1
- *               username: "josue"
- *               email: "josue@cinevault.com"
- *               bio: null
- *               avatar_url: "https://res.cloudinary.com/doznr2qm4/image/upload/v1772616373/cinevault/avatars/user_1.webp"
- *       400:
- *         description: Formato inválido o imagen demasiado grande
- *         content:
- *           application/json:
- *             example:
- *               message: "La imagen no puede superar los 5MB"
- *       401:
- *         $ref: '#/components/responses/Unauthorized'
- */
-router.patch(
-  "/avatar",
-  middlewareAutenticacion,
+  validarBody(actualizarAvatarSchema),
   manejadorAsincrono(actualizarAvatar)
 )
 
