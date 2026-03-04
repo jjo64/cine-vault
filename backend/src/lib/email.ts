@@ -12,7 +12,7 @@ export const enviarCorreoVerificacion = async (
   const link = `${process.env.FRONTEND_URL}/verify-email?token=${token}`
 
   await resend.emails.send({
-    from: "CineVault <noreply@cinevault.art>",
+    from: "CineVault <noreply@mail.cinevault.art>",
     to: email,
     subject: "Verifica tu cuenta",
     html: `
@@ -33,7 +33,7 @@ export const enviarCorreoResetPassword = async (
   const link = `${process.env.FRONTEND_URL}/reset-password?token=${token}`
 
   await resend.emails.send({
-    from: "CineVault <noreply@cinevault.art>",
+    from: "CineVault <noreply@mail.cinevault.art>",
     to: email,
     subject: "Restablecer contraseña",
     html: `
