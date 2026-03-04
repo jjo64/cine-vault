@@ -1,5 +1,7 @@
 import swaggerJsdoc from "swagger-jsdoc"
 
+const esProduccion = process.env.NODE_ENV === "production"
+
 const options = {
   definition: {
     openapi: "3.1.0",
@@ -151,7 +153,9 @@ const options = {
       },
     },
   },
-  apis: ["./src/routes/*.ts"],
+  apis: esProduccion
+    ? ["./dist/src/routes/*.js"]
+    : ["./src/routes/*.ts"],
 }
 
 export const swaggerSpec = swaggerJsdoc(options)
