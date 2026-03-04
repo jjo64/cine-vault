@@ -4,7 +4,10 @@ import { Response } from "express"
 import bcrypt from "bcrypt"
 import cloudinary from "../config/claudinary.config.js"
 
-export const actualizarPerfil = async (req: SolicitudAutenticada, res: Response) => {
+export const actualizarPerfil = async (
+  req: SolicitudAutenticada,
+  res: Response
+) => {
   interface perfilActualizar {
     username?: string
     email?: string
@@ -37,13 +40,18 @@ export const actualizarPerfil = async (req: SolicitudAutenticada, res: Response)
       return res.status(404).json({ message: "Usuario no encontrado" })
     }
     if (error.code === "P2002") {
-      return res.status(409).json({ message: "El username o email ya está en uso" })
+      return res
+        .status(409)
+        .json({ message: "El username o email ya está en uso" })
     }
     throw error // que lo capture el manejadorAsincrono
   }
 }
 
-export const actualizarAuth = async (req: SolicitudAutenticada, res: Response) => {
+export const actualizarAuth = async (
+  req: SolicitudAutenticada,
+  res: Response
+) => {
   interface authActualizar {
     password_actual?: string
     password_nueva?: string
@@ -100,14 +108,18 @@ export const actualizarAvatar = async (
   const formatosPermitidos = ["image/jpeg", "image/png", "image/webp"]
   const match = avatar.match(/^data:(.+);base64,/)
   if (!match || !formatosPermitidos.includes(match[1])) {
-    return res.status(400).json({ message: "Formato no permitido. Usa JPG, PNG o WEBP" })
+    return res
+      .status(400)
+      .json({ message: "Formato no permitido. Usa JPG, PNG o WEBP" })
   }
 
   // Validar tamaño máximo 5MB
   const tamanoBytes = (avatar.length * 3) / 4
   const maxBytes = 5 * 1024 * 1024
   if (tamanoBytes > maxBytes) {
-    return res.status(400).json({ message: "La imagen no puede superar los 5MB" })
+    return res
+      .status(400)
+      .json({ message: "La imagen no puede superar los 5MB" })
   }
 
   // Subir original a Cloudinary sin transformaciones
@@ -132,7 +144,10 @@ export const actualizarAvatar = async (
   res.status(200).json(user)
 }
 
-export const eliminarCuenta = async (req: SolicitudAutenticada, res: Response) => {
+export const eliminarCuenta = async (
+  req: SolicitudAutenticada,
+  res: Response
+) => {
   const user_id = req.user!.user_id
   const user = await prisma.users.delete({
     where: { id: user_id },

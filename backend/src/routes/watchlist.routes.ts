@@ -112,7 +112,11 @@ router.get("/:id_user", manejadorAsincrono(getWatchlistByUser)) // obtener la wa
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
  */
-router.post("/", middlewareAutenticacion, manejadorAsincrono(addMovieToWatchlist)) // añadir película a la watchlist
+router.post(
+  "/",
+  middlewareAutenticacion,
+  manejadorAsincrono(addMovieToWatchlist)
+) // añadir película a la watchlist
 
 /**
  * @swagger
@@ -141,6 +145,10 @@ router.post("/", middlewareAutenticacion, manejadorAsincrono(addMovieToWatchlist
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.delete("/:movie_id", middlewareAutenticacion, manejadorAsincrono(removeMovieFromWatchlist)) // eliminar película de la watchlist
+router.delete(
+  "/:movie_id",
+  middlewareAutenticacion,
+  manejadorAsincrono(removeMovieFromWatchlist)
+) // eliminar película de la watchlist
 
 export default router

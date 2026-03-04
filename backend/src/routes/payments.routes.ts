@@ -59,7 +59,11 @@ const router = Router()
  *             example:
  *               error: "Usuario no encontrado"
  */
-router.post("/create-checkout-session", middlewareAutenticacion, manejadorAsincrono(createCheckoutSession))
+router.post(
+  "/create-checkout-session",
+  middlewareAutenticacion,
+  manejadorAsincrono(createCheckoutSession)
+)
 
 /**
  * @swagger

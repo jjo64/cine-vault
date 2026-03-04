@@ -129,7 +129,11 @@ router.delete("/", middlewareAutenticacion, manejadorAsincrono(eliminarCuenta))
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.patch("/auth", middlewareAutenticacion, manejadorAsincrono(actualizarAuth))
+router.patch(
+  "/auth",
+  middlewareAutenticacion,
+  manejadorAsincrono(actualizarAuth)
+)
 
 /**
  * @swagger
@@ -174,6 +178,10 @@ router.patch("/auth", middlewareAutenticacion, manejadorAsincrono(actualizarAuth
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
  */
-router.patch("/avatar", middlewareAutenticacion, manejadorAsincrono(actualizarAvatar))
+router.patch(
+  "/avatar",
+  middlewareAutenticacion,
+  manejadorAsincrono(actualizarAvatar)
+)
 
 export default router
