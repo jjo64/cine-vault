@@ -13,26 +13,355 @@ import { Router } from "express"
 import { middlewareAutenticacion } from "../middlewares/auth.middlewares.js"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
 
+/**
+ * @swagger
+ * tags:
+ *   name: Reseñas
+ *   description: Gestión de reseñas de películas
+ */
+
 const router = Router()
 
 // Rutas públicas
+/**
+ * @swagger
+ * /reviews:
+ *   get:
+ *     summary: Obtener todas mis reseñas
+ *     tags: [Reseñas]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de reseñas
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Resena'
+ *             example:
+ *               - user_id: 1
+ *                 movie_id: 1
+ *                 content: "Una obra maestra del cine"
+ *                 rating: 4.5
+ *                 likes: 12
+ *                 created_at: "2026-03-03T11:06:11.000Z"
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
 router.get("/", middlewareAutenticacion, manejadorAsincrono(getReviews)) // Obtener todas mis reseñas
+
+/**
+ * @swagger
+ * /reviews/user/{userId}:
+ *   get:
+ *     summary: Obtener las reseñas de un usuario
+ *     tags: [Reseñas]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 1
+ *     responses:
+ *       200:
+ *         description: Lista de reseñas del usuario
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Resena'
+ *             example:
+ *               - user_id: 1
+ *                 movie_id: 1
+ *                 content: "Una obra maestra del cine"
+ *                 rating: 4.5
+ *                 likes: 12
+ *                 created_at: "2026-03-03T11:06:11.000Z"
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
 router.get("/user/:userId", manejadorAsincrono(getReviewsByUserId)) // Obtener las reseñas de un usuario
+
+/**
+ * @swagger
+ * /reviews/movie/{movieId}:
+ *   get:
+ *     summary: Obtener las reseñas de una película
+ *     tags: [Reseñas]
+ *     parameters:
+ *       - in: path
+ *         name: movieId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 550
+ *     responses:
+ *       200:
+ *         description: Lista de reseñas de la película
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Resena'
+ *             example:
+ *               - user_id: 1
+ *                 movie_id: 550
+ *                 content: "Una obra maestra del cine"
+ *                 rating: 4.5
+ *                 likes: 12
+ *                 created_at: "2026-03-03T11:06:11.000Z"
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
 router.get("/movie/:movieId", manejadorAsincrono(getReviewsByMovieId)) // Obtener las reseñas de una pelicula
 
 // Reseñas (privadas)
+/**
+ * @swagger
+ * /reviews:
+ *   post:
+ *     summary: Crear una review
+ *     tags: [Reseñas]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [movie_id, rating]
+ *             properties:
+ *               movie_id:
+ *                 type: integer
+ *               rating:
+ *                 type: number
+ *               content:
+ *                 type: string
+ *           example:
+ *             movie_id: 1
+ *             rating: 4.5
+ *             content: "Una obra maestra del cine"
+ *     responses:
+ *       201:
+ *         description: Reseña creada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Resena'
+ *             example:
+ *               id: 1
+ *               user_id: 1
+ *               movie_id: 1
+ *               content: "Una obra maestra del cine"
+ *               rating: 4.5
+ *               likes: 0
+ *               created_at: "2026-03-04T10:00:00.000Z"
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
 router.post("/", middlewareAutenticacion, manejadorAsincrono(addReview)) // Crear una review
+
+/**
+ * @swagger
+ * /reviews/{reviewId}:
+ *   patch:
+ *     summary: Actualizar una review
+ *     tags: [Reseñas]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: reviewId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 1
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           example:
+ *             rating: 5
+ *             content: "Después de verla de nuevo, es perfecta"
+ *     responses:
+ *       200:
+ *         description: Reseña actualizada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Resena'
+ *             example:
+ *               id: 1
+ *               user_id: 1
+ *               movie_id: 1
+ *               content: "Después de verla de nuevo, es perfecta"
+ *               rating: 5
+ *               likes: 12
+ *               created_at: "2026-03-04T10:00:00.000Z"
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *   delete:
+ *     summary: Eliminar una review
+ *     tags: [Reseñas]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: reviewId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 1
+ *     responses:
+ *       200:
+ *         description: Reseña eliminada
+ *         content:
+ *           application/json:
+ *             example:
+ *               id: 1
+ *               user_id: 1
+ *               movie_id: 1
+ *               content: "Una obra maestra del cine"
+ *               rating: 4.5
+ *               likes: 12
+ *               created_at: "2026-03-04T10:00:00.000Z"
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
 router.patch("/:reviewId", middlewareAutenticacion, manejadorAsincrono(updateReview)) // Actualizar una review
 router.delete("/:reviewId", middlewareAutenticacion, manejadorAsincrono(removeReview)) // Eliminar una review
 
 // Likes (privadas)
+/**
+ * @swagger
+ * /reviews/{reviewId}/like:
+ *   post:
+ *     summary: Dar like a una review
+ *     tags: [Reseñas]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: reviewId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 1
+ *     responses:
+ *       201:
+ *         description: Like añadido
+ *         content:
+ *           application/json:
+ *             example:
+ *               review:
+ *                 id: 1
+ *                 likes: 13
+ *               like:
+ *                 id: 1
+ *                 user_id: 1
+ *                 review_id: 1
+ *                 created_at: "2026-03-04T10:00:00.000Z"
+ *       400:
+ *         description: Ya has dado like a esta reseña
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "Ya has dado like a esta reseña"
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *   delete:
+ *     summary: Quitar like a una review
+ *     tags: [Reseñas]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: reviewId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 1
+ *     responses:
+ *       200:
+ *         description: Like eliminado
+ *         content:
+ *           application/json:
+ *             example:
+ *               review:
+ *                 id: 1
+ *                 likes: 12
+ *               like:
+ *                 id: 1
+ *                 user_id: 1
+ *                 review_id: 1
+ *       400:
+ *         description: No has dado like a esta reseña
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "No has dado like a esta reseña"
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
 router.post("/:reviewId/like", middlewareAutenticacion, manejadorAsincrono(likeReview)) // Dar like a una review
 router.delete("/:reviewId/like", middlewareAutenticacion, manejadorAsincrono(removeLikeReview)) // Quitar like a una review
 
 // Reportes (privadas)
+/**
+ * @swagger
+ * /reviews/{reviewId}/report:
+ *   post:
+ *     summary: Reportar una review
+ *     tags: [Reseñas]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: reviewId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 1
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           example:
+ *             reason: "Contenido inapropiado"
+ *     responses:
+ *       200:
+ *         description: Reseña reportada
+ *         content:
+ *           application/json:
+ *             example:
+ *               id: 1
+ *               reporter_id: 1
+ *               review_id: 1
+ *               reason: "Contenido inapropiado"
+ *               status: "pending"
+ *               created_at: "2026-03-04T10:00:00.000Z"
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
 router.post("/:reviewId/report", middlewareAutenticacion, manejadorAsincrono(reportReview)) // Reportar una review
 
 // Comentarios (privados) — cuando los implementes
 // router.post("/:reviewId/comment", middlewareAutenticacion, manejadorAsincrono(addComment))
 // router.delete("/:reviewId/comment/:commentId", middlewareAutenticacion, manejadorAsincrono(removeComment))
+
 export default router

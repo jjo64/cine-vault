@@ -18,6 +18,8 @@ import rutasBusqueda from "./routes/search.routes.js"
 import rutasPagos from "./routes/payments.routes.js"
 import rutasRbac from "./routes/rbac.routes.js"
 import rutasInformacion from "./routes/information.routes.js"
+import rutasFavorities from "./routes/favorities.routes.js"
+import rutasSettings from "./routes/settings.routes.js"
 
 // Middlewares
 import { manejadorErrores } from "./middlewares/error.middlewares.js"
@@ -28,13 +30,14 @@ import { limpiarUsuariosNoVerificados } from "./lib/jobs.js"
 
 // Swagger & Documentación
 import swaggerUi from "swagger-ui-express"
-import fs from "fs"
-import path from "path"
-import yaml from "yaml"
-import { fileURLToPath } from "url"
+//import fs from "fs"
+//import path from "path"
+//import yaml from "yaml"
+//import { fileURLToPath } from "url"
+import { swaggerSpec } from "../docs/swagger.js"
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+//const __filename = fileURLToPath(import.meta.url)
+//const __dirname = path.dirname(__filename)
 
 // Configuración inicial
 const app = express()
@@ -93,18 +96,19 @@ app.get("/", (req, res) => {
 /* ==========================================================================   
    DOCUMENTACIÓN API (OpenAPI)
    ========================================================================== */
-try {
-  const swaggerPath = path.join(__dirname, "../docs", "openapi.yaml")
-  const swaggerFile = fs.readFileSync(swaggerPath, "utf8")
-  const swaggerDocument = yaml.parse(swaggerFile)
+// try {
+//   const swaggerPath = path.join(__dirname, "../docs", "openapi.yaml")
+//   const swaggerFile = fs.readFileSync(swaggerPath, "utf8")
+//   const swaggerDocument = yaml.parse(swaggerFile)
 
-  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument))
-} catch (error) {
-  console.warn(
-    "No se pudo cargar la documentación Swagger OpenAPI en /api-docs. Verifica que backend/docs/openapi.yaml exista."
-  )
-  console.error(error)
-}
+//   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument))
+// } catch (error) {
+//   console.warn(
+//     "No se pudo cargar la documentación Swagger OpenAPI en /api-docs. Verifica que backend/docs/openapi.yaml exista."
+//   )
+//   console.error(error)
+// }
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 app.use("/api/auth", rutasAuth)
 app.use("/api/users", rutasUsuarios)
 app.use("/api/movies", rutasPeliculas)
@@ -115,6 +119,8 @@ app.use("/api/reviews", rutasResenas)
 app.use("/api/payments", rutasPagos)
 app.use("/api/rbac", rutasRbac)
 app.use("/api/information", rutasInformacion)
+app.use("/api/favorites", rutasFavorities)
+app.use("/api/settings", rutasSettings)
 
 /* ==========================================================================
    MIDDLEWARE DE MANEJO DE ERRORES (SIEMPRE AL FINAL)

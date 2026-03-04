@@ -9,42 +9,42 @@
 ```mermaid
 graph TD
   subgraph Publico
-    L[Landing / Home invitado] --> A[Login / Registro (modal)]
-    L --> B[Explorar listas (upcoming, top-rated, popular)]
-    L --> C[Buscar]
-    C --> D[Resultados de búsqueda]
-    D --> E[Detalle de película]
+    L["Landing / Home invitado"] --> A["Login / Registro (modal)"]
+    L --> B["Explorar listas (upcoming, top-rated, popular)"]
+    L --> C["Buscar"]
+    C --> D["Resultados de búsqueda"]
+    D --> E["Detalle de película"]
   end
 
   subgraph Autenticado
-    H[Home logueado / Feed]
-    H --> I[Ver watchlist]
-    H --> J[Ver diario]
-    H --> K[Actividad de amigos]
+    H["Home logueado / Feed"]
+    H --> I["Ver watchlist"]
+    H --> J["Ver diario"]
+    H --> K["Actividad de amigos"]
     E --> I
     E --> J
-    E --> M[Crear reseña]
-    E --> N[Marcar like / reportar reseña]
-    H --> O[Perfil propio]
-    O --> P[Seguidores / Siguiendo]
-    O --> Q[Ajustes de cuenta]
+    E --> M["Crear reseña"]
+    E --> N["Marcar like / reportar reseña"]
+    H --> O["Perfil propio"]
+    O --> P["Seguidores / Siguiendo"]
+    O --> Q["Ajustes de cuenta"]
   end
 
   subgraph Social
-    O --> R[Seguir usuarios]
-    R --> S[Ver perfil ajeno]
-    S --> T[Watchlist ajena]
-    S --> U[Diario ajeno]
-    S --> V[Reseñas del usuario]
+    O --> R["Seguir usuarios"]
+    R --> S["Ver perfil ajeno"]
+    S --> T["Watchlist ajena"]
+    S --> U["Diario ajeno"]
+    S --> V["Reseñas del usuario"]
   end
 
   subgraph Pagos
-    H --> W[Upgrade membresía]
-    W --> X[Checkout]
-    X --> Y[Confirmación]
+    H --> W["Upgrade membresía"]
+    W --> X["Checkout"]
+    X --> Y["Confirmación"]
   end
 
-  Admin[Panel admin (RBAC)] --> Z[Reportes / roles / pagos]
+  Admin["Panel admin (RBAC)"] --> Z["Reportes / roles / pagos"]
 ```
 
 ## User flow principal
