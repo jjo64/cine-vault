@@ -4,6 +4,7 @@ import cors from "cors"
 import helmet from "helmet"
 import cookieParser from "cookie-parser"
 import cron from "node-cron"
+import { createServer } from "http"
 import "./config/passport.config.js"
 import passport from "passport"
 
@@ -20,6 +21,7 @@ import rutasRbac from "./routes/rbac.routes.js"
 import rutasInformacion from "./routes/information.routes.js"
 import rutasFavorities from "./routes/favorities.routes.js"
 import rutasSettings from "./routes/settings.routes.js"
+import rutasNotificaciones from "./routes/notifications.routes.js"
 
 // Middlewares
 import { manejadorErrores } from "./middlewares/error.middlewares.js"
@@ -27,6 +29,7 @@ import { limitadorGlobal } from "./middlewares/rateLimit.middleware.js"
 
 // Importación de helpers
 import { limpiarUsuariosNoVerificados } from "./lib/jobs.js"
+import { initSocketIO } from "./config/socketio.config.js"
 
 // Swagger & Documentación
 import swaggerUi from "swagger-ui-express"
@@ -41,6 +44,8 @@ import { swaggerSpec } from "../docs/swagger.js"
 
 // Configuración inicial
 const app = express()
+const httpServer = createServer(app)
+initSocketIO(httpServer)
 app.set("trust proxy", 1)
 const PUERTO = process.env.PORT || 3000
 if (!process.env.JWT_SECRET)
@@ -122,6 +127,7 @@ app.use("/api/rbac", rutasRbac)
 app.use("/api/information", rutasInformacion)
 app.use("/api/favorites", rutasFavorities)
 app.use("/api/settings", rutasSettings)
+app.use("/api/notifications", rutasNotificaciones)
 
 /* ==========================================================================
    MIDDLEWARE DE MANEJO DE ERRORES (SIEMPRE AL FINAL)
@@ -133,7 +139,7 @@ app.use(manejadorErrores)
    INICIO DEL SERVIDOR
    ========================================================================== */
 
-app.listen(PUERTO, () => {
+httpServer.listen(PUERTO, () => {
   console.log(`\nServidor corriendo en: http://localhost:${PUERTO}`)
   console.log(
     `Frontend permitido: ${process.env.FRONTEND_URL || "No definido"}\n`
