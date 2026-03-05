@@ -1,13 +1,4 @@
-import { Redis } from "ioredis"
-
-// Inicializamos el cliente de Redis (Asegúrate de tener Redis corriendo o usar un host externo)
-const redis = new Redis({
-  host: process.env.REDIS_HOST || "127.0.0.1",
-  port: Number(process.env.REDIS_PORT) || 6379,
-  // password: process.env.REDIS_PASSWORD
-})
-
-redis.on("error", (err) => console.error("Redis Error:", err))
+import { redis } from "../lib/redis.js"
 
 /**
  * Servicio de Seguridad y Comportamiento

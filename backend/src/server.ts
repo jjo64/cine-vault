@@ -78,6 +78,8 @@ app.use(
 )
 
 app.use(limitadorGlobal)
+// Stripe Webhook necesita el cuerpo raw para verificar la firma
+app.use("/api/payments/webhook", express.raw({ type: "application/json" }))
 app.use(express.json({ limit: "10mb" })) // Parseo de JSON body con límite
 app.use(cookieParser()) // Parseo de cookies
 app.disable("x-powered-by") // Ocultar tecnología del servidor por seguridad

@@ -7,6 +7,10 @@ export interface ISessionRepository {
   deleteById(id: string): Promise<void>
   deleteManyByUser(userId: number): Promise<number>
   deleteManyByUserExcept(userId: number, keepSessionId: string): Promise<number>
+  findByUser(userId: number): Promise<
+    Pick<sessions, "id" | "user_agent" | "ip_address" | "created_at" | "expires_at">[]
+  >
+  findById(id: string): Promise<sessions | null>
 }
 
 export class SessionRepository implements ISessionRepository {
@@ -40,6 +44,24 @@ export class SessionRepository implements ISessionRepository {
       where: { user_id: userId, NOT: { id: keepSessionId } },
     })
     return result.count
+  }
+
+  async findByUser(userId: number) {
+    return prisma.sessions.findMany({
+      where: { user_id: userId },
+      select: {
+        id: true,
+        user_agent: true,
+        ip_address: true,
+        created_at: true,
+        expires_at: true,
+      },
+      orderBy: { created_at: "desc" },
+    })
+  }
+
+  async findById(id: string): Promise<sessions | null> {
+    return prisma.sessions.findUnique({ where: { id } })
   }
 }
 

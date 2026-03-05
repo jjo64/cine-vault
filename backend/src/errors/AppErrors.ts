@@ -58,3 +58,10 @@ export class GoneError extends ApplicationError {
     super(message, 410, "GONE")
   }
 }
+
+/** 429 - Demasiadas solicitudes */
+export class TooManyRequestsError extends ApplicationError {
+  constructor(message = "Demasiadas solicitudes. Intenta nuevamente luego") {
+    super(message, 429, "TOO_MANY_REQUESTS")
+  }
+}

@@ -39,3 +39,10 @@ export const getUnreadCount = async (req: Request, res: Response) => {
   res.json({ count })
 }
 
+export const getPending = async (req: Request, res: Response) => {
+  const pendientes = await notifService.entregarPendientesService(
+    req.user!.user_id
+  )
+  res.json({ pending: pendientes })
+}
+

@@ -12,7 +12,7 @@ export const crearEntradaDiarioSchema = z.object({
     .positive("movie_id debe ser positivo"),
   watched_date: z
     .string()
-    .datetime({ message: "watched_date debe ser una fecha ISO 8601 válida" })
+    .date({ message: "watched_date debe ser YYYY-MM-DD" })
     .optional(),
   notes: z
     .string()

@@ -49,8 +49,11 @@ export const reenviarVerificacion = async (req: Request, res: Response) => {
 export const renovarToken = async (req: Request, res: Response) => {
   const token = req.cookies.refresh_token
   if (!token) throw new UnauthorizedError("No se proporcionó refresh token")
-  const tokenAcceso = await authService.renovarTokenService(token)
-  res.json({ accessToken: tokenAcceso })
+  const { accessToken, refreshToken } = await authService.renovarTokenService(
+    token
+  )
+  res.cookie("refresh_token", refreshToken, COOKIE_OPTIONS)
+  res.json({ accessToken })
 }
 
 export const cerrarSesion = async (req: Request, res: Response) => {
@@ -137,4 +140,16 @@ export const revocarSesiones = async (req: Request, res: Response) => {
   await authService.revocarSesionesService(req.user!.user_id)
   res.clearCookie("refresh_token")
   res.json({ message: "Todas las sesiones han sido cerradas" })
+}
+
+export const listarSesiones = async (req: Request, res: Response) => {
+  const sesiones = await authService.listarSesionesService(req.user!.user_id)
+  res.json({ sessions: sesiones })
+}
+
+export const revocarSesion = async (req: Request, res: Response) => {
+  const { id } = req.params
+  const sessionId = Array.isArray(id) ? id[0] : id
+  await authService.revocarSesionService(req.user!.user_id, sessionId)
+  res.json({ message: "Sesión revocada" })
 }

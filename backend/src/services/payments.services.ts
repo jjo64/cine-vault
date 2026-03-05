@@ -2,6 +2,7 @@ import "dotenv/config"
 import Stripe from "stripe"
 import { paymentsRepository } from "../repositories/PaymentsRepository.js"
 import { NotFoundError, ValidationError } from "../errors/AppErrors.js"
+import { redis } from "../lib/redis.js"
 
 /* ==========================================================================
    PAYMENTS SERVICE
@@ -48,9 +49,33 @@ export async function createCheckoutSessionService(
       userId: usuario.id.toString(),
       plan,
     },
+    payment_intent_data: {
+      metadata: {
+        userId: usuario.id.toString(),
+        plan,
+      },
+    },
   })
 
   return sesion.url!
+}
+
+export async function createPortalSessionService(userId: number): Promise<string> {
+  const sub = await paymentsRepository.findSubscriptionByUser(userId)
+  if (!sub) throw new NotFoundError("No tienes una suscripción activa")
+
+  const stripeSubId = sub.provider_subscription_id
+  if (!stripeSubId) throw new ValidationError("Suscripción sin ID de Stripe")
+
+  const stripeSub = await stripe.subscriptions.retrieve(stripeSubId)
+  const customerId = (stripeSub as any).customer as string
+  if (!customerId) throw new ValidationError("Stripe no devolvió customer")
+
+  const portal = await stripe.billingPortal.sessions.create({
+    customer: customerId,
+    return_url: `${process.env.FRONTEND_URL}/account`,
+  })
+  return portal.url
 }
 
 /**
@@ -72,6 +97,16 @@ export async function processWebhookEventService(
   } catch {
     throw new ValidationError("Webhook inválido")
   }
+
+  // Idempotencia básica por event_id (24h)
+  const seen = await redis.set(
+    `stripe:event:${event.id}`,
+    "1",
+    "EX",
+    60 * 60 * 24,
+    "NX"
+  )
+  if (seen !== "OK") return
 
   switch (event.type) {
     // Pago inicial completado → crear suscripción y pago
@@ -107,8 +142,52 @@ export async function processWebhookEventService(
 
       const nuevaFechaFin = new Date()
       nuevaFechaFin.setMonth(nuevaFechaFin.getMonth() + 1)
+      const sub = await paymentsRepository.findSubscriptionByProviderId(stripeSubId)
+      if (sub) {
+        await paymentsRepository.renewSubscription(stripeSubId, nuevaFechaFin)
+        await paymentsRepository.recordPayment({
+          userId: sub.user_id,
+          subscriptionId: sub.id,
+          amount: (invoice.amount_paid ?? 0) / 100,
+          currency: invoice.currency ?? "eur",
+          providerPaymentId: (invoice as any).payment_intent ?? invoice.id,
+          status: "paid",
+        })
+      }
+      break
+    }
 
-      await paymentsRepository.renewSubscription(stripeSubId, nuevaFechaFin)
+    case "invoice.payment_failed": {
+      const invoice = event.data.object as Stripe.Invoice
+      const stripeSubId = (invoice as any).subscription as string
+      const sub = await paymentsRepository.findSubscriptionByProviderId(stripeSubId)
+      if (sub) {
+        await paymentsRepository.updateSubscriptionStatus(stripeSubId, "expired")
+        await paymentsRepository.recordPayment({
+          userId: sub.user_id,
+          subscriptionId: sub.id,
+          amount: (invoice.amount_due ?? 0) / 100,
+          currency: invoice.currency ?? "eur",
+          providerPaymentId: (invoice as any).payment_intent ?? invoice.id,
+          status: "failed",
+        })
+      }
+      break
+    }
+
+    case "customer.subscription.updated": {
+      const subscription = event.data.object as Stripe.Subscription & {
+        current_period_end?: number
+      }
+      const endDate = subscription.current_period_end
+        ? new Date(subscription.current_period_end * 1000)
+        : undefined
+      const status = mapStripeStatus(subscription.status)
+      await paymentsRepository.updateSubscriptionStatus(
+        subscription.id,
+        status,
+        endDate
+      )
       break
     }
 
@@ -122,4 +201,13 @@ export async function processWebhookEventService(
     default:
       console.log(`Evento Stripe no manejado: ${event.type}`)
   }
+}
+
+const mapStripeStatus = (
+  status: Stripe.Subscription.Status
+): "active" | "cancelled" | "expired" => {
+  if (status === "canceled") return "cancelled"
+  if (status === "unpaid" || status === "past_due" || status === "incomplete_expired")
+    return "expired"
+  return "active"
 }

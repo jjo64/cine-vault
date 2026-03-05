@@ -20,6 +20,12 @@ export interface IDiaryRepository {
   findById(id: number): Promise<diary_entries | null>
   create(userId: number, data: CrearEntradaDiarioDTO): Promise<diary_entries>
   delete(id: number): Promise<void>
+  findByUserMovieDate(
+    userId: number,
+    movieId: number,
+    watchedDate: Date
+  ): Promise<diary_entries | null>
+  countByMovie(movieId: number): Promise<number>
   buildRichResponse(
     userId: number
   ): Promise<RichDiaryEntry[] | null>
@@ -61,8 +67,22 @@ export class DiaryRepository implements IDiaryRepository {
     })
   }
 
+  async findByUserMovieDate(userId: number, movieId: number, watchedDate: Date) {
+    return prisma.diary_entries.findFirst({
+      where: {
+        user_id: userId,
+        movie_id: movieId,
+        watched_date: watchedDate,
+      },
+    })
+  }
+
   async delete(id: number) {
     await prisma.diary_entries.delete({ where: { id } })
+  }
+
+  async countByMovie(movieId: number) {
+    return prisma.diary_entries.count({ where: { movie_id: movieId } })
   }
 
   /**

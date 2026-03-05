@@ -1,6 +1,7 @@
 import { Router } from "express"
 import {
   createCheckoutSession,
+  createPortalSession,
   stripeWebhook,
 } from "../controllers/PaymentsController.js"
 import { middlewareAutenticacion } from "../middlewares/auth.middlewares.js"
@@ -63,6 +64,12 @@ router.post(
   "/create-checkout-session",
   middlewareAutenticacion,
   manejadorAsincrono(createCheckoutSession)
+)
+
+router.post(
+  "/portal-session",
+  middlewareAutenticacion,
+  manejadorAsincrono(createPortalSession)
 )
 
 /**

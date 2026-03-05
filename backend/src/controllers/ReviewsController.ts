@@ -2,6 +2,8 @@ import { Request, Response } from "express"
 import * as reviewsService from "../services/reviews.services.js"
 import { emitirNotificacionService } from "../services/notifications.services.js"
 import type { SolicitudAutenticada } from "../middlewares/auth.middlewares.js"
+import { checkIPSpike } from "../services/security.services.js"
+import { TooManyRequestsError } from "../errors/AppErrors.js"
 
 /* ==========================================================================
    CONTROLADOR DE RESEÑAS
@@ -25,6 +27,7 @@ export const getReviewsByUserId = async (req: Request, res: Response) => {
 }
 
 export const addReview = async (req: Request, res: Response) => {
+  await assertNotRateLimited(req.ip)
   const resena = await reviewsService.crearResenaService(
     req.user!.user_id,
     req.body
@@ -33,6 +36,7 @@ export const addReview = async (req: Request, res: Response) => {
 }
 
 export const removeReview = async (req: Request, res: Response) => {
+  await assertNotRateLimited(req.ip)
   await reviewsService.eliminarResenaService(
     req.user!.user_id,
     Number(req.params.reviewId)
@@ -48,6 +52,7 @@ export const getReviewsByMovieId = async (req: Request, res: Response) => {
 }
 
 export const likeReview = async (req: Request, res: Response) => {
+  await assertNotRateLimited(req.ip)
   const userId = req.user!.user_id
   const reviewId = Number(req.params.reviewId)
 
@@ -71,6 +76,7 @@ export const removeLikeReview = async (
   req: SolicitudAutenticada,
   res: Response
 ) => {
+  await assertNotRateLimited(req.ip)
   const { like, review } = await reviewsService.quitarLikeResenaService(
     req.user!.user_id,
     Number(req.params.reviewId)
@@ -79,6 +85,7 @@ export const removeLikeReview = async (
 }
 
 export const updateReview = async (req: Request, res: Response) => {
+  await assertNotRateLimited(req.ip)
   const resena = await reviewsService.actualizarResenaService(
     req.user!.user_id,
     Number(req.params.reviewId),
@@ -88,10 +95,17 @@ export const updateReview = async (req: Request, res: Response) => {
 }
 
 export const reportReview = async (req: Request, res: Response) => {
+  await assertNotRateLimited(req.ip)
   const reporte = await reviewsService.reportarResenaService(
     req.user!.user_id,
     Number(req.params.reviewId),
     req.body
   )
   res.json(reporte)
+}
+
+const assertNotRateLimited = async (ip: string) => {
+  if (await checkIPSpike(ip)) {
+    throw new TooManyRequestsError("Demasiadas acciones, intenta en unos segundos")
+  }
 }

@@ -2,11 +2,14 @@ import { consultarTMDB } from "../helpers/fetchTMDB.js"
 import { getOSet } from "../config/redis.js"
 import pMap from "p-map"
 import { Request, Response } from "express"
+import { checkIPSpike } from "../services/security.services.js"
+import { TooManyRequestsError } from "../errors/AppErrors.js"
 
 // 2 horas — las búsquedas de TMDB no cambian entre requests
 const TTL_BUSQUEDA = 60 * 60 * 2
 
 export const getSearch = async (req: Request, res: Response) => {
+  await assertNotRateLimited(req.ip)
   const q = req.query.q as string
   const pagina = String(req.query.page || "1")
 
@@ -77,6 +80,7 @@ export const getSearch = async (req: Request, res: Response) => {
 }
 
 export const getMultiSearch = async (req: Request, res: Response) => {
+  await assertNotRateLimited(req.ip)
   const datos = await consultarTMDB("search/multi", {
     query: req.query.q as string,
     ...(req.query.page && { page: req.query.page as string }),
@@ -85,6 +89,7 @@ export const getMultiSearch = async (req: Request, res: Response) => {
 }
 
 export const getPersonSearch = async (req: Request, res: Response) => {
+  await assertNotRateLimited(req.ip)
   const datos = await consultarTMDB("search/person", {
     query: req.query.q as string,
     ...(req.query.page && { page: req.query.page as string }),
@@ -93,6 +98,7 @@ export const getPersonSearch = async (req: Request, res: Response) => {
 }
 
 export const getMovieSearch = async (req: Request, res: Response) => {
+  await assertNotRateLimited(req.ip)
   const datos = await consultarTMDB("search/movie", {
     query: req.query.q as string,
     ...(req.query.page && { page: req.query.page as string }),
@@ -101,9 +107,16 @@ export const getMovieSearch = async (req: Request, res: Response) => {
 }
 
 export const getTVSearch = async (req: Request, res: Response) => {
+  await assertNotRateLimited(req.ip)
   const datos = await consultarTMDB("search/tv", {
     query: req.query.q as string,
     ...(req.query.page && { page: req.query.page as string }),
   })
   res.status(200).json(datos)
+}
+
+const assertNotRateLimited = async (ip: string) => {
+  if (await checkIPSpike(ip)) {
+    throw new TooManyRequestsError("Demasiadas solicitudes, intenta más tarde")
+  }
 }

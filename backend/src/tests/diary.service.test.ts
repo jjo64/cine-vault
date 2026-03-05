@@ -12,6 +12,7 @@ vi.mock("../repositories/DiaryRepository.js", () => ({
     findById: vi.fn(),
     delete: vi.fn(),
     buildRichResponse: vi.fn(),
+    findByUserMovieDate: vi.fn(),
   },
 }))
 
