@@ -3,7 +3,9 @@ import { Redis } from "ioredis"
 interface RedisLike {
   get(key: string): Promise<string | null>
   set(key: string, value: string, ...args: unknown[]): Promise<"OK" | null>
+  setex(key: string, seconds: number, value: string): Promise<"OK" | null>
   del(...keys: string[]): Promise<number>
+  keys(pattern: string): Promise<string[]>
   incr(key: string): Promise<number>
   expire(key: string, seconds: number): Promise<number>
   lpush(key: string, ...values: string[]): Promise<number>
@@ -50,6 +52,13 @@ const createInMemoryRedis = (): RedisLike => {
       }
       return "OK" as const
     },
+    async setex(key: string, seconds: number, value: string) {
+      kv.set(key, value)
+      if (Number.isFinite(seconds)) {
+        expiry.set(key, Date.now() + seconds * 1000)
+      }
+      return "OK" as const
+    },
     async del(...keys: string[]) {
       let removed = 0
       for (const key of keys) {
@@ -58,6 +67,12 @@ const createInMemoryRedis = (): RedisLike => {
         expiry.delete(key)
       }
       return removed
+    },
+    async keys(pattern: string) {
+      // Implementación simple con comodín *
+      const regex = new RegExp("^" + pattern.replace(/\*/g, ".*") + "$")
+      const allKeys = new Set([...kv.keys(), ...lists.keys()])
+      return Array.from(allKeys).filter((key) => regex.test(key))
     },
     async incr(key: string) {
       if (isExpired(key)) {
@@ -102,15 +117,29 @@ const createInMemoryRedis = (): RedisLike => {
   }
 }
 
-// En test usamos un mock en memoria para evitar dependencia externa.
-const redis: RedisLike =
-  process.env.NODE_ENV === "test"
-    ? createInMemoryRedis()
+// Usamos un único cliente: mock en test, ioredis en otros entornos.
+const buildRedisClient = (): RedisLike => {
+  if (process.env.NODE_ENV === "test") return createInMemoryRedis()
+
+  const redisUrl = process.env.REDIS_URL
+  const baseOpts = {
+    lazyConnect: true,
+    password: process.env.REDIS_PASSWORD,
+    username: process.env.REDIS_USERNAME,
+  }
+
+  const client = redisUrl
+    ? new Redis(redisUrl, baseOpts)
     : new Redis({
         host: process.env.REDIS_HOST || "127.0.0.1",
         port: Number(process.env.REDIS_PORT) || 6379,
+        ...baseOpts,
       })
 
-redis.on("error", (err) => console.error("Redis Error:", err))
+  client.on("error", (err) => console.error("Redis Error:", err))
+  return client
+}
+
+const redis: RedisLike = buildRedisClient()
 
 export { redis }

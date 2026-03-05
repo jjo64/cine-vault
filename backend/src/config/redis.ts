@@ -1,22 +1,17 @@
-import { Redis } from "ioredis"
+import { redis } from "../lib/redis.js"
 
 /* ==========================================================================
-   CLIENTE REDIS (ioredis)
+   CLIENTE REDIS (compartido)
    --------------------------------------------------------------------------
-   Variables de entorno requeridas:
-     REDIS_URL=redis://:password@localhost:6379
+   Reutilizamos el mismo cliente de ../lib/redis para evitar conexiones dobles
+   y manteniendo compatibilidad con el mock en memoria en test.
    ========================================================================== */
 
-export const redis = new Redis(process.env.REDIS_URL!, {
-  lazyConnect: true, // No conectar hasta llamar a .connect()
-})
-
-redis.on("error", (err) => console.error("[Redis] Error de conexión:", err))
-redis.on("connect", () => console.log("[Redis] Conectado correctamente"))
-
 export const conectarRedis = async () => {
-  if (redis.status === "wait" || redis.status === "close") {
-    await redis.connect()
+  // Solo los clientes ioredis reales tienen .status/.connect.
+  const client = redis as unknown as { status?: string; connect?: () => Promise<void> }
+  if (client?.status === "wait" || client?.status === "close") {
+    await client.connect?.()
   }
 }
 
@@ -70,3 +65,5 @@ export const CACHE_TTL = {
   listas: 60 * 5, // 5 minutos
   busqueda: 60 * 60 * 2, // 2 horas
 }
+
+export { redis } from "../lib/redis.js"

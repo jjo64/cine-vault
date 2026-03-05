@@ -1,16 +1,16 @@
 openapi: 3.1.0
 info:
   title: API CineVault
-  description: Documentación oficial de la API de CineVault. Red social para amantes del cine.
+  description: Documentación oficial de la API de CineVault (red social de cine).
   version: 1.0.0
   contact:
     name: Equipo CineVault
 
 servers:
   - url: https://api.cinevault.art/api
-    description: Servidor de Producción
+    description: Producción
   - url: http://localhost:4000/api
-    description: Servidor de desarrollo
+    description: Desarrollo local
 
 components:
   securitySchemes:
@@ -32,8 +32,53 @@ components:
         email: { type: string, format: email }
         role: { type: string, enum: [admin, editor, user] }
         avatar_url: { type: string, format: uri, nullable: true }
-        bio: { type: string, maxLength: 160, nullable: true }
+        bio: { type: string, maxLength: 300, nullable: true }
         is_verified: { type: boolean }
+    DiaryEntry:
+      type: object
+      properties:
+        id: { type: integer }
+        movie_id: { type: integer }
+        watched_date: { type: string, format: date }
+        notes: { type: string, nullable: true }
+    WatchlistItem:
+      type: object
+      properties:
+        movie_id: { type: integer }
+        tmdb_id: { type: integer, nullable: true }
+        added_at: { type: string, format: date-time }
+    Favorito:
+      type: object
+      properties:
+        movie_id: { type: integer }
+        rank_position: { type: integer, nullable: true }
+    Resena:
+      type: object
+      properties:
+        id: { type: integer }
+        user_id: { type: integer }
+        movie_id: { type: integer }
+        content: { type: string }
+        rating: { type: number, minimum: 1, maximum: 5 }
+        likes: { type: integer }
+        created_at: { type: string, format: date-time }
+    Comentario:
+      type: object
+      properties:
+        id: { type: integer }
+        review_id: { type: integer }
+        user_id: { type: integer }
+        content: { type: string }
+        created_at: { type: string, format: date-time }
+    Notificacion:
+      type: object
+      properties:
+        id: { type: integer }
+        user_id: { type: integer }
+        sender_id: { type: integer }
+        type: { type: string, enum: [like, comment, follow, report_resolved] }
+        read: { type: boolean }
+        created_at: { type: string, format: date-time }
     TokenResponse:
       type: object
       properties:
@@ -52,7 +97,7 @@ components:
       properties:
         error: { type: string }
         message: { type: string }
-        code: { type: integer }
+        code: { type: string }
     LoginRequest:
       type: object
       required: [username, password]
@@ -71,13 +116,56 @@ components:
       required: [contrasenaActual, contrasenaNueva]
       properties:
         contrasenaActual: { type: string }
-        contrasenaNueva: { type: string }
+        contrasenaNueva: { type: string, minLength: 8 }
     ResetPasswordRequest:
       type: object
       required: [token, password]
       properties:
         token: { type: string }
         password: { type: string, minLength: 8 }
+    CreateReviewRequest:
+      type: object
+      required: [movie_id, rating]
+      properties:
+        movie_id: { type: integer }
+        rating: { type: number, minimum: 1, maximum: 5, multipleOf: 0.5 }
+        content: { type: string }
+    UpdateReviewRequest:
+      type: object
+      properties:
+        rating: { type: number, minimum: 1, maximum: 5, multipleOf: 0.5 }
+        content: { type: string }
+    ReportReviewRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason: { type: string }
+    CreateCommentRequest:
+      type: object
+      required: [content]
+      properties:
+        content: { type: string }
+    AddToListRequest:
+      type: object
+      required: [movie_id]
+      properties:
+        movie_id: { type: integer }
+    AvatarRequest:
+      type: object
+      required: [avatar]
+      properties:
+        avatar: { type: string, description: Imagen base64 }
+    ProfileRequest:
+      type: object
+      properties:
+        username: { type: string }
+        email: { type: string, format: email }
+        bio: { type: string }
+    PlanRequest:
+      type: object
+      required: [plan]
+      properties:
+        plan: { type: string, enum: [vip, pro] }
 
   responses:
     Unauthorized:
@@ -103,7 +191,7 @@ paths:
   /auth/register:
     post:
       tags: [Autenticación]
-      summary: Registrar un nuevo usuario
+      summary: Registrar usuario
       requestBody:
         required: true
         content:
@@ -111,19 +199,8 @@ paths:
             schema:
               $ref: '#/components/schemas/RegisterRequest'
       responses:
-        '201':
-          description: Registro exitoso
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message: { type: string }
-                  userId: { type: integer }
-        '400':
-          $ref: '#/components/responses/ValidationError'
-        '409':
-          description: Usuario ya existe
+        '201': { description: Registrado }
+        '409': { description: Usuario ya existe }
 
   /auth/login:
     post:
@@ -137,81 +214,53 @@ paths:
               $ref: '#/components/schemas/LoginRequest'
       responses:
         '200':
-          description: OK. Devuelve AccessToken y setea cookie refresh.
+          description: OK
           content:
             application/json:
               schema:
                 oneOf:
                   - $ref: '#/components/schemas/TokenResponse'
                   - $ref: '#/components/schemas/TwoFARequired'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        '401': { $ref: '#/components/responses/Unauthorized' }
 
   /auth/refresh:
     post:
       tags: [Autenticación]
-      summary: Renovar access token usando refresh en cookie
-      security:
-        - cookieAuth: []
+      summary: Renovar access token
+      security: [{ cookieAuth: [] }]
       responses:
-        '200':
-          description: Token renovado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TokenResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        '200': { description: Token renovado, content: { application/json: { schema: { $ref: '#/components/schemas/TokenResponse' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
 
   /auth/logout:
     post:
       tags: [Autenticación]
-      summary: Cerrar sesión y revocar refresh actual
-      security:
-        - bearerAuth: []
-        - cookieAuth: []
+      summary: Cerrar sesión
+      security: [{ bearerAuth: [] }, { cookieAuth: [] }]
       responses:
-        '200':
-          description: Sesión cerrada
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MensajeResponse'
+        '200': { description: Sesión cerrada }
 
   /auth/verify:
     get:
       tags: [Autenticación]
-      summary: Verificar token de acceso actual
-      security:
-        - bearerAuth: []
+      summary: Obtener perfil autenticado
+      security: [{ bearerAuth: [] }]
       responses:
-        '200':
-          description: Usuario autenticado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UsuarioPublico'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        '200': { description: Perfil, content: { application/json: { schema: { $ref: '#/components/schemas/UsuarioPublico' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
 
   /auth/verify-email/{token}:
     post:
       tags: [Autenticación]
-      summary: Confirmar correo electrónico
+      summary: Verificar email
       parameters:
-        - name: token
-          in: path
+        - in: path
+          name: token
           required: true
           schema: { type: string }
       responses:
-        '200':
-          description: Email verificado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MensajeResponse'
-        '410':
-          description: Enlace expirado
+        '200': { description: Email verificado }
+        '410': { description: Enlace expirado }
 
   /auth/resend-verification:
     post:
@@ -227,13 +276,12 @@ paths:
               properties:
                 email: { type: string, format: email }
       responses:
-        '200':
-          description: Email reenviado si aplica
+        '200': { description: Enviado si aplica }
 
   /auth/forgot-password:
     post:
       tags: [Autenticación]
-      summary: Solicitar correo de reseteo
+      summary: Solicitar reset
       requestBody:
         required: true
         content:
@@ -244,8 +292,7 @@ paths:
               properties:
                 email: { type: string, format: email }
       responses:
-        '200':
-          description: Correo enviado si aplica
+        '200': { description: Enviado si aplica }
 
   /auth/reset-password:
     post:
@@ -258,16 +305,13 @@ paths:
             schema:
               $ref: '#/components/schemas/ResetPasswordRequest'
       responses:
-        '200':
-          description: Contraseña actualizada
+        '200': { description: Contraseña actualizada }
 
   /auth/cambiar-contrasena:
     post:
       tags: [Autenticación]
       summary: Cambiar contraseña autenticado
-      security:
-        - bearerAuth: []
-        - cookieAuth: []
+      security: [{ bearerAuth: [] }]
       requestBody:
         required: true
         content:
@@ -275,35 +319,29 @@ paths:
             schema:
               $ref: '#/components/schemas/ChangePasswordRequest'
       responses:
-        '200':
-          description: Contraseña actualizada
+        '200': { description: Contraseña actualizada }
 
   /auth/revocar-sesiones:
     post:
       tags: [Autenticación]
-      summary: Revocar todas las sesiones del usuario
-      security:
-        - bearerAuth: []
+      summary: Revocar todas las sesiones
+      security: [{ bearerAuth: [] }]
       responses:
-        '200':
-          description: Sesiones revocadas
+        '200': { description: Sesiones revocadas }
 
   /auth/2fa/activar:
     post:
       tags: [Autenticación]
-      summary: Generar QR y secreto para 2FA
-      security:
-        - bearerAuth: []
+      summary: Generar QR 2FA
+      security: [{ bearerAuth: [] }]
       responses:
-        '200':
-          description: Devuelve QR (dataURL) y secreto base32
+        '200': { description: Devuelve QR y secreto }
 
   /auth/2fa/confirmar:
     post:
       tags: [Autenticación]
-      summary: Confirmar código de 2FA tras escanear
-      security:
-        - bearerAuth: []
+      summary: Confirmar 2FA
+      security: [{ bearerAuth: [] }]
       requestBody:
         required: true
         content:
@@ -314,13 +352,12 @@ paths:
               properties:
                 codigo: { type: string }
       responses:
-        '200':
-          description: 2FA activado
+        '200': { description: 2FA activado }
 
   /auth/2fa/verificar:
     post:
       tags: [Autenticación]
-      summary: Paso 2 de login (2FA)
+      summary: Verificar 2FA en login
       requestBody:
         required: true
         content:
@@ -332,19 +369,13 @@ paths:
                 codigo: { type: string }
                 tokenTemporal: { type: string }
       responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TokenResponse'
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/TokenResponse' } } } }
 
   /auth/2fa/desactivar:
     post:
       tags: [Autenticación]
       summary: Desactivar 2FA
-      security:
-        - bearerAuth: []
+      security: [{ bearerAuth: [] }]
       requestBody:
         required: true
         content:
@@ -355,5 +386,639 @@ paths:
               properties:
                 codigo: { type: string }
       responses:
-        '200':
-          description: 2FA desactivado
+        '200': { description: 2FA desactivado }
+
+  /users:
+    get:
+      tags: [Usuarios]
+      summary: Listar usuarios
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Lista de usuarios, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/UsuarioPublico' } } } } }
+
+  /users/{id}:
+    get:
+      tags: [Usuarios]
+      summary: Perfil público
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Perfil público }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /users/follow/{id}:
+    post:
+      tags: [Usuarios]
+      summary: Seguir usuario
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Seguido }
+
+  /users/unfollow/{id}:
+    delete:
+      tags: [Usuarios]
+      summary: Dejar de seguir
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Unfollow ok }
+
+  /users/{id}/followers:
+    get:
+      tags: [Usuarios]
+      summary: Seguidores
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Lista de seguidores }
+
+  /users/{id}/following:
+    get:
+      tags: [Usuarios]
+      summary: Siguiendo
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Lista de seguidos }
+
+  /settings:
+    patch:
+      tags: [Ajustes]
+      summary: Actualizar perfil
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileRequest'
+      responses:
+        '200': { description: Perfil actualizado }
+    delete:
+      tags: [Ajustes]
+      summary: Eliminar cuenta
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Cuenta eliminada }
+
+  /settings/auth:
+    patch:
+      tags: [Ajustes]
+      summary: Cambiar contraseña
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200': { description: Contraseña actualizada }
+
+  /settings/avatar:
+    patch:
+      tags: [Ajustes]
+      summary: Actualizar avatar
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AvatarRequest'
+      responses:
+        '200': { description: Avatar actualizado }
+
+  /diary:
+    get:
+      tags: [Diario]
+      summary: Obtener mi diario
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Diario, content: { application/json: { schema: { type: object, properties: { diary: { type: array, items: { $ref: '#/components/schemas/DiaryEntry' } } } } } } }
+    post:
+      tags: [Diario]
+      summary: Crear entrada
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [movie_id]
+              properties:
+                movie_id: { type: integer }
+                watched_date: { type: string, format: date }
+                notes: { type: string }
+      responses:
+        '201': { description: Creada }
+
+  /diary/{id}:
+    delete:
+      tags: [Diario]
+      summary: Eliminar entrada
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Eliminada }
+
+  /diary/{id_user}:
+    get:
+      tags: [Diario]
+      summary: Diario de otro usuario
+      parameters:
+        - in: path
+          name: id_user
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Diario público }
+
+  /watchlist:
+    get:
+      tags: [Watchlist]
+      summary: Mi watchlist
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Lista, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/WatchlistItem' } } } } }
+    post:
+      tags: [Watchlist]
+      summary: Añadir a watchlist
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddToListRequest'
+      responses:
+        '201': { description: Añadido }
+
+  /watchlist/{movie_id}:
+    delete:
+      tags: [Watchlist]
+      summary: Eliminar de watchlist
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: movie_id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Eliminado }
+
+  /watchlist/{id_user}:
+    get:
+      tags: [Watchlist]
+      summary: Watchlist de otro usuario
+      parameters:
+        - in: path
+          name: id_user
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Lista }
+
+  /favorites:
+    get:
+      tags: [Favoritos]
+      summary: Mis favoritos
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Lista, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Favorito' } } } } }
+
+  /favorites/user/{userId}:
+    get:
+      tags: [Favoritos]
+      summary: Favoritos de un usuario
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Lista }
+
+  /favorites/{movieId}:
+    post:
+      tags: [Favoritos]
+      summary: Añadir favorito
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: movieId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rank_position: { type: integer }
+      responses:
+        '201': { description: Añadido }
+    delete:
+      tags: [Favoritos]
+      summary: Eliminar favorito
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: movieId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Eliminado }
+
+  /reviews:
+    get:
+      tags: [Reseñas]
+      summary: Mis reseñas
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Lista, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Resena' } } } } }
+    post:
+      tags: [Reseñas]
+      summary: Crear reseña
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReviewRequest'
+      responses:
+        '201': { description: Creada }
+
+  /reviews/user/{userId}:
+    get:
+      tags: [Reseñas]
+      summary: Reseñas de un usuario
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Lista }
+
+  /reviews/movie/{movieId}:
+    get:
+      tags: [Reseñas]
+      summary: Reseñas por película
+      parameters:
+        - in: path
+          name: movieId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Lista }
+
+  /reviews/{reviewId}:
+    patch:
+      tags: [Reseñas]
+      summary: Actualizar reseña
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: reviewId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateReviewRequest'
+      responses:
+        '200': { description: Actualizada }
+    delete:
+      tags: [Reseñas]
+      summary: Eliminar reseña
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: reviewId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Eliminada }
+
+  /reviews/{reviewId}/like:
+    post:
+      tags: [Reseñas]
+      summary: Dar like
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: reviewId
+          required: true
+          schema: { type: integer }
+      responses:
+        '201': { description: Like añadido }
+    delete:
+      tags: [Reseñas]
+      summary: Quitar like
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: reviewId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Like eliminado }
+
+  /reviews/{reviewId}/report:
+    post:
+      tags: [Reseñas]
+      summary: Reportar reseña
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: reviewId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportReviewRequest'
+      responses:
+        '200': { description: Reporte creado }
+
+  /reviews/{reviewId}/comments:
+    get:
+      tags: [Comentarios]
+      summary: Listar comentarios
+      parameters:
+        - in: path
+          name: reviewId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Lista, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Comentario' } } } } }
+    post:
+      tags: [Comentarios]
+      summary: Crear comentario
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: reviewId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCommentRequest'
+      responses:
+        '201': { description: Creado }
+
+  /reviews/comments/{commentId}:
+    patch:
+      tags: [Comentarios]
+      summary: Actualizar comentario
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: commentId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCommentRequest'
+      responses:
+        '200': { description: Actualizado }
+    delete:
+      tags: [Comentarios]
+      summary: Eliminar comentario
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: commentId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Eliminado }
+
+  /search:
+    get:
+      tags: [Búsqueda]
+      summary: Búsqueda general de películas
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema: { type: string }
+        - in: query
+          name: page
+          schema: { type: integer }
+      responses:
+        '200': { description: Resultados }
+
+  /search/multi:
+    get:
+      tags: [Búsqueda]
+      summary: Búsqueda múltiple
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Resultados }
+
+  /search/movie:
+    get:
+      tags: [Búsqueda]
+      summary: Búsqueda de películas
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Resultados }
+
+  /search/person:
+    get:
+      tags: [Búsqueda]
+      summary: Búsqueda de personas
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Resultados }
+
+  /search/tv:
+    get:
+      tags: [Búsqueda]
+      summary: Búsqueda de series
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Resultados }
+
+  /movies/upcoming:
+    get:
+      tags: [Películas]
+      summary: Próximos estrenos
+      responses:
+        '200': { description: Lista }
+
+  /movies/top-rated:
+    get:
+      tags: [Películas]
+      summary: Más valoradas
+      responses:
+        '200': { description: Lista }
+
+  /movies/popular:
+    get:
+      tags: [Películas]
+      summary: Populares
+      responses:
+        '200': { description: Lista }
+
+  /movies/{idOrSlug}:
+    get:
+      tags: [Películas]
+      summary: Detalle por ID o slug
+      parameters:
+        - in: path
+          name: idOrSlug
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Detalle }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /notifications:
+    get:
+      tags: [Notificaciones]
+      summary: Mis notificaciones
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Lista, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Notificacion' } } } } }
+
+  /notifications/unread:
+    get:
+      tags: [Notificaciones]
+      summary: Contador de no leídas
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Conteo }
+
+  /notifications/pending:
+    get:
+      tags: [Notificaciones]
+      summary: Entregar pendientes
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Pendientes }
+
+  /notifications/read-all:
+    patch:
+      tags: [Notificaciones]
+      summary: Marcar todas como leídas
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Marcadas }
+
+  /notifications/{id}/read:
+    patch:
+      tags: [Notificaciones]
+      summary: Marcar como leída
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Marcada }
+
+  /payments/create-checkout-session:
+    post:
+      tags: [Pagos]
+      summary: Crear checkout de Stripe
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanRequest'
+      responses:
+        '200': { description: URL de checkout }
+
+  /payments/portal-session:
+    post:
+      tags: [Pagos]
+      summary: Portal de facturación
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: URL de portal }
+
+  /payments/webhook:
+    post:
+      tags: [Pagos]
+      summary: Webhook de Stripe
+      responses:
+        '200': { description: Evento recibido }
+
+  /information/person/{id}:
+    get:
+      tags: [Información]
+      summary: Información de persona TMDB
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Datos TMDB }
+
+  /information/person/{id}/combined:
+    get:
+      tags: [Información]
+      summary: Créditos combinados TMDB
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Datos TMDB }

@@ -172,35 +172,4 @@ router.post("/", middlewareAutenticacion, validarBody(crearEntradaDiarioSchema),
  */
 router.delete("/:id", middlewareAutenticacion, manejadorAsincrono(removeDiary))
 
-/**
- * @swagger
- * /diary/{id}:
- *   delete:
- *     summary: Eliminar entrada del diario
- *     tags: [Diario]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         example: 1
- *     responses:
- *       200:
- *         description: Entrada eliminada
- *         content:
- *           application/json:
- *             example:
- *               message: "Eliminada exitosamente"
- *       401:
- *         $ref: '#/components/responses/Unauthorized'
- *       403:
- *         $ref: '#/components/responses/Forbidden'
- *       404:
- *         $ref: '#/components/responses/NotFound'
- */
-router.delete("/:id", middlewareAutenticacion, manejadorAsincrono(removeDiary))
-
 export default router
