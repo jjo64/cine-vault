@@ -1,6 +1,7 @@
 import { Request, Response } from "express"
 import {
   createCheckoutSessionService,
+  createPortalSessionService,
   processWebhookEventService,
 } from "../services/payments.services.js"
 
@@ -15,6 +16,12 @@ export const createCheckoutSession = async (req: Request, res: Response) => {
   const userId = req.user!.user_id
   const { plan } = req.body
   const url = await createCheckoutSessionService(Number(userId), plan)
+  res.json({ url })
+}
+
+export const createPortalSession = async (req: Request, res: Response) => {
+  const userId = req.user!.user_id
+  const url = await createPortalSessionService(Number(userId))
   res.json({ url })
 }
 

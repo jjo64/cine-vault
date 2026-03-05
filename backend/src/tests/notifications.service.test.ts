@@ -8,11 +8,22 @@ import { describe, it, expect, vi, beforeEach } from "vitest"
 const mockEmit = vi.fn()
 const mockTo = vi.fn(() => ({ emit: mockEmit }))
 
+const redisMock = vi.hoisted(() => ({
+  lpush: vi.fn(),
+  ltrim: vi.fn(),
+  lrange: vi.fn(),
+  del: vi.fn(),
+}))
+
 vi.mock("../config/socketio.config.js", () => ({
   io: { to: mockTo },
   usuariosConectados: new Map<number, string>([
     [1, "socket-id-123"],
   ]),
+}))
+
+vi.mock("../lib/redis.js", () => ({
+  redis: redisMock,
 }))
 
 vi.mock("../repositories/NotificationsRepository.js", () => ({
@@ -31,6 +42,7 @@ const {
   obtenerNotificacionesService,
   marcarComoLeidaService,
   marcarTodasComoLeidasService,
+  entregarPendientesService,
 } = await import("../services/notifications.services.js")
 
 beforeEach(() => {
@@ -61,6 +73,8 @@ describe("emitirNotificacionService", () => {
 
     expect(notificationsRepository.create).toHaveBeenCalled()
     expect(mockTo).not.toHaveBeenCalled()
+    expect(redisMock.lpush).toHaveBeenCalledWith("notif:queue:99", JSON.stringify(notif))
+    expect(redisMock.ltrim).toHaveBeenCalledWith("notif:queue:99", 0, 49)
   })
 })
 
@@ -88,5 +102,18 @@ describe("marcarTodasComoLeidasService", () => {
     vi.mocked(notificationsRepository.markAllAsRead).mockResolvedValue(3)
     await marcarTodasComoLeidasService(1)
     expect(notificationsRepository.markAllAsRead).toHaveBeenCalledWith(1)
+  })
+})
+
+describe("entregarPendientesService", () => {
+  it("devuelve la cola y la limpia", async () => {
+    redisMock.lrange.mockResolvedValue([
+      JSON.stringify({ id: 1 }),
+      "{malformed}",
+    ])
+    const pending = await entregarPendientesService(5)
+    expect(redisMock.lrange).toHaveBeenCalledWith("notif:queue:5", 0, -1)
+    expect(redisMock.del).toHaveBeenCalledWith("notif:queue:5")
+    expect(pending).toEqual([{ id: 1 }])
   })
 })

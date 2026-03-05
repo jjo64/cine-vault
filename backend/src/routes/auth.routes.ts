@@ -17,6 +17,8 @@ import {
   desactivar2FA,
   cambiarContrasena,
   revocarSesiones,
+  listarSesiones,
+  revocarSesion,
 } from "../controllers/AuthController.js"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
 import {
@@ -24,6 +26,19 @@ import {
   limitadorEmail,
 } from "../middlewares/rateLimit.middleware.js"
 import passport from "passport"
+import {
+  loginSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+  changePasswordSchema,
+  twoFAConfirmSchema,
+  twoFAVerifySchema,
+  revokeSessionParamsSchema,
+} from "../schemas/auth.js"
+import {
+  validarBody,
+  validarParams,
+} from "../middlewares/validation.middleware.js"
 
 const router = Router()
 
@@ -31,21 +46,33 @@ const router = Router()
 // RUTAS PÚBLICAS CON RATE LIMIT ESTRICTO (brute force protection)
 // ---------------------------------------------------------------------------
 // Login → máximo 5 intentos por IP cada 15 minutos
-router.post("/login", limitadorAuth, manejadorAsincrono(iniciarSesion))
+router.post(
+  "/login",
+  limitadorAuth,
+  validarBody(loginSchema),
+  manejadorAsincrono(iniciarSesion)
+)
 // Registro → mismo límite para evitar creación masiva de cuentas
 router.post("/register", limitadorAuth, manejadorAsincrono(registrar))
 // 2FA paso 2 → límite estricto igual que login
-router.post("/2fa/verificar", limitadorAuth, manejadorAsincrono(verificar2FA))
+router.post(
+  "/2fa/verificar",
+  limitadorAuth,
+  validarBody(twoFAVerifySchema),
+  manejadorAsincrono(verificar2FA)
+)
 
 // Emails → máximo 3 por hora para evitar spam
 router.post(
   "/resend-verification",
   limitadorEmail,
+  validarBody(forgotPasswordSchema),
   manejadorAsincrono(reenviarVerificacion)
 )
 router.post(
   "/forgot-password",
   limitadorEmail,
+  validarBody(forgotPasswordSchema),
   manejadorAsincrono(olvidarContrasena)
 )
 
@@ -53,7 +80,11 @@ router.post(
 // RUTAS PÚBLICAS SIN LIMIT ESTRICTO
 // ---------------------------------------------------------------------------
 router.post("/verify-email/:token", manejadorAsincrono(verificarEmail))
-router.post("/reset-password", manejadorAsincrono(resetearContrasena))
+router.post(
+  "/reset-password",
+  validarBody(resetPasswordSchema),
+  manejadorAsincrono(resetearContrasena)
+)
 router.post("/refresh", manejadorAsincrono(renovarToken))
 
 // ---------------------------------------------------------------------------
@@ -85,12 +116,24 @@ router.get(
 router.post(
   "/cambiar-contrasena",
   middlewareAutenticacion,
+  validarBody(changePasswordSchema),
   manejadorAsincrono(cambiarContrasena)
 )
 router.post(
   "/revocar-sesiones",
   middlewareAutenticacion,
   manejadorAsincrono(revocarSesiones)
+)
+router.get(
+  "/sessions",
+  middlewareAutenticacion,
+  manejadorAsincrono(listarSesiones)
+)
+router.delete(
+  "/sessions/:id",
+  middlewareAutenticacion,
+  validarParams(revokeSessionParamsSchema),
+  manejadorAsincrono(revocarSesion)
 )
 router.post(
   "/2fa/activar",
@@ -105,6 +148,7 @@ router.post(
 router.post(
   "/2fa/confirmar",
   middlewareAutenticacion,
+  validarBody(twoFAConfirmSchema),
   manejadorAsincrono(confirmar2FA)
 )
 

@@ -7,20 +7,23 @@ import { z } from "zod"
    los servicios consuman tipos seguros en lugar de `any` o `req.body` crudo.
    ========================================================================== */
 
+const ratingStep = z.coerce.number({ error: "rating debe ser numérico" })
+  .min(1, "El rating mínimo es 1")
+  .max(5, "El rating máximo es 5")
+  .refine((n) => Number.isFinite(n) && (n * 2) % 1 === 0, {
+    message: "El rating debe avanzar de a 0.5",
+  })
+
 /** Crear una nueva reseña */
 export const crearResenaSchema = z.object({
-  movie_id: z
-    .coerce.number({ error: "movie_id debe ser un número" })
+  movie_id: z.coerce.number({ error: "movie_id debe ser un número" })
     .int("movie_id debe ser un entero")
     .positive("movie_id debe ser positivo"),
   content: z
     .string()
     .min(1, "El contenido no puede estar vacío")
     .max(2000, "El contenido no puede superar 2000 caracteres"),
-  rating: z
-    .coerce.number({ error: "rating debe ser un número" })
-    .min(0, "El rating mínimo es 0")
-    .max(10, "El rating máximo es 10"),
+  rating: ratingStep,
 })
 
 /** Actualizar una reseña existente (todos los campos opcionales, movie_id inmutable) */
@@ -31,11 +34,7 @@ export const actualizarResenaSchema = z
       .min(1, "El contenido no puede estar vacío")
       .max(2000, "El contenido no puede superar 2000 caracteres")
       .optional(),
-    rating: z
-      .coerce.number()
-      .min(0, "El rating mínimo es 0")
-      .max(10, "El rating máximo es 10")
-      .optional(),
+    rating: ratingStep.optional(),
   })
   .refine((data) => data.content !== undefined || data.rating !== undefined, {
     message: "Debes proporcionar al menos content o rating para actualizar",

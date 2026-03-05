@@ -6,6 +6,7 @@ import {
   marcarComoLeida,
   marcarTodasComoLeidas,
   getUnreadCount,
+  getPending,
 } from "../controllers/NotificationsController.js"
 
 /**
@@ -72,6 +73,12 @@ router.get(
   "/unread",
   middlewareAutenticacion,
   manejadorAsincrono(getUnreadCount)
+)
+
+router.get(
+  "/pending",
+  middlewareAutenticacion,
+  manejadorAsincrono(getPending)
 )
 
 /**

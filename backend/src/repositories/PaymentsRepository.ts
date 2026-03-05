@@ -19,9 +19,29 @@ export interface ICheckoutCompletedData {
   providerPaymentId: string
 }
 
+interface PaymentRecord {
+  userId: number
+  subscriptionId: number
+  amount: number
+  currency: string
+  providerPaymentId: string
+  status: "paid" | "failed"
+}
+
 class PaymentsRepository {
   async findUserById(userId: number) {
     return prisma.users.findUnique({ where: { id: userId } })
+  }
+
+  async findSubscriptionByProviderId(stripeSubId: string) {
+    return prisma.subscriptions.findFirst({ where: { provider_subscription_id: stripeSubId } })
+  }
+
+  async findSubscriptionByUser(userId: number) {
+    return prisma.subscriptions.findFirst({
+      where: { user_id: userId },
+      orderBy: { id: "desc" },
+    })
   }
 
   /** Crea suscripción + pago y actualiza membresía del usuario (en una transacción) */
@@ -65,6 +85,44 @@ class PaymentsRepository {
     return prisma.subscriptions.updateMany({
       where: { provider_subscription_id: stripeSubId },
       data: { end_date: newEndDate, status: "active" },
+    })
+  }
+
+  async updateSubscriptionStatus(
+    stripeSubId: string,
+    status: "active" | "cancelled" | "expired",
+    newEndDate?: Date
+  ) {
+    return prisma.subscriptions.updateMany({
+      where: { provider_subscription_id: stripeSubId },
+      data: {
+        status,
+        ...(newEndDate && { end_date: newEndDate }),
+      },
+    })
+  }
+
+  async recordPayment(data: PaymentRecord) {
+    const existing = await prisma.payments.findFirst({
+      where: { provider_payment_id: data.providerPaymentId },
+    })
+    if (existing) {
+      return prisma.payments.update({
+        where: { id: existing.id },
+        data: { payment_status: data.status === "paid" ? "paid" : "failed" },
+      })
+    }
+
+    return prisma.payments.create({
+      data: {
+        user_id: data.userId,
+        subscription_id: data.subscriptionId,
+        amount: data.amount,
+        currency: data.currency,
+        provider: "stripe",
+        payment_status: data.status === "paid" ? "paid" : "failed",
+        provider_payment_id: data.providerPaymentId,
+      },
     })
   }
 

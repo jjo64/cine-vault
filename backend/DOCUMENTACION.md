@@ -44,6 +44,61 @@ MariaDB
 
 ---
 
+## 1.1 Configuración y despliegue (Railway / local)
+
+### Variables de entorno mínimas
+
+- `PORT`: puerto del backend (default 3000)
+- `JWT_SECRET`: secreto para firmar access tokens
+- `API_KEY_TMDB`: Bearer de TMDB
+- `FRONTEND_URL` o `FRONTEND_URLS`: origen/es permitidos en CORS (coma separada)
+- `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_USER`, `DATABASE_PASSWORD`, `DATABASE_NAME`: credenciales MariaDB
+- `REDIS_HOST`, `REDIS_PORT`: Redis para rate limit/cache/colas; en tests se usa un Redis en memoria automático
+- `RESEND_API_KEY`, `RESEND_FROM` (opcional): si falta la API key, el envío se simula (no rompe en tests/dev)
+- `BACKEND_URL`: base absoluta para links de email (verify/reset)
+- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_VIP`, `STRIPE_PRICE_PRO`: llaves de Stripe
+
+### Stripe Webhook
+
+- La ruta `/api/payments/webhook` usa `express.raw({ type: "application/json" })` antes del JSON parser para validar la firma. En frameworks de despliegue, evita body-parsing previo.
+- Idempotencia: cada `event.id` se guarda en Redis 24h (`stripe:event:<id>`) para no procesar duplicados.
+
+### Redis en tests
+
+- En `NODE_ENV=test` se usa un Redis en memoria con soporte básico de `EX`/`NX` y listas. No requiere servicio externo.
+
+### Caché e invalidación
+
+- Helpers en `src/lib/cache.ts`: `getCache`, `setCache`, `invalidateKeys` (TTL default 300s).
+- Claves usadas:
+  - `reviews:movie:<movieId>` — listado de reseñas por película
+  - `movie:agg:<movieId>` — agregados (avg_rating, likes_total, diary_entries)
+  - `diary:feed:<userId>` — feed de diario del usuario
+  - `notif:queue:<userId>` — cola de notificaciones offline
+
+### Rate limit y anti-spam
+
+- `checkIPSpike(ip)`: ventana 5s, máx 10 requests → lanza 429 en mutaciones de diary/reviews/comments/search.
+- `isDuplicateComment(userId, comment)`: detecta 3 comentarios idénticos consecutivos por usuario.
+
+### Email (Resend)
+
+- Wrapper seguro en `src/lib/email.ts`: si falta `RESEND_API_KEY` (no prod) retorna stub `{ mocked: true }` y emite warning.
+- Plantillas: verificación, reset, códigos de respaldo 2FA, recomendación nocturna, recibo Stripe. Texto plano incluido.
+
+### Notificaciones
+
+- Si el usuario está offline, la notificación se encola en Redis (`notif:queue:<userId>`). Endpoint `GET /notifications/pending` drena y limpia la cola.
+
+### Pagos (Stripe)
+
+- Checkout: `/payments/create-checkout-session` crea sesión para `vip|pro`, pasa `userId`/`plan` en metadata e `payment_intent_data`.
+- Portal: `/payments/portal-session` abre portal de facturación si el usuario tiene suscripción registrada.
+- Webhooks manejados: `checkout.session.completed`, `invoice.payment_succeeded`, `invoice.payment_failed`, `customer.subscription.updated`, `customer.subscription.deleted`.
+- Pagos registrados idempotentemente por `provider_payment_id`; estados de suscripción se sincronizan con Stripe (`active/cancelled/expired`).
+
+---
+
 ## 2. Estructura de Carpetas
 
 ```

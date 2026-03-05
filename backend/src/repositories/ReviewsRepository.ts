@@ -21,10 +21,19 @@ const REVIEW_SELECT = {
   created_at: true,
 } as const
 
+export interface MovieReviewsAggregate {
+  movie_id: number
+  review_count: number
+  avg_rating: number | null
+  likes_total: number
+}
+
 export interface IReviewsRepository {
   findByUserId(userId: number): Promise<Partial<reviews>[]>
   findByMovieId(movieId: number): Promise<Partial<reviews>[]>
+  findByUserAndMovie(userId: number, movieId: number): Promise<reviews | null>
   findById(id: number): Promise<reviews | null>
+  aggregateByMovie(movieId: number): Promise<MovieReviewsAggregate>
   create(userId: number, data: CrearResenaDTO): Promise<reviews>
   update(id: number, data: ActualizarResenaDTO): Promise<reviews>
   delete(id: number): Promise<void>
@@ -73,8 +82,28 @@ export class ReviewsRepository implements IReviewsRepository {
     })
   }
 
+  async findByUserAndMovie(userId: number, movieId: number) {
+    return prisma.reviews.findFirst({ where: { user_id: userId, movie_id: movieId } })
+  }
+
   async findById(id: number) {
     return prisma.reviews.findUnique({ where: { id } })
+  }
+
+  async aggregateByMovie(movieId: number) {
+    const aggregate = await prisma.reviews.aggregate({
+      where: { movie_id: movieId },
+      _count: { id: true },
+      _avg: { rating: true },
+      _sum: { likes: true },
+    })
+
+    return {
+      movie_id: movieId,
+      review_count: aggregate._count.id,
+      avg_rating: aggregate._avg.rating ? Number(aggregate._avg.rating) : null,
+      likes_total: aggregate._sum.likes ?? 0,
+    }
   }
 
   async create(userId: number, data: CrearResenaDTO) {

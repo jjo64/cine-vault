@@ -203,11 +203,20 @@ export const renovarTokenService = async (refreshToken: string) => {
   const usuario = await userRepository.findById(payload.user_id)
   if (!usuario) throw new NotFoundError("Usuario no encontrado")
 
-  return crearTokenAcceso(
+  // Rotation: invalidar refresh anterior y emitir uno nuevo
+  await sessionRepository.deleteById(payload.id_session)
+
+  const accessToken = crearTokenAcceso(
     usuario.id,
     usuario.role as string,
     usuario.is_verified
   )
+
+  const { token: nuevoRefresh, idSesion } = await crearTokenRefresco(
+    usuario.id
+  )
+
+  return { accessToken, refreshToken: nuevoRefresh, sessionId: idSesion }
 }
 
 // ---------------------------------------------------------------------------
@@ -485,4 +494,26 @@ export const cambiarContrasenaService = async (
 // ---------------------------------------------------------------------------
 export const revocarSesionesService = async (userId: number) => {
   await sessionRepository.deleteManyByUser(userId)
+}
+
+// ---------------------------------------------------------------------------
+// LISTAR SESIONES DEL USUARIO
+// ---------------------------------------------------------------------------
+export const listarSesionesService = async (userId: number) => {
+  return sessionRepository.findByUser(userId)
+}
+
+// ---------------------------------------------------------------------------
+// REVOCAR UNA SESIÓN ESPECÍFICA
+// ---------------------------------------------------------------------------
+export const revocarSesionService = async (userId: number, sessionId: string) => {
+  if (!sessionId) throw new ValidationError("ID de sesión requerido")
+
+  const sesion = await sessionRepository.findById(sessionId)
+
+  if (!sesion || sesion.user_id !== userId) {
+    throw new NotFoundError("Sesión no encontrada")
+  }
+
+  await sessionRepository.deleteById(sessionId)
 }

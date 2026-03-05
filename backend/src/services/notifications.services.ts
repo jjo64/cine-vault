@@ -1,6 +1,7 @@
 import { notificationsRepository } from "../repositories/NotificationsRepository.js"
 import { io, usuariosConectados } from "../config/socketio.config.js"
 import type { notifications_type } from "@prisma/client"
+import { redis } from "../lib/redis.js"
 
 /* ==========================================================================
    NOTIFICATIONS SERVICE
@@ -35,6 +36,9 @@ export const emitirNotificacionService = async ({
   const socketId = usuariosConectados.get(user_id)
   if (socketId) {
     io.to(socketId).emit("nueva_notificacion", notificacion)
+  } else {
+    await redis.lpush(queueKey(user_id), JSON.stringify(notificacion))
+    await redis.ltrim(queueKey(user_id), 0, 49)
   }
 
   return notificacion
@@ -62,3 +66,23 @@ export const contarNoLeidasService = (userId: number) =>
   notificationsRepository.findByUserId(userId, 1000).then(
     (notifs) => notifs.filter((n) => !n.read).length
   )
+
+export const entregarPendientesService = async (userId: number) => {
+  const key = queueKey(userId)
+  const pendientes = await redis.lrange(key, 0, -1)
+  if (pendientes.length === 0) return []
+
+  await redis.del(key)
+
+  const parsed = pendientes.map((raw) => {
+    try {
+      return JSON.parse(raw)
+    } catch {
+      return null
+    }
+  })
+
+  return parsed.filter(Boolean)
+}
+
+const queueKey = (userId: number) => `notif:queue:${userId}`
