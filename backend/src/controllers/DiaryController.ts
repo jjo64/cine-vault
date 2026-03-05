@@ -11,7 +11,7 @@ import { TooManyRequestsError } from "../errors/AppErrors.js"
    ========================================================================== */
 
 export const createDiary = async (req: Request, res: Response) => {
-  await assertNotRateLimited(req.ip)
+  await assertNotRateLimited(req.ip!)
   const entry = await diaryService.crearEntradaDiarioService(
     req.user!.user_id,
     req.body
@@ -32,7 +32,7 @@ export const getDiaryUser = async (req: Request, res: Response) => {
 }
 
 export const removeDiary = async (req: Request, res: Response) => {
-  await assertNotRateLimited(req.ip)
+  await assertNotRateLimited(req.ip!)
   await diaryService.eliminarEntradaDiarioService(
     req.user!.user_id,
     Number(req.params.id)
