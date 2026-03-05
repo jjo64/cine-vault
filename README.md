@@ -1,60 +1,65 @@
-# 🎬 Cinevault: Registro y Descubrimiento Cinematográfico
+# CineVault
 
-¡Hola equipo! 👋 Este es nuestro proyecto para Cinevault. Acá les dejo los pasos detallados para que puedan hacerlo andar en sus máquinas sin problemas. Sigan este orden:
+Plataforma social para descubrir, reseñar y gestionar películas. Backend en Node.js/Express/TypeScript con Prisma y Redis; frontend en React/Vite/TypeScript.
 
-## 🚀 Cómo empezar (Paso a paso)
+## Qué ofrece
+- Autenticación JWT + refresh rotatorio, verificación de email y 2FA TOTP; OAuth Google opcional.
+- Capas separadas: rutas → controladores delgados → servicios → repositorios Prisma; validación con Zod.
+- Funcionalidad social: diario de visionado, watchlist, favoritos, reseñas/likes/comentarios, follows y notificaciones en tiempo real (Socket.IO).
+- Búsquedas y catálogos TMDB con caché Redis; pagos y membresías vía Stripe; emails con Resend; avatares en Cloudinary.
 
-### 1. Clonar y preparar las carpetas
-Primero que nada, una vez que tengan el código, tienen que instalar todas las librerías porque la carpeta `node_modules` no se sube al repo.
+## Requisitos
+- Node 20+, npm/pnpm
+- MariaDB/MySQL y Redis en ejecución
+- API keys: TMDB v4 Bearer, Stripe (secret + precios + webhook), Resend, Cloudinary
 
-*   **Para el Backend:** Entren en la carpeta `backend` desde la terminal y ejecuten:
-    ```bash
-    npm install
-    ```
-*   **Para el Frontend:** Entren en la carpeta `frontend` y hagan lo mismo:
-    ```bash
-    npm install
-    ```
+## Puesta en marcha rápida
+1. Instala dependencias: `npm install` en `backend` y `frontend`.
+2. Crea `.env` en `backend` (ver variables mínimas abajo).
+3. Genera Prisma y aplica el esquema:
+   ```bash
+   cd backend
+   npx prisma generate
+   npx prisma db push
+   ```
+4. Arranca el backend: `npm run dev` (Swagger en `/api-docs`).
+5. Arranca el frontend: `cd ../frontend && npm run dev`.
 
-### 2. Configurar las variables de entorno
-Chicas, esto es **MUY IMPORTANTE**. El servidor no va a arrancar si no tiene sus credenciales.
-1.  Vayan a la carpeta `backend`.
-2.  Busquen el archivo `.env.example`.
-3.  Hagan una copia de ese archivo y cámbienle el nombre a solo `.env`.
-4.  Abran ese nuevo `.env` y rellenen los datos:
-    *   **API_KEY_TMDB:** Tienen que ponerse la suya de TheMovieDB.
-    *   **DATABASE_URL:** Asegúrense de que coincida con su usuario y password de MySQL (usualmente es `root` y sin contraseña en XAMPP).
-    *   **JWT_SECRET:** Pongan cualquier palabra larga, es para que el login funcione.
+> [!NOTE]
+> El webhook de Stripe necesita el body raw; ya está configurado en `/api/payments/webhook`.
 
-### 3. Preparar la Base de Datos (Prisma)
-Como usamos Prisma, tienen que "sincronizar" el modelo con su base de datos local. En la carpeta `backend`, ejecuten:
-```bash
-npx prisma generate
-npx prisma db push
+### Variables de entorno clave (backend)
+- `PORT`, `FRONTEND_URLS` (coma-separado), `BACKEND_URL`
+- `DATABASE_HOST|PORT|USER|PASSWORD|DATABASE_NAME` (o `DATABASE_URL` para Prisma MariaDB)
+- `REDIS_URL` (o `REDIS_HOST|REDIS_PORT` si usas el cliente de `lib/redis`)
+- `JWT_SECRET`, `REFRESH_SECRET`, `VERIFY_EMAIL_SECRET`, `TWO_FACTOR_ENCRYPTION_KEY` (32 chars)
+- `API_KEY_TMDB`
+- `STRIPE_SECRET_KEY`, `STRIPE_PRICE_VIP`, `STRIPE_PRICE_PRO`, `STRIPE_WEBHOOK_SECRET`
+- `RESEND_API_KEY`, `RESEND_FROM`
+- `CLOUDINARY_URL`
+
+### Scripts útiles
+- `npm run dev` / `npm run build` / `npm start`
+- `npm run test` / `npm run test:coverage`
+- `npm run lint` / `npm run lint:fix` / `npm run format`
+- `npm run stop` (Windows, mata procesos node)
+
+## Estructura
 ```
-Esto va a crear las tablas automáticamente en su MySQL.
+cine-vault/
+├─ backend/           # API, servicios, Prisma, docs backend
+└─ frontend/          # SPA React/Vite
+```
 
-### 4. ¡A correr el proyecto!
-Ahora sí, para ver la magia:
-*   **Backend:** `npm run dev` (dentro de la carpeta backend).
-*   **Frontend:** `npm run dev` (dentro de la carpeta frontend).
+## Documentación
+- Visión de arquitectura: [backend/docs/backend-architecture.md](backend/docs/backend-architecture.md)
+- Referencia por dominios (rutas, validaciones, caché): [backend/docs/backend-domains.md](backend/docs/backend-domains.md)
+- Guías prácticas (how-to): [backend/docs/backend-howto.md](backend/docs/backend-howto.md)
+- Tutorial de autenticación end-to-end: [backend/docs/backend-tutorial-auth.md](backend/docs/backend-tutorial-auth.md)
+- Estándares API y ADRs en [backend/docs](backend/docs)
 
----
+## Estado y próximos pasos
+- OpenAPI/Swagger actualmente documenta Auth; resta cubrir el resto de dominios.
+- RBAC implementado (roles + membresías); rutas de ejemplo en `rbac.routes.ts`.
 
-## 🏗️ Sobre el Proyecto
-Cinevault es una plataforma social para amantes del cine. Está construido con:
-- **Backend:** Node.js + Express + TypeScript + Prisma.
-- **Frontend:** React + Vite + TypeScript.
-- **Aesthetics:** Diseño premium "Black & Gold Elegance".
-
-### Comandos útiles (Backend)
-- `npm run dev`: Arranca el servidor con cambios en tiempo real.
-- `npm run stop`: Mata los procesos de Node (solo en Windows).
-
----
-
-## ⚠️ Notas importantes
-- **¿Error con el .env?** Si el servidor les dice que falta una variable, revisen que el nombre del archivo sea exactamente `.env` y no `.env.txt`.
-- **¿Error de Prisma?** Asegúrense de tener el XAMPP (MySQL) prendido antes de hacer el `db push`.
-
-¡Cualquier duda me avisan! 🎬✨
+¿Dudas o bugs? Abre un issue o ping en el chat del equipo.
