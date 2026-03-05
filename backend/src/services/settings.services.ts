@@ -1,10 +1,7 @@
 import cloudinary from "../config/claudinary.config.js"
 import { settingsRepository } from "../repositories/SettingsRepository.js"
 import { userRepository } from "../repositories/UserRepository.js"
-import {
-  hashearContrasena,
-  compararContrasena,
-} from "../lib/crypto.js"
+import { hashearContrasena, compararContrasena } from "../lib/crypto.js"
 import {
   NotFoundError,
   UnauthorizedError,

@@ -56,8 +56,7 @@ describe("Reviews", () => {
   })
 
   it("GET /api/reviews/movie/:movieId — obtiene reseñas de una película", async () => {
-    const res = await request(app)
-      .get(`/api/reviews/movie/${movieId}`)
+    const res = await request(app).get(`/api/reviews/movie/${movieId}`)
 
     expect(res.status).toBe(200)
     expect(Array.isArray(res.body)).toBe(true)
@@ -82,7 +81,11 @@ describe("Reviews", () => {
         is_verified: true,
       },
     })
-    const otroToken = crearTokenAcceso(otroUser.id, otroUser.role!, otroUser.is_verified)
+    const otroToken = crearTokenAcceso(
+      otroUser.id,
+      otroUser.role!,
+      otroUser.is_verified
+    )
 
     const res = await request(app)
       .patch(`/api/reviews/${reviewId}`)

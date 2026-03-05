@@ -84,7 +84,12 @@ const router = Router()
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
  */
-router.patch("/", middlewareAutenticacion, validarBody(actualizarPerfilSchema), manejadorAsincrono(actualizarPerfil)) // Panel principal del settings donde se podra actualizar todos los campos del user
+router.patch(
+  "/",
+  middlewareAutenticacion,
+  validarBody(actualizarPerfilSchema),
+  manejadorAsincrono(actualizarPerfil)
+) // Panel principal del settings donde se podra actualizar todos los campos del user
 router.delete("/", middlewareAutenticacion, manejadorAsincrono(eliminarCuenta))
 
 /**

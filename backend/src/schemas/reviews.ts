@@ -7,7 +7,8 @@ import { z } from "zod"
    los servicios consuman tipos seguros en lugar de `any` o `req.body` crudo.
    ========================================================================== */
 
-const ratingStep = z.coerce.number({ error: "rating debe ser numérico" })
+const ratingStep = z.coerce
+  .number({ error: "rating debe ser numérico" })
   .min(1, "El rating mínimo es 1")
   .max(5, "El rating máximo es 5")
   .refine((n) => Number.isFinite(n) && (n * 2) % 1 === 0, {
@@ -16,7 +17,8 @@ const ratingStep = z.coerce.number({ error: "rating debe ser numérico" })
 
 /** Crear una nueva reseña */
 export const crearResenaSchema = z.object({
-  movie_id: z.coerce.number({ error: "movie_id debe ser un número" })
+  movie_id: z.coerce
+    .number({ error: "movie_id debe ser un número" })
     .int("movie_id debe ser un entero")
     .positive("movie_id debe ser positivo"),
   content: z

@@ -26,9 +26,7 @@ export interface IDiaryRepository {
     watchedDate: Date
   ): Promise<diary_entries | null>
   countByMovie(movieId: number): Promise<number>
-  buildRichResponse(
-    userId: number
-  ): Promise<RichDiaryEntry[] | null>
+  buildRichResponse(userId: number): Promise<RichDiaryEntry[] | null>
 }
 
 /** Tipo enriquecido con metadatos de TMDB y reseña del usuario */
@@ -67,7 +65,11 @@ export class DiaryRepository implements IDiaryRepository {
     })
   }
 
-  async findByUserMovieDate(userId: number, movieId: number, watchedDate: Date) {
+  async findByUserMovieDate(
+    userId: number,
+    movieId: number,
+    watchedDate: Date
+  ) {
     return prisma.diary_entries.findFirst({
       where: {
         user_id: userId,

@@ -212,9 +212,7 @@ export const renovarTokenService = async (refreshToken: string) => {
     usuario.is_verified
   )
 
-  const { token: nuevoRefresh, idSesion } = await crearTokenRefresco(
-    usuario.id
-  )
+  const { token: nuevoRefresh, idSesion } = await crearTokenRefresco(usuario.id)
 
   return { accessToken, refreshToken: nuevoRefresh, sessionId: idSesion }
 }
@@ -506,7 +504,10 @@ export const listarSesionesService = async (userId: number) => {
 // ---------------------------------------------------------------------------
 // REVOCAR UNA SESIÓN ESPECÍFICA
 // ---------------------------------------------------------------------------
-export const revocarSesionService = async (userId: number, sessionId: string) => {
+export const revocarSesionService = async (
+  userId: number,
+  sessionId: string
+) => {
   if (!sessionId) throw new ValidationError("ID de sesión requerido")
 
   const sesion = await sessionRepository.findById(sessionId)

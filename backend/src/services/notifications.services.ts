@@ -52,10 +52,7 @@ export const marcarComoLeidaService = async (
   notifId: number
 ) => {
   // markAsRead ya filtra por user_id internamente, devuelve null si no es del usuario
-  const notificacion = await notificationsRepository.markAsRead(
-    notifId,
-    userId
-  )
+  const notificacion = await notificationsRepository.markAsRead(notifId, userId)
   return notificacion
 }
 
@@ -63,9 +60,9 @@ export const marcarTodasComoLeidasService = (userId: number) =>
   notificationsRepository.markAllAsRead(userId)
 
 export const contarNoLeidasService = (userId: number) =>
-  notificationsRepository.findByUserId(userId, 1000).then(
-    (notifs) => notifs.filter((n) => !n.read).length
-  )
+  notificationsRepository
+    .findByUserId(userId, 1000)
+    .then((notifs) => notifs.filter((n) => !n.read).length)
 
 export const entregarPendientesService = async (userId: number) => {
   const key = queueKey(userId)

@@ -33,7 +33,10 @@ export const actualizarAvatar = async (
     req.user!.user_id,
     req.body
   )
-  res.json({ message: "Avatar actualizado correctamente", avatar_url: avatarUrl })
+  res.json({
+    message: "Avatar actualizado correctamente",
+    avatar_url: avatarUrl,
+  })
 }
 
 export const eliminarCuenta = async (
@@ -43,4 +46,3 @@ export const eliminarCuenta = async (
   await settingsService.eliminarCuentaService(req.user!.user_id)
   res.json({ message: "Cuenta eliminada correctamente" })
 }
-

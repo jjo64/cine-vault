@@ -5,12 +5,15 @@ import { diaryRepository } from "../../repositories/DiaryRepository.js"
 vi.mock("../../repositories/DiaryRepository.js", () => ({
   diaryRepository: {
     findByUserMovieDate: vi.fn().mockResolvedValue(null),
-    create: vi.fn().mockImplementation((_userId: number, data: any) => Promise.resolve(data)),
+    create: vi
+      .fn()
+      .mockImplementation((_userId: number, data: any) =>
+        Promise.resolve(data)
+      ),
   },
 }))
 
 describe("diary default date", () => {
-
   beforeEach(() => {
     vi.clearAllMocks()
   })

@@ -60,7 +60,9 @@ export async function createCheckoutSessionService(
   return sesion.url!
 }
 
-export async function createPortalSessionService(userId: number): Promise<string> {
+export async function createPortalSessionService(
+  userId: number
+): Promise<string> {
   const sub = await paymentsRepository.findSubscriptionByUser(userId)
   if (!sub) throw new NotFoundError("No tienes una suscripción activa")
 
@@ -142,7 +144,8 @@ export async function processWebhookEventService(
 
       const nuevaFechaFin = new Date()
       nuevaFechaFin.setMonth(nuevaFechaFin.getMonth() + 1)
-      const sub = await paymentsRepository.findSubscriptionByProviderId(stripeSubId)
+      const sub =
+        await paymentsRepository.findSubscriptionByProviderId(stripeSubId)
       if (sub) {
         await paymentsRepository.renewSubscription(stripeSubId, nuevaFechaFin)
         await paymentsRepository.recordPayment({
@@ -160,9 +163,13 @@ export async function processWebhookEventService(
     case "invoice.payment_failed": {
       const invoice = event.data.object as Stripe.Invoice
       const stripeSubId = (invoice as any).subscription as string
-      const sub = await paymentsRepository.findSubscriptionByProviderId(stripeSubId)
+      const sub =
+        await paymentsRepository.findSubscriptionByProviderId(stripeSubId)
       if (sub) {
-        await paymentsRepository.updateSubscriptionStatus(stripeSubId, "expired")
+        await paymentsRepository.updateSubscriptionStatus(
+          stripeSubId,
+          "expired"
+        )
         await paymentsRepository.recordPayment({
           userId: sub.user_id,
           subscriptionId: sub.id,
@@ -207,7 +214,11 @@ const mapStripeStatus = (
   status: Stripe.Subscription.Status
 ): "active" | "cancelled" | "expired" => {
   if (status === "canceled") return "cancelled"
-  if (status === "unpaid" || status === "past_due" || status === "incomplete_expired")
+  if (
+    status === "unpaid" ||
+    status === "past_due" ||
+    status === "incomplete_expired"
+  )
     return "expired"
   return "active"
 }

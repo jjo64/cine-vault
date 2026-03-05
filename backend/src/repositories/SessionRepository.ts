@@ -7,8 +7,13 @@ export interface ISessionRepository {
   deleteById(id: string): Promise<void>
   deleteManyByUser(userId: number): Promise<number>
   deleteManyByUserExcept(userId: number, keepSessionId: string): Promise<number>
-  findByUser(userId: number): Promise<
-    Pick<sessions, "id" | "user_agent" | "ip_address" | "created_at" | "expires_at">[]
+  findByUser(
+    userId: number
+  ): Promise<
+    Pick<
+      sessions,
+      "id" | "user_agent" | "ip_address" | "created_at" | "expires_at"
+    >[]
   >
   findById(id: string): Promise<sessions | null>
 }

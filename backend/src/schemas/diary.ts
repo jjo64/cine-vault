@@ -6,8 +6,8 @@ import { z } from "zod"
 
 /** Crear una entrada en el diario de visionado */
 export const crearEntradaDiarioSchema = z.object({
-  movie_id: z
-    .coerce.number({ error: "movie_id debe ser un número" })
+  movie_id: z.coerce
+    .number({ error: "movie_id debe ser un número" })
     .int("movie_id debe ser un entero")
     .positive("movie_id debe ser positivo"),
   watched_date: z

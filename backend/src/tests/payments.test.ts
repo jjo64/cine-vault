@@ -11,7 +11,9 @@ process.env.STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY ?? "sk_test_dummy"
 process.env.STRIPE_PRICE_PRO = process.env.STRIPE_PRICE_PRO ?? "price_test_pro"
 process.env.STRIPE_PRICE_VIP = process.env.STRIPE_PRICE_VIP ?? "price_test_vip"
 
-const createSession = vi.fn(async () => ({ url: "https://stripe.test/session" }))
+const createSession = vi.fn(async () => ({
+  url: "https://stripe.test/session",
+}))
 const constructEvent = vi.fn()
 const retrieveSub = vi.fn()
 const createPortal = vi.fn(async () => ({ url: "https://stripe.test/portal" }))
@@ -41,7 +43,8 @@ vi.mock("../repositories/PaymentsRepository.js", () => ({
 }))
 
 const rutasPagos = (await import("../routes/payments.routes.js")).default
-const { processWebhookEventService } = await import("../services/payments.services.js")
+const { processWebhookEventService } =
+  await import("../services/payments.services.js")
 
 const app = express()
 app.use(express.json())
@@ -53,7 +56,10 @@ let tokenTest: string
 
 beforeEach(() => {
   vi.clearAllMocks()
-  paymentsRepository.findUserById.mockResolvedValue({ id: 1, email: "payer@test.com" })
+  paymentsRepository.findUserById.mockResolvedValue({
+    id: 1,
+    email: "payer@test.com",
+  })
   tokenTest = crearTokenAcceso(1, "user", true)
 })
 
@@ -115,7 +121,15 @@ describe("processWebhookEventService", () => {
     constructEvent.mockReturnValue({
       id: "evt_1",
       type: "checkout.session.completed",
-      data: { object: { metadata: { userId: "1", plan: "pro" }, subscription: "sub_1", amount_total: 1000, currency: "eur", payment_intent: "pi_1" } },
+      data: {
+        object: {
+          metadata: { userId: "1", plan: "pro" },
+          subscription: "sub_1",
+          amount_total: 1000,
+          currency: "eur",
+          payment_intent: "pi_1",
+        },
+      },
     })
 
     await processWebhookEventService(Buffer.from("{}"), "sig")
@@ -125,11 +139,22 @@ describe("processWebhookEventService", () => {
   })
 
   it("registra pago en invoice.payment_succeeded", async () => {
-    paymentsRepository.findSubscriptionByProviderId.mockResolvedValue({ id: 10, user_id: 1 })
+    paymentsRepository.findSubscriptionByProviderId.mockResolvedValue({
+      id: 10,
+      user_id: 1,
+    })
     constructEvent.mockReturnValue({
       id: "evt_2",
       type: "invoice.payment_succeeded",
-      data: { object: { subscription: "sub_1", amount_paid: 500, currency: "usd", billing_reason: "subscription_cycle", payment_intent: "pi_2" } },
+      data: {
+        object: {
+          subscription: "sub_1",
+          amount_paid: 500,
+          currency: "usd",
+          billing_reason: "subscription_cycle",
+          payment_intent: "pi_2",
+        },
+      },
     })
 
     await processWebhookEventService(Buffer.from("{}"), "sig")

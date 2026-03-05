@@ -11,7 +11,7 @@ describe("middlewareAutenticacion", () => {
   const makeReq = (token?: string) =>
     ({
       headers: token ? { authorization: `Bearer ${token}` } : {},
-    } as any)
+    }) as any
 
   it("lanza UnauthorizedError cuando falta token", () => {
     const req = makeReq()

@@ -10,8 +10,7 @@ import type { AgregarFavoritoDTO } from "../schemas/favorites.js"
 
 export const obtenerFavoritosService = async (userId: number) => {
   const favoritos = await favoritiesRepository.findByUserId(userId)
-  if (favoritos.length === 0)
-    throw new NotFoundError("No tienes favoritos")
+  if (favoritos.length === 0) throw new NotFoundError("No tienes favoritos")
   return favoritos
 }
 

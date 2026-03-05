@@ -32,7 +32,10 @@ export const obtenerResenasPorUsuarioService = (userId: number) =>
 
 export const obtenerResenasPorPeliculaService = async (movieId: number) => {
   const cacheKey = movieReviewsKey(movieId)
-  const cached = await getCache<Awaited<ReturnType<typeof reviewsRepository.findByMovieId>>>(cacheKey)
+  const cached =
+    await getCache<Awaited<ReturnType<typeof reviewsRepository.findByMovieId>>>(
+      cacheKey
+    )
   if (cached) return cached
 
   const resenas = await reviewsRepository.findByMovieId(movieId)
@@ -51,7 +54,8 @@ const verificarYCrearResenaUnica = async (
     userId,
     data.movie_id
   )
-  if (existente) throw new ConflictError("Ya tienes una reseña para esta película")
+  if (existente)
+    throw new ConflictError("Ya tienes una reseña para esta película")
   const resena = await reviewsRepository.create(userId, data)
   await invalidateResenaCache(data.movie_id)
   return resena
@@ -120,8 +124,7 @@ export const darLikeResenaService = async (
 ) => {
   const id = asegurarId(reviewId)
   const likeExistente = await reviewsRepository.findLike(userId, id)
-  if (likeExistente)
-    throw new ConflictError("Ya has dado like a esta reseña")
+  if (likeExistente) throw new ConflictError("Ya has dado like a esta reseña")
 
   const { like, review } = await reviewsRepository.addLikeTransaction(
     userId,
@@ -137,8 +140,7 @@ export const quitarLikeResenaService = async (
 ) => {
   const id = asegurarId(reviewId)
   const likeExistente = await reviewsRepository.findLike(userId, id)
-  if (!likeExistente)
-    throw new NotFoundError("No has dado like a esta reseña")
+  if (!likeExistente) throw new NotFoundError("No has dado like a esta reseña")
   const result = await reviewsRepository.removeLikeTransaction(userId, id)
   await invalidateResenaCache(result.review.movie_id)
   return result
@@ -203,7 +205,9 @@ const invalidateResenaCache = async (movieId: number) => {
   await invalidateKeys([movieReviewsKey(movieId), movieAggregateKey(movieId)])
 }
 
-const buildMovieAggregate = async (movieId: number): Promise<MovieAggregate> => {
+const buildMovieAggregate = async (
+  movieId: number
+): Promise<MovieAggregate> => {
   const [reviewsAggregate, diaryCount] = await Promise.all([
     reviewsRepository.aggregateByMovie(movieId),
     diaryRepository.countByMovie(movieId),

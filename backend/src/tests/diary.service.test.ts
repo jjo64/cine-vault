@@ -35,7 +35,9 @@ describe("obtenerDiarioService", () => {
   })
 
   it("devuelve el diario enriquecido si hay entradas", async () => {
-    const ricas = [{ id: 1, movie_info: { title: "El club de la lucha" } }] as any
+    const ricas = [
+      { id: 1, movie_info: { title: "El club de la lucha" } },
+    ] as any
     vi.mocked(diaryRepository.buildRichResponse).mockResolvedValue(ricas)
 
     const resultado = await obtenerDiarioService(1)
@@ -46,7 +48,12 @@ describe("obtenerDiarioService", () => {
 
 describe("crearEntradaDiarioService", () => {
   it("crea y devuelve la entrada del diario", async () => {
-    const entrada = { id: 1, user_id: 1, movie_id: 2, watched_date: new Date() } as any
+    const entrada = {
+      id: 1,
+      user_id: 1,
+      movie_id: 2,
+      watched_date: new Date(),
+    } as any
     vi.mocked(diaryRepository.create).mockResolvedValue(entrada)
 
     const resultado = await crearEntradaDiarioService(1, {
@@ -69,12 +76,19 @@ describe("eliminarEntradaDiarioService", () => {
 
   it("lanza NotFoundError si la entrada no existe", async () => {
     vi.mocked(diaryRepository.findById).mockResolvedValue(null)
-    await expect(eliminarEntradaDiarioService(1, 99)).rejects.toThrow(NotFoundError)
+    await expect(eliminarEntradaDiarioService(1, 99)).rejects.toThrow(
+      NotFoundError
+    )
   })
 
   it("lanza ForbiddenError si el usuario no es el propietario", async () => {
     const { ForbiddenError } = await import("../errors/AppErrors.js")
-    vi.mocked(diaryRepository.findById).mockResolvedValue({ id: 5, user_id: 99 } as any)
-    await expect(eliminarEntradaDiarioService(1, 5)).rejects.toThrow(ForbiddenError)
+    vi.mocked(diaryRepository.findById).mockResolvedValue({
+      id: 5,
+      user_id: 99,
+    } as any)
+    await expect(eliminarEntradaDiarioService(1, 5)).rejects.toThrow(
+      ForbiddenError
+    )
   })
 })

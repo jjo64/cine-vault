@@ -16,10 +16,7 @@ export const actualizarPerfilSchema = z
         "El username solo puede contener letras, números y guiones bajos"
       )
       .optional(),
-    email: z
-      .string()
-      .email("El email no tiene un formato válido")
-      .optional(),
+    email: z.string().email("El email no tiene un formato válido").optional(),
     bio: z
       .string()
       .max(300, "La bio no puede superar 300 caracteres")
@@ -36,9 +33,7 @@ export const actualizarPerfilSchema = z
 /** Cambiar contraseña */
 export const actualizarAuthSchema = z
   .object({
-    password_actual: z
-      .string()
-      .min(1, "La contraseña actual es requerida"),
+    password_actual: z.string().min(1, "La contraseña actual es requerida"),
     password_nueva: z
       .string()
       .min(8, "La nueva contraseña debe tener al menos 8 caracteres")
@@ -56,9 +51,7 @@ export const actualizarAuthSchema = z
 
 /** Actualizar avatar (base64) */
 export const actualizarAvatarSchema = z.object({
-  avatar: z
-    .string()
-    .min(1, "No se ha proporcionado imagen"),
+  avatar: z.string().min(1, "No se ha proporcionado imagen"),
 })
 
 export type ActualizarPerfilDTO = z.infer<typeof actualizarPerfilSchema>

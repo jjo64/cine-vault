@@ -16,7 +16,8 @@ vi.mock("../repositories/WatchlistRepository.js", () => ({
   },
 }))
 
-const { watchlistRepository } = await import("../repositories/WatchlistRepository.js")
+const { watchlistRepository } =
+  await import("../repositories/WatchlistRepository.js")
 const {
   obtenerWatchlistService,
   agregarAWatchlistService,
@@ -52,7 +53,9 @@ describe("agregarAWatchlistService", () => {
 
   it("lanza ConflictError si la película ya está en la watchlist", async () => {
     vi.mocked(watchlistRepository.exists).mockResolvedValue(true)
-    await expect(agregarAWatchlistService(1, { movie_id: 10 })).rejects.toThrow(ConflictError)
+    await expect(agregarAWatchlistService(1, { movie_id: 10 })).rejects.toThrow(
+      ConflictError
+    )
     expect(watchlistRepository.create).not.toHaveBeenCalled()
   })
 })
@@ -60,7 +63,9 @@ describe("agregarAWatchlistService", () => {
 describe("eliminarDeWatchlistService", () => {
   it("elimina la película de la watchlist del usuario", async () => {
     vi.mocked(watchlistRepository.deleteByMovieId).mockResolvedValue(undefined)
-    await expect(eliminarDeWatchlistService(1, { movie_id: 10 })).resolves.not.toThrow()
+    await expect(
+      eliminarDeWatchlistService(1, { movie_id: 10 })
+    ).resolves.not.toThrow()
     expect(watchlistRepository.deleteByMovieId).toHaveBeenCalledWith(1, 10)
   })
 })
