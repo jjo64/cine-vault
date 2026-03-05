@@ -37,4 +37,3 @@ export const removeMovieFromFavorites = async (req: Request, res: Response) => {
   )
   res.json({ message: "Eliminado de favoritos" })
 }
-

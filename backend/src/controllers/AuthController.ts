@@ -49,9 +49,8 @@ export const reenviarVerificacion = async (req: Request, res: Response) => {
 export const renovarToken = async (req: Request, res: Response) => {
   const token = req.cookies.refresh_token
   if (!token) throw new UnauthorizedError("No se proporcionó refresh token")
-  const { accessToken, refreshToken } = await authService.renovarTokenService(
-    token
-  )
+  const { accessToken, refreshToken } =
+    await authService.renovarTokenService(token)
   res.cookie("refresh_token", refreshToken, COOKIE_OPTIONS)
   res.json({ accessToken })
 }

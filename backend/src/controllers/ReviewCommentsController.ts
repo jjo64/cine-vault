@@ -41,7 +41,10 @@ export const addComment = async (req: SolicitudAutenticada, res: Response) => {
   res.status(201).json(comentario)
 }
 
-export const removeComment = async (req: SolicitudAutenticada, res: Response) => {
+export const removeComment = async (
+  req: SolicitudAutenticada,
+  res: Response
+) => {
   await assertNotRateLimited(req.ip!)
   await reviewsService.eliminarComentarioService(
     req.user!.user_id,
@@ -50,7 +53,10 @@ export const removeComment = async (req: SolicitudAutenticada, res: Response) =>
   res.json({ message: "Comentario eliminado correctamente" })
 }
 
-export const updateComment = async (req: SolicitudAutenticada, res: Response) => {
+export const updateComment = async (
+  req: SolicitudAutenticada,
+  res: Response
+) => {
   await assertNotRateLimited(req.ip!)
   const comentario = await reviewsService.actualizarComentarioService(
     req.user!.user_id,
@@ -62,6 +68,8 @@ export const updateComment = async (req: SolicitudAutenticada, res: Response) =>
 
 const assertNotRateLimited = async (ip: string) => {
   if (await checkIPSpike(ip)) {
-    throw new TooManyRequestsError("Demasiadas acciones, intenta en unos segundos")
+    throw new TooManyRequestsError(
+      "Demasiadas acciones, intenta en unos segundos"
+    )
   }
 }

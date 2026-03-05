@@ -1,4 +1,10 @@
-import { reviews, review_likes, reports, review_comments, Prisma } from "@prisma/client"
+import {
+  reviews,
+  review_likes,
+  reports,
+  review_comments,
+  Prisma,
+} from "@prisma/client"
 import { prisma } from "../lib/prisma.js"
 import type { CrearResenaDTO, ActualizarResenaDTO } from "../schemas/reviews.js"
 
@@ -83,7 +89,9 @@ export class ReviewsRepository implements IReviewsRepository {
   }
 
   async findByUserAndMovie(userId: number, movieId: number) {
-    return prisma.reviews.findFirst({ where: { user_id: userId, movie_id: movieId } })
+    return prisma.reviews.findFirst({
+      where: { user_id: userId, movie_id: movieId },
+    })
   }
 
   async findById(id: number) {

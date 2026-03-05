@@ -2,7 +2,13 @@ import { redis } from "./redis.js"
 
 const DEFAULT_TTL_SECONDS = 300
 
-type Serializable = Record<string, unknown> | Array<unknown> | string | number | boolean | null
+type Serializable =
+  | Record<string, unknown>
+  | Array<unknown>
+  | string
+  | number
+  | boolean
+  | null
 
 export const getCache = async <T>(key: string): Promise<T | null> => {
   const raw = await redis.get(key)

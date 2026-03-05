@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 
 const sendMock = vi.fn()
-const instances = vi.hoisted(() => [] as Array<{ apiKey?: string; send: typeof sendMock }>)
+const instances = vi.hoisted(
+  () => [] as Array<{ apiKey?: string; send: typeof sendMock }>
+)
 
 vi.mock("resend", () => {
   return {

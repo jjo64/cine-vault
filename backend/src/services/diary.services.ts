@@ -1,5 +1,9 @@
 import { diaryRepository } from "../repositories/DiaryRepository.js"
-import { NotFoundError, ForbiddenError, ConflictError } from "../errors/AppErrors.js"
+import {
+  NotFoundError,
+  ForbiddenError,
+  ConflictError,
+} from "../errors/AppErrors.js"
 import type { CrearEntradaDiarioDTO } from "../schemas/diary.js"
 import { getCache, invalidateKeys, setCache } from "../lib/cache.js"
 
@@ -11,7 +15,10 @@ import { getCache, invalidateKeys, setCache } from "../lib/cache.js"
 
 export const obtenerDiarioService = async (userId: number) => {
   const cacheKey = diarioCacheKey(userId)
-  const cached = await getCache<Awaited<ReturnType<typeof diaryRepository.buildRichResponse>>>(cacheKey)
+  const cached =
+    await getCache<
+      Awaited<ReturnType<typeof diaryRepository.buildRichResponse>>
+    >(cacheKey)
   if (cached) return cached
 
   const diario = await diaryRepository.buildRichResponse(userId)

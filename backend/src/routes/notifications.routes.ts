@@ -75,11 +75,7 @@ router.get(
   manejadorAsincrono(getUnreadCount)
 )
 
-router.get(
-  "/pending",
-  middlewareAutenticacion,
-  manejadorAsincrono(getPending)
-)
+router.get("/pending", middlewareAutenticacion, manejadorAsincrono(getPending))
 
 /**
  * @swagger

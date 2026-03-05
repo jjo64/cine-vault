@@ -139,7 +139,12 @@ router.get("/:id_user", manejadorAsincrono(getDiaryUser)) // obtener diario de o
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
  */
-router.post("/", middlewareAutenticacion, validarBody(crearEntradaDiarioSchema), manejadorAsincrono(createDiary)) // crear diario
+router.post(
+  "/",
+  middlewareAutenticacion,
+  validarBody(crearEntradaDiarioSchema),
+  manejadorAsincrono(createDiary)
+) // crear diario
 
 /**
  * @swagger

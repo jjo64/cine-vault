@@ -11,7 +11,9 @@ import type { AgregarFavoritoDTO } from "../schemas/favorites.js"
    ========================================================================== */
 
 export interface IFavoritiesRepository {
-  findByUserId(userId: number): Promise<Pick<favorites, "movie_id" | "rank_position">[]>
+  findByUserId(
+    userId: number
+  ): Promise<Pick<favorites, "movie_id" | "rank_position">[]>
   findFirst(userId: number, movieId: number): Promise<favorites | null>
   create(userId: number, data: AgregarFavoritoDTO): Promise<favorites>
   delete(id: number): Promise<void>

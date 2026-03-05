@@ -1,6 +1,9 @@
 import { watchlistRepository } from "../repositories/WatchlistRepository.js"
 import { ConflictError } from "../errors/AppErrors.js"
-import type { AgregarWatchlistDTO, EliminarWatchlistDTO } from "../schemas/watchlist.js"
+import type {
+  AgregarWatchlistDTO,
+  EliminarWatchlistDTO,
+} from "../schemas/watchlist.js"
 
 /* ==========================================================================
    WATCHLIST SERVICE

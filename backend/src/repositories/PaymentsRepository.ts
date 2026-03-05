@@ -34,7 +34,9 @@ class PaymentsRepository {
   }
 
   async findSubscriptionByProviderId(stripeSubId: string) {
-    return prisma.subscriptions.findFirst({ where: { provider_subscription_id: stripeSubId } })
+    return prisma.subscriptions.findFirst({
+      where: { provider_subscription_id: stripeSubId },
+    })
   }
 
   async findSubscriptionByUser(userId: number) {

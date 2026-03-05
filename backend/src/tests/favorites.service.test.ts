@@ -15,7 +15,8 @@ vi.mock("../repositories/FavoritiesRepository.js", () => ({
   },
 }))
 
-const { favoritiesRepository } = await import("../repositories/FavoritiesRepository.js")
+const { favoritiesRepository } =
+  await import("../repositories/FavoritiesRepository.js")
 const {
   obtenerFavoritosService,
   agregarFavoritoService,
@@ -53,7 +54,9 @@ describe("agregarFavoritoService", () => {
 
 describe("eliminarFavoritoService", () => {
   it("elimina el favorito si existe", async () => {
-    vi.mocked(favoritiesRepository.findFirst).mockResolvedValue({ id: 5 } as any)
+    vi.mocked(favoritiesRepository.findFirst).mockResolvedValue({
+      id: 5,
+    } as any)
     vi.mocked(favoritiesRepository.delete).mockResolvedValue(undefined as any)
 
     await expect(eliminarFavoritoService(1, 10)).resolves.not.toThrow()

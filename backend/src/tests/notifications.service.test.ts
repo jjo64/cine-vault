@@ -17,9 +17,7 @@ const redisMock = vi.hoisted(() => ({
 
 vi.mock("../config/socketio.config.js", () => ({
   io: { to: mockTo },
-  usuariosConectados: new Map<number, string>([
-    [1, "socket-id-123"],
-  ]),
+  usuariosConectados: new Map<number, string>([[1, "socket-id-123"]]),
 }))
 
 vi.mock("../lib/redis.js", () => ({
@@ -36,7 +34,8 @@ vi.mock("../repositories/NotificationsRepository.js", () => ({
   },
 }))
 
-const { notificationsRepository } = await import("../repositories/NotificationsRepository.js")
+const { notificationsRepository } =
+  await import("../repositories/NotificationsRepository.js")
 const {
   emitirNotificacionService,
   obtenerNotificacionesService,
@@ -69,11 +68,18 @@ describe("emitirNotificacionService", () => {
     const notif = { id: 2, user_id: 99, type: "comment", read: false } as any
     vi.mocked(notificationsRepository.create).mockResolvedValue(notif)
 
-    await emitirNotificacionService({ user_id: 99, sender_id: 2, type: "comment" })
+    await emitirNotificacionService({
+      user_id: 99,
+      sender_id: 2,
+      type: "comment",
+    })
 
     expect(notificationsRepository.create).toHaveBeenCalled()
     expect(mockTo).not.toHaveBeenCalled()
-    expect(redisMock.lpush).toHaveBeenCalledWith("notif:queue:99", JSON.stringify(notif))
+    expect(redisMock.lpush).toHaveBeenCalledWith(
+      "notif:queue:99",
+      JSON.stringify(notif)
+    )
     expect(redisMock.ltrim).toHaveBeenCalledWith("notif:queue:99", 0, 49)
   })
 })

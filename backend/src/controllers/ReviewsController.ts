@@ -106,6 +106,8 @@ export const reportReview = async (req: Request, res: Response) => {
 
 const assertNotRateLimited = async (ip: string) => {
   if (await checkIPSpike(ip)) {
-    throw new TooManyRequestsError("Demasiadas acciones, intenta en unos segundos")
+    throw new TooManyRequestsError(
+      "Demasiadas acciones, intenta en unos segundos"
+    )
   }
 }

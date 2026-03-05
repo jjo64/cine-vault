@@ -179,7 +179,12 @@ router.get("/movie/:movieId", manejadorAsincrono(getReviewsByMovieId)) // Obtene
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
  */
-router.post("/", middlewareAutenticacion, validarBody(crearResenaSchema), manejadorAsincrono(addReview)) // Crear una review
+router.post(
+  "/",
+  middlewareAutenticacion,
+  validarBody(crearResenaSchema),
+  manejadorAsincrono(addReview)
+) // Crear una review
 
 /**
  * @swagger
@@ -470,7 +475,12 @@ router.post(
  *         $ref: '#/components/responses/NotFound'
  */
 router.get("/:reviewId/comments", manejadorAsincrono(getCommentsByReviewId))
-router.post("/:reviewId/comments", middlewareAutenticacion, validarBody(crearComentarioSchema), manejadorAsincrono(addComment))
+router.post(
+  "/:reviewId/comments",
+  middlewareAutenticacion,
+  validarBody(crearComentarioSchema),
+  manejadorAsincrono(addComment)
+)
 
 /**
  * @swagger
@@ -551,7 +561,16 @@ router.post("/:reviewId/comments", middlewareAutenticacion, validarBody(crearCom
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.patch("/:reviewId/comments/:commentId", middlewareAutenticacion, validarBody(actualizarComentarioSchema), manejadorAsincrono(updateComment))
-router.delete("/:reviewId/comments/:commentId", middlewareAutenticacion, manejadorAsincrono(removeComment))
+router.patch(
+  "/:reviewId/comments/:commentId",
+  middlewareAutenticacion,
+  validarBody(actualizarComentarioSchema),
+  manejadorAsincrono(updateComment)
+)
+router.delete(
+  "/:reviewId/comments/:commentId",
+  middlewareAutenticacion,
+  manejadorAsincrono(removeComment)
+)
 
 export default router

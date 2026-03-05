@@ -75,10 +75,7 @@ describe("Cache de agregados de película", () => {
       likes_total: 3,
       diary_entries: 1,
     })
-    expect(setCache).toHaveBeenCalledWith(
-      `movie:agg:${movieId}`,
-      aggregate
-    )
+    expect(setCache).toHaveBeenCalledWith(`movie:agg:${movieId}`, aggregate)
 
     await obtenerAgregadoPeliculaService(movieId)
     expect(reviewsRepositoryMock.aggregateByMovie).toHaveBeenCalledTimes(1)

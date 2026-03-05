@@ -10,7 +10,6 @@ vi.mock("../../repositories/DiaryRepository.js", () => ({
 }))
 
 describe("diary unique per day", () => {
-
   beforeEach(() => {
     vi.clearAllMocks()
   })

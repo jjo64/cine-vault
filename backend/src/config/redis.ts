@@ -9,7 +9,10 @@ import { redis } from "../lib/redis.js"
 
 export const conectarRedis = async () => {
   // Solo los clientes ioredis reales tienen .status/.connect.
-  const client = redis as unknown as { status?: string; connect?: () => Promise<void> }
+  const client = redis as unknown as {
+    status?: string
+    connect?: () => Promise<void>
+  }
   if (client?.status === "wait" || client?.status === "close") {
     await client.connect?.()
   }

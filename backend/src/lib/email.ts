@@ -9,7 +9,8 @@ type EmailPayload = {
 }
 
 const apiKey = process.env.RESEND_API_KEY
-const defaultFrom = process.env.RESEND_FROM || "CineVault <noreply@mail.cinevault.art>"
+const defaultFrom =
+  process.env.RESEND_FROM || "CineVault <noreply@mail.cinevault.art>"
 
 const resendClient = apiKey ? new Resend(apiKey) : null
 
@@ -32,7 +33,10 @@ const sendEmail = async ({ to, subject, html, text, from }: EmailPayload) => {
   })
 }
 
-export const enviarCorreoVerificacion = async (email: string, token: string) => {
+export const enviarCorreoVerificacion = async (
+  email: string,
+  token: string
+) => {
   const link = `${process.env.BACKEND_URL}/api/auth/verify-email?token=${token}`
   return sendEmail({
     to: email,
@@ -46,7 +50,10 @@ export const enviarCorreoVerificacion = async (email: string, token: string) => 
   })
 }
 
-export const enviarCorreoResetPassword = async (email: string, token: string) => {
+export const enviarCorreoResetPassword = async (
+  email: string,
+  token: string
+) => {
   const link = `${process.env.BACKEND_URL}/api/auth/reset-password?token=${token}`
   return sendEmail({
     to: email,
@@ -62,7 +69,10 @@ export const enviarCorreoResetPassword = async (email: string, token: string) =>
   })
 }
 
-export const enviarCorreoBackupCodes = async (email: string, codes: string[]) => {
+export const enviarCorreoBackupCodes = async (
+  email: string,
+  codes: string[]
+) => {
   const listado = codes.map((c) => `<li>${c}</li>`).join("")
   return sendEmail({
     to: email,

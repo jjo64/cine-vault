@@ -18,7 +18,9 @@ vi.mock("../../lib/email.js", () => ({
 
 vi.mock("../../repositories/UserRepository.js", () => ({
   userRepository: {
-    findById: vi.fn().mockResolvedValue({ id: 1, role: "user", is_verified: true }),
+    findById: vi
+      .fn()
+      .mockResolvedValue({ id: 1, role: "user", is_verified: true }),
   },
 }))
 

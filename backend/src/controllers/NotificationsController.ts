@@ -45,4 +45,3 @@ export const getPending = async (req: Request, res: Response) => {
   )
   res.json({ pending: pendientes })
 }
-
