@@ -1,6 +1,16 @@
 import { Redis } from "ioredis"
 
-type RedisLike = Pick<Redis, "get" | "set" | "del" | "incr" | "expire" | "lpush" | "ltrim" | "lrange" | "on">
+interface RedisLike {
+  get(key: string): Promise<string | null>
+  set(key: string, value: string, ...args: unknown[]): Promise<"OK" | null>
+  del(...keys: string[]): Promise<number>
+  incr(key: string): Promise<number>
+  expire(key: string, seconds: number): Promise<number>
+  lpush(key: string, ...values: string[]): Promise<number>
+  ltrim(key: string, start: number, stop: number): Promise<void | "OK">
+  lrange(key: string, start: number, stop: number): Promise<string[]>
+  on(event: string, listener: (...args: unknown[]) => void): this
+}
 
 const createInMemoryRedis = (): RedisLike => {
   const kv = new Map<string, string>()
@@ -78,12 +88,14 @@ const createInMemoryRedis = (): RedisLike => {
       const arr = lists.get(key) || []
       lists.set(key, arr.slice(start, stop + 1))
     },
-    async lrange(key: string, start = 0, stop = -1) {
+    async lrange(key: string, start: string | number = 0, stop: string | number = -1) {
       if (isExpired(key)) return []
-      const arr = lists.get(key) || []
-      if (stop === -1) return arr.slice(start)
-      return arr.slice(start, stop + 1)
-    },
+        const arr = lists.get(key) || []
+        const s = Number(start)
+        const e = Number(stop)
+        if (e === -1) return arr.slice(s)
+          return arr.slice(s, e + 1)
+      },
     on() {
       return this
     },

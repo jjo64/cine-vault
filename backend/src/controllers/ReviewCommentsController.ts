@@ -20,7 +20,7 @@ export const getCommentsByReviewId = async (req: Request, res: Response) => {
 }
 
 export const addComment = async (req: SolicitudAutenticada, res: Response) => {
-  await assertNotRateLimited(req.ip)
+  await assertNotRateLimited(req.ip!)
   const userId = req.user!.user_id
   const reviewId = Number(req.params.reviewId)
 
@@ -42,7 +42,7 @@ export const addComment = async (req: SolicitudAutenticada, res: Response) => {
 }
 
 export const removeComment = async (req: SolicitudAutenticada, res: Response) => {
-  await assertNotRateLimited(req.ip)
+  await assertNotRateLimited(req.ip!)
   await reviewsService.eliminarComentarioService(
     req.user!.user_id,
     Number(req.params.commentId)
@@ -51,7 +51,7 @@ export const removeComment = async (req: SolicitudAutenticada, res: Response) =>
 }
 
 export const updateComment = async (req: SolicitudAutenticada, res: Response) => {
-  await assertNotRateLimited(req.ip)
+  await assertNotRateLimited(req.ip!)
   const comentario = await reviewsService.actualizarComentarioService(
     req.user!.user_id,
     Number(req.params.commentId),

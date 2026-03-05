@@ -9,7 +9,7 @@ import { TooManyRequestsError } from "../errors/AppErrors.js"
 const TTL_BUSQUEDA = 60 * 60 * 2
 
 export const getSearch = async (req: Request, res: Response) => {
-  await assertNotRateLimited(req.ip)
+  await assertNotRateLimited(req.ip!)
   const q = req.query.q as string
   const pagina = String(req.query.page || "1")
 
@@ -80,7 +80,7 @@ export const getSearch = async (req: Request, res: Response) => {
 }
 
 export const getMultiSearch = async (req: Request, res: Response) => {
-  await assertNotRateLimited(req.ip)
+  await assertNotRateLimited(req.ip!)
   const datos = await consultarTMDB("search/multi", {
     query: req.query.q as string,
     ...(req.query.page && { page: req.query.page as string }),
@@ -89,7 +89,7 @@ export const getMultiSearch = async (req: Request, res: Response) => {
 }
 
 export const getPersonSearch = async (req: Request, res: Response) => {
-  await assertNotRateLimited(req.ip)
+  await assertNotRateLimited(req.ip!)
   const datos = await consultarTMDB("search/person", {
     query: req.query.q as string,
     ...(req.query.page && { page: req.query.page as string }),
@@ -98,7 +98,7 @@ export const getPersonSearch = async (req: Request, res: Response) => {
 }
 
 export const getMovieSearch = async (req: Request, res: Response) => {
-  await assertNotRateLimited(req.ip)
+  await assertNotRateLimited(req.ip!)
   const datos = await consultarTMDB("search/movie", {
     query: req.query.q as string,
     ...(req.query.page && { page: req.query.page as string }),
@@ -107,7 +107,7 @@ export const getMovieSearch = async (req: Request, res: Response) => {
 }
 
 export const getTVSearch = async (req: Request, res: Response) => {
-  await assertNotRateLimited(req.ip)
+  await assertNotRateLimited(req.ip!)
   const datos = await consultarTMDB("search/tv", {
     query: req.query.q as string,
     ...(req.query.page && { page: req.query.page as string }),
