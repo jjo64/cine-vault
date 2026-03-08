@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { GrainOverlay } from '../components/profile-v2/primitives'
 import { Footer, Navbar, ProfileHero, TabsBar } from '../components/profile-v2/layout'
-import { ListsPanel, OverviewPanel, ProfileSidebar, ReviewsPanel, VaultPanel, WatchlistPanel } from '../components/profile-v2/panels'
+import { HistoryPanel, ListsPanel, OverviewPanel, ProfileSidebar, ReviewsPanel, VaultPanel, WatchlistPanel } from '../components/profile-v2/panels'
 import { C, SANS } from '../components/profile-v2/theme'
 import { useProfilePageData } from '../hooks/useProfilePageData'
 import { useResponsive } from '../hooks/useResponsive'
@@ -19,6 +19,8 @@ export default function ProfilePage() {
     error,
     profileHeader,
     stats,
+    followerUsers,
+    followingUsers,
     isAuthenticated,
     isOwnProfile,
     hasTargetProfile,
@@ -38,7 +40,17 @@ export default function ProfilePage() {
   const showGuestHint = !loading && !hasTargetProfile && !isAuthenticated
 
   const panels: Record<string, ReactNode> = {
-    Resumen: <OverviewPanel recentlyWatched={recentlyWatched} watchlistFilms={watchlistFilms} reviewItems={reviewItems} isMobile={isMobile} isTablet={isTablet} />,
+    Resumen: (
+      <OverviewPanel
+        recentlyWatched={recentlyWatched}
+        watchlistFilms={watchlistFilms}
+        reviewItems={reviewItems}
+        isMobile={isMobile}
+        isTablet={isTablet}
+        onJumpToTab={(tab) => setActiveTab(tab)}
+      />
+    ),
+    Historial: <HistoryPanel recentlyWatched={recentlyWatched} isMobile={isMobile} />,
     Vault: <VaultPanel isMobile={isMobile} isTablet={isTablet} />,
     Watchlist: <WatchlistPanel watchlistFilms={watchlistFilms} isMobile={isMobile} />,
     Reseñas: <ReviewsPanel reviewItems={reviewItems} isMobile={isMobile} />,
@@ -51,7 +63,16 @@ export default function ProfilePage() {
       <Navbar onNavigateHome={() => navigate('/')} onSearch={searchFromNavbar} isMobile={isMobile} />
 
       <div style={{ paddingTop: 64 }}>
-        <ProfileHero header={profileHeader} stats={stats} canEditProfile={canEditProfile && !isPublicProfile} isMobile={isMobile} isTablet={isTablet} />
+        <ProfileHero
+          header={profileHeader}
+          stats={stats}
+          followers={followerUsers}
+          following={followingUsers}
+          onNavigateToUser={(targetUsername) => navigate(`/${targetUsername}`)}
+          canEditProfile={canEditProfile && !isPublicProfile}
+          isMobile={isMobile}
+          isTablet={isTablet}
+        />
       </div>
 
       <TabsBar active={activeTab} onSelect={setActiveTab} isMobile={isMobile} />

@@ -76,15 +76,19 @@ export function GrainOverlay() {
   )
 }
 
-export function SectionHeader({ title, em, link }: { title: string; em?: string; link: string }) {
+export function SectionHeader({ title, em, link, onLinkClick }: { title: string; em?: string; link: string; onLinkClick?: () => void }) {
   return (
     <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 24 }}>
       <div style={{ fontFamily: SERIF, fontSize: 26, fontWeight: 400, letterSpacing: '0.02em', color: C.text }}>
         {title} {em && <em style={{ color: C.textSoft, fontStyle: 'italic', fontSize: 22 }}>{em}</em>}
       </div>
-      <a
-        href="#"
+      <button
+        type="button"
+        onClick={onLinkClick}
         style={{
+          border: 'none',
+          background: 'none',
+          cursor: onLinkClick ? 'pointer' : 'default',
           fontSize: 11,
           letterSpacing: '0.16em',
           textTransform: 'uppercase',
@@ -97,7 +101,7 @@ export function SectionHeader({ title, em, link }: { title: string; em?: string;
         }}
       >
         {link} <ChevronRight size={12} />
-      </a>
+      </button>
     </div>
   )
 }

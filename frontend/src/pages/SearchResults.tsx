@@ -218,7 +218,7 @@ export default function SearchResultsPage() {
           {sortedResults.map((movie) => (
             <Link key={movie.id} to={`/movie/${movie.id}-${createSlug(movie.title)}`} style={{ textDecoration: 'none' }}>
               <article style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '92px minmax(0, 1fr)', gap: 14, border: `1px solid ${C.border}`, background: C.surface, padding: 10, transition: 'border-color 0.2s, transform 0.2s', cursor: 'pointer' }}>
-                <img src={movie.poster_path ? `https://image.tmdb.org/t/p/w185${movie.poster_path}` : 'https://via.placeholder.com/185x278?text=No+Poster'} alt={movie.title} style={{ width: isMobile ? '100%' : 92, height: isMobile ? 220 : 138, objectFit: 'cover', borderRadius: 2, background: C.elevated }} />
+                <img src={movie.poster_path ? `https://image.tmdb.org/t/p/w185${movie.poster_path}` : '/no-poster.svg'} alt={movie.title} style={{ width: isMobile ? '100%' : 92, height: isMobile ? 220 : 138, objectFit: 'cover', borderRadius: 2, background: C.elevated }} />
 
                 <div style={{ minWidth: 0 }}>
                   <h2 style={{ margin: '2px 0 6px', color: C.text, fontFamily: SANS, fontSize: isMobile ? 20 : 26, textTransform: 'uppercase', lineHeight: 1.02, letterSpacing: '0.02em' }}>

@@ -4,7 +4,7 @@ import { motion, useScroll, useTransform } from 'motion/react'
 import { Search, ChevronRight, Star, Users, BookOpen, Layers, ArrowRight, Film, Sparkles, Lock, Clapperboard, Menu, X } from 'lucide-react'
 import InfiniteSlider from './InfiniteSlider'
 import { createSlug } from '../utils/stringUtils'
-import { getCurrentUser, logoutCurrentUser } from '../services/authServices'
+import { getCurrentUser, getStoredAccessToken, logoutCurrentUser } from '../services/authServices'
 
 const C = {
   bg: '#080808',
@@ -237,17 +237,27 @@ function Navbar({ isMobile, isTablet }: { isMobile: boolean; isTablet: boolean }
     useEffect(() => {
       let alive = true
 
-      getCurrentUser()
-        .then((user) => {
-          if (!alive) return
-          setViewerUsername(user.username)
-        })
-        .catch(() => {
-          if (!alive) return
-          setViewerUsername(null)
-        })
+      const initialToken = getStoredAccessToken()
+      if (!initialToken) {
+        setViewerUsername(null)
+      } else {
+        getCurrentUser()
+          .then((user) => {
+            if (!alive) return
+            setViewerUsername(user.username)
+          })
+          .catch(() => {
+            if (!alive) return
+            setViewerUsername(null)
+          })
+      }
 
       const onAuthChange = () => {
+        if (!getStoredAccessToken()) {
+          setViewerUsername(null)
+          return
+        }
+
         getCurrentUser()
           .then((user) => setViewerUsername(user.username))
           .catch(() => setViewerUsername(null))
@@ -479,7 +489,7 @@ function Navbar({ isMobile, isTablet }: { isMobile: boolean; isTablet: boolean }
                   }}
                 >
                   <Img
-                    src={movie.poster_path ? `https://image.tmdb.org/t/p/w92${movie.poster_path}` : 'https://via.placeholder.com/92x138?text=No+Poster'}
+                    src={movie.poster_path ? `https://image.tmdb.org/t/p/w92${movie.poster_path}` : '/no-poster.svg'}
                     alt={movie.title}
                     style={{ width: 30, height: 46, objectFit: 'cover' }}
                   />
@@ -565,15 +575,15 @@ function Navbar({ isMobile, isTablet }: { isMobile: boolean; isTablet: boolean }
 }
 
 function Hero() {
-  const ref = useRef<HTMLDivElement>(null)
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] })
-  const y = useTransform(scrollYProgress, [0, 1], ['0%', '20%'])
+  const { scrollY } = useScroll()
+  const y = useTransform(scrollY, [0, 540], ['0%', '28%'])
+  const scale = useTransform(scrollY, [0, 540], [1, 1.08])
 
   const typewriterTexts = ['resenas.', 'obsesiones.', 'rituales.', 'descubrimientos.', 'opiniones.']
 
   return (
-    <div ref={ref} style={{ position: 'relative', height: '100vh', minHeight: 640, overflow: 'hidden' }}>
-      <motion.div style={{ y, position: 'absolute', inset: '-10% 0', zIndex: 0 }}>
+    <div style={{ position: 'relative', height: '100vh', minHeight: 640, overflow: 'hidden' }}>
+      <motion.div style={{ y, scale, position: 'absolute', inset: '-10% 0', zIndex: 0 }}>
         <Img src={IMG.hero} alt="CineVault Hero" style={{ width: '100%', height: '110%', objectFit: 'cover', filter: 'brightness(0.38) saturate(0.6)' }} />
       </motion.div>
 

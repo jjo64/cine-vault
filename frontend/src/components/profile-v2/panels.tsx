@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { motion } from 'motion/react'
+import { useNavigate } from 'react-router-dom'
 import {
   BarChart2,
   BookOpen,
@@ -20,6 +21,9 @@ import { C, SANS, SERIF, textClampOneLine } from './theme'
 import { Badge, Img, SectionHeader, Stars } from './primitives'
 import { vaultMockItems, userListsMock, IMG } from './assets'
 import type { RecentlyWatchedItem, ReviewItem, WatchlistItem } from './models'
+import { createSlug } from '../../utils/stringUtils'
+
+const movieHref = (movieId: number, title: string, tmdbId: number | null) => `/movie/${tmdbId ?? movieId}-${createSlug(title)}`
 
 function NightRec({ recommendation, isMobile }: { recommendation: WatchlistItem | null; isMobile: boolean }) {
   const [watched, setWatched] = useState(false)
@@ -112,6 +116,7 @@ function NightRec({ recommendation, isMobile }: { recommendation: WatchlistItem 
 }
 
 function FilmCard({ film, delay = 0 }: { film: RecentlyWatchedItem; delay?: number }) {
+  const navigate = useNavigate()
   const [hovered, setHovered] = useState(false)
   return (
     <motion.div
@@ -120,6 +125,7 @@ function FilmCard({ film, delay = 0 }: { film: RecentlyWatchedItem; delay?: numb
       transition={{ duration: 0.5, delay }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onClick={() => navigate(movieHref(film.movieId, film.title, film.tmdbId))}
       style={{ cursor: 'pointer' }}
     >
       <div
@@ -253,6 +259,7 @@ function VaultCard({ item, delay = 0 }: { item: (typeof vaultMockItems)[number];
 }
 
 function ReviewCard({ review, delay = 0, compact = false }: { review: ReviewItem; delay?: number; compact?: boolean }) {
+  const navigate = useNavigate()
   const richText = review.text
     .replace(/<b>/g, `<strong style="color:${C.text};font-style:normal;font-weight:500">`)
     .replace(/<\/b>/g, '</strong>')
@@ -269,7 +276,23 @@ function ReviewCard({ review, delay = 0, compact = false }: { review: ReviewItem
       </div>
       <div>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
-          <span style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 400, color: C.text }}>{review.title}</span>
+          <button
+            type="button"
+            onClick={() => navigate(movieHref(review.movieId, review.title, review.tmdbId))}
+            style={{
+              border: 'none',
+              background: 'none',
+              padding: 0,
+              margin: 0,
+              fontFamily: SERIF,
+              fontSize: 20,
+              fontWeight: 400,
+              color: C.text,
+              cursor: 'pointer',
+            }}
+          >
+            {review.title}
+          </button>
           <Stars rating={review.rating} size={11} />
           <span style={{ fontSize: 11, color: C.textMuted, marginLeft: 'auto', fontFamily: SANS }}>{review.createdAtLabel}</span>
         </div>
@@ -300,6 +323,7 @@ function ReviewCard({ review, delay = 0, compact = false }: { review: ReviewItem
 }
 
 function WatchlistStrip({ watchlistFilms }: { watchlistFilms: WatchlistItem[] }) {
+  const navigate = useNavigate()
   return (
     <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 8, marginBottom: 48, scrollbarWidth: 'none' }}>
       {watchlistFilms.slice(0, 8).map((film, index) => (
@@ -309,6 +333,7 @@ function WatchlistStrip({ watchlistFilms }: { watchlistFilms: WatchlistItem[] })
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: index * 0.04 }}
           style={{ flexShrink: 0, width: 90, cursor: 'pointer' }}
+          onClick={() => navigate(movieHref(film.movieId, film.title, film.tmdbId))}
         >
           <div
             style={{ aspectRatio: '2/3', borderRadius: 1, overflow: 'hidden', marginBottom: 8, transition: 'transform 0.3s' }}
@@ -347,36 +372,38 @@ export function OverviewPanel({
   reviewItems,
   isMobile,
   isTablet,
+  onJumpToTab,
 }: {
   recentlyWatched: RecentlyWatchedItem[]
   watchlistFilms: WatchlistItem[]
   reviewItems: ReviewItem[]
   isMobile: boolean
   isTablet: boolean
+  onJumpToTab: (tab: 'Historial' | 'Vault' | 'Watchlist' | 'Reseñas') => void
 }) {
   const recommendation = watchlistFilms[0] || null
   return (
     <div>
       <NightRec recommendation={recommendation} isMobile={isMobile} />
 
-      <SectionHeader title="Vistas recientemente" link="Ver historial" />
+      <SectionHeader title="Vistas recientemente" link="Ver historial" onLinkClick={() => onJumpToTab('Historial')} />
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(3, minmax(0, 1fr))' : 'repeat(auto-fill, minmax(130px, 1fr))', gap: isMobile ? 10 : 16, marginBottom: 48 }}>
         {recentlyWatched.map((film, index) => (
           <FilmCard key={film.movieId} film={film} delay={index * 0.05} />
         ))}
       </div>
 
-      <SectionHeader title="Mi Vault" link="Ver todo" />
+      <SectionHeader title="Mi Vault" link="Ver todo" onLinkClick={() => onJumpToTab('Vault')} />
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: 16, marginBottom: 48 }}>
         {vaultMockItems.slice(0, 3).map((item, index) => (
           <VaultCard key={item.id} item={item} delay={index * 0.08} />
         ))}
       </div>
 
-      <SectionHeader title="Última reseña" link="Ver todas" />
+      <SectionHeader title="Última reseña" link="Ver todas" onLinkClick={() => onJumpToTab('Reseñas')} />
       <div style={{ marginBottom: 48 }}>{reviewItems[0] ? <ReviewCard review={reviewItems[0]} compact={isMobile} /> : null}</div>
 
-      <SectionHeader title="Watchlist" em={`— ${watchlistFilms.length} pendientes`} link="Ver completa" />
+      <SectionHeader title="Watchlist" em={`— ${watchlistFilms.length} pendientes`} link="Ver completa" onLinkClick={() => onJumpToTab('Watchlist')} />
       <WatchlistStrip watchlistFilms={watchlistFilms} />
     </div>
   )
@@ -447,6 +474,7 @@ export function VaultPanel({ isMobile, isTablet }: { isMobile: boolean; isTablet
 }
 
 export function WatchlistPanel({ watchlistFilms, isMobile }: { watchlistFilms: WatchlistItem[]; isMobile: boolean }) {
+  const navigate = useNavigate()
   const [watched, setWatched] = useState<number[]>([])
   const toggle = (id: number) => setWatched((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
 
@@ -506,6 +534,7 @@ export function WatchlistPanel({ watchlistFilms, isMobile }: { watchlistFilms: W
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.04 }}
               style={{ cursor: 'pointer', position: 'relative', flexShrink: 0, width: isMobile ? 120 : 'auto' }}
+              onClick={() => navigate(movieHref(film.movieId, film.title, film.tmdbId))}
             >
               <div style={{ aspectRatio: '2/3', borderRadius: 2, overflow: 'hidden', marginBottom: 10, position: 'relative' }}>
                 <Img
@@ -525,7 +554,10 @@ export function WatchlistPanel({ watchlistFilms, isMobile }: { watchlistFilms: W
                   </div>
                 )}
                 <button
-                  onClick={() => toggle(film.movieId)}
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    toggle(film.movieId)
+                  }}
                   style={{
                     position: 'absolute',
                     inset: 0,
@@ -562,6 +594,42 @@ export function WatchlistPanel({ watchlistFilms, isMobile }: { watchlistFilms: W
             </motion.div>
           )
         })}
+      </div>
+    </div>
+  )
+}
+
+export function HistoryPanel({ recentlyWatched, isMobile }: { recentlyWatched: RecentlyWatchedItem[]; isMobile: boolean }) {
+  const navigate = useNavigate()
+
+  return (
+    <div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
+        <div style={{ fontFamily: SERIF, fontSize: 26, color: C.text }}>
+          Historial <em style={{ fontStyle: 'italic', color: C.textSoft, fontSize: 20 }}>— {recentlyWatched.length} vistas recientes</em>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(3, minmax(0, 1fr))' : 'repeat(auto-fill, minmax(130px, 1fr))', gap: isMobile ? 10 : 16 }}>
+        {recentlyWatched.map((film, index) => (
+          <motion.div
+            key={film.movieId}
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.04 }}
+            onClick={() => navigate(movieHref(film.movieId, film.title, film.tmdbId))}
+            style={{ cursor: 'pointer' }}
+          >
+            <div style={{ aspectRatio: '2/3', borderRadius: 2, overflow: 'hidden', marginBottom: 10 }}>
+              <Img src={film.posterUrl} alt={film.title} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(0.72)' }} />
+            </div>
+            <div style={{ fontSize: 12, fontWeight: 500, color: C.text, lineHeight: 1.3, marginBottom: 2, fontFamily: SERIF, ...textClampOneLine }}>
+              {film.title}
+            </div>
+            <div style={{ fontSize: 11, color: C.textSoft, fontFamily: SANS }}>{film.year || 'Año desconocido'}</div>
+            <div style={{ fontSize: 10, color: C.textMuted, fontStyle: 'italic', fontFamily: SERIF, marginTop: 1 }}>{film.director}</div>
+          </motion.div>
+        ))}
       </div>
     </div>
   )

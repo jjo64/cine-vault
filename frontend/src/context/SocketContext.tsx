@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react"
 import type { ReactNode } from "react"
 import { io } from "socket.io-client"
+import { authorizedFetch, clearStoredAccessToken, getStoredAccessToken } from "../services/authServices"
 
 interface Notificacion {
   id: number
@@ -28,78 +29,84 @@ const SocketContext = createContext<SocketContextType | null>(null)
 export const SocketProvider = ({ children }: { children: ReactNode }) => {
   const [notificaciones, setNotificaciones] = useState<Notificacion[]>([])
 
-  useEffect(() => {
-    const token = localStorage.getItem("token")
-    if (!token) return
-
-    let userId: number | null = null
+  const getUserIdFromToken = (token: string): number | null => {
     try {
-      const payload = JSON.parse(atob(token.split(".")[1]))
-      userId = payload.user_id
+      const payload = JSON.parse(atob(token.split('.')[1] || '')) as { user_id?: unknown }
+      return typeof payload.user_id === 'number' ? payload.user_id : null
     } catch {
-      localStorage.removeItem("token")
-      setNotificaciones([])
-      return
+      return null
     }
+  }
 
-    if (!userId) {
-      setNotificaciones([])
-      return
-    }
+  useEffect(() => {
+    let socketInstance: ReturnType<typeof io> | null = null
+    let active = true
 
-    const socketInstance = io(import.meta.env.VITE_API_URL, {
-      withCredentials: true,
-    })
+    const start = async () => {
+      const token = getStoredAccessToken()
+      if (!token) {
+        setNotificaciones([])
+        return
+      }
 
-    socketInstance.on("connect", () => {
-      socketInstance.emit("registrar_usuario", userId)
-    })
+      const userId = getUserIdFromToken(token)
+      if (!userId) {
+        clearStoredAccessToken()
+        setNotificaciones([])
+        return
+      }
 
-    socketInstance.on("nueva_notificacion", (notificacion: Notificacion) => {
-      setNotificaciones((prev) => [notificacion, ...prev])
-    })
+      try {
+        socketInstance = io(import.meta.env.VITE_API_URL, {
+          withCredentials: true,
+        })
 
-    fetch(`${import.meta.env.VITE_API_URL}/api/notifications`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(async (res) => {
+        socketInstance.on("connect", () => {
+          socketInstance?.emit("registrar_usuario", userId)
+        })
+
+        socketInstance.on("nueva_notificacion", (notificacion: Notificacion) => {
+          setNotificaciones((prev) => [notificacion, ...prev])
+        })
+
+        const res = await authorizedFetch('/api/notifications')
         if (!res.ok) {
-          if (res.status === 401) {
-            localStorage.removeItem("token")
-          }
-          return []
+          setNotificaciones([])
+          return
         }
-        return res.json()
-      })
-      .then((data) => setNotificaciones(Array.isArray(data) ? data : []))
-      .catch(console.error)
+
+        const data = await res.json()
+        if (active) setNotificaciones(Array.isArray(data) ? data : [])
+      } catch {
+        if (active) setNotificaciones([])
+      }
+    }
+
+    start()
 
     return () => {
-      socketInstance.disconnect()
+      active = false
+      socketInstance?.disconnect()
     }
   }, [])
 
   const noLeidas = notificaciones.filter((n) => !n.read).length
 
   const marcarLeida = async (id: number) => {
-    const token = localStorage.getItem("token")
-    if (!token) return
-    await fetch(`${import.meta.env.VITE_API_URL}/api/notifications/${id}/read`, {
+    const res = await authorizedFetch(`/api/notifications/${id}/read`, {
       method: "PATCH",
-      headers: { Authorization: `Bearer ${token}` },
     })
+    if (!res.ok) return
     setNotificaciones((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n))
     )
   }
 
   const marcarTodasLeidas = async () => {
-    const token = localStorage.getItem("token")
-    if (!token) return
-    await fetch(`${import.meta.env.VITE_API_URL}/api/notifications/read-all`, {
+    const res = await authorizedFetch('/api/notifications/read-all', {
       method: "PATCH",
-      headers: { Authorization: `Bearer ${token}` },
     })
+    if (!res.ok) return
     setNotificaciones((prev) => prev.map((n) => ({ ...n, read: true })))
   }
 

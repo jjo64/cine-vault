@@ -1,7 +1,7 @@
 import { Request, Response } from "express"
 import { COOKIE_OPTIONS } from "../lib/tokens.js"
 import * as authService from "../services/auth.services.js"
-import { UnauthorizedError } from "../errors/AppErrors.js"
+import { UnauthorizedError, ValidationError } from "../errors/AppErrors.js"
 
 /* ==========================================================================
    CONTROLADOR DE AUTENTICACIÓN
@@ -28,14 +28,37 @@ export const iniciarSesion = async (req: Request, res: Response) => {
 }
 
 export const registrar = async (req: Request, res: Response) => {
-  const { userId } = await authService.registrarService(req.body)
-  res.status(201).json({ message: "Usuario registrado exitosamente", userId })
+  const resultado = await authService.registrarService(req.body)
+
+  if (resultado.verificationResent) {
+    return res.status(200).json({
+      message:
+        "Tu cuenta ya existía sin verificar. Te reenviamos el correo de verificación.",
+      userId: resultado.userId,
+      verificationResent: true,
+    })
+  }
+
+  res.status(201).json({ message: "Usuario registrado exitosamente", userId: resultado.userId })
 }
 
 export const verificarEmail = async (req: Request, res: Response) => {
   const token = String(req.params.token)
   await authService.verificarEmailService(token)
   res.json({ message: "Email verificado exitosamente" })
+}
+
+export const verificarEmailDesdeQuery = async (req: Request, res: Response) => {
+  const token = String(req.query.token || "").trim()
+  if (!token) throw new ValidationError("Token de verificación requerido")
+
+  await authService.verificarEmailService(token)
+
+  const frontendBase =
+    process.env.EMAIL_PUBLIC_URL ||
+    process.env.FRONTEND_URL ||
+    "http://localhost:5173"
+  res.redirect(`${frontendBase}/verify-email?status=verified`)
 }
 
 export const reenviarVerificacion = async (req: Request, res: Response) => {

@@ -28,8 +28,13 @@ import { ensureMovieRefId, findMovieRefIdByCandidate } from "./movieRef.services
 // RESEÑAS
 // ---------------------------------------------------------------------------
 
-export const obtenerResenasPorUsuarioService = (userId: number) =>
-  reviewsRepository.findByUserId(userId)
+export const obtenerResenasPorUsuarioService = async (userId: number) => {
+  const rows = await reviewsRepository.findByUserId(userId)
+  return rows.map((row) => ({
+    ...row,
+    tmdb_id: row.movies_ref?.tmdb_id ?? null,
+  }))
+}
 
 export const obtenerResenasPorPeliculaService = async (movieId: number) => {
   const resolvedMovieId = await findMovieRefIdByCandidate(movieId)

@@ -4,15 +4,15 @@ import { motion, useScroll, useTransform } from 'motion/react'
 import {
   ChevronLeft,
   Bookmark,
-  Share2,
-  List,
   Heart,
+  Eye,
   MessageSquare,
   ChevronRight,
   ExternalLink,
   Menu,
   X,
 } from 'lucide-react'
+import { createSlug } from '../utils/stringUtils'
 import {
   addToDiary,
   addToFavorites,
@@ -498,7 +498,7 @@ function Navbar({
                   <button
                     key={movie.id}
                     onClick={() => {
-                      navigate(`/movie/${movie.id}`)
+                      navigate(`/movie/${movie.id}-${createSlug(movie.title)}`)
                       setOpenDropdown(false)
                       setQuery('')
                     }}
@@ -569,6 +569,108 @@ function Navbar({
   )
 }
 
+function ActivityDock({
+  inVault,
+  liked,
+  inWatchlist,
+  userRating,
+  onToggleVault,
+  onToggleFavorite,
+  onToggleWatchlist,
+  onWriteReview,
+  onAddToList,
+  onShare,
+}: {
+  inVault: boolean
+  liked: boolean
+  inWatchlist: boolean
+  userRating: number
+  onToggleVault: () => void
+  onToggleFavorite: () => void
+  onToggleWatchlist: () => void
+  onWriteReview: () => void
+  onAddToList: () => void
+  onShare: () => void
+}) {
+  const quickActions = [
+    { key: 'watch', label: inVault ? 'Watch ✓' : 'Watch', active: inVault, onClick: onToggleVault, icon: Eye },
+    { key: 'like', label: liked ? 'Like ✓' : 'Like', active: liked, onClick: onToggleFavorite, icon: Heart },
+    { key: 'watchlist', label: inWatchlist ? 'Watchlist ✓' : 'Watchlist', active: inWatchlist, onClick: onToggleWatchlist, icon: Bookmark },
+  ]
+
+  return (
+    <div
+      style={{
+        width: '100%',
+        maxWidth: 420,
+        border: `1px solid ${C.border}`,
+        background: 'linear-gradient(180deg, rgba(19,24,33,0.88), rgba(12,15,22,0.92))',
+        boxShadow: `0 18px 48px rgba(0,0,0,0.45), inset 0 1px 0 ${C.accentGlowStrong}`,
+        backdropFilter: 'blur(6px)',
+      }}
+    >
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', borderBottom: `1px solid ${C.border}` }}>
+        {quickActions.map((item) => (
+          <button
+            key={item.key}
+            onClick={item.onClick}
+            style={{
+              border: 'none',
+              borderRight: item.key !== 'watchlist' ? `1px solid ${C.border}` : 'none',
+              background: item.active ? C.accentGlowStrong : 'transparent',
+              color: item.active ? C.accent : C.textSoft,
+              padding: '14px 8px 12px',
+              cursor: 'pointer',
+              display: 'grid',
+              gap: 6,
+              placeItems: 'center',
+              fontFamily: SANS,
+              fontSize: 12,
+              letterSpacing: '0.06em',
+            }}
+          >
+            <item.icon size={16} strokeWidth={1.6} fill={item.active && item.key === 'like' ? C.gold : item.active ? C.accent : 'none'} />
+            <span>{item.label}</span>
+          </button>
+        ))}
+      </div>
+
+      <div style={{ borderBottom: `1px solid ${C.border}`, padding: '10px 12px' }}>
+        <div style={{ fontFamily: SANS, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.18em', color: C.textSoft, marginBottom: 8 }}>
+          Rate
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', gap: 2 }}>
+            {[1, 2, 3, 4, 5].map((value) => (
+              <span key={value} style={{ color: value <= userRating ? C.gold : C.textMuted, fontSize: 20, lineHeight: 1 }}>★</span>
+            ))}
+          </div>
+          <div style={{ color: C.textSoft, fontSize: 12, fontFamily: SANS }}>{userRating > 0 ? `${userRating}/5` : 'Sin rating'}</div>
+        </div>
+      </div>
+
+      <button
+        onClick={onWriteReview}
+        style={{ width: '100%', border: 'none', borderBottom: `1px solid ${C.border}`, background: 'transparent', color: C.text, padding: '12px 14px', textAlign: 'left', fontFamily: SANS, fontSize: 14, cursor: 'pointer' }}
+      >
+        Review o log de esta película...
+      </button>
+      <button
+        onClick={onAddToList}
+        style={{ width: '100%', border: 'none', borderBottom: `1px solid ${C.border}`, background: 'transparent', color: C.textSoft, padding: '12px 14px', textAlign: 'left', fontFamily: SANS, fontSize: 14, cursor: 'pointer' }}
+      >
+        Add to lists...
+      </button>
+      <button
+        onClick={onShare}
+        style={{ width: '100%', border: 'none', background: 'transparent', color: C.textSoft, padding: '12px 14px', textAlign: 'left', fontFamily: SANS, fontSize: 14, cursor: 'pointer' }}
+      >
+        Share
+      </button>
+    </div>
+  )
+}
+
 function Hero({
   movie,
   userRating,
@@ -580,6 +682,7 @@ function Hero({
   onToggleWatchlist,
   onToggleFavorite,
   onAddToList,
+  onWriteReview,
   onShare,
   isMobile,
   isTablet,
@@ -594,6 +697,7 @@ function Hero({
   onToggleWatchlist: () => void
   onToggleFavorite: () => void
   onAddToList: () => void
+  onWriteReview: () => void
   onShare: () => void
   isMobile: boolean
   isTablet: boolean
@@ -682,57 +786,18 @@ function Hero({
           <div style={{ fontSize: 11, color: C.textMuted, fontFamily: SANS }}>{votes} ratings</div>
         </div>
 
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-          <button
-            onClick={onToggleVault}
-            style={{
-              padding: '12px 20px',
-              width: isMobile ? '100%' : 'auto',
-              background: inVault ? C.accentDim : C.accent,
-              color: C.bg,
-              border: 'none',
-              fontFamily: SANS,
-              fontSize: 11,
-              letterSpacing: '0.18em',
-              textTransform: 'uppercase',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-            }}
-          >
-            {inVault ? '✓ En mi Vault' : '+ Vault'}
-          </button>
-
-          <button
-            onClick={onAddToList}
-            style={{
-              padding: '12px 20px',
-              width: isMobile ? '100%' : 'auto',
-              background: 'transparent',
-              color: C.textSoft,
-              border: `1px solid ${C.border}`,
-              fontFamily: SANS,
-              fontSize: 11,
-              letterSpacing: '0.18em',
-              textTransform: 'uppercase',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 7,
-            }}
-          >
-            <List size={13} strokeWidth={1.5} /> Añadir a lista
-          </button>
-
-          <button title="Watchlist" onClick={onToggleWatchlist} style={{ width: 46, height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', color: inWatchlist ? C.accent : C.textSoft, border: `1px solid ${inWatchlist ? C.accentDim : C.border}`, cursor: 'pointer' }}>
-            <Bookmark size={15} strokeWidth={1.5} fill={inWatchlist ? C.accent : 'none'} />
-          </button>
-          <button title="Me gusta" onClick={onToggleFavorite} style={{ width: 46, height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', color: liked ? C.accent : C.textSoft, border: `1px solid ${liked ? C.accentDim : C.border}`, cursor: 'pointer' }}>
-            <Heart size={15} strokeWidth={1.5} fill={liked ? C.gold : 'none'} />
-          </button>
-          <button title="Compartir" onClick={onShare} style={{ width: 46, height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', color: C.textSoft, border: `1px solid ${C.border}`, cursor: 'pointer' }}>
-            <Share2 size={15} strokeWidth={1.5} />
-          </button>
-        </div>
+        <ActivityDock
+          inVault={inVault}
+          liked={liked}
+          inWatchlist={inWatchlist}
+          userRating={userRating}
+          onToggleVault={onToggleVault}
+          onToggleFavorite={onToggleFavorite}
+          onToggleWatchlist={onToggleWatchlist}
+          onWriteReview={onWriteReview}
+          onAddToList={onAddToList}
+          onShare={onShare}
+        />
       </motion.div>
 
       {!isMobile && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2 }} style={{ position: 'absolute', bottom: 28, left: 52, display: 'flex', alignItems: 'center', gap: 12, zIndex: 10 }}>
@@ -1034,6 +1099,7 @@ export default function MovieDetailPage() {
   const [composerMode, setComposerMode] = useState<'review' | 'reply' | null>(null)
   const [composerText, setComposerText] = useState('')
   const [replyTargetId, setReplyTargetId] = useState<number | null>(null)
+  const composerRef = useRef<HTMLDivElement | null>(null)
 
   const [userRating, setUserRating] = useState(0)
   const [myReviewId, setMyReviewId] = useState<number | null>(null)
@@ -1182,6 +1248,11 @@ export default function MovieDetailPage() {
     const id = window.setTimeout(() => setNotice(null), 3000)
     return () => window.clearTimeout(id)
   }, [notice])
+
+  useEffect(() => {
+    if (!composerMode) return
+    composerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [composerMode])
 
   const requireAuth = () => {
     if (token) return true
@@ -1542,6 +1613,7 @@ export default function MovieDetailPage() {
         onToggleWatchlist={handleToggleWatchlist}
         onToggleFavorite={handleToggleFavorite}
         onAddToList={handleAddToList}
+        onWriteReview={handleWriteReview}
         onShare={handleShare}
         isMobile={isMobileViewport}
         isTablet={isTabletViewport}
@@ -1560,21 +1632,23 @@ export default function MovieDetailPage() {
         }}
       >
         <main>
-          <InlineComposer
-            mode={composerMode}
-            text={composerText}
-            onTextChange={setComposerText}
-            onCancel={() => {
-              setComposerMode(null)
-              setComposerText('')
-            }}
-            onSubmit={handleSubmitComposer}
-          />
           <Synopsis overview={movie.overview || ''} tagline={movie.tagline} />
           <Themes themes={themes} />
           {stills.length > 0 && <Stills stills={stills} isMobile={isMobileViewport} />}
           <CastCrew cast={(movie.credits?.cast || []).slice(0, 12)} crew={(movie.credits?.crew || []).slice(0, 12)} />
           <Reviews reviews={reviews} likedReviewIds={likedReviewIds} onToggleLike={handleToggleReviewLike} onReply={handleReplyReview} onWriteReview={handleWriteReview} />
+          <div ref={composerRef}>
+            <InlineComposer
+              mode={composerMode}
+              text={composerText}
+              onTextChange={setComposerText}
+              onCancel={() => {
+                setComposerMode(null)
+                setComposerText('')
+              }}
+              onSubmit={handleSubmitComposer}
+            />
+          </div>
         </main>
 
         <Sidebar movie={movie} similar={similar} compact={isCompactSidebar} />
