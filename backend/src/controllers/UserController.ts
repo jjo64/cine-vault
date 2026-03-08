@@ -9,6 +9,11 @@ export const obtenerUsuarios = async (req: Request, res: Response) => {
 export const obtenerUsuarioPorId = async (req: Request, res: Response) => {
   res.json(await userService.obtenerUsuarioPorIdService(Number(req.params.id)))
 }
+export const obtenerUsuarioPorUsername = async (req: Request, res: Response) => {
+  res.json(
+    await userService.obtenerUsuarioPorUsernameService(String(req.params.username))
+  )
+}
 export const obtenerSeguidores = async (req: Request, res: Response) => {
   res.json(await userService.obtenerSeguidoresService(Number(req.params.id)))
 }

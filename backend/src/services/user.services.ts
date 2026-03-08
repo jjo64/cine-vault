@@ -157,6 +157,37 @@ export const obtenerUsuarioPorIdService = async (id: number) => {
 }
 
 /**
+ * Obtiene un usuario por su username único.
+ */
+export const obtenerUsuarioPorUsernameService = async (username: string) => {
+  const normalized = username.trim()
+  if (!normalized) throw new ValidationError("Username inválido")
+
+  const usuario = await prisma.users.findUnique({
+    where: { username: normalized },
+    select: {
+      id: true,
+      username: true,
+      avatar_url: true,
+      bio: true,
+      created_at: true,
+      _count: {
+        select: {
+          reviews: true,
+          diary_entries: true,
+          watchlist: true,
+          follows_follows_follower_idTousers: true,
+          follows_follows_following_idTousers: true,
+        },
+      },
+    },
+  })
+
+  if (!usuario) throw new NotFoundError("Usuario no encontrado")
+  return usuario
+}
+
+/**
  * Obtiene los seguidores de un usuario.
  * Resuelto con include anidado en UNA SOLA QUERY (fix N+1).
  */

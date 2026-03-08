@@ -6,6 +6,7 @@ import {
 } from "../errors/AppErrors.js"
 import type { CrearEntradaDiarioDTO } from "../schemas/diary.js"
 import { getCache, invalidateKeys, setCache } from "../lib/cache.js"
+import { ensureMovieRefId } from "./movieRef.services.js"
 
 /* ==========================================================================
    DIARY SERVICE
@@ -42,10 +43,11 @@ const crearDiarioUnicoPorDia = async (
   userId: number,
   data: CrearEntradaDiarioDTO
 ) => {
+  const movieId = await ensureMovieRefId(data.movie_id)
   const watchedDate = normalizarFecha(data.watched_date)
   const existente = await diaryRepository.findByUserMovieDate(
     userId,
-    data.movie_id,
+    movieId,
     watchedDate
   )
   if (existente)
@@ -53,9 +55,10 @@ const crearDiarioUnicoPorDia = async (
 
   const entry = await diaryRepository.create(userId, {
     ...data,
+    movie_id: movieId,
     watched_date: watchedDate.toISOString().slice(0, 10),
   })
-  await invalidateCacheForDiary(userId, data.movie_id)
+  await invalidateCacheForDiary(userId, movieId)
   return entry
 }
 

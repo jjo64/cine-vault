@@ -1,5 +1,6 @@
 import { watchlistRepository } from "../repositories/WatchlistRepository.js"
 import { ConflictError } from "../errors/AppErrors.js"
+import { ensureMovieRefId, findMovieRefIdByCandidate } from "./movieRef.services.js"
 import type {
   AgregarWatchlistDTO,
   EliminarWatchlistDTO,
@@ -18,15 +19,20 @@ export const agregarAWatchlistService = async (
   userId: number,
   data: AgregarWatchlistDTO
 ) => {
-  const yaExiste = await watchlistRepository.exists(userId, data.movie_id)
+  const movieId = await ensureMovieRefId(data.movie_id)
+  const yaExiste = await watchlistRepository.exists(userId, movieId)
   if (yaExiste)
     throw new ConflictError(
       `La película ${data.movie_id} ya está en tu watchlist`
     )
-  return watchlistRepository.create(userId, data.movie_id)
+  return watchlistRepository.create(userId, movieId)
 }
 
 export const eliminarDeWatchlistService = (
   userId: number,
   data: EliminarWatchlistDTO
-) => watchlistRepository.deleteByMovieId(userId, data.movie_id)
+) =>
+  findMovieRefIdByCandidate(data.movie_id).then((resolvedMovieId) => {
+    if (!resolvedMovieId) return
+    return watchlistRepository.deleteByMovieId(userId, resolvedMovieId)
+  })

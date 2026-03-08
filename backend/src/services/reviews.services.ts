@@ -14,6 +14,7 @@ import type {
   CrearComentarioDTO,
   ActualizarComentarioDTO,
 } from "../schemas/reviews.js"
+import { ensureMovieRefId, findMovieRefIdByCandidate } from "./movieRef.services.js"
 
 /* ==========================================================================
    REVIEWS SERVICE
@@ -31,14 +32,17 @@ export const obtenerResenasPorUsuarioService = (userId: number) =>
   reviewsRepository.findByUserId(userId)
 
 export const obtenerResenasPorPeliculaService = async (movieId: number) => {
-  const cacheKey = movieReviewsKey(movieId)
+  const resolvedMovieId = await findMovieRefIdByCandidate(movieId)
+  if (!resolvedMovieId) return []
+
+  const cacheKey = movieReviewsKey(resolvedMovieId)
   const cached =
     await getCache<Awaited<ReturnType<typeof reviewsRepository.findByMovieId>>>(
       cacheKey
     )
   if (cached) return cached
 
-  const resenas = await reviewsRepository.findByMovieId(movieId)
+  const resenas = await reviewsRepository.findByMovieId(resolvedMovieId)
   await setCache(cacheKey, resenas)
   return resenas
 }
@@ -50,14 +54,18 @@ const verificarYCrearResenaUnica = async (
   userId: number,
   data: CrearResenaDTO
 ) => {
+  const movieId = await ensureMovieRefId(data.movie_id)
   const existente = await reviewsRepository.findByUserAndMovie(
     userId,
-    data.movie_id
+    movieId
   )
   if (existente)
     throw new ConflictError("Ya tienes una reseña para esta película")
-  const resena = await reviewsRepository.create(userId, data)
-  await invalidateResenaCache(data.movie_id)
+  const resena = await reviewsRepository.create(userId, {
+    ...data,
+    movie_id: movieId,
+  })
+  await invalidateResenaCache(movieId)
   return resena
 }
 

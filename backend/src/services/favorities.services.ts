@@ -1,6 +1,7 @@
 import { favoritiesRepository } from "../repositories/FavoritiesRepository.js"
 import { NotFoundError } from "../errors/AppErrors.js"
 import type { AgregarFavoritoDTO } from "../schemas/favorites.js"
+import { ensureMovieRefId, findMovieRefIdByCandidate } from "./movieRef.services.js"
 
 /* ==========================================================================
    FAVORITIES SERVICE
@@ -24,13 +25,19 @@ export const obtenerFavoritosPorUsuarioService = async (userId: number) => {
 export const agregarFavoritoService = (
   userId: number,
   data: AgregarFavoritoDTO
-) => favoritiesRepository.create(userId, data)
+) =>
+  ensureMovieRefId(data.movieId).then((movieId) =>
+    favoritiesRepository.create(userId, { ...data, movieId })
+  )
 
 export const eliminarFavoritoService = async (
   userId: number,
   movieId: number
 ) => {
-  const favorito = await favoritiesRepository.findFirst(userId, movieId)
+  const resolvedMovieId = await findMovieRefIdByCandidate(movieId)
+  if (!resolvedMovieId) throw new NotFoundError("Favorito no encontrado")
+
+  const favorito = await favoritiesRepository.findFirst(userId, resolvedMovieId)
   if (!favorito) throw new NotFoundError("Favorito no encontrado")
   await favoritiesRepository.delete(favorito.id)
 }

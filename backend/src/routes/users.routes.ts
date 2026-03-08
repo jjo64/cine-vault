@@ -3,6 +3,7 @@ import { middlewareAutenticacion } from "../middlewares/auth.middlewares.js"
 import {
   obtenerUsuarios,
   obtenerUsuarioPorId,
+  obtenerUsuarioPorUsername,
   obtenerSeguidores,
   obtenerSiguiendo,
   dejarDeSeguirUsuario,
@@ -54,6 +55,11 @@ const router = Router()
  *         $ref: '#/components/responses/Unauthorized'
  */
 router.get("/", middlewareAutenticacion, manejadorAsincrono(obtenerUsuarios))
+
+router.get(
+  "/username/:username",
+  manejadorAsincrono(obtenerUsuarioPorUsername)
+)
 
 /**
  * @swagger

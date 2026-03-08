@@ -19,8 +19,8 @@
         "transpileOnly": true
     },
     "include": [
-        "**/*.ts",
-        "src/server.ts"
+        "src/**/*.ts",
+        "prisma/**/*.ts"
     ],
     "exclude": [
         "node_modules",
