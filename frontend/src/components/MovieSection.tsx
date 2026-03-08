@@ -23,9 +23,14 @@ const MovieSection: React.FC<MovieSectionProps> = ({ title, endpoint }) => {
         const fetchMovies = async () => {
             try {
                 const res = await fetch(`${import.meta.env.VITE_API_URL}${endpoint}`);
+                if (!res.ok) {
+                    setMovies([]);
+                    return;
+                }
                 const data = await res.json();
-                setMovies(data.results || []);
+                setMovies(Array.isArray(data?.results) ? data.results : []);
             } catch (error) {
+                setMovies([]);
                 console.error(`Error fetching ${title}:`, error);
             }
         };

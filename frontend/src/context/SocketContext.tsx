@@ -32,8 +32,20 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     const token = localStorage.getItem("token")
     if (!token) return
 
-    const payload = JSON.parse(atob(token.split(".")[1]))
-    const userId = payload.user_id
+    let userId: number | null = null
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]))
+      userId = payload.user_id
+    } catch {
+      localStorage.removeItem("token")
+      setNotificaciones([])
+      return
+    }
+
+    if (!userId) {
+      setNotificaciones([])
+      return
+    }
 
     const socketInstance = io(import.meta.env.VITE_API_URL, {
       withCredentials: true,
@@ -50,8 +62,16 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     fetch(`${import.meta.env.VITE_API_URL}/api/notifications`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then((res) => res.json())
-      .then((data) => setNotificaciones(data))
+      .then(async (res) => {
+        if (!res.ok) {
+          if (res.status === 401) {
+            localStorage.removeItem("token")
+          }
+          return []
+        }
+        return res.json()
+      })
+      .then((data) => setNotificaciones(Array.isArray(data) ? data : []))
       .catch(console.error)
 
     return () => {
@@ -63,6 +83,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
 
   const marcarLeida = async (id: number) => {
     const token = localStorage.getItem("token")
+    if (!token) return
     await fetch(`${import.meta.env.VITE_API_URL}/api/notifications/${id}/read`, {
       method: "PATCH",
       headers: { Authorization: `Bearer ${token}` },
@@ -74,6 +95,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
 
   const marcarTodasLeidas = async () => {
     const token = localStorage.getItem("token")
+    if (!token) return
     await fetch(`${import.meta.env.VITE_API_URL}/api/notifications/read-all`, {
       method: "PATCH",
       headers: { Authorization: `Bearer ${token}` },

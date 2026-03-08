@@ -1,119 +1,254 @@
-import React, { useEffect, useState } from 'react';
-import { useSearchParams, Link, useParams } from 'react-router-dom';
-import Navbar from '../components/Navbar';
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Search, SlidersHorizontal } from 'lucide-react'
+import { createSlug } from '../utils/stringUtils'
+import { searchMovies } from '../services/searchServices'
+import { useResponsive } from '../hooks/useResponsive'
 
-const createSlug = (title: string) => title.toLowerCase().replace(/[^a-z0-0]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+const C = {
+  bg: '#080808',
+  surface: '#111111',
+  elevated: '#1A1A1A',
+  border: '#252525',
+  accent: '#D4AF7A',
+  accentDim: '#9A7A48',
+  accentGlow: 'rgba(212,175,122,0.12)',
+  text: '#E2E2E2',
+  textSoft: '#7A7A7A',
+  textMuted: '#3A3A3A',
+} as const
 
-const SearchResults: React.FC = () => {
-    const [searchParams] = useSearchParams();
-    const { query: urlQuery } = useParams<{ query: string }>();
+const SANS = "'Syne', sans-serif"
+const SERIF = "'Cormorant Garamond', serif"
 
-    // Prioridad a la query de la URL si existe, reemplazando + por espacio
-    const queryFromParams = searchParams.get('q') || '';
-    const query = (urlQuery ? decodeURIComponent(urlQuery).replace(/\+/g, ' ') : queryFromParams) || '';
+type SearchMovie = {
+  id: number
+  title: string
+  original_title?: string
+  release_date?: string
+  poster_path?: string | null
+  director?: string
+  overview?: string
+}
 
-    const [results, setResults] = useState([]);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
-    const [totalResults, setTotalResults] = useState(0);
+type SortMode = 'relevance' | 'year-desc' | 'year-asc' | 'title-asc'
 
-    useEffect(() => {
-        if (query) {
-            fetch(`${import.meta.env.VITE_API_URL}/api/search?q=${encodeURIComponent(query)}&page=${currentPage}`)
-                .then(res => res.json())
-                .then(data => {
-                    setResults(data.results || []);
-                    setTotalPages(data.total_pages || 1);
-                    setTotalResults(data.total_results || 0);
-                })
-                .catch(err => {
-                    console.error("Error al buscar películas:", err);
-                });
-        }
-    }, [query, currentPage]);
+function GrainOverlay() {
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        pointerEvents: 'none',
+        zIndex: 90,
+        backgroundImage:
+          'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\' opacity=\'0.04\'/%3E%3C/svg%3E")',
+        opacity: 0.35,
+      }}
+    />
+  )
+}
 
-    return (
-        <div className="letterboxd-layout">
-            <Navbar />
+function SearchTopBar({
+  query,
+  onSearch,
+  isMobile,
+}: {
+  query: string
+  onSearch: (q: string) => void
+  isMobile: boolean
+}) {
+  const [input, setInput] = useState(query)
+  const navigate = useNavigate()
 
-            <main className="main-content">
-                <section className="results-section">
-                    <h2 className="section-title">Encontradas {totalResults} coincidencias para "{query}"</h2>
+  useEffect(() => {
+    setInput(query)
+  }, [query])
 
-                    <div className="movie-list-container">
-                        {results.map((movie: any) => (
-                            <Link key={movie.id} 
-                                // ✅ ID + título
-                                to={`/movie/${movie.id}-${createSlug(movie.title)}`} className="movie-list-item">
-                                <img
-                                    className="movie-poster-large"
-                                    src={movie.poster_path ? `https://image.tmdb.org/t/p/w185${movie.poster_path}` : 'https://via.placeholder.com/185x278?text=No+Poster'}
-                                    alt={movie.title}
-                                />
-                                <div className="movie-info-large">
-                                    <h3 className="movie-title-large">
-                                        {movie.title}
-                                        {movie.release_date && <span className="movie-year">{movie.release_date.split('-')[0]}</span>}
-                                    </h3>
-                                    {movie.original_title !== movie.title && (
-                                        <p className="movie-alt-titles">Título original: {movie.original_title}</p>
-                                    )}
-                                    {movie.alternative_titles && movie.alternative_titles.length > 0 && (
-                                        <p className="movie-alt-titles" style={{ opacity: 0.6, fontSize: '12px' }}>
-                                            Títulos Alternativos: {movie.alternative_titles.slice(0, 5).map((t: any) => t.title).join(', ')}
-                                            {movie.alternative_titles.length > 5 && '...'}
-                                        </p>
-                                    )}
-                                    <p className="movie-director"><span>Dirigida por</span> {movie.director || 'Desconocido'}</p>
-                                    <p style={{ fontSize: '14px', color: 'rgba(255, 255, 255, 0.4)', marginTop: '12px' }}>
-                                        {movie.overview ? (movie.overview.substring(0, 200) + '...') : 'Sin descripción disponible.'}
-                                    </p>
-                                </div>
-                            </Link>
-                        ))}
-                    </div>
+  return (
+    <header
+      style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 120,
+        borderBottom: `1px solid ${C.border}`,
+        background: 'rgba(8,8,8,0.92)',
+        backdropFilter: 'blur(16px)',
+      }}
+    >
+      <div style={{ maxWidth: 1260, margin: '0 auto', padding: isMobile ? '12px 14px' : '14px 20px', display: 'flex', alignItems: 'center', gap: 20, flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
+        <button onClick={() => navigate('/')} style={{ border: 'none', background: 'none', color: C.text, textDecoration: 'none', cursor: 'pointer', fontFamily: SERIF, fontSize: 22, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+          Cine<span style={{ color: C.accent }}>Vault</span>
+        </button>
 
-                    <div className="pagination" style={{ marginTop: '3rem', display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-                        {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => i + 1).map(page => (
-                            <button
-                                key={page}
-                                onClick={() => setCurrentPage(page)}
-                                style={{
-                                    padding: '0.6rem 1.2rem',
-                                    backgroundColor: currentPage === page ? 'var(--bg-navy)' : 'transparent',
-                                    border: '1px solid var(--border-muted)',
-                                    color: currentPage === page ? 'var(--accent-gold)' : 'var(--text-alabaster)',
-                                    cursor: 'pointer',
-                                    borderRadius: '4px',
-                                    fontWeight: '700'
-                                }}
-                            >
-                                {page}
-                            </button>
-                        ))}
-                    </div>
-                </section>
+        <form
+          onSubmit={(event) => {
+            event.preventDefault()
+            if (!input.trim()) return
+            onSearch(input.trim())
+          }}
+          style={{ flex: 1, maxWidth: isMobile ? '100%' : 560, minWidth: isMobile ? '100%' : undefined }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, height: 40, borderRadius: 999, border: `1px solid ${C.border}`, background: C.elevated, padding: '0 12px 0 14px' }}>
+            <Search size={15} color={C.textSoft} />
+            <input
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+              placeholder="Buscar películas, directores..."
+              style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', color: C.text, fontFamily: SANS, fontSize: 12, letterSpacing: '0.05em' }}
+            />
+          </div>
+        </form>
+      </div>
+    </header>
+  )
+}
 
-                <aside className="sidebar-section">
-                    <h2 className="section-title">MOSTRAR RESULTADOS PARA</h2>
-                    <ul className="sidebar-list">
-                        <li className="sidebar-item active">Todos</li>
-                        <li className="sidebar-item">Películas</li>
-                        <li className="sidebar-item">Listas</li>
-                        <li className="sidebar-item">Miembros</li>
-                        <li className="sidebar-item">Artículos</li>
-                    </ul>
+export default function SearchResultsPage() {
+  const { query: urlQuery } = useParams<{ query: string }>()
+  const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
 
-                    <div style={{ marginTop: '40px' }}>
-                        <h2 className="section-title">AYUDA DE BÚSQUEDA</h2>
-                        <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', lineHeight: '1.6' }}>
-                            Puedes buscar por título original o traducido. Cinevault utiliza TMDB para proporcionarte la mejor información de cine.
-                        </p>
-                    </div>
-                </aside>
-            </main>
+  const queryFromParams = searchParams.get('q') || ''
+  const query = (urlQuery ? decodeURIComponent(urlQuery).replace(/\+/g, ' ') : queryFromParams).trim()
+
+  const [results, setResults] = useState<SearchMovie[]>([])
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalResults, setTotalResults] = useState(0)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [sortMode, setSortMode] = useState<SortMode>('relevance')
+  const { isMobile, isTablet } = useResponsive()
+
+  useEffect(() => {
+    if (!query) {
+      setResults([])
+      setTotalPages(1)
+      setTotalResults(0)
+      return
+    }
+
+    let alive = true
+
+    const load = async () => {
+      setLoading(true)
+      setError(null)
+
+      try {
+        const data = await searchMovies(query, currentPage)
+        if (!alive) return
+        setResults(Array.isArray(data?.results) ? data.results : [])
+        setTotalPages(Number(data?.total_pages || 1))
+        setTotalResults(Number(data?.total_results || 0))
+      } catch (err) {
+        if (!alive) return
+        setError((err as Error).message || 'No se pudo buscar')
+      } finally {
+        if (alive) setLoading(false)
+      }
+    }
+
+    load()
+    return () => {
+      alive = false
+    }
+  }, [query, currentPage])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [query])
+
+  const sortedResults = useMemo(() => {
+    const list = [...results]
+    if (sortMode === 'relevance') return list
+
+    if (sortMode === 'title-asc') {
+      return list.sort((a, b) => a.title.localeCompare(b.title, 'es'))
+    }
+
+    if (sortMode === 'year-desc') {
+      return list.sort((a, b) => Number(b.release_date?.slice(0, 4) || 0) - Number(a.release_date?.slice(0, 4) || 0))
+    }
+
+    return list.sort((a, b) => Number(a.release_date?.slice(0, 4) || 0) - Number(b.release_date?.slice(0, 4) || 0))
+  }, [results, sortMode])
+
+  const handleSearch = (nextQuery: string) => {
+    navigate(`/search/${nextQuery.replace(/\s+/g, '+')}`)
+  }
+
+  const pageButtons = Array.from({ length: Math.min(totalPages, 8) }, (_, i) => i + 1)
+
+  return (
+    <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: SANS }}>
+      <GrainOverlay />
+      <SearchTopBar query={query} onSearch={handleSearch} isMobile={isMobile} />
+
+      <main style={{ maxWidth: 1260, margin: '0 auto', padding: isMobile ? '18px 12px 36px' : isTablet ? '24px 16px 42px' : '28px 20px 56px', position: 'relative', zIndex: 2 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: 20, flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.22em', color: C.accent, marginBottom: 6 }}>Resultados</div>
+            <h1 style={{ margin: 0, fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(30px, 4vw, 52px)', lineHeight: 1.08 }}>
+              {totalResults.toLocaleString('es-ES')} coincidencias para &quot;{query || '...'}&quot;
+            </h1>
+          </div>
+
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, border: `1px solid ${C.border}`, background: C.surface, padding: '7px 10px', width: isMobile ? '100%' : 'auto' }}>
+            <SlidersHorizontal size={14} color={C.textSoft} />
+            <select value={sortMode} onChange={(event) => setSortMode(event.target.value as SortMode)} style={{ background: 'transparent', border: 'none', outline: 'none', color: C.textSoft, fontFamily: SANS, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.12em', cursor: 'pointer' }}>
+              <option value="relevance">Relevancia</option>
+              <option value="year-desc">Año: recientes</option>
+              <option value="year-asc">Año: antiguas</option>
+              <option value="title-asc">Título A-Z</option>
+            </select>
+          </div>
         </div>
-    );
-};
 
-export default SearchResults;
+        {loading && <div style={{ color: C.textSoft, fontFamily: SERIF, fontStyle: 'italic', marginBottom: 14 }}>Buscando...</div>}
+        {error && <div style={{ color: '#ff8a8a', marginBottom: 14 }}>{error}</div>}
+
+        {!loading && sortedResults.length === 0 && (
+          <div style={{ border: `1px solid ${C.border}`, background: C.surface, padding: 18, color: C.textSoft }}>
+            No encontramos resultados para esa búsqueda.
+          </div>
+        )}
+
+        <section style={{ display: 'grid', gap: 10 }}>
+          {sortedResults.map((movie) => (
+            <Link key={movie.id} to={`/movie/${movie.id}-${createSlug(movie.title)}`} style={{ textDecoration: 'none' }}>
+              <article style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '92px minmax(0, 1fr)', gap: 14, border: `1px solid ${C.border}`, background: C.surface, padding: 10, transition: 'border-color 0.2s, transform 0.2s', cursor: 'pointer' }}>
+                <img src={movie.poster_path ? `https://image.tmdb.org/t/p/w185${movie.poster_path}` : 'https://via.placeholder.com/185x278?text=No+Poster'} alt={movie.title} style={{ width: isMobile ? '100%' : 92, height: isMobile ? 220 : 138, objectFit: 'cover', borderRadius: 2, background: C.elevated }} />
+
+                <div style={{ minWidth: 0 }}>
+                  <h2 style={{ margin: '2px 0 6px', color: C.text, fontFamily: SANS, fontSize: isMobile ? 20 : 26, textTransform: 'uppercase', lineHeight: 1.02, letterSpacing: '0.02em' }}>
+                    {movie.title}
+                    {movie.release_date && <span style={{ marginLeft: 8, color: C.textSoft, fontSize: 14, fontWeight: 400, textTransform: 'none' }}>{movie.release_date.split('-')[0]}</span>}
+                  </h2>
+
+                  {movie.original_title && movie.original_title !== movie.title && <div style={{ color: C.textSoft, fontSize: 12, marginBottom: 6 }}>Título original: {movie.original_title}</div>}
+
+                  <div style={{ color: C.accentDim, fontSize: 12, marginBottom: 8 }}>{movie.director || 'Dirección no disponible'}</div>
+
+                  <p style={{ margin: 0, color: C.textSoft, fontFamily: SERIF, fontStyle: 'italic', lineHeight: 1.5, fontSize: 15 }}>
+                    {movie.overview ? `${movie.overview.slice(0, 220)}${movie.overview.length > 220 ? '...' : ''}` : 'Sin descripción disponible.'}
+                  </p>
+                </div>
+              </article>
+            </Link>
+          ))}
+        </section>
+
+        {totalPages > 1 && (
+          <div style={{ marginTop: 26, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
+            {pageButtons.map((page) => (
+              <button key={page} onClick={() => setCurrentPage(page)} style={{ padding: '8px 12px', background: currentPage === page ? C.accentGlow : 'transparent', border: `1px solid ${currentPage === page ? C.accentDim : C.border}`, color: currentPage === page ? C.accent : C.textSoft, cursor: 'pointer', fontFamily: SANS, fontSize: 11, letterSpacing: '0.1em' }}>
+                {page}
+              </button>
+            ))}
+          </div>
+        )}
+      </main>
+    </div>
+  )
+}
