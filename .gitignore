@@ -13,6 +13,9 @@ pnpm-debug.log*
 dist/
 dist-ssr/
 /backend/generated/
+/frontend/playwright-report/
+/frontend/playwright-report-integration/
+/frontend/test-results/
 
 # Logs
 logs

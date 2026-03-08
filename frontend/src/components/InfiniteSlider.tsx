@@ -20,10 +20,15 @@ const InfiniteSlider: React.FC = () => {
         const fetchPopular = async () => {
             try {
                 const res = await fetch(`${import.meta.env.VITE_API_URL}/api/movies/popular`);
+                if (!res.ok) {
+                    setMovies([]);
+                    return;
+                }
                 const data = await res.json();
-                // Tomamos el top 10
-                setMovies(data.results.slice(0, 10));
+                const results = Array.isArray(data?.results) ? data.results : [];
+                setMovies(results.slice(0, 10));
             } catch (error) {
+                setMovies([]);
                 console.error("Error fetching popular movies:", error);
             }
         };

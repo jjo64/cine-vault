@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './AuthModal.css';
 
 interface AuthModalProps {
@@ -16,6 +16,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+
+    useEffect(() => {
+        setMode(initialMode)
+        setError('')
+    }, [initialMode, isOpen])
 
     if (!isOpen) return null;
 
@@ -45,7 +50,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
 
             if (mode === 'login') {
                 localStorage.setItem('token', data.accessToken);
-                window.location.reload(); // Recargar para actualizar estado de auth
+                window.dispatchEvent(new CustomEvent('auth-state-changed'))
+                onClose()
+                window.location.reload(); // mantiene el flujo actual mientras migramos estado global
             } else {
                 setMode('login'); // Ir a login tras registro exitoso
                 setError('¡Cuenta creada! Por favor inicia sesión.');
