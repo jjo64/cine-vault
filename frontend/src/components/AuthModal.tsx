@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom'
 import './AuthModal.css';
 import { setStoredAccessToken } from '../services/authServices'
 
@@ -9,6 +10,7 @@ interface AuthModalProps {
 }
 
 const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'login' }) => {
+    const navigate = useNavigate()
     const [mode, setMode] = useState<'login' | 'register'>(initialMode);
     const [formData, setFormData] = useState({
         username: '',
