@@ -10,6 +10,8 @@ import {
   MessageSquare,
   ChevronRight,
   ExternalLink,
+  Menu,
+  X,
 } from 'lucide-react'
 import {
   addToDiary,
@@ -384,6 +386,7 @@ function Navbar({
   const [results, setResults] = useState<Array<{ id: number; title: string; poster_path: string | null }>>([])
   const [openDropdown, setOpenDropdown] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
   const debouncedQuery = useMemo(() => query.trim(), [query])
@@ -415,7 +418,10 @@ function Navbar({
   useEffect(() => {
     const onOutside = (event: MouseEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) setOpenDropdown(false)
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) setMenuOpen(false)
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false)
+        setMobileNavOpen(false)
+      }
     }
     document.addEventListener('mousedown', onOutside)
     return () => document.removeEventListener('mousedown', onOutside)
@@ -466,7 +472,7 @@ function Navbar({
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 12 }}>
-        <div ref={wrapperRef} style={{ position: 'relative', width: isMobile ? 150 : isTablet ? 190 : 240 }}>
+        <div ref={wrapperRef} style={{ position: 'relative', width: isMobile ? 130 : isTablet ? 190 : 240 }}>
           <div style={{ height: 38, borderRadius: 999, border: `1px solid ${C.border}`, background: 'rgba(255,255,255,0.14)', display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px' }}>
             <input
               value={query}
@@ -508,6 +514,33 @@ function Navbar({
             </div>
           )}
         </div>
+
+        {isMobile && (
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setMobileNavOpen((value) => !value)}
+              style={{ width: 36, height: 36, border: `1px solid ${C.border}`, background: 'transparent', color: C.textSoft, cursor: 'pointer', display: 'grid', placeItems: 'center' }}
+            >
+              {mobileNavOpen ? <X size={14} /> : <Menu size={14} />}
+            </button>
+            {mobileNavOpen && (
+              <div style={{ position: 'absolute', right: 0, top: 42, minWidth: 170, border: `1px solid ${C.border}`, background: 'rgba(8,8,8,0.98)', padding: 8, display: 'grid', gap: 6 }}>
+                {navLinks.map((item) => (
+                  <button
+                    key={item}
+                    onClick={() => {
+                      if (item === 'Sign in' || item === 'Create account') navigate('/profile')
+                      setMobileNavOpen(false)
+                    }}
+                    style={{ border: 'none', background: 'transparent', color: C.text, textAlign: 'left', padding: '8px 10px', fontFamily: SANS, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}
+                  >
+                    {item}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {!viewer ? (
           <button
@@ -599,12 +632,12 @@ function Hero({
       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(8,8,8,0.92) 0%, rgba(8,8,8,0.8) 40%, rgba(8,8,8,0.45) 70%, rgba(8,8,8,0.78) 100%)' }} />
       <div style={{ position: 'absolute', bottom: 0, left: 0, width: 500, height: 400, background: `radial-gradient(ellipse at bottom left, ${C.accentGlow}, transparent 70%)`, pointerEvents: 'none' }} />
 
-      {posterUrl && (
+      {posterUrl && !isMobile && (
         <motion.div
           initial={{ opacity: 0, y: -24, scale: 0.94 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.3 }}
-          style={{ position: 'absolute', right: '12%', top: '50%', y: posterY, width: 220, zIndex: 10, transform: 'translateY(-50%)' }}
+          style={{ position: 'absolute', right: isTablet ? '5%' : '12%', top: '50%', y: posterY, width: isTablet ? 180 : 220, zIndex: 10, transform: 'translateY(-50%)' }}
         >
           <div style={{ aspectRatio: '2/3', borderRadius: 2, overflow: 'hidden', boxShadow: '0 40px 100px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.04)', position: 'relative' }}>
             <Img src={posterUrl} alt={`${movie.title} poster`} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(0.6) brightness(0.85)' }} />
@@ -615,7 +648,7 @@ function Hero({
       )}
 
       <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, ease: 'easeOut', delay: 0.1 }} style={{ position: 'relative', zIndex: 10, padding: isMobile ? '0 16px 28px' : isTablet ? '0 28px 40px' : '0 52px 64px', maxWidth: isMobile ? '100%' : 680 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 10, letterSpacing: '0.22em', textTransform: 'uppercase', color: C.accent, padding: '4px 10px', border: `1px solid ${C.accentDim}`, fontFamily: SANS }}>
             {genresText}
           </span>
@@ -626,22 +659,22 @@ function Hero({
         </div>
 
         <div style={{ marginBottom: 4 }}>
-          <h1 style={{ fontFamily: SERIF, fontSize: 'clamp(52px, 6vw, 76px)', fontWeight: 300, lineHeight: 0.92, letterSpacing: '-0.02em', color: C.text, margin: 0 }}>
+          <h1 style={{ fontFamily: SERIF, fontSize: isMobile ? 'clamp(36px, 12vw, 52px)' : 'clamp(52px, 6vw, 76px)', fontWeight: 300, lineHeight: 0.92, letterSpacing: '-0.02em', color: C.text, margin: 0 }}>
             {movie.title}
           </h1>
-          <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(40px, 4.5vw, 64px)', fontWeight: 300, lineHeight: 1, color: 'rgba(226,226,226,0.35)', letterSpacing: '-0.01em', marginTop: 2 }}>
+          <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: isMobile ? 'clamp(26px, 9vw, 36px)' : 'clamp(40px, 4.5vw, 64px)', fontWeight: 300, lineHeight: 1, color: 'rgba(226,226,226,0.35)', letterSpacing: '-0.01em', marginTop: 2 }}>
             {movie.original_title || movie.title}
           </div>
         </div>
 
-        <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 20, color: C.textSoft, marginBottom: 28, letterSpacing: '0.02em', marginTop: 16 }}>
+        <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: isMobile ? 17 : 20, color: C.textSoft, marginBottom: 20, letterSpacing: '0.02em', marginTop: 14 }}>
           Una película de <span style={{ color: C.accent }}>{director}</span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginBottom: 28 }}>
+        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? 12 : 24, marginBottom: 24 }}>
           <StarRating value={userRating} onChange={onRate} />
 
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, paddingLeft: 24, borderLeft: `1px solid ${C.border}` }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, paddingLeft: isMobile ? 0 : 24, borderLeft: isMobile ? 'none' : `1px solid ${C.border}` }}>
             <span style={{ fontFamily: SERIF, fontSize: 34, fontWeight: 300, color: C.gold, lineHeight: 1 }}>{score}</span>
             <span style={{ fontSize: 14, color: C.textMuted, fontFamily: SANS }}>/5</span>
             <span style={{ fontSize: 11, color: C.textSoft, fontFamily: SANS, marginLeft: 4 }}>en CineVault</span>
@@ -653,7 +686,8 @@ function Hero({
           <button
             onClick={onToggleVault}
             style={{
-              padding: '12px 28px',
+              padding: '12px 20px',
+              width: isMobile ? '100%' : 'auto',
               background: inVault ? C.accentDim : C.accent,
               color: C.bg,
               border: 'none',
@@ -671,7 +705,8 @@ function Hero({
           <button
             onClick={onAddToList}
             style={{
-              padding: '12px 22px',
+              padding: '12px 20px',
+              width: isMobile ? '100%' : 'auto',
               background: 'transparent',
               color: C.textSoft,
               border: `1px solid ${C.border}`,
@@ -700,12 +735,12 @@ function Hero({
         </div>
       </motion.div>
 
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2 }} style={{ position: 'absolute', bottom: 28, left: 52, display: 'flex', alignItems: 'center', gap: 12, zIndex: 10 }}>
+      {!isMobile && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2 }} style={{ position: 'absolute', bottom: 28, left: 52, display: 'flex', alignItems: 'center', gap: 12, zIndex: 10 }}>
         <div style={{ width: 32, height: 1, background: C.textMuted, position: 'relative', overflow: 'hidden' }}>
           <motion.div animate={{ x: ['-100%', '0%', '100%'] }} transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }} style={{ position: 'absolute', inset: 0, background: C.accent }} />
         </div>
         <span style={{ fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.textMuted, fontFamily: SANS }}>Seguir leyendo</span>
-      </motion.div>
+      </motion.div>}
     </div>
   )
 }

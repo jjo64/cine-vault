@@ -9,6 +9,7 @@ export default function ProfileIndexPage() {
 
   useEffect(() => {
     let alive = true
+    let retries = 0
 
     const load = async () => {
       try {
@@ -18,6 +19,12 @@ export default function ProfileIndexPage() {
         setStatus('authorized')
       } catch {
         if (!alive) return
+        const hasToken = Boolean(localStorage.getItem('token'))
+        if (hasToken && retries < 3) {
+          retries += 1
+          window.setTimeout(load, 250)
+          return
+        }
         setStatus('unauthorized')
       }
     }

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion, useScroll, useTransform } from 'motion/react'
-import { Search, ChevronRight, Star, Users, BookOpen, Layers, ArrowRight, Film, Sparkles, Lock, Clapperboard } from 'lucide-react'
+import { Search, ChevronRight, Star, Users, BookOpen, Layers, ArrowRight, Film, Sparkles, Lock, Clapperboard, Menu, X } from 'lucide-react'
 import InfiniteSlider from './InfiniteSlider'
 import { createSlug } from '../utils/stringUtils'
 import { getCurrentUser, logoutCurrentUser } from '../services/authServices'
@@ -229,10 +229,11 @@ function FilmCardMini({
   )
 }
 
-function Navbar() {
+function Navbar({ isMobile, isTablet }: { isMobile: boolean; isTablet: boolean }) {
   const navigate = useNavigate()
   const [viewerUsername, setViewerUsername] = useState<string | null>(null)
   const [isSearchFocused, setIsSearchFocused] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
     useEffect(() => {
       let alive = true
 
@@ -310,6 +311,7 @@ function Navbar() {
 
   const visibleResults = useMemo(() => searchResults.slice(0, 6), [searchResults])
   const navLinks = viewerUsername ? ['Films', 'Lists', 'Members', 'Journal'] : ['Sign in', 'Create account', 'Films', 'Lists', 'Members', 'Journal']
+  const visibleNavLinks = isMobile ? [] : isTablet ? navLinks.slice(0, 4) : navLinks
 
   return (
     <motion.nav
@@ -325,16 +327,16 @@ function Navbar() {
         display: 'grid',
         gridTemplateColumns: '1fr auto',
         alignItems: 'center',
-        padding: '0 40px',
-        height: 64,
+        padding: isMobile ? '0 14px' : isTablet ? '0 24px' : '0 40px',
+        height: isMobile ? 56 : 64,
         background: scrolled ? 'rgba(8,8,8,0.97)' : 'rgba(8,8,8,0.6)',
         backdropFilter: 'blur(20px)',
         borderBottom: scrolled ? `1px solid ${C.border}` : '1px solid transparent',
         transition: 'background 0.4s, border-color 0.4s',
       }}
     >
-      <ul style={{ display: 'flex', gap: 34, listStyle: 'none', margin: 0, padding: 0, alignItems: 'center' }}>
-        {navLinks.map((link) => (
+      <ul style={{ display: 'flex', gap: isTablet ? 18 : 34, listStyle: 'none', margin: 0, padding: 0, alignItems: 'center' }}>
+        {visibleNavLinks.map((link) => (
           <li key={link}>
             {link === 'Sign in' || link === 'Create account' ? (
               <button
@@ -378,7 +380,8 @@ function Navbar() {
         )}
       </ul>
 
-      <div ref={containerRef} style={{ position: 'relative', width: 260 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div ref={containerRef} style={{ position: 'relative', width: isMobile ? 150 : isTablet ? 200 : 260 }}>
         <div
           style={{
             height: 40,
@@ -415,7 +418,7 @@ function Navbar() {
               background: 'transparent',
               color: C.text,
               fontFamily: SANS,
-              fontSize: 12,
+              fontSize: isMobile ? 11 : 12,
               letterSpacing: '0.04em',
             }}
           />
@@ -445,7 +448,7 @@ function Navbar() {
               position: 'absolute',
               top: 46,
               left: 0,
-              width: 260,
+              width: '100%',
               border: `1px solid ${C.border}`,
               background: 'rgba(8,8,8,0.98)',
               borderRadius: 6,
@@ -490,6 +493,72 @@ function Navbar() {
             )}
           </div>
         )}
+      </div>
+      {isMobile && (
+        <div style={{ position: 'relative' }}>
+          <button
+            onClick={() => setMenuOpen((value) => !value)}
+            style={{
+              width: 36,
+              height: 36,
+              border: `1px solid ${C.border}`,
+              background: 'rgba(255,255,255,0.08)',
+              color: C.text,
+              display: 'grid',
+              placeItems: 'center',
+              cursor: 'pointer',
+            }}
+            aria-label="Abrir menu"
+          >
+            {menuOpen ? <X size={16} /> : <Menu size={16} />}
+          </button>
+          {menuOpen && (
+            <div
+              style={{
+                position: 'absolute',
+                right: 0,
+                top: 44,
+                minWidth: 190,
+                border: `1px solid ${C.border}`,
+                background: 'rgba(8,8,8,0.98)',
+                padding: 8,
+                display: 'grid',
+                gap: 6,
+              }}
+            >
+              {navLinks.map((link) => (
+                <button
+                  key={link}
+                  onClick={() => {
+                    if (link === 'Sign in' || link === 'Create account') {
+                      window.dispatchEvent(
+                        new CustomEvent('open-auth-modal', {
+                          detail: { mode: link === 'Create account' ? 'register' : 'login' },
+                        })
+                      )
+                    }
+                    setMenuOpen(false)
+                  }}
+                  style={{
+                    border: 'none',
+                    background: 'transparent',
+                    color: C.text,
+                    textAlign: 'left',
+                    padding: '8px 10px',
+                    fontFamily: SANS,
+                    fontSize: 11,
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {link}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       </div>
     </motion.nav>
   )
@@ -634,7 +703,7 @@ function SectionHeader({ eyebrow, title }: { eyebrow: string; title: string }) {
   )
 }
 
-function MovieGridSection({ endpoint, eyebrow, title }: { endpoint: string; eyebrow: string; title: string }) {
+function MovieGridSection({ endpoint, eyebrow, title, isMobile, isTablet }: { endpoint: string; eyebrow: string; title: string; isMobile: boolean; isTablet: boolean }) {
   const [movies, setMovies] = useState<ApiMovie[]>([])
 
   useEffect(() => {
@@ -656,7 +725,7 @@ function MovieGridSection({ endpoint, eyebrow, title }: { endpoint: string; eyeb
   }, [endpoint])
 
   return (
-    <section style={{ padding: '100px 80px', background: C.surface, borderTop: `1px solid ${C.border}` }}>
+    <section style={{ padding: isMobile ? '56px 14px' : isTablet ? '72px 24px' : '100px 80px', background: C.surface, borderTop: `1px solid ${C.border}` }}>
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -692,7 +761,7 @@ function MovieGridSection({ endpoint, eyebrow, title }: { endpoint: string; eyeb
   )
 }
 
-function HowItWorks() {
+function HowItWorks({ isMobile, isTablet }: { isMobile: boolean; isTablet: boolean }) {
   const pillars = [
     {
       icon: <Layers size={22} color={C.accent} />,
@@ -718,7 +787,7 @@ function HowItWorks() {
   ]
 
   return (
-    <section id="como-funciona" style={{ padding: '100px 80px', background: C.surface, borderTop: `1px solid ${C.border}` }}>
+    <section id="como-funciona" style={{ padding: isMobile ? '56px 14px' : isTablet ? '72px 24px' : '100px 80px', background: C.surface, borderTop: `1px solid ${C.border}` }}>
       <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }} style={{ textAlign: 'center', marginBottom: 64 }}>
         <div style={{ fontFamily: SANS, fontSize: 10, letterSpacing: '0.3em', textTransform: 'uppercase', color: C.accent, marginBottom: 14 }}>Tres pilares</div>
         <h2 style={{ fontFamily: SERIF, fontSize: 48, fontWeight: 400, color: C.text, margin: '0 auto 16px', lineHeight: 1.1, maxWidth: 600 }}>El alma de CineVault</h2>
@@ -727,7 +796,7 @@ function HowItWorks() {
         </p>
       </motion.div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? '1fr 1fr' : 'repeat(3, 1fr)', gap: 2 }}>
         {pillars.map((pillar, i) => (
           <motion.div
             key={pillar.label}
@@ -760,10 +829,10 @@ function HowItWorks() {
   )
 }
 
-function NightFeature() {
+function NightFeature({ isMobile, isTablet }: { isMobile: boolean; isTablet: boolean }) {
   return (
-    <section style={{ padding: '100px 80px', background: C.bg, borderTop: `1px solid ${C.border}` }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center', maxWidth: 1200, margin: '0 auto' }}>
+    <section style={{ padding: isMobile ? '56px 14px' : isTablet ? '72px 24px' : '100px 80px', background: C.bg, borderTop: `1px solid ${C.border}` }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 28 : 80, alignItems: 'center', maxWidth: 1200, margin: '0 auto' }}>
         <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}>
           <div style={{ fontFamily: SANS, fontSize: 10, letterSpacing: '0.3em', textTransform: 'uppercase', color: C.accent, marginBottom: 16 }}>Feature estrella</div>
           <h2 style={{ fontFamily: SERIF, fontSize: 52, fontWeight: 400, color: C.text, margin: '0 0 20px', lineHeight: 1.05 }}>Esta noche,<br />sin excusas.</h2>
@@ -834,15 +903,15 @@ const publicReviews = [
   },
 ]
 
-function ReviewsSection() {
+function ReviewsSection({ isMobile, isTablet }: { isMobile: boolean; isTablet: boolean }) {
   return (
-    <section style={{ padding: '100px 80px', background: C.surface, borderTop: `1px solid ${C.border}` }}>
+    <section style={{ padding: isMobile ? '56px 14px' : isTablet ? '72px 24px' : '100px 80px', background: C.surface, borderTop: `1px solid ${C.border}` }}>
       <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }} style={{ textAlign: 'center', marginBottom: 56 }}>
         <div style={{ fontFamily: SANS, fontSize: 10, letterSpacing: '0.3em', textTransform: 'uppercase', color: C.accent, marginBottom: 14 }}>La comunidad opina</div>
         <h2 style={{ fontFamily: SERIF, fontSize: 44, fontWeight: 400, color: C.text, margin: 0, lineHeight: 1.1 }}>Resenas que son literatura</h2>
       </motion.div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? '1fr 1fr' : 'repeat(3, 1fr)', gap: 2 }}>
         {publicReviews.map((review, i) => (
           <motion.div
             key={review.id}
@@ -874,9 +943,9 @@ function ReviewsSection() {
   )
 }
 
-function FinalCTA() {
+function FinalCTA({ isMobile, isTablet }: { isMobile: boolean; isTablet: boolean }) {
   return (
-    <section style={{ padding: '120px 80px', background: C.bg, borderTop: `1px solid ${C.border}`, textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+    <section style={{ padding: isMobile ? '72px 14px' : isTablet ? '92px 24px' : '120px 80px', background: C.bg, borderTop: `1px solid ${C.border}`, textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
       <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 600, height: 400, background: `radial-gradient(ellipse, ${C.accentGlow} 0%, transparent 70%)`, pointerEvents: 'none' }} />
       <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.9 }} style={{ position: 'relative', zIndex: 1 }}>
         <div style={{ fontFamily: SANS, fontSize: 10, letterSpacing: '0.35em', textTransform: 'uppercase', color: C.accent, marginBottom: 20 }}>
@@ -928,7 +997,7 @@ function FinalCTA() {
   )
 }
 
-function Footer() {
+function Footer({ isMobile, isTablet }: { isMobile: boolean; isTablet: boolean }) {
   const cols = [
     { title: 'Explorar', links: ['Films', 'Directores', 'Listas', 'Journal', 'Miembros'] },
     { title: 'Tu cuenta', links: ['Iniciar sesion', 'Crear cuenta', 'El Vault', 'Watchlist', 'Resenas'] },
@@ -936,8 +1005,8 @@ function Footer() {
   ]
 
   return (
-    <footer style={{ background: C.surface, borderTop: `1px solid ${C.border}`, padding: '64px 80px 40px' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 48, marginBottom: 48 }}>
+    <footer style={{ background: C.surface, borderTop: `1px solid ${C.border}`, padding: isMobile ? '40px 14px 28px' : isTablet ? '56px 24px 32px' : '64px 80px 40px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? '1.5fr 1fr 1fr' : '2fr 1fr 1fr 1fr', gap: isMobile ? 28 : 48, marginBottom: 48 }}>
         <div>
           <div style={{ fontFamily: SERIF, fontSize: 24, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text, marginBottom: 16 }}>
             Cine<span style={{ color: C.accent }}>Vault</span>
@@ -979,25 +1048,35 @@ function Footer() {
 }
 
 export default function Landing() {
+  const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth)
+  const isMobile = viewportWidth < 768
+  const isTablet = viewportWidth >= 768 && viewportWidth < 1100
+
+  useEffect(() => {
+    const onResize = () => setViewportWidth(window.innerWidth)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+
   return (
     <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: SANS, overflowX: 'hidden' }}>
       <GrainOverlay />
-      <Navbar />
+      <Navbar isMobile={isMobile} isTablet={isTablet} />
       <Hero />
 
-      <section style={{ padding: '80px 80px', background: C.bg }}>
+      <section style={{ padding: isMobile ? '52px 14px' : isTablet ? '68px 24px' : '80px 80px', background: C.bg }}>
         <SectionHeader eyebrow="Lo que otros usuarios estan viendo" title="El canon esta vivo" />
         <InfiniteSlider />
       </section>
 
-      <MovieGridSection endpoint="/api/movies/top-rated" eyebrow="Coleccion" title="Aclamados por la critica" />
-      <MovieGridSection endpoint="/api/movies/upcoming" eyebrow="Coleccion" title="Pronto en cine" />
+      <MovieGridSection endpoint="/api/movies/top-rated" eyebrow="Coleccion" title="Aclamados por la critica" isMobile={isMobile} isTablet={isTablet} />
+      <MovieGridSection endpoint="/api/movies/upcoming" eyebrow="Coleccion" title="Pronto en cine" isMobile={isMobile} isTablet={isTablet} />
 
-      <HowItWorks />
-      <NightFeature />
-      <ReviewsSection />
-      <FinalCTA />
-      <Footer />
+      <HowItWorks isMobile={isMobile} isTablet={isTablet} />
+      <NightFeature isMobile={isMobile} isTablet={isTablet} />
+      <ReviewsSection isMobile={isMobile} isTablet={isTablet} />
+      <FinalCTA isMobile={isMobile} isTablet={isTablet} />
+      <Footer isMobile={isMobile} isTablet={isTablet} />
     </div>
   )
 }

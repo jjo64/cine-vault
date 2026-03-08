@@ -41,7 +41,7 @@ export default function ProfilePage() {
     Resumen: <OverviewPanel recentlyWatched={recentlyWatched} watchlistFilms={watchlistFilms} reviewItems={reviewItems} isMobile={isMobile} isTablet={isTablet} />,
     Vault: <VaultPanel isMobile={isMobile} isTablet={isTablet} />,
     Watchlist: <WatchlistPanel watchlistFilms={watchlistFilms} isMobile={isMobile} />,
-    Reseñas: <ReviewsPanel reviewItems={reviewItems} />,
+    Reseñas: <ReviewsPanel reviewItems={reviewItems} isMobile={isMobile} />,
     Listas: <ListsPanel isMobile={isMobile} />,
   }
 

@@ -52,7 +52,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
                 localStorage.setItem('token', data.accessToken);
                 window.dispatchEvent(new CustomEvent('auth-state-changed'))
                 onClose()
-                window.location.reload(); // mantiene el flujo actual mientras migramos estado global
+                window.location.assign('/profile')
             } else {
                 setMode('login'); // Ir a login tras registro exitoso
                 setError('¡Cuenta creada! Por favor inicia sesión.');
