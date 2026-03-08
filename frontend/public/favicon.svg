@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="CineVault CV">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#141925"/>
+      <stop offset="100%" stop-color="#090b11"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#e2c08a"/>
+      <stop offset="100%" stop-color="#9a7a48"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#bg)"/>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="none" stroke="#2a3040" stroke-width="1.5"/>
+
+  <path d="M26 20c-6 0-10 4.8-10 12s4 12 10 12c3.3 0 6-1.1 8.4-3.4" fill="none" stroke="url(#accent)" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M35 20l7 24 7-24" fill="none" stroke="url(#accent)" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <circle cx="13" cy="13" r="1.2" fill="#d4af7a" opacity="0.8"/>
+</svg>

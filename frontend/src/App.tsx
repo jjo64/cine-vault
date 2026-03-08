@@ -10,6 +10,7 @@ const MovieDetail = lazy(() => import('./pages/MovieDetail'))
 const SearchResults = lazy(() => import('./pages/SearchResults'))
 const Profile = lazy(() => import('./pages/Profile'))
 const ProfileIndexPage = lazy(() => import('./pages/ProfileIndex'))
+const VerifyEmailPage = lazy(() => import('./pages/VerifyEmail'))
 const NotFoundPage = lazy(() => import('./pages/NotFound'))
 
 function App() {
@@ -37,6 +38,7 @@ function App() {
                 <Route path="/search-results" element={<SearchResults />} />
                 <Route path="/search/:query" element={<SearchResults />} />
                 <Route path="/profile" element={<ProfileIndexPage />} />
+                <Route path="/verify-email" element={<VerifyEmailPage />} />
                 <Route path="/:username" element={<Profile />} />
                 <Route path="*" element={<NotFoundPage />} />
             </Routes>

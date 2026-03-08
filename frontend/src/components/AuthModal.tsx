@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom'
 import './AuthModal.css';
+import { setStoredAccessToken } from '../services/authServices'
 
 interface AuthModalProps {
     isOpen: boolean;
@@ -51,13 +52,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
             if (!res.ok) throw new Error(data.message || 'Error en autenticación');
 
             if (mode === 'login') {
-                localStorage.setItem('token', data.accessToken);
+                setStoredAccessToken(data.accessToken);
                 window.dispatchEvent(new CustomEvent('auth-state-changed'))
                 onClose()
-                navigate('/profile', { replace: true })
             } else {
                 setMode('login'); // Ir a login tras registro exitoso
-                setError('¡Cuenta creada! Por favor inicia sesión.');
+                setError(data.message || '¡Cuenta creada! Por favor inicia sesión.');
             }
         } catch (err: any) {
             setError(err.message);

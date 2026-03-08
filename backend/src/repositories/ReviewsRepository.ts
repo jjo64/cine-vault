@@ -25,6 +25,11 @@ const REVIEW_SELECT = {
   rating: true,
   likes: true,
   created_at: true,
+  movies_ref: {
+    select: {
+      tmdb_id: true,
+    },
+  },
 } as const
 
 export interface MovieReviewsAggregate {

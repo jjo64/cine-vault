@@ -1,5 +1,6 @@
 export type EnrichedMovie = {
   movieId: number
+  tmdbId: number | null
   title: string
   year: number | null
   director: string
@@ -48,9 +49,16 @@ export type ProfileHeaderData = {
   bio: string
 }
 
+export type ProfileConnection = {
+  id: number
+  username: string
+  avatarUrl?: string | null
+}
+
 export type ProfileStatsData = {
   views: number
   reviews: number
-  vault: number
   watchlist: number
+  following: number
+  followers: number
 }

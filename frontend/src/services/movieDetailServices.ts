@@ -1,3 +1,5 @@
+import { authorizedFetch } from './authServices'
+
 const API_URL = import.meta.env.VITE_API_URL
 
 export type MovieDetailApi = {
@@ -47,14 +49,18 @@ type RequestOptions = {
 }
 
 async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const response = await fetch(`${API_URL}${path}`, {
+  const requestInit: RequestInit = {
     method: options.method ?? 'GET',
     headers: {
       'Content-Type': 'application/json',
       ...(options.token ? { Authorization: `Bearer ${options.token}` } : {}),
     },
     ...(options.body ? { body: JSON.stringify(options.body) } : {}),
-  })
+  }
+
+  const response = options.token
+    ? await authorizedFetch(path, requestInit)
+    : await fetch(`${API_URL}${path}`, requestInit)
 
   if (!response.ok) {
     const message = await response.text()

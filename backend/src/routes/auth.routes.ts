@@ -7,6 +7,7 @@ import {
   cerrarSesion,
   verificarToken,
   verificarEmail,
+  verificarEmailDesdeQuery,
   reenviarVerificacion,
   controladorCallback,
   activar2FA,
@@ -80,6 +81,7 @@ router.post(
 // RUTAS PÚBLICAS SIN LIMIT ESTRICTO
 // ---------------------------------------------------------------------------
 router.post("/verify-email/:token", manejadorAsincrono(verificarEmail))
+router.get("/verify-email", manejadorAsincrono(verificarEmailDesdeQuery))
 router.post(
   "/reset-password",
   validarBody(resetPasswordSchema),
@@ -103,11 +105,7 @@ router.get(
 // ---------------------------------------------------------------------------
 // RUTAS PROTEGIDAS (requieren token)
 // ---------------------------------------------------------------------------
-router.post(
-  "/logout",
-  middlewareAutenticacion,
-  manejadorAsincrono(cerrarSesion)
-)
+router.post("/logout", manejadorAsincrono(cerrarSesion))
 router.get(
   "/verify",
   middlewareAutenticacion,

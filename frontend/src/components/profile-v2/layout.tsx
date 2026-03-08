@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Bell, Search, Settings, Share2, Edit3 } from 'lucide-react'
-import { motion } from 'motion/react'
+import { Bell, Search, Settings, Share2, Edit3, X } from 'lucide-react'
+import { AnimatePresence, motion } from 'motion/react'
 import { useNavigate } from 'react-router-dom'
-import { backdropImages } from './assets'
+import { backdropImages, IMG } from './assets'
 import { createSlug } from '../../utils/stringUtils'
 import { C, SANS, SERIF, inputButtonReset } from './theme'
 import { Img } from './primitives'
-import type { ProfileHeaderData, ProfileStatsData } from './models'
+import type { ProfileConnection, ProfileHeaderData, ProfileStatsData } from './models'
 import { searchMovies } from '../../services/searchServices'
 
-export const TAB_LIST = ['Resumen', 'Vault', 'Watchlist', 'Reseñas', 'Listas'] as const
+export const TAB_LIST = ['Resumen', 'Historial', 'Vault', 'Watchlist', 'Reseñas', 'Listas'] as const
 
 type SearchMovieResult = {
   id: number
@@ -245,7 +245,7 @@ export function Navbar({
                       }}
                     >
                       <Img
-                        src={movie.poster_path ? `https://image.tmdb.org/t/p/w92${movie.poster_path}` : 'https://via.placeholder.com/92x138?text=No+Poster'}
+                        src={movie.poster_path ? `https://image.tmdb.org/t/p/w92${movie.poster_path}` : '/no-poster.svg'}
                         alt={movie.title}
                         style={{ width: 44, height: 64, objectFit: 'cover', borderRadius: 2, flexShrink: 0 }}
                       />
@@ -354,16 +354,36 @@ export function Navbar({
 export function ProfileHero({
   header,
   stats,
+  followers,
+  following,
+  onNavigateToUser,
   canEditProfile,
   isMobile,
   isTablet,
 }: {
   header: ProfileHeaderData
   stats: ProfileStatsData
+  followers: ProfileConnection[]
+  following: ProfileConnection[]
+  onNavigateToUser: (username: string) => void
   canEditProfile: boolean
   isMobile: boolean
   isTablet: boolean
 }) {
+  const [openList, setOpenList] = useState<'followers' | 'following' | null>(null)
+  const listItems = openList === 'followers' ? followers : following
+
+  useEffect(() => {
+    if (!openList) return
+
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpenList(null)
+    }
+
+    window.addEventListener('keydown', onEscape)
+    return () => window.removeEventListener('keydown', onEscape)
+  }, [openList])
+
   return (
     <div style={{ position: 'relative', height: isMobile ? 620 : isTablet ? 560 : 480, overflow: 'hidden' }}>
       <div
@@ -480,22 +500,144 @@ export function ProfileHero({
           )}
         </div>
 
-        <div style={{ display: 'flex', gap: isMobile ? 16 : 40, alignSelf: isMobile ? 'stretch' : 'flex-end', paddingBottom: 8, width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'space-between' : 'flex-start' }}>
+        <div style={{ display: 'flex', gap: isMobile ? 12 : 24, alignSelf: isMobile ? 'stretch' : 'flex-end', paddingBottom: 8, width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'space-between' : 'flex-start', flexWrap: 'wrap' }}>
           {[
-            [String(stats.views), 'vistas'],
-            [String(stats.reviews), 'reseñas'],
-            [String(stats.vault), 'vault'],
-            [String(stats.watchlist), 'watchlist'],
-          ].map(([num, label]) => (
-            <div key={label} style={{ textAlign: 'center' }}>
-              <span style={{ fontFamily: SERIF, fontSize: 32, fontWeight: 300, display: 'block', color: C.text, lineHeight: 1 }}>{num}</span>
+            { num: String(stats.views), label: 'vistas' },
+            { num: String(stats.reviews), label: 'reseñas' },
+            { num: String(stats.watchlist), label: 'watchlist' },
+          ].map((item) => (
+            <div key={item.label} style={{ textAlign: 'center', minWidth: 76 }}>
+              <span style={{ fontFamily: SERIF, fontSize: 32, fontWeight: 300, display: 'block', color: C.text, lineHeight: 1 }}>{item.num}</span>
               <span style={{ fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.textSoft, marginTop: 3, display: 'block', fontFamily: SANS }}>
-                {label}
+                {item.label}
               </span>
             </div>
           ))}
+          <button
+            onClick={() => setOpenList(openList === 'following' ? null : 'following')}
+            style={{ border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'center', minWidth: 86, padding: 0 }}
+          >
+            <span style={{ fontFamily: SERIF, fontSize: 32, fontWeight: 300, display: 'block', color: C.text, lineHeight: 1 }}>{stats.following}</span>
+            <span style={{ fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.textSoft, marginTop: 3, display: 'block', fontFamily: SANS }}>
+              following
+            </span>
+          </button>
+          <button
+            onClick={() => setOpenList(openList === 'followers' ? null : 'followers')}
+            style={{ border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'center', minWidth: 86, padding: 0 }}
+          >
+            <span style={{ fontFamily: SERIF, fontSize: 32, fontWeight: 300, display: 'block', color: C.text, lineHeight: 1 }}>{stats.followers}</span>
+            <span style={{ fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.textSoft, marginTop: 3, display: 'block', fontFamily: SANS }}>
+              followers
+            </span>
+          </button>
         </div>
+
       </motion.div>
+
+      <AnimatePresence>
+        {openList && (
+          <motion.div
+            onClick={() => setOpenList(null)}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 120,
+              background: 'rgba(4,5,8,0.62)',
+              backdropFilter: 'blur(2px)',
+              display: 'grid',
+              placeItems: 'center',
+              padding: isMobile ? '16px' : '24px',
+            }}
+          >
+            <motion.div
+              onClick={(event) => event.stopPropagation()}
+              initial={{ opacity: 0, y: 16, scale: 0.985 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.99 }}
+              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+              style={{
+                width: '100%',
+                maxWidth: 420,
+                maxHeight: 'min(78vh, 620px)',
+                overflow: 'hidden',
+                border: `1px solid ${C.border}`,
+                background: 'linear-gradient(160deg, rgba(15,18,25,0.98) 0%, rgba(9,11,16,0.98) 100%)',
+                boxShadow: '0 28px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.03)',
+              }}
+            >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '14px 14px 10px',
+                borderBottom: `1px solid ${C.border}`,
+              }}
+            >
+              <div style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.accent, fontFamily: SANS }}>
+                {openList === 'followers' ? 'Followers' : 'Following'}
+              </div>
+              <button
+                type="button"
+                onClick={() => setOpenList(null)}
+                aria-label="Cerrar popup"
+                style={{
+                  border: `1px solid ${C.border}`,
+                  background: 'transparent',
+                  color: C.textSoft,
+                  width: 30,
+                  height: 30,
+                  display: 'grid',
+                  placeItems: 'center',
+                  cursor: 'pointer',
+                }}
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            <div style={{ maxHeight: 'calc(min(78vh, 620px) - 56px)', overflowY: 'auto', padding: '8px 10px 10px' }}>
+              {listItems.length === 0 && (
+                <div style={{ color: C.textSoft, fontFamily: SERIF, fontStyle: 'italic', padding: '10px 6px 12px' }}>
+                  Aún no hay usuarios aquí.
+                </div>
+              )}
+              {listItems.map((user) => (
+                <button
+                  key={`${openList}-${user.id}`}
+                  onClick={() => {
+                    setOpenList(null)
+                    onNavigateToUser(user.username)
+                  }}
+                  style={{
+                    width: '100%',
+                    border: 'none',
+                    background: 'transparent',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: '10px 8px',
+                    color: C.text,
+                    textAlign: 'left',
+                  }}
+                >
+                  <div style={{ width: 34, height: 34, borderRadius: '50%', overflow: 'hidden', border: `1px solid ${C.border}`, flexShrink: 0 }}>
+                    <Img src={user.avatarUrl || IMG.avatar} alt={user.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                  <span style={{ fontFamily: SANS, fontSize: 13 }}>@{user.username}</span>
+                </button>
+              ))}
+            </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

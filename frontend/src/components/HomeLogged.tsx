@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Film, NotebookPen, Search, Star, Bookmark } from 'lucide-react'
-import { logoutCurrentUser } from '../services/authServices'
+import { authorizedJson, logoutCurrentUser } from '../services/authServices'
 
 type ActivityMovie = {
   movie_id: number
@@ -31,19 +31,12 @@ const C = {
 const SANS = "'Syne', sans-serif"
 const SERIF = "'Cormorant Garamond', serif"
 
-const getToken = () => localStorage.getItem('token')
-const API = import.meta.env.VITE_API_URL
-
 async function authGet<T>(path: string): Promise<T> {
-  const token = getToken()
-  if (!token) throw new Error('No token')
-  const res = await fetch(`${API}${path}`, { headers: { Authorization: `Bearer ${token}` } })
-  if (!res.ok) throw new Error(`Error ${res.status}`)
-  return res.json()
+  return authorizedJson<T>(path)
 }
 
 function posterUrl(path?: string | null) {
-  if (!path) return 'https://via.placeholder.com/300x450?text=No+Poster'
+  if (!path) return '/no-poster.svg'
   if (path.startsWith('http')) return path
   return `https://image.tmdb.org/t/p/w342${path}`
 }

@@ -15,6 +15,7 @@ export interface RichWatchlistEntry {
   movie_id: number
   tmdb_id: number | null
   movie_info: { title: string; poster_path: string } | null
+  added_at: Date | null
 }
 
 export interface IWatchlistRepository {
@@ -59,7 +60,8 @@ export class WatchlistRepository implements IWatchlistRepository {
   async buildRichResponse(userId: number): Promise<RichWatchlistEntry[]> {
     const entries = await prisma.watchlist.findMany({
       where: { user_id: userId },
-      select: { movie_id: true },
+      select: { movie_id: true, added_at: true },
+      orderBy: { added_at: 'desc' },
     })
 
     if (entries.length === 0) return []
@@ -92,6 +94,7 @@ export class WatchlistRepository implements IWatchlistRepository {
       movie_id: entry.movie_id,
       tmdb_id: movieMap.get(entry.movie_id) ?? null,
       movie_info: tmdbMap.get(entry.movie_id) ?? null,
+      added_at: entry.added_at,
     }))
   }
 }

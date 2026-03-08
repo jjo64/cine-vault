@@ -2,6 +2,8 @@ import rateLimit from "express-rate-limit"
 import { RateLimiterRedis } from "rate-limiter-flexible"
 import { redis } from "../config/redis.js"
 
+const isProduction = process.env.NODE_ENV === "production"
+
 /* ==========================================================================
    RATE LIMITING
    --------------------------------------------------------------------------
@@ -23,6 +25,8 @@ export const limitadorGlobal = rateLimit({
   max: 200, // máximo 200 requests por IP en esa ventana
   standardHeaders: true, // devuelve info en headers RateLimit-*
   legacyHeaders: false,
+  skip: (req) =>
+    !isProduction || ["GET", "HEAD", "OPTIONS"].includes(req.method),
   message: {
     error: {
       code: "RATE_LIMIT",
@@ -49,6 +53,8 @@ export const limitadorAuth = async (
   res: import("express").Response,
   next: import("express").NextFunction
 ) => {
+  if (!isProduction) return next()
+
   try {
     // La key combina IP + ruta para que /login y /2fa/verificar tengan contadores separados
     const key = `${req.ip}:${req.path}`
@@ -83,6 +89,8 @@ export const limitadorEmail = async (
   res: import("express").Response,
   next: import("express").NextFunction
 ) => {
+  if (!isProduction) return next()
+
   try {
     await limiterEmail.consume(req.ip!)
     next()

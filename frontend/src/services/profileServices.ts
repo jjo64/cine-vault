@@ -1,4 +1,4 @@
-import { getCurrentUser } from './authServices'
+import { authorizedFetch, getCurrentUser, getStoredAccessToken } from './authServices'
 
 const API_URL = import.meta.env.VITE_API_URL
 
@@ -35,19 +35,30 @@ export type RichWatchlistEntry = {
   tmdb_id: number | null
   movie_info?: { title: string; poster_path: string | null } | null
   rank_position?: number | null
+  added_at?: string | null
 }
 
 export type ReviewEntry = {
   id: number
   user_id: number
   movie_id: number
+  tmdb_id?: number | null
   content: string | null
   rating: number | null
   likes?: number
   created_at: string
+  movies_ref?: {
+    tmdb_id?: number | null
+  } | null
 }
 
 export type FavoriteEntry = { movie_id: number; rank_position: number | null }
+
+export type FollowUserEntry = {
+  id: number
+  username: string
+  avatar_url?: string | null
+}
 
 type FetchOptions<T> = {
   token?: string | null
@@ -62,11 +73,15 @@ const buildHeaders = (token?: string | null) => ({
 })
 
 async function apiFetch<T>(path: string, options: FetchOptions<T>): Promise<T> {
-  const response = await fetch(`${API_URL}${path}`, {
+  const requestInit: RequestInit = {
     method: options.method ?? 'GET',
     headers: buildHeaders(options.token),
     ...(options.body ? { body: JSON.stringify(options.body) } : {}),
-  })
+  }
+
+  const response = options.token
+    ? await authorizedFetch(path, requestInit)
+    : await fetch(`${API_URL}${path}`, requestInit)
 
   if (!response.ok) {
     if (response.status === 404) return options.defaultValue
@@ -84,7 +99,7 @@ async function apiFetch<T>(path: string, options: FetchOptions<T>): Promise<T> {
 }
 
 export async function resolveViewerId(): Promise<{ userId: number | null; username: string | null; token: string | null }> {
-  const token = localStorage.getItem('token')
+  const token = getStoredAccessToken()
   if (!token) return { userId: null, username: null, token: null }
 
   try {
@@ -130,5 +145,15 @@ export const fetchFavorites = (userId: number, token?: string | null, isSelf?: b
 export const fetchReviews = (userId: number, token?: string | null, isSelf?: boolean) =>
   apiFetch<ReviewEntry[]>(isSelf ? '/api/reviews' : `/api/reviews/user/${userId}`, {
     token: isSelf ? token : undefined,
+    defaultValue: [],
+  })
+
+export const fetchFollowers = (userId: number) =>
+  apiFetch<FollowUserEntry[]>(`/api/users/${userId}/followers`, {
+    defaultValue: [],
+  })
+
+export const fetchFollowing = (userId: number) =>
+  apiFetch<FollowUserEntry[]>(`/api/users/${userId}/following`, {
     defaultValue: [],
   })

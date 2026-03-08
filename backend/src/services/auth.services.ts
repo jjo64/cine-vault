@@ -100,8 +100,43 @@ export const registrarService = async (body: unknown) => {
 
   const { email, username, password } = validacion.data
 
+  const emitirVerificacion = async (userId: number, userEmail: string) => {
+    await authTokenRepository.deleteMany({
+      user_id: userId,
+      type: "VERIFY_EMAIL",
+    })
+
+    const tokenVerificacion = jwt.sign(
+      { user_id: userId },
+      process.env.VERIFY_EMAIL_SECRET!,
+      { expiresIn: "1h" }
+    )
+
+    await authTokenRepository.create({
+      id: crypto.randomUUID(),
+      users: { connect: { id: userId } },
+      token: tokenVerificacion,
+      type: "VERIFY_EMAIL",
+      expires_at: new Date(Date.now() + 60 * 60 * 1000),
+    })
+
+    await enviarCorreoVerificacion(userEmail, tokenVerificacion)
+  }
+
   const usuarioExistente = await userRepository.findByEmail(email)
-  if (usuarioExistente) throw new ConflictError("El usuario ya está registrado")
+  if (usuarioExistente) {
+    if (usuarioExistente.is_verified) {
+      throw new ConflictError("Ese email ya está registrado. Inicia sesión.")
+    }
+
+    await emitirVerificacion(usuarioExistente.id, usuarioExistente.email)
+    return { userId: usuarioExistente.id, verificationResent: true }
+  }
+
+  const usernameExistente = await userRepository.findByUsername(username)
+  if (usernameExistente) {
+    throw new ConflictError("Ese nombre de usuario ya está en uso")
+  }
 
   const contrasenaHasheada = await hashearContrasena(password)
   const nuevoUsuario = await userRepository.create({
@@ -110,21 +145,7 @@ export const registrarService = async (body: unknown) => {
     password: contrasenaHasheada,
   })
 
-  const tokenVerificacion = jwt.sign(
-    { user_id: nuevoUsuario.id },
-    process.env.VERIFY_EMAIL_SECRET!,
-    { expiresIn: "1h" }
-  )
-
-  await authTokenRepository.create({
-    id: crypto.randomUUID(),
-    users: { connect: { id: nuevoUsuario.id } },
-    token: tokenVerificacion,
-    type: "VERIFY_EMAIL",
-    expires_at: new Date(Date.now() + 60 * 60 * 1000),
-  })
-
-  await enviarCorreoVerificacion(nuevoUsuario.email, tokenVerificacion)
+  await emitirVerificacion(nuevoUsuario.id, nuevoUsuario.email)
 
   return { userId: nuevoUsuario.id }
 }
