@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom'
 import './AuthModal.css';
 
 interface AuthModalProps {
@@ -8,6 +9,7 @@ interface AuthModalProps {
 }
 
 const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'login' }) => {
+    const navigate = useNavigate()
     const [mode, setMode] = useState<'login' | 'register'>(initialMode);
     const [formData, setFormData] = useState({
         username: '',
@@ -52,7 +54,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
                 localStorage.setItem('token', data.accessToken);
                 window.dispatchEvent(new CustomEvent('auth-state-changed'))
                 onClose()
-                window.location.assign('/profile')
+                navigate('/profile', { replace: true })
             } else {
                 setMode('login'); // Ir a login tras registro exitoso
                 setError('¡Cuenta creada! Por favor inicia sesión.');
