@@ -57,6 +57,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
                 setMode('login'); // Ir a login tras registro exitoso
                 setError(data.message || '¡Cuenta creada! Por favor inicia sesión.');
             }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (err: any) {
             setError(err.message);
         } finally {
