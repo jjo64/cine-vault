@@ -33,6 +33,7 @@ export function Navbar({
   const [searchResults, setSearchResults] = useState<SearchMovieResult[]>([])
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [isSearching, setIsSearching] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   const trimmedQuery = searchQuery.trim()
 
@@ -153,8 +154,8 @@ export function Navbar({
         })}
       </ul>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 10 : 20 }}>
-        <div ref={wrapperRef} style={{ position: 'relative', width: isMobile ? 170 : 270 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 20 }}>
+        <div ref={wrapperRef} style={{ position: 'relative', width: isMobile ? 132 : 270 }}>
           <form
             onSubmit={(event) => {
               event.preventDefault()
@@ -251,7 +252,7 @@ export function Navbar({
                       <span
                         style={{
                           fontFamily: SANS,
-                          fontSize: 30,
+                          fontSize: isMobile ? 13 : 16,
                           fontWeight: 700,
                           letterSpacing: '0.01em',
                           textTransform: 'uppercase',
@@ -288,6 +289,63 @@ export function Navbar({
             }}
           />
         </button>
+
+        {isMobile && (
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setIsMobileMenuOpen((value) => !value)}
+              style={{
+                ...inputButtonReset,
+                color: C.textSoft,
+                padding: '8px 9px',
+                border: `1px solid ${C.border}`,
+                borderRadius: 999,
+              }}
+            >
+              <span style={{ fontSize: 11, letterSpacing: '0.08em' }}>Menu</span>
+            </button>
+
+            {isMobileMenuOpen && (
+              <div
+                style={{
+                  position: 'absolute',
+                  right: 0,
+                  top: 42,
+                  minWidth: 170,
+                  border: `1px solid ${C.border}`,
+                  background: 'rgba(7,8,11,0.98)',
+                  padding: 8,
+                  display: 'grid',
+                  gap: 6,
+                }}
+              >
+                {['Explorar', 'Feed', 'Esta noche', 'Perfil'].map((label) => (
+                  <button
+                    key={label}
+                    onClick={() => {
+                      if (label === 'Explorar') onNavigateHome()
+                      setIsMobileMenuOpen(false)
+                    }}
+                    style={{
+                      border: 'none',
+                      background: 'transparent',
+                      color: C.text,
+                      textAlign: 'left',
+                      padding: '8px 10px',
+                      fontFamily: SANS,
+                      fontSize: 11,
+                      letterSpacing: '0.12em',
+                      textTransform: 'uppercase',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </nav>
   )

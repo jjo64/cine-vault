@@ -21,7 +21,7 @@ import { Badge, Img, SectionHeader, Stars } from './primitives'
 import { vaultMockItems, userListsMock, IMG } from './assets'
 import type { RecentlyWatchedItem, ReviewItem, WatchlistItem } from './models'
 
-function NightRec({ recommendation }: { recommendation: WatchlistItem | null }) {
+function NightRec({ recommendation, isMobile }: { recommendation: WatchlistItem | null; isMobile: boolean }) {
   const [watched, setWatched] = useState(false)
   return (
     <motion.div
@@ -32,11 +32,12 @@ function NightRec({ recommendation }: { recommendation: WatchlistItem | null }) 
         background: C.surface,
         border: `1px solid ${C.border}`,
         borderLeft: `3px solid ${C.accent}`,
-        padding: '24px 28px',
+        padding: isMobile ? '18px 16px' : '24px 28px',
         marginBottom: 48,
         display: 'flex',
-        alignItems: 'center',
-        gap: 24,
+        flexDirection: isMobile ? 'column' : 'row',
+        alignItems: isMobile ? 'flex-start' : 'center',
+        gap: isMobile ? 14 : 24,
         position: 'relative',
         overflow: 'hidden',
       }}
@@ -75,11 +76,11 @@ function NightRec({ recommendation }: { recommendation: WatchlistItem | null }) 
         </div>
       </div>
 
-      <div style={{ marginLeft: 'auto', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, position: 'relative', zIndex: 1 }}>
+      <div style={{ marginLeft: isMobile ? 0 : 'auto', width: isMobile ? '100%' : 'auto', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: isMobile ? 'flex-start' : 'flex-end', gap: 8, position: 'relative', zIndex: 1 }}>
         <button
           onClick={() => setWatched((value) => !value)}
           style={{
-            padding: '10px 22px',
+            padding: '10px 18px',
             background: watched ? C.accentDim : C.accent,
             color: C.bg,
             border: 'none',
@@ -102,7 +103,7 @@ function NightRec({ recommendation }: { recommendation: WatchlistItem | null }) 
             'Marcar como vista'
           )}
         </button>
-        <div style={{ fontSize: 11, color: C.gold, display: 'flex', alignItems: 'center', gap: 5, fontFamily: SANS }}>
+        <div style={{ fontSize: 11, color: C.gold, display: 'flex', alignItems: 'center', gap: 5, fontFamily: SANS, flexWrap: 'wrap' }}>
           <Trophy size={11} /> +40 pts si la ves esta noche
         </div>
       </div>
@@ -251,7 +252,7 @@ function VaultCard({ item, delay = 0 }: { item: (typeof vaultMockItems)[number];
   )
 }
 
-function ReviewCard({ review, delay = 0 }: { review: ReviewItem; delay?: number }) {
+function ReviewCard({ review, delay = 0, compact = false }: { review: ReviewItem; delay?: number; compact?: boolean }) {
   const richText = review.text
     .replace(/<b>/g, `<strong style="color:${C.text};font-style:normal;font-weight:500">`)
     .replace(/<\/b>/g, '</strong>')
@@ -261,9 +262,9 @@ function ReviewCard({ review, delay = 0 }: { review: ReviewItem; delay?: number 
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay }}
-      style={{ borderBottom: `1px solid ${C.border}`, padding: '24px 0', display: 'grid', gridTemplateColumns: '56px 1fr', gap: 20 }}
+      style={{ borderBottom: `1px solid ${C.border}`, padding: '24px 0', display: 'grid', gridTemplateColumns: compact ? '1fr' : '56px 1fr', gap: compact ? 12 : 20 }}
     >
-      <div style={{ aspectRatio: '2/3', borderRadius: 1, overflow: 'hidden' }}>
+      <div style={{ width: compact ? 48 : 'auto', aspectRatio: '2/3', borderRadius: 1, overflow: 'hidden' }}>
         <Img src={review.posterUrl} alt={review.title} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(0.6)' }} />
       </div>
       <div>
@@ -356,10 +357,10 @@ export function OverviewPanel({
   const recommendation = watchlistFilms[0] || null
   return (
     <div>
-      <NightRec recommendation={recommendation} />
+      <NightRec recommendation={recommendation} isMobile={isMobile} />
 
       <SectionHeader title="Vistas recientemente" link="Ver historial" />
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(auto-fill, minmax(130px, 1fr))', gap: 16, marginBottom: 48 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(3, minmax(0, 1fr))' : 'repeat(auto-fill, minmax(130px, 1fr))', gap: isMobile ? 10 : 16, marginBottom: 48 }}>
         {recentlyWatched.map((film, index) => (
           <FilmCard key={film.movieId} film={film} delay={index * 0.05} />
         ))}
@@ -373,7 +374,7 @@ export function OverviewPanel({
       </div>
 
       <SectionHeader title="Última reseña" link="Ver todas" />
-      <div style={{ marginBottom: 48 }}>{reviewItems[0] ? <ReviewCard review={reviewItems[0]} /> : null}</div>
+      <div style={{ marginBottom: 48 }}>{reviewItems[0] ? <ReviewCard review={reviewItems[0]} compact={isMobile} /> : null}</div>
 
       <SectionHeader title="Watchlist" em={`— ${watchlistFilms.length} pendientes`} link="Ver completa" />
       <WatchlistStrip watchlistFilms={watchlistFilms} />
@@ -451,11 +452,11 @@ export function WatchlistPanel({ watchlistFilms, isMobile }: { watchlistFilms: W
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
         <div style={{ fontFamily: SERIF, fontSize: 26, color: C.text }}>
           Watchlist <em style={{ fontStyle: 'italic', color: C.textSoft, fontSize: 20 }}>— {watchlistFilms.length} películas</em>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, width: isMobile ? '100%' : 'auto' }}>
           <button
             style={{
               padding: '7px 14px',
@@ -495,7 +496,7 @@ export function WatchlistPanel({ watchlistFilms, isMobile }: { watchlistFilms: W
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(auto-fill, minmax(130px, 1fr))', gap: 16 }}>
+      <div style={{ display: isMobile ? 'flex' : 'grid', overflowX: isMobile ? 'auto' : 'visible', paddingBottom: isMobile ? 6 : 0, gridTemplateColumns: isMobile ? undefined : 'repeat(auto-fill, minmax(130px, 1fr))', gap: 16 }}>
         {watchlistFilms.map((film, index) => {
           const isWatched = watched.includes(film.movieId)
           return (
@@ -504,7 +505,7 @@ export function WatchlistPanel({ watchlistFilms, isMobile }: { watchlistFilms: W
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.04 }}
-              style={{ cursor: 'pointer', position: 'relative' }}
+              style={{ cursor: 'pointer', position: 'relative', flexShrink: 0, width: isMobile ? 120 : 'auto' }}
             >
               <div style={{ aspectRatio: '2/3', borderRadius: 2, overflow: 'hidden', marginBottom: 10, position: 'relative' }}>
                 <Img
@@ -566,7 +567,7 @@ export function WatchlistPanel({ watchlistFilms, isMobile }: { watchlistFilms: W
   )
 }
 
-export function ReviewsPanel({ reviewItems }: { reviewItems: ReviewItem[] }) {
+export function ReviewsPanel({ reviewItems, isMobile }: { reviewItems: ReviewItem[]; isMobile: boolean }) {
   const [sort, setSort] = useState('Reciente')
   const sortedReviews = useMemo(() => {
     if (sort === 'Rating') return [...reviewItems].sort((a, b) => b.rating - a.rating)
@@ -576,11 +577,11 @@ export function ReviewsPanel({ reviewItems }: { reviewItems: ReviewItem[] }) {
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
         <div style={{ fontFamily: SERIF, fontSize: 26, color: C.text }}>
           Reseñas <em style={{ fontStyle: 'italic', color: C.textSoft, fontSize: 20 }}>— {reviewItems.length} escritas</em>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', width: isMobile ? '100%' : 'auto' }}>
           {['Reciente', 'Rating', 'Película'].map((sortName) => (
             <button
               key={sortName}
@@ -604,7 +605,7 @@ export function ReviewsPanel({ reviewItems }: { reviewItems: ReviewItem[] }) {
       </div>
       <div>
         {sortedReviews.map((review, index) => (
-          <ReviewCard key={review.id} review={review} delay={index * 0.07} />
+          <ReviewCard key={review.id} review={review} delay={index * 0.07} compact={isMobile} />
         ))}
       </div>
       <button
