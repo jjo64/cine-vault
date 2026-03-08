@@ -8,6 +8,8 @@ pnpm-debug.log*
 # Environment
 .env
 .env*.local
+.env.*
+!.env.example
 
 # Build & Output
 dist/
