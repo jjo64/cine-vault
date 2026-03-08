@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect, useState } from 'react'
 import { Routes, Route } from 'react-router'
 import AuthModal from './components/AuthModal'
+import SeoManager from './components/SeoManager'
 import { SocketProvider } from "./context/SocketContext"
 import './App.css'
 
@@ -28,6 +29,7 @@ function App() {
 
     return (
         <SocketProvider>
+        <SeoManager />
         <Suspense fallback={<div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#080808', color: '#7A7A7A' }}>Cargando...</div>}>
             <Routes>
                 <Route path="/" element={<Home />} />
