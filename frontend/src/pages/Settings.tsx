@@ -17,7 +17,17 @@ import {
   updateProfileSettings,
   type SessionEntry,
 } from '../services/profileServices'
-import { clearStoredAccessToken, getCurrentUser, getStoredAccessToken } from '../services/authServices'
+import {
+  activateTwoFactor,
+  clearStoredAccessToken,
+  confirmTwoFactor,
+  disableTwoFactor,
+  getCurrentUser,
+  getRecoveryCodesStatus,
+  getStoredAccessToken,
+  regenerateRecoveryCodes,
+  authorizedFetch,
+} from '../services/authServices'
 import { useResponsive } from '../hooks/useResponsive'
 
 type SectionKey = 'perfil' | 'seguridad' | 'cuenta'
@@ -74,6 +84,16 @@ export default function SettingsPage() {
   const [showLeaveModal, setShowLeaveModal] = useState(false)
   const [deleteStep, setDeleteStep] = useState(0)
   const [deleteInput, setDeleteInput] = useState('')
+  const [isTwoFactorEnabled, setIsTwoFactorEnabled] = useState(false)
+  const [twoFactorQr, setTwoFactorQr] = useState<string | null>(null)
+  const [twoFactorSecret, setTwoFactorSecret] = useState<string | null>(null)
+  const [twoFactorCode, setTwoFactorCode] = useState('')
+  const [twoFactorDisableCode, setTwoFactorDisableCode] = useState('')
+  const [twoFactorBusy, setTwoFactorBusy] = useState(false)
+  const [recoveryCodes, setRecoveryCodes] = useState<string[]>([])
+  const [recoveryCodesRemaining, setRecoveryCodesRemaining] = useState<number | null>(null)
+  const [recoveryRegenerateCode, setRecoveryRegenerateCode] = useState('')
+  const [recoveryBusy, setRecoveryBusy] = useState(false)
 
   const token = getStoredAccessToken()
 
@@ -86,12 +106,18 @@ export default function SettingsPage() {
   }, [profileForm, initialProfile, avatarBase64])
 
   useEffect(() => {
-    if (!token) {
-      navigate('/profile')
-      return
-    }
-
     let alive = true
+
+    const loadRecoveryStatus = async () => {
+      try {
+        const status = await getRecoveryCodesStatus()
+        if (!alive) return
+        setRecoveryCodesRemaining(status.remaining)
+      } catch {
+        if (!alive) return
+        setRecoveryCodesRemaining(0)
+      }
+    }
 
     const load = async () => {
       setLoading(true)
@@ -99,9 +125,7 @@ export default function SettingsPage() {
 
       try {
         const current = await getCurrentUser()
-        const usersRes = await fetch(`${import.meta.env.VITE_API_URL}/api/users`, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
+        const usersRes = await authorizedFetch('/api/users', { method: 'GET' })
 
         if (!usersRes.ok) throw new Error('No se pudo cargar el perfil')
         const users = (await usersRes.json()) as Array<{ id: number; username: string; email?: string; bio?: string; avatar_url?: string | null }>
@@ -118,10 +142,16 @@ export default function SettingsPage() {
         setProfileForm(nextProfile)
         setInitialProfile(nextProfile)
         setAvatarPreview(me?.avatar_url || current.avatar_url || null)
+        const twoFactorEnabled = Boolean(current.two_factor_enabled)
+        setIsTwoFactorEnabled(twoFactorEnabled)
 
         const sessionsRes = await fetchAuthSessions(token)
         if (!alive) return
         setSessions(Array.isArray(sessionsRes.sessions) ? sessionsRes.sessions : [])
+
+        if (twoFactorEnabled) {
+          await loadRecoveryStatus()
+        }
       } catch (err) {
         if (!alive) return
         setError((err as Error).message || 'No se pudo cargar ajustes')
@@ -306,6 +336,106 @@ export default function SettingsPage() {
     }
   }
 
+  const beginTwoFactorSetup = async () => {
+    setTwoFactorBusy(true)
+    setError(null)
+    setSuccessMessage(null)
+
+    try {
+      const { qr, secreto } = await activateTwoFactor()
+      setTwoFactorQr(qr)
+      setTwoFactorSecret(secreto)
+      setTwoFactorCode('')
+      setInlineErrors((prev) => ({ ...prev, twofactor: '' }))
+      setSuccessMessage('Escaneá el QR y confirmá con tu código 2FA')
+    } catch (err) {
+      setError((err as Error).message || 'No se pudo iniciar la configuración 2FA')
+    } finally {
+      setTwoFactorBusy(false)
+    }
+  }
+
+  const confirmTwoFactorSetup = async () => {
+    const code = twoFactorCode.trim()
+    if (!code) {
+      setInlineErrors((prev) => ({ ...prev, twofactor: 'Ingresá tu código 2FA de 6 dígitos' }))
+      return
+    }
+
+    setTwoFactorBusy(true)
+    setError(null)
+    setSuccessMessage(null)
+
+    try {
+      const payload = await confirmTwoFactor(code)
+      setIsTwoFactorEnabled(true)
+      setTwoFactorQr(null)
+      setTwoFactorSecret(null)
+      setTwoFactorCode('')
+      setRecoveryCodes(Array.isArray(payload.recoveryCodes) ? payload.recoveryCodes : [])
+      setRecoveryCodesRemaining(Array.isArray(payload.recoveryCodes) ? payload.recoveryCodes.length : null)
+      setRecoveryRegenerateCode('')
+      setInlineErrors((prev) => ({ ...prev, twofactor: '' }))
+      setSuccessMessage('2FA activado correctamente. Guardá tus recovery codes en un lugar seguro.')
+    } catch (err) {
+      setError((err as Error).message || 'No se pudo confirmar 2FA')
+    } finally {
+      setTwoFactorBusy(false)
+    }
+  }
+
+  const disableTwoFactorSetup = async () => {
+    const code = twoFactorDisableCode.trim()
+    if (!code) {
+      setInlineErrors((prev) => ({ ...prev, twofactorDisable: 'Ingresá el código actual para desactivar 2FA' }))
+      return
+    }
+
+    setTwoFactorBusy(true)
+    setError(null)
+    setSuccessMessage(null)
+
+    try {
+      await disableTwoFactor(code)
+      setIsTwoFactorEnabled(false)
+      setTwoFactorDisableCode('')
+      setRecoveryCodes([])
+      setRecoveryCodesRemaining(null)
+      setRecoveryRegenerateCode('')
+      setInlineErrors((prev) => ({ ...prev, twofactorDisable: '' }))
+      setSuccessMessage('2FA desactivado correctamente')
+    } catch (err) {
+      setError((err as Error).message || 'No se pudo desactivar 2FA')
+    } finally {
+      setTwoFactorBusy(false)
+    }
+  }
+
+  const regenerateRecoveryCodesAction = async () => {
+    const code = recoveryRegenerateCode.trim()
+    if (!code) {
+      setInlineErrors((prev) => ({ ...prev, recoveryRegenerate: 'Ingresá tu código 2FA actual para regenerar' }))
+      return
+    }
+
+    setRecoveryBusy(true)
+    setError(null)
+    setSuccessMessage(null)
+
+    try {
+      const codes = await regenerateRecoveryCodes(code)
+      setRecoveryCodes(codes)
+      setRecoveryCodesRemaining(codes.length)
+      setRecoveryRegenerateCode('')
+      setInlineErrors((prev) => ({ ...prev, recoveryRegenerate: '' }))
+      setSuccessMessage('Recovery codes regenerados. Los anteriores ya no sirven.')
+    } catch (err) {
+      setError((err as Error).message || 'No se pudieron regenerar los recovery codes')
+    } finally {
+      setRecoveryBusy(false)
+    }
+  }
+
   const handleTryLeave = () => {
     if (!hasUnsavedChanges) {
       navigate(-1)
@@ -420,6 +550,123 @@ export default function SettingsPage() {
 
         {activeSection === 'seguridad' && (
           <section style={{ border: `1px solid ${C.border}`, background: C.surface, padding: 14, display: 'grid', gap: 14 }}>
+            <h2 style={{ margin: 0, fontFamily: SERIF, fontWeight: 400, fontSize: 28 }}>Autenticación en 2 pasos</h2>
+
+            <div style={{ border: `1px solid ${isTwoFactorEnabled ? C.accentDim : C.border}`, background: isTwoFactorEnabled ? C.accentGlow : C.elevated, padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+              <div style={{ fontFamily: SANS, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: isTwoFactorEnabled ? C.accent : C.textSoft }}>
+                Estado 2FA: {isTwoFactorEnabled ? 'Activo' : 'Inactivo'}
+              </div>
+
+              {!isTwoFactorEnabled ? (
+                <button
+                  onClick={beginTwoFactorSetup}
+                  disabled={twoFactorBusy}
+                  style={{ border: `1px solid ${C.accentDim}`, background: C.accentGlow, color: C.accent, padding: '8px 12px', fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: twoFactorBusy ? 'default' : 'pointer', fontFamily: SANS }}
+                >
+                  {twoFactorBusy ? 'Preparando...' : 'Activar 2FA'}
+                </button>
+              ) : (
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    placeholder="Código para desactivar"
+                    value={twoFactorDisableCode}
+                    onChange={(event) => setTwoFactorDisableCode(event.target.value.replace(/\D/g, ''))}
+                    style={{ border: `1px solid ${C.border}`, background: C.surface, color: C.text, padding: '8px 10px', fontFamily: SANS, minWidth: 180 }}
+                  />
+                  <button
+                    onClick={disableTwoFactorSetup}
+                    disabled={twoFactorBusy}
+                    style={{ border: '1px solid #6f3131', background: 'rgba(140,48,48,0.18)', color: '#ff9d9d', padding: '8px 12px', fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: twoFactorBusy ? 'default' : 'pointer', fontFamily: SANS }}
+                  >
+                    {twoFactorBusy ? 'Procesando...' : 'Desactivar 2FA'}
+                  </button>
+                </div>
+              )}
+            </div>
+            <FieldError>{inlineErrors.twofactorDisable}</FieldError>
+
+            {twoFactorQr && !isTwoFactorEnabled && (
+              <div style={{ border: `1px solid ${C.border}`, background: C.elevated, padding: 12, display: 'grid', gap: 10 }}>
+                <div style={{ color: C.textSoft, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: SANS }}>
+                  Escaneá este QR en tu app autenticadora
+                </div>
+
+                <div style={{ width: 180, height: 180, border: `1px solid ${C.border}`, background: '#fff', padding: 8 }}>
+                  <img src={twoFactorQr} alt="QR 2FA" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                </div>
+
+                <div>
+                  <div style={{ color: C.textSoft, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 4 }}>Clave manual</div>
+                  <div style={{ border: `1px solid ${C.border}`, background: C.surface, padding: '10px 12px', fontFamily: SANS, color: C.text, wordBreak: 'break-all', fontSize: 12 }}>
+                    {twoFactorSecret}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    placeholder="Código de 6 dígitos"
+                    value={twoFactorCode}
+                    onChange={(event) => setTwoFactorCode(event.target.value.replace(/\D/g, ''))}
+                    style={{ border: `1px solid ${C.border}`, background: C.surface, color: C.text, padding: '8px 10px', fontFamily: SANS, minWidth: 180 }}
+                  />
+                  <button
+                    onClick={confirmTwoFactorSetup}
+                    disabled={twoFactorBusy}
+                    style={{ border: `1px solid ${C.accentDim}`, background: C.accentGlow, color: C.accent, padding: '8px 12px', fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: twoFactorBusy ? 'default' : 'pointer', fontFamily: SANS }}
+                  >
+                    {twoFactorBusy ? 'Confirmando...' : 'Confirmar activación'}
+                  </button>
+                </div>
+                <FieldError>{inlineErrors.twofactor}</FieldError>
+              </div>
+            )}
+
+            {isTwoFactorEnabled && (
+              <div style={{ border: `1px solid ${C.border}`, background: C.elevated, padding: 12, display: 'grid', gap: 10 }}>
+                <h3 style={{ margin: 0, fontFamily: SERIF, fontWeight: 400, fontSize: 24 }}>Recovery codes</h3>
+                <p style={{ margin: 0, color: C.textSoft, fontFamily: SERIF, fontStyle: 'italic' }}>
+                  Usalos si perdés acceso a tu app autenticadora. Cada código funciona una sola vez.
+                </p>
+                <div style={{ color: C.textSoft, fontSize: 12 }}>
+                  Códigos restantes: {recoveryCodesRemaining ?? '...'}
+                </div>
+
+                {recoveryCodes.length > 0 && (
+                  <div style={{ border: `1px solid ${C.border}`, background: C.surface, padding: 10, display: 'grid', gap: 6 }}>
+                    {recoveryCodes.map((code) => (
+                      <code key={code} style={{ color: C.accent, fontSize: 13, letterSpacing: '0.08em' }}>{code}</code>
+                    ))}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    placeholder="Código 2FA actual"
+                    value={recoveryRegenerateCode}
+                    onChange={(event) => setRecoveryRegenerateCode(event.target.value.replace(/\D/g, ''))}
+                    style={{ border: `1px solid ${C.border}`, background: C.surface, color: C.text, padding: '8px 10px', fontFamily: SANS, minWidth: 180 }}
+                  />
+                  <button
+                    onClick={regenerateRecoveryCodesAction}
+                    disabled={recoveryBusy}
+                    style={{ border: `1px solid ${C.accentDim}`, background: C.accentGlow, color: C.accent, padding: '8px 12px', fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: recoveryBusy ? 'default' : 'pointer', fontFamily: SANS }}
+                  >
+                    {recoveryBusy ? 'Regenerando...' : 'Regenerar recovery codes'}
+                  </button>
+                </div>
+                <FieldError>{inlineErrors.recoveryRegenerate}</FieldError>
+              </div>
+            )}
+
             <h2 style={{ margin: 0, fontFamily: SERIF, fontWeight: 400, fontSize: 28 }}>Contraseña</h2>
 
             <input

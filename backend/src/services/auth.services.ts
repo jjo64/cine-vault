@@ -5,6 +5,7 @@ import crypto from "crypto"
 import {
   crearTokenAcceso,
   crearTokenRefresco,
+  hashearToken,
   verificarTokenRefresco,
 } from "../lib/tokens.js"
 import {
@@ -32,6 +33,133 @@ import { userRepository } from "../repositories/UserRepository.js"
 import { authTokenRepository } from "../repositories/AuthTokenRepository.js"
 import { sessionRepository } from "../repositories/SessionRepository.js"
 import { LoginResult } from "../types/auth.js"
+import { redis } from "../lib/redis.js"
+
+const TRUSTED_DEVICE_TTL_SECONDS = 30 * 24 * 60 * 60
+const RECOVERY_CODES_TTL_SECONDS = 180 * 24 * 60 * 60
+const RECOVERY_CODES_COUNT = 8
+
+const trustedDeviceFingerprint = (userAgent: string) =>
+  crypto.createHash("sha256").update(userAgent || "unknown").digest("hex")
+
+const trustedDeviceKey = (
+  userId: number,
+  fingerprint: string,
+  tokenHash: string
+) => `auth:trusted-device:${userId}:${fingerprint}:${tokenHash}`
+
+const recoveryCodesKey = (userId: number) => `auth:2fa:recovery:${userId}`
+
+const normalizeRecoveryCode = (code: string) =>
+  code.replace(/[^a-zA-Z0-9]/g, "").toUpperCase()
+
+const generateRecoveryCode = () => {
+  const bytes = crypto.randomBytes(4).toString("hex").toUpperCase()
+  return `${bytes.slice(0, 4)}-${bytes.slice(4, 8)}`
+}
+
+const saveRecoveryCodes = async (userId: number, plainCodes: string[]) => {
+  const hashedCodes = plainCodes.map((code) =>
+    hashearToken(normalizeRecoveryCode(code))
+  )
+
+  await redis.set(
+    recoveryCodesKey(userId),
+    JSON.stringify(hashedCodes),
+    "EX",
+    RECOVERY_CODES_TTL_SECONDS
+  )
+}
+
+const createAndStoreRecoveryCodes = async (userId: number) => {
+  const codes = Array.from({ length: RECOVERY_CODES_COUNT }, () =>
+    generateRecoveryCode()
+  )
+  await saveRecoveryCodes(userId, codes)
+  return codes
+}
+
+const getRecoveryCodeHashes = async (userId: number): Promise<string[]> => {
+  const raw = await redis.get(recoveryCodesKey(userId))
+  if (!raw) return []
+
+  try {
+    const parsed = JSON.parse(raw) as string[]
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
+const getRecoveryCodesRemaining = async (userId: number) => {
+  const hashes = await getRecoveryCodeHashes(userId)
+  return hashes.length
+}
+
+const consumeRecoveryCodeIfValid = async (userId: number, code: string) => {
+  const normalized = normalizeRecoveryCode(code)
+  if (!normalized) return { consumed: false, remaining: 0 }
+
+  const codeHash = hashearToken(normalized)
+  const hashes = await getRecoveryCodeHashes(userId)
+  const matchIndex = hashes.findIndex((hash) => hash === codeHash)
+
+  if (matchIndex === -1) {
+    return { consumed: false, remaining: hashes.length }
+  }
+
+  hashes.splice(matchIndex, 1)
+
+  if (hashes.length === 0) {
+    await redis.del(recoveryCodesKey(userId))
+  } else {
+    await redis.set(
+      recoveryCodesKey(userId),
+      JSON.stringify(hashes),
+      "EX",
+      RECOVERY_CODES_TTL_SECONDS
+    )
+  }
+
+  return { consumed: true, remaining: hashes.length }
+}
+
+const isTrustedDevice = async (
+  userId: number,
+  trustedDeviceToken: string | undefined,
+  userAgent: string
+) => {
+  if (!trustedDeviceToken) return false
+
+  const fingerprint = trustedDeviceFingerprint(userAgent)
+  const tokenHash = hashearToken(trustedDeviceToken)
+  const key = trustedDeviceKey(userId, fingerprint, tokenHash)
+  const raw = await redis.get(key)
+  return Boolean(raw)
+}
+
+const registerTrustedDevice = async (userId: number, userAgent: string) => {
+  const token = crypto.randomBytes(32).toString("hex")
+  const fingerprint = trustedDeviceFingerprint(userAgent)
+  const tokenHash = hashearToken(token)
+  const key = trustedDeviceKey(userId, fingerprint, tokenHash)
+
+  await redis.set(
+    key,
+    JSON.stringify({ createdAt: new Date().toISOString() }),
+    "EX",
+    TRUSTED_DEVICE_TTL_SECONDS
+  )
+
+  return token
+}
+
+const clearTrustedDevices = async (userId: number) => {
+  const keys = await redis.keys(`auth:trusted-device:${userId}:*`)
+  if (keys.length) {
+    await redis.del(...keys)
+  }
+}
 
 /* ==========================================================================
    AUTH SERVICE
@@ -47,7 +175,11 @@ import { LoginResult } from "../types/auth.js"
 // ---------------------------------------------------------------------------
 export const iniciarSesionService = async (
   username: string,
-  password: string
+  password: string,
+  context?: {
+    trustedDeviceToken?: string
+    userAgent?: string
+  }
 ): Promise<LoginResult> => {
   if (!username || !password) {
     throw new UnauthorizedError("Credenciales incorrectas")
@@ -69,6 +201,22 @@ export const iniciarSesionService = async (
 
   // Flujo 2FA: devolver token temporal en vez de tokens reales
   if (usuario.two_factor_enabled) {
+    const trusted = await isTrustedDevice(
+      usuario.id,
+      context?.trustedDeviceToken,
+      context?.userAgent || ""
+    )
+
+    if (trusted) {
+      const tokenAcceso = crearTokenAcceso(
+        usuario.id,
+        usuario.role as string,
+        usuario.is_verified
+      )
+      const { token: tokenRefresco } = await crearTokenRefresco(usuario.id)
+      return { type: "OK", tokenAcceso, tokenRefresco }
+    }
+
     const tokenTemporal = jwt.sign(
       { user_id: usuario.id, two_factor_pending: true },
       process.env.JWT_SECRET!,
@@ -318,13 +466,23 @@ export const confirmar2FAService = async (userId: number, codigo: string) => {
     throw new ValidationError("Primero debes generar el QR")
   }
 
-  const secretoReal = desencriptarSecreto(usuario.two_factor_secret)
+  let secretoReal: string
+  try {
+    secretoReal = desencriptarSecreto(usuario.two_factor_secret)
+  } catch {
+    throw new ValidationError(
+      "No se pudo leer tu configuracion 2FA. Reactivala desde ajustes."
+    )
+  }
   const totp = crearTOTP(secretoReal)
   const delta = totp.validate({ token: codigo, window: 1 })
 
   if (delta === null) throw new UnauthorizedError("Código incorrecto")
 
   await userRepository.update(userId, { two_factor_enabled: true })
+
+  const recoveryCodes = await createAndStoreRecoveryCodes(userId)
+  return { recoveryCodes }
 }
 
 // ---------------------------------------------------------------------------
@@ -332,7 +490,9 @@ export const confirmar2FAService = async (userId: number, codigo: string) => {
 // ---------------------------------------------------------------------------
 export const verificar2FAService = async (
   codigo: string,
-  tokenTemporal: string
+  tokenTemporal: string,
+  rememberDevice?: boolean,
+  userAgent?: string
 ) => {
   if (!codigo || !tokenTemporal) throw new ValidationError("Datos requeridos")
 
@@ -348,11 +508,27 @@ export const verificar2FAService = async (
     throw new ValidationError("No se ha configurado 2FA")
   }
 
-  const secretoReal = desencriptarSecreto(usuario.two_factor_secret)
+  let secretoReal: string
+  try {
+    secretoReal = desencriptarSecreto(usuario.two_factor_secret)
+  } catch {
+    throw new ValidationError(
+      "No se pudo leer tu configuracion 2FA. Reactivala desde ajustes."
+    )
+  }
   const totp = crearTOTP(secretoReal)
   const delta = totp.validate({ token: codigo, window: 1 })
+  let usedRecoveryCode = false
+  let remainingRecoveryCodes: number | null = null
 
-  if (delta === null) throw new UnauthorizedError("Código incorrecto")
+  if (delta === null) {
+    const recoveryResult = await consumeRecoveryCodeIfValid(usuario.id, codigo)
+    if (!recoveryResult.consumed) {
+      throw new UnauthorizedError("Código incorrecto")
+    }
+    usedRecoveryCode = true
+    remainingRecoveryCodes = recoveryResult.remaining
+  }
 
   const tokenAcceso = crearTokenAcceso(
     usuario.id,
@@ -361,7 +537,18 @@ export const verificar2FAService = async (
   )
   const { token: tokenRefresco } = await crearTokenRefresco(usuario.id)
 
-  return { tokenAcceso, tokenRefresco }
+  let trustedDeviceToken: string | undefined
+  if (rememberDevice) {
+    trustedDeviceToken = await registerTrustedDevice(usuario.id, userAgent || "")
+  }
+
+  return {
+    tokenAcceso,
+    tokenRefresco,
+    trustedDeviceToken,
+    usedRecoveryCode,
+    remainingRecoveryCodes,
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -445,7 +632,14 @@ export const desactivar2FAService = async (userId: number, codigo: string) => {
     throw new ValidationError("No tenés 2FA activado")
   }
 
-  const secretoReal = desencriptarSecreto(usuario.two_factor_secret!)
+  let secretoReal: string
+  try {
+    secretoReal = desencriptarSecreto(usuario.two_factor_secret!)
+  } catch {
+    throw new ValidationError(
+      "No se pudo leer tu configuracion 2FA. Reactivala desde ajustes."
+    )
+  }
   const totp = crearTOTP(secretoReal)
   const delta = totp.validate({ token: codigo, window: 1 })
 
@@ -455,6 +649,45 @@ export const desactivar2FAService = async (userId: number, codigo: string) => {
     two_factor_enabled: false,
     two_factor_secret: null,
   })
+
+  await redis.del(recoveryCodesKey(userId))
+  await clearTrustedDevices(userId)
+}
+
+// ---------------------------------------------------------------------------
+// RECOVERY CODES 2FA
+// ---------------------------------------------------------------------------
+export const recoveryCodesStatusService = async (userId: number) => {
+  const remaining = await getRecoveryCodesRemaining(userId)
+  return { remaining }
+}
+
+export const regenerarRecoveryCodesService = async (
+  userId: number,
+  codigo: string
+) => {
+  if (!codigo) throw new ValidationError("Código requerido")
+
+  const usuario = await userRepository.findById(userId)
+  if (!usuario?.two_factor_enabled || !usuario.two_factor_secret) {
+    throw new ValidationError("2FA no está activado")
+  }
+
+  let secretoReal: string
+  try {
+    secretoReal = desencriptarSecreto(usuario.two_factor_secret)
+  } catch {
+    throw new ValidationError(
+      "No se pudo leer tu configuracion 2FA. Reactivala desde ajustes."
+    )
+  }
+
+  const totp = crearTOTP(secretoReal)
+  const delta = totp.validate({ token: codigo, window: 1 })
+  if (delta === null) throw new UnauthorizedError("Código incorrecto")
+
+  const recoveryCodes = await createAndStoreRecoveryCodes(userId)
+  return { recoveryCodes }
 }
 
 // ---------------------------------------------------------------------------

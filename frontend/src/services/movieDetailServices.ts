@@ -59,7 +59,7 @@ async function apiRequest<T>(path: string, options: RequestOptions = {}): Promis
     ...(options.body ? { body: JSON.stringify(options.body) } : {}),
   }
 
-  const response = options.token
+  const response = options.token !== undefined
     ? await authorizedFetch(path, requestInit)
     : await fetch(`${API_URL}${path}`, requestInit)
 
@@ -86,16 +86,16 @@ export const fetchSearchMovies = (query: string) =>
 export const fetchUserById = (userId: number) =>
   apiRequest<{ id: number; username?: string; avatar_url?: string | null }>(`/api/users/${userId}`)
 
-export const fetchMyReviews = (token: string) => apiRequest<ReviewApi[]>('/api/reviews', { token })
+export const fetchMyReviews = (token: string | null) => apiRequest<ReviewApi[]>('/api/reviews', { token })
 
-export const createReview = (token: string, movieId: number, rating: number, content: string) =>
+export const createReview = (token: string | null, movieId: number, rating: number, content: string) =>
   apiRequest<ReviewApi>('/api/reviews', {
     token,
     method: 'POST',
     body: { movie_id: movieId, rating, content },
   })
 
-export const updateReview = (token: string, reviewId: number, rating: number) =>
+export const updateReview = (token: string | null, reviewId: number, rating: number) =>
   apiRequest<ReviewApi>(`/api/reviews/${reviewId}`, {
     token,
     method: 'PATCH',
@@ -103,7 +103,7 @@ export const updateReview = (token: string, reviewId: number, rating: number) =>
   })
 
 export const updateReviewContent = (
-  token: string,
+  token: string | null,
   reviewId: number,
   payload: { rating?: number; content?: string }
 ) =>
@@ -113,29 +113,29 @@ export const updateReviewContent = (
     body: payload,
   })
 
-export const deleteReview = (token: string, reviewId: number) =>
+export const deleteReview = (token: string | null, reviewId: number) =>
   apiRequest<{ message: string }>(`/api/reviews/${reviewId}`, {
     token,
     method: 'DELETE',
   })
 
-export const fetchMyWatchlist = (token: string) =>
+export const fetchMyWatchlist = (token: string | null) =>
   apiRequest<Array<{ movie_id: number; tmdb_id?: number | null }>>('/api/watchlist', { token })
 
-export const addToWatchlist = (token: string, movieId: number) =>
+export const addToWatchlist = (token: string | null, movieId: number) =>
   apiRequest<{ message: string }>('/api/watchlist', {
     token,
     method: 'POST',
     body: { movie_id: movieId },
   })
 
-export const removeFromWatchlist = (token: string, movieId: number) =>
+export const removeFromWatchlist = (token: string | null, movieId: number) =>
   apiRequest<{ message: string }>(`/api/watchlist/${movieId}`, {
     token,
     method: 'DELETE',
   })
 
-export const fetchMyFavorites = async (token: string) => {
+export const fetchMyFavorites = async (token: string | null) => {
   try {
     return await apiRequest<Array<{ movie_id: number; tmdb_id?: number | null }>>('/api/favorites', { token })
   } catch {
@@ -143,50 +143,56 @@ export const fetchMyFavorites = async (token: string) => {
   }
 }
 
-export const addToFavorites = (token: string, movieId: number) =>
+export const addToFavorites = (token: string | null, movieId: number) =>
   apiRequest('/api/favorites/' + movieId, {
     token,
     method: 'POST',
     body: { movieId },
   })
 
-export const removeFromFavorites = (token: string, movieId: number) =>
+export const removeFromFavorites = (token: string | null, movieId: number) =>
   apiRequest('/api/favorites/' + movieId, {
     token,
     method: 'DELETE',
   })
 
-export const fetchMyDiary = async (token: string) => {
+export const fetchMyDiary = async (token: string | null) => {
   try {
-    return await apiRequest<{ diary?: Array<{ movie_id: number; tmdb_id?: number | null }> }>('/api/diary', { token })
+    return await apiRequest<{ diary?: Array<{ id: number; movie_id: number; tmdb_id?: number | null; watched_date?: string | null }> }>('/api/diary', { token })
   } catch {
-    return { diary: [] as Array<{ movie_id: number; tmdb_id?: number | null }> }
+    return { diary: [] as Array<{ id: number; movie_id: number; tmdb_id?: number | null; watched_date?: string | null }> }
   }
 }
 
-export const addToDiary = (token: string, movieId: number) =>
+export const addToDiary = (token: string | null, movieId: number, watchedDate?: string) =>
   apiRequest('/api/diary', {
     token,
     method: 'POST',
     body: {
       movie_id: movieId,
-      watched_date: new Date().toISOString().slice(0, 10),
+      watched_date: watchedDate || new Date().toISOString().slice(0, 10),
     },
   })
 
-export const likeReview = (token: string, reviewId: number) =>
+export const removeFromDiary = (token: string | null, diaryEntryId: number) =>
+  apiRequest('/api/diary/' + diaryEntryId, {
+    token,
+    method: 'DELETE',
+  })
+
+export const likeReview = (token: string | null, reviewId: number) =>
   apiRequest<{ review: { id: number; likes: number } }>(`/api/reviews/${reviewId}/like`, {
     token,
     method: 'POST',
   })
 
-export const unlikeReview = (token: string, reviewId: number) =>
+export const unlikeReview = (token: string | null, reviewId: number) =>
   apiRequest<{ review: { id: number; likes: number } }>(`/api/reviews/${reviewId}/like`, {
     token,
     method: 'DELETE',
   })
 
-export const commentOnReview = (token: string, reviewId: number, content: string) =>
+export const commentOnReview = (token: string | null, reviewId: number, content: string) =>
   apiRequest(`/api/reviews/${reviewId}/comments`, {
     token,
     method: 'POST',

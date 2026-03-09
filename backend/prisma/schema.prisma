@@ -46,9 +46,37 @@ model movies_ref {
   tmdb_id       Int             @unique(map: "tmdb_id")
   diary_entries diary_entries[]
   favorites     favorites[]
+  list_items    user_list_items[]
   reviews       reviews[]
   vault         vault[]
   watchlist     watchlist[]
+}
+
+model user_lists {
+  id          Int               @id @default(autoincrement())
+  user_id     Int
+  name        String            @db.VarChar(120)
+  description String?           @db.Text
+  is_public   Boolean           @default(false)
+  created_at  DateTime          @default(now()) @db.Timestamp(0)
+  updated_at  DateTime          @default(now()) @db.Timestamp(0)
+  users       users             @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  items       user_list_items[]
+
+  @@index([user_id], map: "idx_user_lists_user_id")
+}
+
+model user_list_items {
+  id         Int        @id @default(autoincrement())
+  list_id    Int
+  movie_id   Int
+  added_at   DateTime   @default(now()) @db.Timestamp(0)
+  movie_list user_lists @relation(fields: [list_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  movie_ref  movies_ref @relation(fields: [movie_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+
+  @@unique([list_id, movie_id], map: "uniq_list_movie")
+  @@index([list_id], map: "idx_user_list_items_list_id")
+  @@index([movie_id], map: "idx_user_list_items_movie_id")
 }
 
 model news {
@@ -178,6 +206,7 @@ model users {
   reviews                             reviews[]
   sessions                            sessions[]
   subscriptions                       subscriptions[]
+  user_lists                          user_lists[]
   user_activity                       user_activity[]
   vault                               vault[]
   watchlist                           watchlist[]

@@ -1,4 +1,4 @@
-import type { UserListMock, VaultMockItem } from './models'
+import type { VaultMockItem } from './models'
 
 export const IMG = {
   avatar: 'https://images.unsplash.com/photo-1628070435838-19eb835ad70d?w=400&q=80',
@@ -27,37 +27,3 @@ export const vaultMockItems: VaultMockItem[] = [
   { id: 6, type: 'Edit', title: 'Planos secuencia que me detienen la vida', duration: '6 min', views: 311, img: IMG.cinema },
 ]
 
-export const userListsMock: UserListMock[] = [
-  {
-    id: 1,
-    title: 'El tiempo como personaje',
-    count: 12,
-    visibility: 'public',
-    desc: 'Peliculas donde el tiempo no es fondo, es protagonista.',
-    covers: [IMG.fog, IMG.mistyRoad, IMG.blueTexture, IMG.forest],
-  },
-  {
-    id: 2,
-    title: 'Para ver a las 3 AM',
-    count: 8,
-    visibility: 'public',
-    desc: 'No para dormir. Para entrar en un estado otro.',
-    covers: [IMG.nightCity, IMG.filmNoir, IMG.grain, IMG.projector],
-  },
-  {
-    id: 3,
-    title: 'Directoras que lo cambian todo',
-    count: 15,
-    visibility: 'public',
-    desc: 'Akerman, Varda, Denis, Campion, Deren. El canon real.',
-    covers: [IMG.womanPortrait, IMG.italy, IMG.cinema, IMG.hongKong],
-  },
-  {
-    id: 4,
-    title: 'Mi vault personal',
-    count: 6,
-    visibility: 'private',
-    desc: 'Las que no le recomendaria a nadie. Solo mias.',
-    covers: [IMG.grain, IMG.blueTexture, IMG.mistyRoad, IMG.fog],
-  },
-]

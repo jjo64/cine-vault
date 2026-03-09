@@ -5,7 +5,8 @@ import {
   ChevronLeft,
   Bookmark,
   Heart,
-  Eye,
+  Share2,
+  List,
   MessageSquare,
   ChevronRight,
   ExternalLink,
@@ -15,8 +16,10 @@ import {
   Trash2,
 } from 'lucide-react'
 import { createSlug } from '../utils/stringUtils'
+import { resolveNavPathWithFallback } from '../lib/navigation'
 import {
   addToDiary,
+  removeFromDiary,
   deleteReview,
   addToFavorites,
   addToWatchlist,
@@ -40,7 +43,13 @@ import {
   unlikeReview,
   updateReview,
 } from '../services/movieDetailServices'
-import { getCurrentUser } from '../services/authServices'
+import {
+  addMovieToList,
+  createList,
+  getMyLists,
+  type UserListSummary,
+} from '../services/listsServices'
+import { getCurrentUser, getStoredAccessToken } from '../services/authServices'
 
 const C = {
   bg: '#080808',
@@ -151,7 +160,11 @@ function StarRating({ value, onChange }: { value: number; onChange: (n: number) 
     '4.5': 'Excelente, casi obra maestra',
     '5': 'Obra maestra',
   }
-  const active = hover ?? value
+  const activeRaw = hover ?? value
+  const active =
+    typeof activeRaw === 'number'
+      ? (Number.isFinite(activeRaw) ? activeRaw : 0)
+      : Number(activeRaw) || 0
 
   const getFill = (starIndex: number) => {
     const raw = active - starIndex
@@ -268,6 +281,314 @@ function InlineComposer({
           {cta}
         </button>
       </div>
+    </div>
+  )
+}
+
+function ReviewLogModal({
+  open,
+  movie,
+  text,
+  rating,
+  liked,
+  seenDate,
+  seenBefore,
+  saving,
+  onClose,
+  onTextChange,
+  onRatingChange,
+  onToggleLike,
+  onSeenDateChange,
+  onSeenBeforeChange,
+  onSave,
+}: {
+  open: boolean
+  movie: MovieDetailApi | null
+  text: string
+  rating: number
+  liked: boolean
+  seenDate: string
+  seenBefore: boolean
+  saving: boolean
+  onClose: () => void
+  onTextChange: (value: string) => void
+  onRatingChange: (value: number) => void
+  onToggleLike: () => void
+  onSeenDateChange: (value: string) => void
+  onSeenBeforeChange: (value: boolean) => void
+  onSave: () => void
+}) {
+  if (!open || !movie) return null
+
+  const posterUrl = movie.poster_path ? `${TMDB_POSTER}${movie.poster_path}` : '/no-poster.svg'
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 450,
+        background: 'rgba(5,6,9,0.68)',
+        backdropFilter: 'blur(2px)',
+        display: 'grid',
+        placeItems: 'center',
+        padding: '18px',
+      }}
+    >
+      <motion.div
+        onClick={(event) => event.stopPropagation()}
+        initial={{ opacity: 0, y: 16, scale: 0.985 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+        style={{
+          width: '100%',
+          maxWidth: 760,
+          border: `1px solid ${C.border}`,
+          background: 'linear-gradient(160deg, rgba(12,15,22,0.98) 0%, rgba(9,10,14,0.98) 100%)',
+          boxShadow: '0 28px 80px rgba(0,0,0,0.6)',
+          overflow: 'hidden',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: `1px solid ${C.border}` }}>
+          <div style={{ fontFamily: SANS, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.accent }}>Review / Log</div>
+          <button onClick={onClose} style={{ width: 30, height: 30, border: `1px solid ${C.border}`, background: 'transparent', color: C.textSoft, cursor: 'pointer', display: 'grid', placeItems: 'center' }}>
+            <X size={14} />
+          </button>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '130px minmax(0, 1fr)', gap: 16, padding: 16 }}>
+          <div>
+            <div style={{ aspectRatio: '2/3', overflow: 'hidden', border: `1px solid ${C.border}`, background: C.elevated }}>
+              <Img src={posterUrl} alt={movie.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </div>
+            <div style={{ marginTop: 8, fontFamily: SERIF, color: C.text, fontSize: 15, ...textClampOneLine }}>{movie.title}</div>
+          </div>
+
+          <div>
+            <textarea
+              value={text}
+              onChange={(event) => onTextChange(event.target.value)}
+              rows={5}
+              placeholder="Escribe tu review o log..."
+              style={{ width: '100%', resize: 'vertical', background: C.elevated, border: `1px solid ${C.border}`, color: C.text, fontFamily: SERIF, fontSize: 16, lineHeight: 1.5, padding: 12, outline: 'none', marginBottom: 12 }}
+            />
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+              <div style={{ fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: C.textSoft, fontFamily: SANS }}>Rating</div>
+              <StarRating value={rating} onChange={onRatingChange} />
+            </div>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 14, marginBottom: 12 }}>
+              <button
+                onClick={onToggleLike}
+                style={{
+                  width: 38,
+                  height: 38,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'transparent',
+                  color: liked ? C.accent : C.textSoft,
+                  border: `1px solid ${liked ? C.accentDim : C.border}`,
+                  cursor: 'pointer',
+                }}
+                title="Me gusta"
+              >
+                <Heart size={14} strokeWidth={1.6} fill={liked ? C.gold : 'none'} />
+              </button>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.textSoft, fontFamily: SANS, fontSize: 12 }}>
+                <input
+                  type="checkbox"
+                  checked={seenBefore}
+                  onChange={(event) => onSeenBeforeChange(event.target.checked)}
+                  style={{ accentColor: C.accent }}
+                />
+                Ya la había visto antes
+              </label>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontFamily: SANS, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: C.textSoft }}>Vista</span>
+                <input
+                  type="date"
+                  value={seenDate}
+                  onChange={(event) => onSeenDateChange(event.target.value)}
+                  style={{ background: C.elevated, border: `1px solid ${C.border}`, color: C.text, padding: '8px 10px', fontFamily: SANS, fontSize: 12 }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button onClick={onClose} style={{ border: `1px solid ${C.border}`, background: 'transparent', color: C.textSoft, padding: '10px 12px', cursor: 'pointer', fontFamily: SANS, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+                Cancelar
+              </button>
+              <button onClick={onSave} disabled={saving} style={{ border: `1px solid ${C.accentDim}`, background: C.accentGlow, color: C.accent, padding: '10px 14px', cursor: saving ? 'default' : 'pointer', fontFamily: SANS, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', opacity: saving ? 0.7 : 1 }}>
+                {saving ? 'Guardando...' : 'Guardar cambios'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  )
+}
+
+function AddToListModal({
+  open,
+  movieTitle,
+  loading,
+  saving,
+  lists,
+  selectedListId,
+  createName,
+  createDescription,
+  creating,
+  onClose,
+  onSelectList,
+  onCreateNameChange,
+  onCreateDescriptionChange,
+  onCreateList,
+  onConfirm,
+}: {
+  open: boolean
+  movieTitle: string
+  loading: boolean
+  saving: boolean
+  lists: UserListSummary[]
+  selectedListId: number | null
+  createName: string
+  createDescription: string
+  creating: boolean
+  onClose: () => void
+  onSelectList: (listId: number) => void
+  onCreateNameChange: (value: string) => void
+  onCreateDescriptionChange: (value: string) => void
+  onCreateList: () => void
+  onConfirm: () => void
+}) {
+  if (!open) return null
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 460,
+        background: 'rgba(5,6,9,0.68)',
+        backdropFilter: 'blur(2px)',
+        display: 'grid',
+        placeItems: 'center',
+        padding: 18,
+      }}
+    >
+      <motion.div
+        onClick={(event) => event.stopPropagation()}
+        initial={{ opacity: 0, y: 16, scale: 0.985 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+        style={{
+          width: '100%',
+          maxWidth: 640,
+          border: `1px solid ${C.border}`,
+          background: 'linear-gradient(160deg, rgba(12,15,22,0.98) 0%, rgba(9,10,14,0.98) 100%)',
+          boxShadow: '0 28px 80px rgba(0,0,0,0.6)',
+          overflow: 'hidden',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: `1px solid ${C.border}` }}>
+          <div style={{ fontFamily: SANS, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.accent }}>
+            Anadir a lista
+          </div>
+          <button onClick={onClose} style={{ width: 30, height: 30, border: `1px solid ${C.border}`, background: 'transparent', color: C.textSoft, cursor: 'pointer', display: 'grid', placeItems: 'center' }}>
+            <X size={14} />
+          </button>
+        </div>
+
+        <div style={{ padding: 16 }}>
+          <div style={{ fontFamily: SERIF, fontSize: 18, color: C.text, marginBottom: 14 }}>
+            {movieTitle}
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontFamily: SANS, fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: C.textSoft, marginBottom: 8 }}>
+              Tus listas
+            </div>
+
+            {loading ? (
+              <div style={{ color: C.textSoft, fontFamily: SERIF, fontStyle: 'italic' }}>Cargando listas...</div>
+            ) : lists.length === 0 ? (
+              <div style={{ color: C.textSoft, fontFamily: SERIF, fontStyle: 'italic' }}>No tienes listas todavia. Crea una debajo.</div>
+            ) : (
+              <div style={{ display: 'grid', gap: 8, maxHeight: 220, overflowY: 'auto', paddingRight: 2 }}>
+                {lists.map((list) => (
+                  <button
+                    key={list.id}
+                    onClick={() => onSelectList(list.id)}
+                    style={{
+                      border: `1px solid ${selectedListId === list.id ? C.accentDim : C.border}`,
+                      background: selectedListId === list.id ? C.accentGlow : C.elevated,
+                      color: selectedListId === list.id ? C.accent : C.text,
+                      textAlign: 'left',
+                      padding: '10px 12px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <div style={{ fontFamily: SERIF, fontSize: 17 }}>{list.name}</div>
+                    <div style={{ fontFamily: SANS, fontSize: 11, color: C.textSoft }}>
+                      {list.items_count} films {list.is_public ? '· Publica' : '· Privada'}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 14 }}>
+            <div style={{ fontFamily: SANS, fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: C.textSoft, marginBottom: 8 }}>
+              Crear nueva lista
+            </div>
+            <div style={{ display: 'grid', gap: 8 }}>
+              <input
+                value={createName}
+                onChange={(event) => onCreateNameChange(event.target.value)}
+                placeholder="Nombre de la lista"
+                style={{ background: C.elevated, border: `1px solid ${C.border}`, color: C.text, padding: '10px 12px', fontFamily: SERIF, fontSize: 16 }}
+              />
+              <textarea
+                value={createDescription}
+                onChange={(event) => onCreateDescriptionChange(event.target.value)}
+                placeholder="Descripcion (opcional)"
+                rows={2}
+                style={{ resize: 'vertical', background: C.elevated, border: `1px solid ${C.border}`, color: C.text, padding: '10px 12px', fontFamily: SERIF, fontSize: 15 }}
+              />
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={onCreateList}
+                  disabled={creating}
+                  style={{ border: `1px solid ${C.border}`, background: 'transparent', color: C.textSoft, padding: '9px 12px', cursor: creating ? 'default' : 'pointer', fontFamily: SANS, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', opacity: creating ? 0.7 : 1 }}
+                >
+                  {creating ? 'Creando...' : 'Crear lista'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
+            <button onClick={onClose} style={{ border: `1px solid ${C.border}`, background: 'transparent', color: C.textSoft, padding: '10px 12px', cursor: 'pointer', fontFamily: SANS, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+              Cancelar
+            </button>
+            <button
+              onClick={onConfirm}
+              disabled={saving || selectedListId === null}
+              style={{ border: `1px solid ${C.accentDim}`, background: C.accentGlow, color: C.accent, padding: '10px 14px', cursor: saving || selectedListId === null ? 'default' : 'pointer', fontFamily: SANS, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', opacity: saving || selectedListId === null ? 0.7 : 1 }}
+            >
+              {saving ? 'Guardando...' : 'Anadir pelicula'}
+            </button>
+          </div>
+        </div>
+      </motion.div>
     </div>
   )
 }
@@ -477,7 +798,12 @@ function Navbar({
                     {item}
                   </button>
                 ) : (
-                  <span style={{ fontFamily: SANS, fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.textSoft }}>{item}</span>
+                  <button
+                    onClick={() => navigate(resolveNavPathWithFallback(item))}
+                    style={{ border: 'none', padding: 0, background: 'none', fontFamily: SANS, fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.textSoft, cursor: 'pointer' }}
+                  >
+                    {item}
+                  </button>
                 )}
               </li>
             )
@@ -545,6 +871,8 @@ function Navbar({
                     onClick={() => {
                       if (item === 'Sign in' || item === 'Create account') {
                         openAuthModal(item === 'Create account' ? 'register' : 'login')
+                      } else {
+                        navigate(resolveNavPathWithFallback(item))
                       }
                       setMobileNavOpen(false)
                     }}
@@ -585,108 +913,6 @@ function Navbar({
   )
 }
 
-function ActivityDock({
-  inVault,
-  liked,
-  inWatchlist,
-  userRating,
-  onToggleVault,
-  onToggleFavorite,
-  onToggleWatchlist,
-  onWriteReview,
-  onAddToList,
-  onShare,
-}: {
-  inVault: boolean
-  liked: boolean
-  inWatchlist: boolean
-  userRating: number
-  onToggleVault: () => void
-  onToggleFavorite: () => void
-  onToggleWatchlist: () => void
-  onWriteReview: () => void
-  onAddToList: () => void
-  onShare: () => void
-}) {
-  const quickActions = [
-    { key: 'watch', label: inVault ? 'Watch ✓' : 'Watch', active: inVault, onClick: onToggleVault, icon: Eye },
-    { key: 'like', label: liked ? 'Like ✓' : 'Like', active: liked, onClick: onToggleFavorite, icon: Heart },
-    { key: 'watchlist', label: inWatchlist ? 'Watchlist ✓' : 'Watchlist', active: inWatchlist, onClick: onToggleWatchlist, icon: Bookmark },
-  ]
-
-  return (
-    <div
-      style={{
-        width: '100%',
-        maxWidth: 420,
-        border: `1px solid ${C.border}`,
-        background: 'linear-gradient(180deg, rgba(19,24,33,0.88), rgba(12,15,22,0.92))',
-        boxShadow: `0 18px 48px rgba(0,0,0,0.45), inset 0 1px 0 ${C.accentGlowStrong}`,
-        backdropFilter: 'blur(6px)',
-      }}
-    >
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', borderBottom: `1px solid ${C.border}` }}>
-        {quickActions.map((item) => (
-          <button
-            key={item.key}
-            onClick={item.onClick}
-            style={{
-              border: 'none',
-              borderRight: item.key !== 'watchlist' ? `1px solid ${C.border}` : 'none',
-              background: item.active ? C.accentGlowStrong : 'transparent',
-              color: item.active ? C.accent : C.textSoft,
-              padding: '14px 8px 12px',
-              cursor: 'pointer',
-              display: 'grid',
-              gap: 6,
-              placeItems: 'center',
-              fontFamily: SANS,
-              fontSize: 12,
-              letterSpacing: '0.06em',
-            }}
-          >
-            <item.icon size={16} strokeWidth={1.6} fill={item.active && item.key === 'like' ? C.gold : item.active ? C.accent : 'none'} />
-            <span>{item.label}</span>
-          </button>
-        ))}
-      </div>
-
-      <div style={{ borderBottom: `1px solid ${C.border}`, padding: '10px 12px' }}>
-        <div style={{ fontFamily: SANS, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.18em', color: C.textSoft, marginBottom: 8 }}>
-          Rate
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', gap: 2 }}>
-            {[1, 2, 3, 4, 5].map((value) => (
-              <span key={value} style={{ color: value <= userRating ? C.gold : C.textMuted, fontSize: 20, lineHeight: 1 }}>★</span>
-            ))}
-          </div>
-          <div style={{ color: C.textSoft, fontSize: 12, fontFamily: SANS }}>{userRating > 0 ? `${userRating}/5` : 'Sin rating'}</div>
-        </div>
-      </div>
-
-      <button
-        onClick={onWriteReview}
-        style={{ width: '100%', border: 'none', borderBottom: `1px solid ${C.border}`, background: 'transparent', color: C.text, padding: '12px 14px', textAlign: 'left', fontFamily: SANS, fontSize: 14, cursor: 'pointer' }}
-      >
-        Review o log de esta película...
-      </button>
-      <button
-        onClick={onAddToList}
-        style={{ width: '100%', border: 'none', borderBottom: `1px solid ${C.border}`, background: 'transparent', color: C.textSoft, padding: '12px 14px', textAlign: 'left', fontFamily: SANS, fontSize: 14, cursor: 'pointer' }}
-      >
-        Add to lists...
-      </button>
-      <button
-        onClick={onShare}
-        style={{ width: '100%', border: 'none', background: 'transparent', color: C.textSoft, padding: '12px 14px', textAlign: 'left', fontFamily: SANS, fontSize: 14, cursor: 'pointer' }}
-      >
-        Share
-      </button>
-    </div>
-  )
-}
-
 function Hero({
   movie,
   userRating,
@@ -719,8 +945,49 @@ function Hero({
   isTablet: boolean
 }) {
   const heroRef = useRef<HTMLDivElement>(null)
+  const actionMenuRef = useRef<HTMLDivElement | null>(null)
+  const actionMenuButtonRef = useRef<HTMLButtonElement | null>(null)
+  const [actionMenuOpen, setActionMenuOpen] = useState(false)
+  const [actionMenuTop, setActionMenuTop] = useState(0)
+  const [actionMenuLeft, setActionMenuLeft] = useState(0)
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] })
   const posterY = useTransform(scrollYProgress, [0, 1], ['0%', '12%'])
+
+  useEffect(() => {
+    if (!actionMenuOpen) return
+
+    const updateMenuPosition = () => {
+      const rect = actionMenuButtonRef.current?.getBoundingClientRect()
+      if (!rect) return
+      setActionMenuTop(rect.bottom + 8)
+      setActionMenuLeft(Math.max(10, rect.right - 190))
+    }
+
+    updateMenuPosition()
+
+    const onOutsideClick = (event: MouseEvent) => {
+      if (!actionMenuRef.current) return
+      if (!actionMenuRef.current.contains(event.target as Node)) {
+        setActionMenuOpen(false)
+      }
+    }
+
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setActionMenuOpen(false)
+    }
+
+    document.addEventListener('mousedown', onOutsideClick)
+    window.addEventListener('keydown', onEscape)
+    window.addEventListener('resize', updateMenuPosition)
+    window.addEventListener('scroll', updateMenuPosition, true)
+
+    return () => {
+      document.removeEventListener('mousedown', onOutsideClick)
+      window.removeEventListener('keydown', onEscape)
+      window.removeEventListener('resize', updateMenuPosition)
+      window.removeEventListener('scroll', updateMenuPosition, true)
+    }
+  }, [actionMenuOpen])
 
   const releaseYear = movie.release_date ? new Date(movie.release_date).getFullYear() : '----'
   const runtime = movie.runtime ? `${movie.runtime} min` : 'Duración desconocida'
@@ -812,18 +1079,142 @@ function Hero({
           <div style={{ fontSize: 11, color: C.textMuted, fontFamily: SANS }}>{votes} ratings</div>
         </div>
 
-        <ActivityDock
-          inVault={inVault}
-          liked={liked}
-          inWatchlist={inWatchlist}
-          userRating={userRating}
-          onToggleVault={onToggleVault}
-          onToggleFavorite={onToggleFavorite}
-          onToggleWatchlist={onToggleWatchlist}
-          onWriteReview={onWriteReview}
-          onAddToList={onAddToList}
-          onShare={onShare}
-        />
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          <button
+            onClick={onToggleVault}
+            style={{
+              padding: '12px 20px',
+              width: isMobile ? '100%' : 'auto',
+              background: inVault ? C.accentDim : C.accent,
+              color: C.bg,
+              border: 'none',
+              fontFamily: SANS,
+              fontSize: 11,
+              letterSpacing: '0.18em',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+          >
+            {inVault ? '✓ En mi Vault' : '+ Vault'}
+          </button>
+
+          <button
+            onClick={onWriteReview}
+            style={{
+              padding: '12px 20px',
+              width: isMobile ? '100%' : 'auto',
+              background: 'transparent',
+              color: C.textSoft,
+              border: `1px solid ${C.border}`,
+              fontFamily: SANS,
+              fontSize: 11,
+              letterSpacing: '0.18em',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 7,
+            }}
+          >
+            <MessageSquare size={13} strokeWidth={1.5} /> Review o log
+          </button>
+
+          <button title="Watchlist" onClick={onToggleWatchlist} style={{ width: 46, height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', color: inWatchlist ? C.accent : C.textSoft, border: `1px solid ${inWatchlist ? C.accentDim : C.border}`, cursor: 'pointer' }}>
+            <Bookmark size={15} strokeWidth={1.5} fill={inWatchlist ? C.accent : 'none'} />
+          </button>
+          <button title="Me gusta" onClick={onToggleFavorite} style={{ width: 46, height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', color: liked ? C.accent : C.textSoft, border: `1px solid ${liked ? C.accentDim : C.border}`, cursor: 'pointer' }}>
+            <Heart size={15} strokeWidth={1.5} fill={liked ? C.gold : 'none'} />
+          </button>
+          <div ref={actionMenuRef} style={{ position: 'relative' }}>
+            <button
+              ref={actionMenuButtonRef}
+              title="Más opciones"
+              onClick={() => setActionMenuOpen((prev) => !prev)}
+              style={{
+                width: 46,
+                height: 46,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'transparent',
+                color: actionMenuOpen ? C.accent : C.textSoft,
+                border: `1px solid ${actionMenuOpen ? C.accentDim : C.border}`,
+                cursor: 'pointer',
+              }}
+            >
+              <Menu size={15} strokeWidth={1.8} />
+            </button>
+
+            {actionMenuOpen && (
+              <div
+                style={{
+                  position: 'fixed',
+                  left: actionMenuLeft,
+                  top: actionMenuTop,
+                  minWidth: 180,
+                  border: `1px solid ${C.border}`,
+                  background: 'rgba(8,8,8,0.98)',
+                  backdropFilter: 'blur(10px)',
+                  boxShadow: '0 18px 40px rgba(0,0,0,0.45)',
+                  padding: 6,
+                  display: 'grid',
+                  gap: 4,
+                  zIndex: 30,
+                }}
+              >
+                <button
+                  onClick={() => {
+                    setActionMenuOpen(false)
+                    onAddToList()
+                  }}
+                  style={{
+                    width: '100%',
+                    border: 'none',
+                    background: 'transparent',
+                    color: C.text,
+                    textAlign: 'left',
+                    padding: '9px 10px',
+                    cursor: 'pointer',
+                    fontFamily: SANS,
+                    fontSize: 11,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.1em',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 7,
+                  }}
+                >
+                  <List size={13} strokeWidth={1.5} /> Añadir a lista
+                </button>
+                <button
+                  onClick={() => {
+                    setActionMenuOpen(false)
+                    onShare()
+                  }}
+                  style={{
+                    width: '100%',
+                    border: 'none',
+                    background: 'transparent',
+                    color: C.text,
+                    textAlign: 'left',
+                    padding: '9px 10px',
+                    cursor: 'pointer',
+                    fontFamily: SANS,
+                    fontSize: 11,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.1em',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 7,
+                  }}
+                >
+                  <Share2 size={13} strokeWidth={1.5} /> Compartir
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </motion.div>
 
       {!isMobile && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2 }} style={{ position: 'absolute', bottom: 28, left: 52, display: 'flex', alignItems: 'center', gap: 12, zIndex: 10 }}>
@@ -1214,6 +1605,21 @@ export default function MovieDetailPage() {
   const [replyTargetId, setReplyTargetId] = useState<number | null>(null)
   const [editingReviewId, setEditingReviewId] = useState<number | null>(null)
   const composerRef = useRef<HTMLDivElement | null>(null)
+  const [reviewLogOpen, setReviewLogOpen] = useState(false)
+  const [reviewLogText, setReviewLogText] = useState('')
+  const [reviewLogRating, setReviewLogRating] = useState(0)
+  const [reviewLogLiked, setReviewLogLiked] = useState(false)
+  const [reviewLogSeenDate, setReviewLogSeenDate] = useState(() => new Date().toISOString().slice(0, 10))
+  const [reviewLogSeenBefore, setReviewLogSeenBefore] = useState(false)
+  const [reviewLogSaving, setReviewLogSaving] = useState(false)
+  const [addToListOpen, setAddToListOpen] = useState(false)
+  const [addToListLoading, setAddToListLoading] = useState(false)
+  const [addToListSaving, setAddToListSaving] = useState(false)
+  const [addToListCreating, setAddToListCreating] = useState(false)
+  const [userLists, setUserLists] = useState<UserListSummary[]>([])
+  const [selectedListId, setSelectedListId] = useState<number | null>(null)
+  const [newListName, setNewListName] = useState('')
+  const [newListDescription, setNewListDescription] = useState('')
 
   const [userRating, setUserRating] = useState(0)
   const [myReviewId, setMyReviewId] = useState<number | null>(null)
@@ -1227,8 +1633,14 @@ export default function MovieDetailPage() {
   const isMobileViewport = viewportWidth < 768
   const isTabletViewport = viewportWidth >= 768 && viewportWidth < 1100
 
-  const token = localStorage.getItem('token')
+  const [token, setToken] = useState<string | null>(() => getStoredAccessToken())
   const movieId = useMemo(() => parseMovieId(slugOrId), [slugOrId])
+
+  useEffect(() => {
+    const syncToken = () => setToken(getStoredAccessToken())
+    window.addEventListener('auth-state-changed', syncToken)
+    return () => window.removeEventListener('auth-state-changed', syncToken)
+  }, [])
 
   const matchesCurrentMovie = (
     candidate: { movie_id?: number | null; tmdb_id?: number | null },
@@ -1426,7 +1838,7 @@ export default function MovieDetailPage() {
       if (myReviewId) {
         await updateReview(token, myReviewId, value)
       } else {
-        const created = await createReview(token, movie.id, value, 'Rating rápido desde Movie Detail')
+        const created = await createReview(token, movie.id, value, '')
         setMyReviewId(created.id)
       }
       setUserRating(value)
@@ -1442,18 +1854,34 @@ export default function MovieDetailPage() {
       return
     }
 
-    if (inVault) {
-      setNoticeType('info')
-      setNotice('Ya está en tu Vault')
-      return
-    }
-
     try {
+      if (inVault) {
+        const myDiary = await fetchMyDiary(token)
+        const currentEntry = (myDiary.diary || []).find((entry) =>
+          matchesCurrentMovie(
+            { movie_id: entry.movie_id, tmdb_id: entry.tmdb_id },
+            movie.id,
+            movieId
+          )
+        )
+
+        if (!currentEntry?.id) {
+          setInVault(false)
+          showSuccess('Se actualizó tu Vault')
+          return
+        }
+
+        await removeFromDiary(token, currentEntry.id)
+        setInVault(false)
+        showSuccess('Eliminada de tu Vault')
+        return
+      }
+
       await addToDiary(token, movie.id)
       setInVault(true)
       showSuccess('Añadida a tu Vault')
     } catch (err) {
-      const message = (err as Error).message || 'No se pudo añadir al Vault'
+      const message = (err as Error).message || 'No se pudo actualizar tu Vault'
       if (/ya registraste|ya está|conflict|duplicate/i.test(message)) {
         setInVault(true)
         showSuccess('Esta película ya estaba en tu Vault')
@@ -1523,18 +1951,68 @@ export default function MovieDetailPage() {
       return
     }
 
+    setAddToListOpen(true)
+    setAddToListLoading(true)
+    setNewListName('')
+    setNewListDescription('')
+
     try {
-      await addToFavorites(token, movie.id)
-      setLiked(true)
-      showSuccess('Añadida a tu lista rápida (favoritos)')
+      const lists = await getMyLists()
+      setUserLists(lists)
+      setSelectedListId(lists[0]?.id ?? null)
     } catch (err) {
       const message = (err as Error).message || 'No se pudo añadir a lista'
+      setAddToListOpen(false)
+      showError(message)
+    } finally {
+      setAddToListLoading(false)
+    }
+  }
+
+  const handleCreateListFromModal = async () => {
+    const name = newListName.trim()
+    if (!name) {
+      showError('Escribe un nombre para crear la lista')
+      return
+    }
+
+    setAddToListCreating(true)
+    try {
+      const created = await createList({
+        name,
+        description: newListDescription.trim() || null,
+      })
+      setUserLists((prev) => [created, ...prev])
+      setSelectedListId(created.id)
+      setNewListName('')
+      setNewListDescription('')
+      showSuccess(`Lista "${created.name}" creada`)
+    } catch (err) {
+      showError((err as Error).message || 'No se pudo crear la lista')
+    } finally {
+      setAddToListCreating(false)
+    }
+  }
+
+  const handleConfirmAddToList = async () => {
+    if (!movie || selectedListId === null) return
+
+    const target = userLists.find((list) => list.id === selectedListId)
+    setAddToListSaving(true)
+    try {
+      await addMovieToList(selectedListId, movie.id)
+      setAddToListOpen(false)
+      showSuccess(`Anadida a "${target?.name || 'tu lista'}"`)
+    } catch (err) {
+      const message = (err as Error).message || 'No se pudo anadir a lista'
       if (/ya|conflict|duplicate/i.test(message)) {
-        setLiked(true)
-        showSuccess('Esta película ya estaba en tu lista rápida')
+        setAddToListOpen(false)
+        showSuccess('Esta pelicula ya estaba en esa lista')
         return
       }
       showError(message)
+    } finally {
+      setAddToListSaving(false)
     }
   }
 
@@ -1626,9 +2104,103 @@ export default function MovieDetailPage() {
 
     setReplyTargetId(null)
     setEditingReviewId(existingOwnReview?.id ?? null)
-    setComposerText(existingOwnReview?.content || '')
-    if (existingOwnReview?.rating) setUserRating(existingOwnReview.rating)
-    setComposerMode('review')
+    setReviewLogText(existingOwnReview?.content || '')
+    setReviewLogRating(existingOwnReview?.rating || userRating || 0)
+    setReviewLogLiked(liked)
+    setReviewLogSeenDate(new Date().toISOString().slice(0, 10))
+    setReviewLogSeenBefore(false)
+    setReviewLogOpen(true)
+  }
+
+  const handleSaveReviewLog = async () => {
+    if (!token || !movie) {
+      requireAuth()
+      return
+    }
+
+    setReviewLogSaving(true)
+
+    try {
+      const text = reviewLogText.trim()
+      const ratingToUse = reviewLogRating > 0 ? reviewLogRating : 0
+
+      if (myReviewId || editingReviewId) {
+        const reviewId = editingReviewId || myReviewId
+        if (reviewId && (text || ratingToUse > 0)) {
+          await updateReviewContent(token, reviewId, {
+            rating: ratingToUse || undefined,
+            content: text || 'Log rápido desde Movie Detail',
+          })
+        }
+      } else if (text || ratingToUse > 0) {
+        const created = await createReview(
+          token,
+          movie.id,
+          ratingToUse > 0 ? ratingToUse : 4,
+          text || 'Log rápido desde Movie Detail'
+        )
+        setMyReviewId(created.id)
+      }
+
+      try {
+        await addToDiary(token, movie.id, reviewLogSeenDate)
+        setInVault(true)
+      } catch (err) {
+        const message = (err as Error).message || ''
+        if (!/ya registraste|ya está|conflict|duplicate/i.test(message)) {
+          throw err
+        }
+        setInVault(true)
+      }
+
+      if (reviewLogLiked !== liked) {
+        if (reviewLogLiked) {
+          await addToFavorites(token, movie.id)
+          setLiked(true)
+        } else {
+          await removeFromFavorites(token, movie.id)
+          setLiked(false)
+        }
+      }
+
+      const freshReviews = await fetchMovieReviews(movie.id)
+      const uniqueUserIds = [...new Set(freshReviews.map((review) => review.user_id))]
+      const userPairs = await Promise.all(
+        uniqueUserIds.map(async (userId) => {
+          try {
+            const user = await fetchUserById(userId)
+            return [
+              userId,
+              {
+                username: user.username || `Usuario ${userId}`,
+                avatarUrl: user.avatar_url || null,
+              },
+            ] as const
+          } catch {
+            return [
+              userId,
+              {
+                username: `Usuario ${userId}`,
+                avatarUrl: null,
+              },
+            ] as const
+          }
+        })
+      )
+      const userMeta = Object.fromEntries(userPairs)
+      setReviews(mapMovieReviews(freshReviews, userMeta))
+
+      const ownReview = freshReviews.find((review) => matchesCurrentMovie(review, movie.id, movieId))
+      setMyReviewId(ownReview?.id ?? null)
+      setUserRating(Number(ownReview?.rating ?? reviewLogRating))
+      setReviewLogOpen(false)
+      setEditingReviewId(null)
+      showSuccess(reviewLogSeenBefore ? 'Log y reseña guardados (vista previa)' : 'Log y reseña guardados')
+    } catch (err) {
+      showError((err as Error).message || 'No se pudo guardar el log')
+    } finally {
+      setReviewLogSaving(false)
+    }
   }
 
   const handleEditReview = (review: AppReview) => {
@@ -1784,6 +2356,40 @@ export default function MovieDetailPage() {
     <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: SANS, overflowX: 'hidden' }}>
       <Grain />
       <NoticeBar message={notice} type={noticeType} />
+      <ReviewLogModal
+        open={reviewLogOpen}
+        movie={movie}
+        text={reviewLogText}
+        rating={reviewLogRating}
+        liked={reviewLogLiked}
+        seenDate={reviewLogSeenDate}
+        seenBefore={reviewLogSeenBefore}
+        saving={reviewLogSaving}
+        onClose={() => setReviewLogOpen(false)}
+        onTextChange={setReviewLogText}
+        onRatingChange={setReviewLogRating}
+        onToggleLike={() => setReviewLogLiked((prev) => !prev)}
+        onSeenDateChange={setReviewLogSeenDate}
+        onSeenBeforeChange={setReviewLogSeenBefore}
+        onSave={handleSaveReviewLog}
+      />
+      <AddToListModal
+        open={addToListOpen}
+        movieTitle={movie.title}
+        loading={addToListLoading}
+        saving={addToListSaving}
+        lists={userLists}
+        selectedListId={selectedListId}
+        createName={newListName}
+        createDescription={newListDescription}
+        creating={addToListCreating}
+        onClose={() => setAddToListOpen(false)}
+        onSelectList={setSelectedListId}
+        onCreateNameChange={setNewListName}
+        onCreateDescriptionChange={setNewListDescription}
+        onCreateList={handleCreateListFromModal}
+        onConfirm={handleConfirmAddToList}
+      />
       <Navbar viewer={viewer} onLogout={handleLogout} isMobile={isMobileViewport} isTablet={isTabletViewport} />
 
       <Hero

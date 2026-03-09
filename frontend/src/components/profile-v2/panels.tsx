@@ -19,11 +19,18 @@ import {
 } from 'lucide-react'
 import { C, SANS, SERIF, textClampOneLine } from './theme'
 import { Badge, Img, SectionHeader, Stars } from './primitives'
-import { vaultMockItems, userListsMock, IMG } from './assets'
-import type { RecentlyWatchedItem, ReviewItem, WatchlistItem } from './models'
+import { vaultMockItems, IMG } from './assets'
+import type { RecentlyWatchedItem, ReviewItem, UserListSummaryItem, WatchlistItem } from './models'
 import { createSlug } from '../../utils/stringUtils'
 
 const movieHref = (movieId: number, title: string, tmdbId: number | null) => `/movie/${tmdbId ?? movieId}-${createSlug(title)}`
+
+const PROFILE_STAR_SIZES = {
+  cardMobile: 10,
+  cardHover: 11,
+  reviewCompact: 11,
+  reviewDesktop: 12,
+} as const
 
 function NightRec({ recommendation, isMobile }: { recommendation: WatchlistItem | null; isMobile: boolean }) {
   const [watched, setWatched] = useState(false)
@@ -139,7 +146,7 @@ function FilmCardMobile({ film, delay = 0 }: { film: RecentlyWatchedItem; delay?
           {film.title}
         </div>
         <div style={{ fontSize: 11, color: C.textSoft, fontFamily: SANS, marginBottom: 3 }}>{film.year || '—'}</div>
-        <Stars rating={film.rating} size={9} />
+        <Stars rating={film.rating} size={PROFILE_STAR_SIZES.cardMobile} />
       </div>
     </motion.div>
   )
@@ -194,7 +201,7 @@ function FilmCard({ film, delay = 0 }: { film: RecentlyWatchedItem; delay?: numb
             padding: 12,
           }}
         >
-          <Stars rating={film.rating} size={10} />
+          <Stars rating={film.rating} size={PROFILE_STAR_SIZES.cardHover} />
         </div>
       </div>
       <div style={{ fontSize: 12, fontWeight: 500, color: C.text, lineHeight: 1.3, marginBottom: 2, fontFamily: SERIF, ...textClampOneLine }}>
@@ -344,7 +351,7 @@ function ReviewCard({ review, delay = 0, compact = false }: { review: ReviewItem
             {review.title}
           </button>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-            <Stars rating={review.rating} size={10} />
+            <Stars rating={review.rating} size={PROFILE_STAR_SIZES.reviewCompact} />
             <span style={{ fontSize: 10, color: C.textMuted, fontFamily: SANS }}>{review.createdAtLabel}</span>
           </div>
           {/* Texto truncado a 2 líneas en móvil */}
@@ -396,7 +403,7 @@ function ReviewCard({ review, delay = 0, compact = false }: { review: ReviewItem
           >
             {review.title}
           </button>
-          <Stars rating={review.rating} size={11} />
+          <Stars rating={review.rating} size={PROFILE_STAR_SIZES.reviewDesktop} />
           <span style={{ fontSize: 11, color: C.textMuted, marginLeft: 'auto', fontFamily: SANS }}>{review.createdAtLabel}</span>
         </div>
         <div style={{ fontFamily: SERIF, fontSize: 16, fontStyle: 'italic', color: C.textSoft, lineHeight: 1.7, maxWidth: 680 }} dangerouslySetInnerHTML={{ __html: richText }} />
@@ -763,8 +770,6 @@ export function WatchlistPanel({ watchlistFilms, isMobile }: { watchlistFilms: W
 }
 
 export function HistoryPanel({ recentlyWatched, isMobile }: { recentlyWatched: RecentlyWatchedItem[]; isMobile: boolean }) {
-  const navigate = useNavigate()
-
   return (
     <div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
@@ -782,23 +787,7 @@ export function HistoryPanel({ recentlyWatched, isMobile }: { recentlyWatched: R
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 16 }}>
           {recentlyWatched.map((film, index) => (
-            <motion.div
-              key={film.movieId}
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.04 }}
-              onClick={() => navigate(movieHref(film.movieId, film.title, film.tmdbId))}
-              style={{ cursor: 'pointer' }}
-            >
-              <div style={{ aspectRatio: '2/3', borderRadius: 2, overflow: 'hidden', marginBottom: 10 }}>
-                <Img src={film.posterUrl} alt={film.title} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(0.72)' }} />
-              </div>
-              <div style={{ fontSize: 12, fontWeight: 500, color: C.text, lineHeight: 1.3, marginBottom: 2, fontFamily: SERIF, ...textClampOneLine }}>
-                {film.title}
-              </div>
-              <div style={{ fontSize: 11, color: C.textSoft, fontFamily: SANS }}>{film.year || 'Año desconocido'}</div>
-              <div style={{ fontSize: 10, color: C.textMuted, fontStyle: 'italic', fontFamily: SERIF, marginTop: 1 }}>{film.director}</div>
-            </motion.div>
+            <FilmCard key={film.movieId} film={film} delay={index * 0.04} />
           ))}
         </div>
       )}
@@ -873,14 +862,17 @@ export function ReviewsPanel({ reviewItems, isMobile }: { reviewItems: ReviewIte
   )
 }
 
-export function ListsPanel({ isMobile }: { isMobile: boolean }) {
+export function ListsPanel({ isMobile, userLists }: { isMobile: boolean; userLists: UserListSummaryItem[] }) {
+  const navigate = useNavigate()
+
   return (
     <div>
       <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 12 : 0, justifyContent: 'space-between', marginBottom: 28 }}>
         <div style={{ fontFamily: SERIF, fontSize: isMobile ? 22 : 26, color: C.text }}>
-          Listas <em style={{ fontStyle: 'italic', color: C.textSoft, fontSize: isMobile ? 17 : 20 }}>— {userListsMock.length} curadas</em>
+          Listas <em style={{ fontStyle: 'italic', color: C.textSoft, fontSize: isMobile ? 17 : 20 }}>— {userLists.length} creadas</em>
         </div>
         <button
+          onClick={() => navigate('/lists')}
           style={{
             padding: '9px 20px',
             background: 'transparent',
@@ -901,8 +893,14 @@ export function ListsPanel({ isMobile }: { isMobile: boolean }) {
         </button>
       </div>
 
+      {userLists.length === 0 && (
+        <div style={{ color: C.textSoft, fontFamily: SERIF, fontStyle: 'italic' }}>
+          Todavía no tienes listas creadas.
+        </div>
+      )}
+
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 16 }}>
-        {userListsMock.map((list, index) => (
+        {userLists.map((list, index) => (
           <motion.div
             key={list.id}
             initial={{ opacity: 0, y: 12 }}
@@ -910,23 +908,22 @@ export function ListsPanel({ isMobile }: { isMobile: boolean }) {
             transition={{ delay: index * 0.08 }}
             style={{ background: C.surface, border: `1px solid ${C.border}`, cursor: 'pointer', overflow: 'hidden', transition: 'border-color 0.2s, transform 0.3s' }}
             whileHover={{ borderColor: C.accentDim, y: -3 }}
+            onClick={() => navigate('/lists')}
           >
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', aspectRatio: '16/7', overflow: 'hidden' }}>
-              {list.covers.map((src, coverIndex) => (
-                <div key={coverIndex} style={{ overflow: 'hidden' }}>
-                  <Img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(0.5) brightness(0.7)' }} />
-                </div>
-              ))}
+            <div style={{ aspectRatio: '16/7', background: 'linear-gradient(135deg, rgba(212,175,122,0.18), rgba(10,10,10,0.9))', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ fontFamily: SANS, color: C.accent, letterSpacing: '0.14em', fontSize: 11, textTransform: 'uppercase' }}>
+                Lista personalizada
+              </span>
             </div>
             <div style={{ padding: '16px 20px' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
-                <div style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 400, color: C.text, lineHeight: 1.2 }}>{list.title}</div>
+                <div style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 400, color: C.text, lineHeight: 1.2 }}>{list.name}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: C.textSoft, flexShrink: 0, marginLeft: 12 }}>
-                  {list.visibility === 'private' ? <Lock size={10} /> : <Globe size={10} />}
-                  <span style={{ fontSize: 10, fontFamily: SANS }}>{list.count} films</span>
+                  {list.isPublic ? <Globe size={10} /> : <Lock size={10} />}
+                  <span style={{ fontSize: 10, fontFamily: SANS }}>{list.itemsCount} films</span>
                 </div>
               </div>
-              <div style={{ fontSize: 13, fontFamily: SERIF, fontStyle: 'italic', color: C.textSoft, lineHeight: 1.5 }}>{list.desc}</div>
+              <div style={{ fontSize: 13, fontFamily: SERIF, fontStyle: 'italic', color: C.textSoft, lineHeight: 1.5 }}>{list.description || 'Sin descripción'}</div>
             </div>
           </motion.div>
         ))}

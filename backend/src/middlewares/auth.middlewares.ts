@@ -38,7 +38,9 @@ export const middlewareAutenticacion = (
   next: NextFunction
 ) => {
   const authHeader = req.headers["authorization"]
-  const token = authHeader && authHeader.split(" ")[1]
+  const bearerToken = authHeader && authHeader.split(" ")[1]
+  const cookieToken = req.cookies?.access_token
+  const token = bearerToken || cookieToken
 
   if (!token) {
     throw new UnauthorizedError("No se proporcionó token de acceso")

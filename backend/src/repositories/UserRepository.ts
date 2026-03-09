@@ -45,13 +45,9 @@ export class UserRepository implements IUserRepository {
       select: {
         id: true,
         username: true,
-        email: true,
         role: true,
         avatar_url: true,
-        bio: true,
-        created_at: true,
         two_factor_enabled: true,
-        google_id: true,
         is_verified: true,
       },
     })

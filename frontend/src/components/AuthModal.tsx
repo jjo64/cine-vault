@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import './AuthModal.css';
-import { setStoredAccessToken } from '../services/authServices'
+import { setStoredAccessToken, verifyTwoFactorLogin } from '../services/authServices'
 import { notify } from '../lib/notify'
 import { conectarSocket } from '../context/SocketContext'
 
@@ -11,19 +11,27 @@ interface AuthModalProps {
     initialMode?: 'login' | 'register';
 }
 
+type AuthStep = 'login' | 'register' | 'two-factor'
+
 const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'login' }) => {
-    const [mode, setMode] = useState<'login' | 'register'>(initialMode);
+    const [step, setStep] = useState<AuthStep>(initialMode);
     const [formData, setFormData] = useState({
         username: '',
         email: '',
         password: ''
     });
+    const [twoFactorCode, setTwoFactorCode] = useState('')
+    const [tempToken, setTempToken] = useState('')
+    const [rememberDevice, setRememberDevice] = useState(true)
     const [loading, setLoading] = useState(false);
     const [hasSubmitError, setHasSubmitError] = useState(false);
 
     useEffect(() => {
-        setMode(initialMode)
+        setStep(initialMode)
         setHasSubmitError(false)
+        setTwoFactorCode('')
+        setTempToken('')
+        setRememberDevice(true)
     }, [initialMode, isOpen])
 
     useEffect(() => {
@@ -44,12 +52,20 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const completeAuth = (accessToken: string) => {
+        setStoredAccessToken(accessToken)
+        conectarSocket(accessToken)
+        window.dispatchEvent(new CustomEvent('auth-state-changed'))
+        notify.loginOk()
+        onClose()
+    }
+
+    const handlePrimarySubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setHasSubmitError(false);
 
-        const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/register';
+        const endpoint = step === 'login' ? '/api/auth/login' : '/api/auth/register';
         const url = `${import.meta.env.VITE_API_URL}${endpoint}`;
 
         try {
@@ -57,43 +73,74 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData),
-                credentials: 'include' // Important for cookies
+                credentials: 'include'
             });
 
             const data = await res.json();
 
             if (!res.ok) throw new Error(data.message || 'Error en autenticación');
 
-            if (mode === 'login') {
-                setStoredAccessToken(data.accessToken);
-                conectarSocket(data.accessToken)
-                window.dispatchEvent(new CustomEvent('auth-state-changed'))
-                notify.loginOk()
-                onClose()
+            if (step === 'login') {
+                if (data.two_factor_required && data.tokenTemporal) {
+                    setStep('two-factor')
+                    setTempToken(data.tokenTemporal)
+                    setTwoFactorCode('')
+                    notify.loginError('Verificación 2FA requerida')
+                    return
+                }
+
+                if (!data.accessToken) {
+                    throw new Error('No se recibió token de acceso')
+                }
+
+                completeAuth(data.accessToken)
             } else {
-                setMode('login'); // Ir a login tras registro exitoso
+                setStep('login');
                 notify.registerOk()
             }
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (err: any) {
+        } catch (err: unknown) {
             setHasSubmitError(true)
-            const message = err.message || 'Error en autenticación'
-            if (mode === 'login') {
-                notify.loginError(message)
-            } else {
-                notify.loginError(message)
-            }
+            const message = err instanceof Error ? err.message : 'Error en autenticación'
+            notify.loginError(message)
         } finally {
             setLoading(false);
         }
     };
 
+    const handleTwoFactorSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+
+        if (!twoFactorCode.trim() || !tempToken) {
+            setHasSubmitError(true)
+            notify.loginError('Ingresá el código 2FA de 6 dígitos')
+            return
+        }
+
+        try {
+            setLoading(true)
+            setHasSubmitError(false)
+            const accessToken = await verifyTwoFactorLogin(twoFactorCode.trim(), tempToken, rememberDevice)
+            completeAuth(accessToken)
+        } catch (err: unknown) {
+            setHasSubmitError(true)
+            const message = err instanceof Error ? err.message : 'No se pudo verificar 2FA'
+            notify.loginError(message)
+        } finally {
+            setLoading(false)
+        }
+    }
+
     const handleGoogleLogin = () => {
         window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/google`
     }
 
-    const title = mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta'
-    const subtitle = mode === 'login' ? 'TU VAULT TE ESPERA' : 'EL CINE EMPIEZA AQUÍ'
+    const isTwoFactorStep = step === 'two-factor'
+    const title = isTwoFactorStep ? 'Verificación 2FA' : step === 'login' ? 'Iniciar sesión' : 'Crear cuenta'
+    const subtitle = isTwoFactorStep
+        ? 'Ingresa el código de tu app autenticadora'
+        : step === 'login'
+            ? 'TU VAULT TE ESPERA'
+            : 'EL CINE EMPIEZA AQUÍ'
 
     return (
         <div className="auth-modal-overlay" onClick={onClose}>
@@ -109,57 +156,102 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
                 <h2 className="auth-modal-title">{title}</h2>
                 <p className="auth-modal-subtitle">{subtitle}</p>
 
-                <form onSubmit={handleSubmit} className="auth-form">
-                    {mode === 'register' && (
+                {!isTwoFactorStep ? (
+                    <form onSubmit={handlePrimarySubmit} className="auth-form">
+                        {step === 'register' && (
+                            <input
+                                type="email"
+                                name="email"
+                                placeholder="Email"
+                                value={formData.email}
+                                onChange={handleChange}
+                                required
+                                className={`auth-input ${hasSubmitError ? 'auth-input-error' : ''}`}
+                            />
+                        )}
                         <input
-                            type="email"
-                            name="email"
-                            placeholder="Email"
-                            value={formData.email}
+                            type="text"
+                            name="username"
+                            placeholder="Nombre de usuario"
+                            value={formData.username}
                             onChange={handleChange}
                             required
                             className={`auth-input ${hasSubmitError ? 'auth-input-error' : ''}`}
                         />
-                    )}
-                    <input
-                        type="text"
-                        name="username"
-                        placeholder="Nombre de usuario"
-                        value={formData.username}
-                        onChange={handleChange}
-                        required
-                        className={`auth-input ${hasSubmitError ? 'auth-input-error' : ''}`}
-                    />
-                    <input
-                        type="password"
-                        name="password"
-                        placeholder="Contraseña"
-                        value={formData.password}
-                        onChange={handleChange}
-                        required
-                        className={`auth-input ${hasSubmitError ? 'auth-input-error' : ''}`}
-                    />
+                        <input
+                            type="password"
+                            name="password"
+                            placeholder="Contraseña"
+                            value={formData.password}
+                            onChange={handleChange}
+                            required
+                            className={`auth-input ${hasSubmitError ? 'auth-input-error' : ''}`}
+                        />
 
-                    <button type="submit" className="auth-submit-btn" disabled={loading}>
-                        {loading ? 'Procesando...' : (mode === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta')}
-                    </button>
-                </form>
+                        <button type="submit" className="auth-submit-btn" disabled={loading}>
+                            {loading ? 'Procesando...' : (step === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta')}
+                        </button>
+                    </form>
+                ) : (
+                    <form onSubmit={handleTwoFactorSubmit} className="auth-form">
+                        <input
+                            type="text"
+                            inputMode="text"
+                            maxLength={12}
+                            placeholder="Código 2FA o recovery code"
+                            value={twoFactorCode}
+                            onChange={(event) => {
+                                const nextValue = event.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, '')
+                                setTwoFactorCode(nextValue)
+                                if (hasSubmitError) setHasSubmitError(false)
+                            }}
+                            required
+                            className={`auth-input ${hasSubmitError ? 'auth-input-error' : ''}`}
+                        />
+                        <label style={{ color: '#9ab', fontSize: '12px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <input
+                                type="checkbox"
+                                checked={rememberDevice}
+                                onChange={(event) => setRememberDevice(event.target.checked)}
+                            />
+                            Recordar este dispositivo por 30 días
+                        </label>
+                        <button type="submit" className="auth-submit-btn" disabled={loading}>
+                            {loading ? 'Verificando...' : 'Verificar código'}
+                        </button>
+                        <button
+                            type="button"
+                            className="auth-google-btn"
+                            onClick={() => {
+                                setStep('login')
+                                setTwoFactorCode('')
+                                setTempToken('')
+                            }}
+                        >
+                            Volver al login
+                        </button>
+                    </form>
+                )}
 
-                <div className="auth-separator">
-                    <span>o</span>
-                </div>
+                {!isTwoFactorStep && (
+                    <>
+                        <div className="auth-separator">
+                            <span>o</span>
+                        </div>
 
-                <button type="button" className="auth-google-btn" onClick={handleGoogleLogin}>
-                    Continuar con Google
-                </button>
+                        <button type="button" className="auth-google-btn" onClick={handleGoogleLogin}>
+                            Continuar con Google
+                        </button>
 
-                <div className="auth-toggle-text">
-                    {mode === 'login' ? (
-                        <>¿No tienes cuenta? <span onClick={() => setMode('register')}>Regístrate</span></>
-                    ) : (
-                        <>¿Ya tienes cuenta? <span onClick={() => setMode('login')}>Inicia Sesión</span></>
-                    )}
-                </div>
+                        <div className="auth-toggle-text">
+                            {step === 'login' ? (
+                                <>¿No tienes cuenta? <span onClick={() => setStep('register')}>Regístrate</span></>
+                            ) : (
+                                <>¿Ya tienes cuenta? <span onClick={() => setStep('login')}>Inicia Sesión</span></>
+                            )}
+                        </div>
+                    </>
+                )}
             </motion.div>
         </div>
     );

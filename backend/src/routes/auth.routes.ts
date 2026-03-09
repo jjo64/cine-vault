@@ -20,6 +20,8 @@ import {
   revocarSesiones,
   listarSesiones,
   revocarSesion,
+  recoveryCodesStatus,
+  regenerarRecoveryCodes,
 } from "../controllers/AuthController.js"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
 import {
@@ -148,6 +150,17 @@ router.post(
   middlewareAutenticacion,
   validarBody(twoFAConfirmSchema),
   manejadorAsincrono(confirmar2FA)
+)
+router.get(
+  "/2fa/recovery-codes/status",
+  middlewareAutenticacion,
+  manejadorAsincrono(recoveryCodesStatus)
+)
+router.post(
+  "/2fa/recovery-codes/regenerar",
+  middlewareAutenticacion,
+  validarBody(twoFAConfirmSchema),
+  manejadorAsincrono(regenerarRecoveryCodes)
 )
 
 export default router

@@ -28,6 +28,7 @@ export const twoFAConfirmSchema = z.object({
 export const twoFAVerifySchema = z.object({
   codigo: z.string().min(4, "Código requerido"),
   tokenTemporal: z.string().min(1, "Token temporal requerido"),
+  rememberDevice: z.boolean().optional(),
 })
 
 export const revokeSessionParamsSchema = z.object({

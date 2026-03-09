@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import { ChevronLeft, Menu, SlidersHorizontal, X } from 'lucide-react'
 import { createSlug } from '../utils/stringUtils'
+import { resolveNavPathWithFallback } from '../lib/navigation'
 import {
   fetchMovieGenres,
   searchMovie,
@@ -13,7 +14,7 @@ import {
   type GenreItem,
   type SearchMovieResult,
 } from '../services/searchServices'
-import { getCurrentUser } from '../services/authServices'
+import { getCurrentUser, getStoredAccessToken } from '../services/authServices'
 import { useResponsive } from '../hooks/useResponsive'
 
 const C = {
@@ -185,7 +186,12 @@ function Navbar({
                     {item}
                   </button>
                 ) : (
-                  <span style={{ fontFamily: SANS, fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.textSoft }}>{item}</span>
+                  <button
+                    onClick={() => navigate(resolveNavPathWithFallback(item))}
+                    style={{ border: 'none', padding: 0, background: 'none', fontFamily: SANS, fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.textSoft, cursor: 'pointer' }}
+                  >
+                    {item}
+                  </button>
                 )}
               </li>
             )
@@ -251,7 +257,11 @@ function Navbar({
                   <button
                     key={item}
                     onClick={() => {
-                      if (item === 'Sign in' || item === 'Create account') openAuthModal()
+                      if (item === 'Sign in' || item === 'Create account') {
+                        openAuthModal()
+                      } else {
+                        navigate(resolveNavPathWithFallback(item))
+                      }
                       setMobileNavOpen(false)
                     }}
                     style={{ border: 'none', background: 'transparent', color: C.text, textAlign: 'left', padding: '8px 10px', fontFamily: SANS, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}
@@ -410,7 +420,7 @@ export default function SearchResultsPage() {
   const [sortMode, setSortMode] = useState<SortMode>('relevance')
   const [viewer, setViewer] = useState<Viewer | null>(null)
   const { isMobile, isTablet } = useResponsive()
-  const token = localStorage.getItem('token')
+  const token = getStoredAccessToken()
 
   useEffect(() => {
     fetchMovieGenres().then((data) => setGenres(data.slice(0, 14))).catch(() => setGenres([]))
