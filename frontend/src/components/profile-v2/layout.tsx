@@ -155,7 +155,7 @@ export function Navbar({
       </ul>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 20 }}>
-        <div ref={wrapperRef} style={{ position: 'relative', width: isMobile ? 132 : 270 }}>
+        <div ref={wrapperRef} style={{ position: 'relative', width: isMobile ? 'min(132px, calc(100vw - 220px))' : 270 }}>
           <form
             onSubmit={(event) => {
               event.preventDefault()
@@ -397,7 +397,14 @@ export function ProfileHero({
   }, [openList])
 
   return (
-    <div style={{ position: 'relative', height: isMobile ? 620 : isTablet ? 560 : 480, overflow: 'hidden' }}>
+    <div
+      style={{
+        position: 'relative',
+        minHeight: isMobile ? 620 : isTablet ? 560 : 480,
+        height: isMobile ? 'auto' : isTablet ? 560 : 480,
+        overflow: 'hidden',
+      }}
+    >
       <div
         style={{
           position: 'absolute',
@@ -443,8 +450,8 @@ export function ProfileHero({
         <div style={{ position: 'relative', flexShrink: 0 }}>
           <div
             style={{
-              width: 100,
-              height: 100,
+              width: isMobile ? 80 : 100,
+              height: isMobile ? 80 : 100,
               borderRadius: '50%',
               border: `2px solid ${C.accent}`,
               overflow: 'hidden',
@@ -545,28 +552,28 @@ export function ProfileHero({
             { num: String(stats.reviews), label: 'reseñas' },
             { num: String(stats.watchlist), label: 'watchlist' },
           ].map((item) => (
-            <div key={item.label} style={{ textAlign: 'center', minWidth: 76 }}>
-              <span style={{ fontFamily: SERIF, fontSize: 32, fontWeight: 300, display: 'block', color: C.text, lineHeight: 1 }}>{item.num}</span>
-              <span style={{ fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.textSoft, marginTop: 3, display: 'block', fontFamily: SANS }}>
+            <div key={item.label} style={{ textAlign: 'center', minWidth: isMobile ? 56 : 76 }}>
+              <span style={{ fontFamily: SERIF, fontSize: isMobile ? 26 : 32, fontWeight: 300, display: 'block', color: C.text, lineHeight: 1 }}>{item.num}</span>
+              <span style={{ fontSize: isMobile ? 9 : 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.textSoft, marginTop: 3, display: 'block', fontFamily: SANS }}>
                 {item.label}
               </span>
             </div>
           ))}
           <button
             onClick={() => setOpenList(openList === 'following' ? null : 'following')}
-            style={{ border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'center', minWidth: 86, padding: 0 }}
+            style={{ border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'center', minWidth: isMobile ? 56 : 86, padding: 0 }}
           >
-            <span style={{ fontFamily: SERIF, fontSize: 32, fontWeight: 300, display: 'block', color: C.text, lineHeight: 1 }}>{stats.following}</span>
-            <span style={{ fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.textSoft, marginTop: 3, display: 'block', fontFamily: SANS }}>
+            <span style={{ fontFamily: SERIF, fontSize: isMobile ? 26 : 32, fontWeight: 300, display: 'block', color: C.text, lineHeight: 1 }}>{stats.following}</span>
+            <span style={{ fontSize: isMobile ? 9 : 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.textSoft, marginTop: 3, display: 'block', fontFamily: SANS }}>
               following
             </span>
           </button>
           <button
             onClick={() => setOpenList(openList === 'followers' ? null : 'followers')}
-            style={{ border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'center', minWidth: 86, padding: 0 }}
+            style={{ border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'center', minWidth: isMobile ? 56 : 86, padding: 0 }}
           >
-            <span style={{ fontFamily: SERIF, fontSize: 32, fontWeight: 300, display: 'block', color: C.text, lineHeight: 1 }}>{stats.followers}</span>
-            <span style={{ fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.textSoft, marginTop: 3, display: 'block', fontFamily: SANS }}>
+            <span style={{ fontFamily: SERIF, fontSize: isMobile ? 26 : 32, fontWeight: 300, display: 'block', color: C.text, lineHeight: 1 }}>{stats.followers}</span>
+            <span style={{ fontSize: isMobile ? 9 : 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.textSoft, marginTop: 3, display: 'block', fontFamily: SANS }}>
               followers
             </span>
           </button>
