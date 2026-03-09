@@ -2,12 +2,30 @@ import { Request, Response } from "express"
 import type { SolicitudAutenticada } from "../middlewares/auth.middlewares.js"
 import * as userService from "../services/user.services.js"
 import { emitirNotificacion } from "./NotificationsController.js"
+import jwt from "jsonwebtoken"
+import type { PayloadAcceso } from "../middlewares/auth.middlewares.js"
 
 export const obtenerUsuarios = async (req: Request, res: Response) => {
   res.json(await userService.obtenerUsuariosService())
 }
 export const obtenerUsuarioPorId = async (req: Request, res: Response) => {
-  res.json(await userService.obtenerUsuarioPorIdService(Number(req.params.id)))
+  const authHeader = req.headers["authorization"]
+  const token = authHeader && authHeader.split(" ")[1]
+  let viewerId: number | null = null
+
+  if (token) {
+    try {
+      const payload = jwt.verify(token, process.env.JWT_SECRET!) as PayloadAcceso
+      viewerId = payload.user_id
+    } catch {
+      // Si el token no es valido se ignora y el endpoint sigue siendo publico.
+      viewerId = null
+    }
+  }
+
+  res.json(
+    await userService.obtenerUsuarioPorIdService(Number(req.params.id), viewerId)
+  )
 }
 export const obtenerUsuarioPorUsername = async (req: Request, res: Response) => {
   res.json(

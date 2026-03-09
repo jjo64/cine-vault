@@ -4,6 +4,7 @@ import {
   getSearch,
   getMultiSearch,
   getMovieSearch,
+  getMovieGenres,
   getPersonSearch,
   getTVSearch,
 } from "../controllers/SearchController.js"
@@ -132,6 +133,8 @@ router.get("/multi", manejadorAsincrono(getMultiSearch)) // busqueda general
  *               total_results: 1
  */
 router.get("/movie", manejadorAsincrono(getMovieSearch)) // busqueda películas
+
+router.get("/genres/movie", manejadorAsincrono(getMovieGenres))
 
 /**
  * @swagger

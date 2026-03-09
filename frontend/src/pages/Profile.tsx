@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -8,6 +8,8 @@ import { HistoryPanel, ListsPanel, OverviewPanel, ProfileSidebar, ReviewsPanel, 
 import { C, SANS } from '../components/profile-v2/theme'
 import { useProfilePageData } from '../hooks/useProfilePageData'
 import { useResponsive } from '../hooks/useResponsive'
+import { fetchUserProfileByUsername, followUser, unfollowUser } from '../services/profileServices'
+import { getStoredAccessToken } from '../services/authServices'
 
 export default function ProfilePage() {
   const navigate = useNavigate()
@@ -29,13 +31,82 @@ export default function ProfilePage() {
     watchlistFilms,
     reviewItems,
   } = useProfilePageData(username)
+  const [isFollowing, setIsFollowing] = useState(false)
+  const [followBusy, setFollowBusy] = useState(false)
+  const [targetUserId, setTargetUserId] = useState<number | null>(null)
+  const [statsOverride, setStatsOverride] = useState<{ followers?: number; following?: number }>({})
 
   const searchFromNavbar = (query: string) => {
-    const formatted = query.replace(/\s+/g, '+')
-    navigate(`/search/${formatted}`)
+    navigate(`/search?q=${encodeURIComponent(query.trim())}`)
   }
 
   const canEditProfile = isAuthenticated && isOwnProfile
+
+  useEffect(() => {
+    setStatsOverride({})
+  }, [stats.followers, stats.following])
+
+  useEffect(() => {
+    if (!username || !isPublicProfile) {
+      setTargetUserId(null)
+      setIsFollowing(false)
+      return
+    }
+
+    let active = true
+    const token = getStoredAccessToken()
+
+    fetchUserProfileByUsername(username, token)
+      .then((profile) => {
+        if (!active || !profile) return
+        setTargetUserId(profile.id)
+        setIsFollowing(Boolean(profile.is_following))
+      })
+      .catch(() => {
+        if (!active) return
+        setTargetUserId(null)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [username, isPublicProfile])
+
+  const displayStats = useMemo(
+    () => ({
+      ...stats,
+      followers: statsOverride.followers ?? stats.followers,
+      following: statsOverride.following ?? stats.following,
+    }),
+    [stats, statsOverride]
+  )
+
+  const handleToggleFollow = async () => {
+    const token = getStoredAccessToken()
+    if (!token || !targetUserId || followBusy) return
+
+    const previousFollowing = isFollowing
+    const previousFollowers = displayStats.followers
+
+    setFollowBusy(true)
+    setIsFollowing(!previousFollowing)
+    setStatsOverride({
+      followers: Math.max(0, previousFollowers + (previousFollowing ? -1 : 1)),
+    })
+
+    try {
+      if (previousFollowing) {
+        await unfollowUser(targetUserId, token)
+      } else {
+        await followUser(targetUserId, token)
+      }
+    } catch {
+      setIsFollowing(previousFollowing)
+      setStatsOverride({ followers: previousFollowers })
+    } finally {
+      setFollowBusy(false)
+    }
+  }
 
   const showGuestHint = !loading && !hasTargetProfile && !isAuthenticated
 
@@ -65,11 +136,17 @@ export default function ProfilePage() {
       <div style={{ paddingTop: 64 }}>
         <ProfileHero
           header={profileHeader}
-          stats={stats}
+          stats={displayStats}
           followers={followerUsers}
           following={followingUsers}
           onNavigateToUser={(targetUsername) => navigate(`/${targetUsername}`)}
           canEditProfile={canEditProfile && !isPublicProfile}
+          isPublicProfile={isPublicProfile}
+          isFollowing={isFollowing}
+          followBusy={followBusy}
+          onToggleFollow={handleToggleFollow}
+          onEditProfile={() => navigate('/settings')}
+          onOpenSettings={() => navigate('/settings')}
           isMobile={isMobile}
           isTablet={isTablet}
         />

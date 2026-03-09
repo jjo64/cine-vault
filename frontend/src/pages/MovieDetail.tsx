@@ -11,14 +11,18 @@ import {
   ExternalLink,
   Menu,
   X,
+  Pencil,
+  Trash2,
 } from 'lucide-react'
 import { createSlug } from '../utils/stringUtils'
 import {
   addToDiary,
+  deleteReview,
   addToFavorites,
   addToWatchlist,
   commentOnReview,
   createReview,
+  updateReviewContent,
   fetchMovieDetail,
   fetchMovieReviews,
   fetchMyDiary,
@@ -61,6 +65,8 @@ const TMDB_POSTER = 'https://image.tmdb.org/t/p/w500'
 type AppReview = {
   id: number
   userId: number
+  movieId: number
+  tmdbId: number | null
   username: string
   avatarUrl?: string | null
   content: string
@@ -294,8 +300,8 @@ function parseMovieId(slugOrId?: string): number | null {
   return Number.isFinite(value) ? value : null
 }
 
-function getDirector(movie: MovieDetailApi | null) {
-  return (movie?.credits?.crew || []).find((person) => person.job === 'Director')?.name || 'Desconocido'
+function getDirectorObj(movie: MovieDetailApi | null) {
+  return (movie?.credits?.crew || []).find((person) => person.job === 'Director') || null
 }
 
 function getCrewByJob(movie: MovieDetailApi | null, jobs: string[]) {
@@ -334,6 +340,8 @@ function mapMovieReviews(
   return reviews.map((review) => ({
     id: review.id,
     userId: review.user_id,
+    movieId: review.movie_id,
+    tmdbId: review.tmdb_id ?? null,
     username: userMeta[review.user_id]?.username || `Usuario ${review.user_id}`,
     avatarUrl: userMeta[review.user_id]?.avatarUrl || null,
     content: review.content || 'Sin comentario',
@@ -429,6 +437,9 @@ function Navbar({
 
   const navLinks = viewer ? ['Films', 'Lists', 'Members', 'Journal'] : ['Sign in', 'Create account', 'Films', 'Lists', 'Members', 'Journal']
   const visibleNavLinks = isMobile ? [] : isTablet ? navLinks.slice(0, 3) : navLinks
+  const openAuthModal = (mode: 'login' | 'register') => {
+    window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: { mode } }))
+  }
 
   return (
     <nav
@@ -459,9 +470,12 @@ function Navbar({
             return (
               <li key={item}>
                 {isAuthLink ? (
-                  <Link to="/profile" style={{ fontFamily: SANS, fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.textSoft, textDecoration: 'none' }}>
+                  <button
+                    onClick={() => openAuthModal(item === 'Create account' ? 'register' : 'login')}
+                    style={{ border: 'none', padding: 0, background: 'none', fontFamily: SANS, fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.textSoft, cursor: 'pointer' }}
+                  >
                     {item}
-                  </Link>
+                  </button>
                 ) : (
                   <span style={{ fontFamily: SANS, fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.textSoft }}>{item}</span>
                 )}
@@ -483,7 +497,7 @@ function Navbar({
               }}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' && query.trim()) {
-                  navigate(`/search/${query.trim().replace(/\s+/g, '+')}`)
+                  navigate(`/search?q=${encodeURIComponent(query.trim())}`)
                   setOpenDropdown(false)
                 }
               }}
@@ -529,7 +543,9 @@ function Navbar({
                   <button
                     key={item}
                     onClick={() => {
-                      if (item === 'Sign in' || item === 'Create account') navigate('/profile')
+                      if (item === 'Sign in' || item === 'Create account') {
+                        openAuthModal(item === 'Create account' ? 'register' : 'login')
+                      }
                       setMobileNavOpen(false)
                     }}
                     style={{ border: 'none', background: 'transparent', color: C.text, textAlign: 'left', padding: '8px 10px', fontFamily: SANS, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}
@@ -558,7 +574,7 @@ function Navbar({
             {menuOpen && (
               <div style={{ position: 'absolute', right: 0, top: 44, minWidth: 180, border: `1px solid ${C.border}`, background: 'rgba(8,8,8,0.98)', padding: 6 }}>
                 <button onClick={() => navigate('/profile')} style={{ width: '100%', border: 'none', background: 'transparent', color: C.text, textAlign: 'left', padding: '8px 10px', cursor: 'pointer', fontFamily: SANS, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Mi perfil</button>
-                <button onClick={() => navigate('/profile')} style={{ width: '100%', border: 'none', background: 'transparent', color: C.text, textAlign: 'left', padding: '8px 10px', cursor: 'pointer', fontFamily: SANS, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Configuración</button>
+                <button onClick={() => navigate('/settings')} style={{ width: '100%', border: 'none', background: 'transparent', color: C.text, textAlign: 'left', padding: '8px 10px', cursor: 'pointer', fontFamily: SANS, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Configuración</button>
                 <button onClick={onLogout} style={{ width: '100%', border: 'none', background: 'transparent', color: '#ff8d8d', textAlign: 'left', padding: '8px 10px', cursor: 'pointer', fontFamily: SANS, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Cerrar sesión</button>
               </div>
             )}
@@ -710,7 +726,7 @@ function Hero({
   const runtime = movie.runtime ? `${movie.runtime} min` : 'Duración desconocida'
   const country = movie.production_countries?.[0]?.name || 'País no disponible'
   const genresText = (movie.genres || []).slice(0, 2).map((genre) => genre.name).join(' · ') || 'Sin género'
-  const director = getDirector(movie)
+  const directorObj = getDirectorObj(movie)
   const score = ((movie.vote_average || 0) / 2).toFixed(1)
   const votes = (movie.vote_count || 0).toLocaleString('es-ES')
   const posterUrl = movie.poster_path ? `${TMDB_POSTER}${movie.poster_path}` : ''
@@ -772,7 +788,17 @@ function Hero({
         </div>
 
         <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: isMobile ? 17 : 20, color: C.textSoft, marginBottom: 20, letterSpacing: '0.02em', marginTop: 14 }}>
-          Una película de <span style={{ color: C.accent }}>{director}</span>
+          Una película de{' '}
+          {directorObj ? (
+            <Link
+              to={`/person/${directorObj.id}`}
+              style={{ color: C.accent, textDecoration: 'none', paddingBottom: 1, transition: 'color 0.2s' }}
+            >
+              {directorObj.name}
+            </Link>
+          ) : (
+            'Desconocido'
+          )}
         </div>
 
         <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? 12 : 24, marginBottom: 24 }}>
@@ -842,21 +868,33 @@ function Synopsis({ overview, tagline }: { overview: string; tagline: string | n
 }
 
 function Themes({ themes }: { themes: string[] }) {
-  const [active, setActive] = useState<string[]>(themes.slice(0, 3))
-  const toggle = (theme: string) => setActive((prev) => (prev.includes(theme) ? prev.filter((item) => item !== theme) : [...prev, theme]))
+  const navigate = useNavigate()
 
   return (
     <motion.section initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }} style={{ marginBottom: 64 }}>
       <SectionLabel>Temas y atmósferas</SectionLabel>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-        {themes.map((theme) => {
-          const isActive = active.includes(theme)
-          return (
-            <button key={theme} onClick={() => toggle(theme)} style={{ fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: isActive ? C.accent : C.textSoft, border: `1px solid ${isActive ? C.accentDim : C.border}`, background: isActive ? C.accentGlow : 'transparent', padding: '6px 14px', cursor: 'pointer', transition: 'all 0.2s', fontFamily: SANS }}>
-              {theme}
-            </button>
-          )
-        })}
+        {themes.map((theme) => (
+          <motion.button
+            key={theme}
+            onClick={() => navigate(`/search?q=${encodeURIComponent(theme)}&genre=`)}
+            whileHover={{ borderColor: C.accentDim, color: C.accent }}
+            transition={{ duration: 0.2 }}
+            style={{
+              fontSize: 11,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              color: C.textSoft,
+              border: `1px solid ${C.border}`,
+              background: 'transparent',
+              padding: '6px 14px',
+              cursor: 'pointer',
+              fontFamily: SANS,
+            }}
+          >
+            {theme}
+          </motion.button>
+        ))}
       </div>
     </motion.section>
   )
@@ -890,7 +928,17 @@ function CastCrew({
   crew: Array<{ id: number; name: string; job?: string; profile_path?: string | null }>
 }) {
   const [tab, setTab] = useState<'cast' | 'crew'>('cast')
+  const [castPage, setCastPage] = useState(0)
   const people = tab === 'cast' ? cast : crew
+  const pageSize = 8
+  const start = castPage * pageSize
+  const visiblePeople = people.slice(start, start + pageSize)
+  const hasPrev = castPage > 0
+  const hasNext = start + pageSize < people.length
+
+  useEffect(() => {
+    setCastPage(0)
+  }, [tab])
 
   return (
     <motion.section initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }} style={{ marginBottom: 64 }}>
@@ -899,17 +947,23 @@ function CastCrew({
         <button onClick={() => setTab('crew')} style={{ border: `1px solid ${tab === 'crew' ? C.accentDim : C.border}`, background: tab === 'crew' ? C.accentGlow : 'transparent', color: tab === 'crew' ? C.accent : C.textSoft, padding: '6px 12px', cursor: 'pointer', fontFamily: SANS, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.12em' }}>Crew</button>
       </div>
       <SectionLabel>{tab === 'cast' ? 'Reparto' : 'Crew técnico'}</SectionLabel>
-      <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 8, scrollbarWidth: 'none' }}>
-        {people.map((person, index) => (
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))', gap: 16, paddingBottom: 8 }}>
+        {visiblePeople.map((person, index) => (
           <motion.div key={`${tab}-${person.id}-${index}`} style={{ flexShrink: 0, width: 96, cursor: 'pointer', textAlign: 'center' }} whileHover={{ y: -4 }} transition={{ duration: 0.25 }}>
-            <div style={{ width: 96, height: 96, borderRadius: '50%', background: C.elevated, border: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginBottom: 10, fontFamily: SERIF, fontSize: 28, color: C.textMuted }}>
-              {person.profile_path ? (
-                <Img src={`${TMDB_POSTER}${person.profile_path}`} alt={person.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                initials(person.name)
-              )}
-            </div>
-            <div style={{ fontSize: 12, fontFamily: SANS, color: C.text, lineHeight: 1.3, marginBottom: 2, ...textClampOneLine }}>{person.name}</div>
+            <Link to={`/person/${person.id}`} style={{ textDecoration: 'none' }}>
+              <motion.div
+                whileHover={{ opacity: 0.8 }}
+                transition={{ duration: 0.2 }}
+                style={{ width: 96, height: 96, borderRadius: '50%', background: C.elevated, border: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginBottom: 10, fontFamily: SERIF, fontSize: 28, color: C.textMuted, cursor: 'pointer', transition: 'opacity 0.2s' }}
+              >
+                {person.profile_path ? (
+                  <Img src={`${TMDB_POSTER}${person.profile_path}`} alt={person.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  initials(person.name)
+                )}
+              </motion.div>
+            </Link>
+            <Link to={`/person/${person.id}`} style={{ fontSize: 12, fontFamily: SANS, color: C.text, lineHeight: 1.3, marginBottom: 2, ...textClampOneLine, textDecoration: 'none', display: 'block' }}>{person.name}</Link>
             <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 13, color: C.textSoft }}>
               <span style={textClampOneLine}>
                 {tab === 'cast' ? ('character' in person ? person.character || 'Sin rol' : 'Sin rol') : 'job' in person ? person.job || 'Sin rol' : 'Sin rol'}
@@ -918,6 +972,28 @@ function CastCrew({
           </motion.div>
         ))}
       </div>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginTop: 12 }}>
+        {hasPrev && (
+          <motion.button
+            onClick={() => setCastPage((prev) => Math.max(0, prev - 1))}
+            whileHover={{ borderColor: C.accentDim, color: C.accent }}
+            transition={{ duration: 0.2 }}
+            style={{ border: `1px solid ${C.border}`, background: 'transparent', color: C.textSoft, padding: '8px 14px', cursor: 'pointer' }}
+          >
+            <ChevronLeft size={14} />
+          </motion.button>
+        )}
+        {hasNext && (
+          <motion.button
+            onClick={() => setCastPage((prev) => prev + 1)}
+            whileHover={{ borderColor: C.accentDim, color: C.accent }}
+            transition={{ duration: 0.2 }}
+            style={{ border: `1px solid ${C.border}`, background: 'transparent', color: C.textSoft, padding: '8px 14px', cursor: 'pointer' }}
+          >
+            <ChevronRight size={14} />
+          </motion.button>
+        )}
+      </div>
     </motion.section>
   )
 }
@@ -925,14 +1001,20 @@ function CastCrew({
 function Reviews({
   reviews,
   likedReviewIds,
+  viewerId,
   onToggleLike,
   onReply,
+  onEditReview,
+  onDeleteReview,
   onWriteReview,
 }: {
   reviews: AppReview[]
   likedReviewIds: Set<number>
+  viewerId: number | null
   onToggleLike: (reviewId: number, liked: boolean) => void
   onReply: (reviewId: number) => void
+  onEditReview: (review: AppReview) => void
+  onDeleteReview: (review: AppReview) => void
   onWriteReview: () => void
 }) {
   return (
@@ -981,27 +1063,45 @@ function Reviews({
               <button onClick={() => onReply(review.id)} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: C.textMuted, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: SANS, letterSpacing: '0.1em' }}>
                 <MessageSquare size={13} strokeWidth={1.5} /> Responder
               </button>
+              {viewerId === review.userId && (
+                <>
+                  <button onClick={() => onEditReview(review)} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: C.textMuted, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: SANS, letterSpacing: '0.1em' }}>
+                    <Pencil size={13} strokeWidth={1.5} /> Editar
+                  </button>
+                  <button onClick={() => onDeleteReview(review)} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#ff9b9b', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: SANS, letterSpacing: '0.1em' }}>
+                    <Trash2 size={13} strokeWidth={1.5} /> Eliminar
+                  </button>
+                </>
+              )}
             </div>
           </motion.div>
         )
       })}
 
       <button onClick={onWriteReview} style={{ marginTop: 28, padding: '12px 28px', background: 'transparent', color: C.accent, border: `1px solid ${C.accentDim}`, fontFamily: SANS, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
-        Escribir mi reseña
+        Escribir o editar mi reseña
       </button>
     </motion.section>
   )
 }
 
-function Sidebar({ movie, similar, compact }: { movie: MovieDetailApi; similar: SimilarFilm[]; compact: boolean }) {
-  const director = getDirector(movie)
+function Sidebar({
+  movie,
+  similar,
+  compact,
+  directorObj,
+}: {
+  movie: MovieDetailApi
+  similar: SimilarFilm[]
+  compact: boolean
+  directorObj: { id: number; name: string } | null
+}) {
   const photography = getCrewByJob(movie, ['Director of Photography', 'Cinematography'])
   const music = getCrewByJob(movie, ['Original Music Composer', 'Music', 'Composer'])
   const production = movie.production_companies?.[0]?.name || 'Desconocido'
   const platforms = mapPlatforms(movie)
 
   const metaRows = [
-    { key: 'Director', val: director },
     { key: 'País', val: movie.production_countries?.[0]?.name || 'Desconocido' },
     { key: 'Año', val: movie.release_date ? String(new Date(movie.release_date).getFullYear()) : '----' },
     { key: 'Duración', val: movie.runtime ? `${movie.runtime} min` : 'No disponible' },
@@ -1017,6 +1117,19 @@ function Sidebar({ movie, similar, compact }: { movie: MovieDetailApi; similar: 
         <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: compact ? 16 : 24, marginBottom: 20 }}>
           <div style={{ fontSize: 10, letterSpacing: '0.24em', textTransform: 'uppercase', color: C.accent, marginBottom: 18, fontFamily: SANS }}>Ficha técnica</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', flexDirection: compact ? 'column' : 'row', justifyContent: 'space-between', alignItems: compact ? 'flex-start' : 'baseline', gap: compact ? 4 : 0 }}>
+              <span style={{ fontSize: 11, color: C.textMuted, letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: SANS }}>Director</span>
+              {directorObj ? (
+                <Link
+                  to={`/person/${directorObj.id}`}
+                  style={{ fontFamily: SERIF, fontSize: compact ? 15 : 16, color: C.accent, textAlign: compact ? 'left' : 'right', maxWidth: '100%', ...textClampOneLine, textDecoration: 'none', borderBottom: `1px solid ${C.accentDim}`, paddingBottom: 1 }}
+                >
+                  {directorObj.name}
+                </Link>
+              ) : (
+                <span style={{ fontFamily: SERIF, fontSize: compact ? 15 : 16, color: C.textSoft, textAlign: compact ? 'left' : 'right', maxWidth: '100%', ...textClampOneLine }}>Desconocido</span>
+              )}
+            </div>
             {metaRows.map((row) => (
               <div key={row.key} style={{ display: 'flex', flexDirection: compact ? 'column' : 'row', justifyContent: 'space-between', alignItems: compact ? 'flex-start' : 'baseline', gap: compact ? 4 : 0 }}>
                 <span style={{ fontSize: 11, color: C.textMuted, letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: SANS }}>{row.key}</span>
@@ -1099,6 +1212,7 @@ export default function MovieDetailPage() {
   const [composerMode, setComposerMode] = useState<'review' | 'reply' | null>(null)
   const [composerText, setComposerText] = useState('')
   const [replyTargetId, setReplyTargetId] = useState<number | null>(null)
+  const [editingReviewId, setEditingReviewId] = useState<number | null>(null)
   const composerRef = useRef<HTMLDivElement | null>(null)
 
   const [userRating, setUserRating] = useState(0)
@@ -1115,6 +1229,18 @@ export default function MovieDetailPage() {
 
   const token = localStorage.getItem('token')
   const movieId = useMemo(() => parseMovieId(slugOrId), [slugOrId])
+
+  const matchesCurrentMovie = (
+    candidate: { movie_id?: number | null; tmdb_id?: number | null },
+    detailId: number,
+    routeMovieId: number | null
+  ) => {
+    if (candidate.tmdb_id && candidate.tmdb_id === detailId) return true
+    if (routeMovieId && candidate.tmdb_id && candidate.tmdb_id === routeMovieId) return true
+    if (candidate.movie_id && candidate.movie_id === detailId) return true
+    if (routeMovieId && candidate.movie_id && candidate.movie_id === routeMovieId) return true
+    return false
+  }
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -1207,20 +1333,30 @@ export default function MovieDetailPage() {
 
         if (token) {
           const [myReviews, myWatchlist, myFavorites, myDiary] = await Promise.all([
-            fetchMyReviews(token),
-            fetchMyWatchlist(token),
-            fetchMyFavorites(token),
-            fetchMyDiary(token),
+            fetchMyReviews(token).catch(() => []),
+            fetchMyWatchlist(token).catch(() => []),
+            fetchMyFavorites(token).catch(() => []),
+            fetchMyDiary(token).catch(() => ({ diary: [] })),
           ])
 
           if (!alive) return
 
-          const myReview = myReviews.find((review) => review.movie_id === detail.id)
+          const myReview = myReviews.find((review) =>
+            matchesCurrentMovie(review, detail.id, movieId)
+          )
           setMyReviewId(myReview?.id ?? null)
           setUserRating(Number(myReview?.rating ?? 0))
-          setInWatchlist(myWatchlist.some((entry) => entry.movie_id === detail.id))
-          setLiked(myFavorites.some((entry) => entry.movie_id === detail.id))
-          setInVault((myDiary.diary || []).some((entry) => entry.movie_id === detail.id))
+          setInWatchlist(myWatchlist.some((entry) => matchesCurrentMovie(entry, detail.id, movieId)))
+          setLiked(myFavorites.some((entry) => matchesCurrentMovie(entry, detail.id, movieId)))
+          setInVault(
+            (myDiary.diary || []).some((entry) =>
+              matchesCurrentMovie(
+                { movie_id: entry.movie_id, tmdb_id: entry.tmdb_id },
+                detail.id,
+                movieId
+              )
+            )
+          )
         } else {
           setMyReviewId(null)
           setUserRating(0)
@@ -1484,9 +1620,47 @@ export default function MovieDetailPage() {
       return
     }
 
+    const existingOwnReview = viewer
+      ? reviews.find((review) => review.userId === viewer.id)
+      : null
+
     setReplyTargetId(null)
-    setComposerText('')
+    setEditingReviewId(existingOwnReview?.id ?? null)
+    setComposerText(existingOwnReview?.content || '')
+    if (existingOwnReview?.rating) setUserRating(existingOwnReview.rating)
     setComposerMode('review')
+  }
+
+  const handleEditReview = (review: AppReview) => {
+    setEditingReviewId(review.id)
+    setReplyTargetId(null)
+    setComposerText(review.content || '')
+    setUserRating(review.rating || userRating)
+    setComposerMode('review')
+  }
+
+  const handleDeleteReview = async (review: AppReview) => {
+    if (!token) {
+      requireAuth()
+      return
+    }
+
+    try {
+      await deleteReview(token, review.id)
+      setReviews((prev) => prev.filter((item) => item.id !== review.id))
+      if (myReviewId === review.id) {
+        setMyReviewId(null)
+        setUserRating(0)
+      }
+      if (editingReviewId === review.id) {
+        setEditingReviewId(null)
+        setComposerMode(null)
+        setComposerText('')
+      }
+      showSuccess('Reseña eliminada')
+    } catch (err) {
+      showError((err as Error).message || 'No se pudo eliminar la reseña')
+    }
   }
 
   const handleSubmitComposer = async () => {
@@ -1519,8 +1693,13 @@ export default function MovieDetailPage() {
     const ratingToUse = userRating > 0 ? userRating : 4
 
     try {
-      if (myReviewId) {
-        await updateReview(token, myReviewId, ratingToUse)
+      if (myReviewId || editingReviewId) {
+        const reviewId = editingReviewId || myReviewId
+        if (!reviewId) return
+        await updateReviewContent(token, reviewId, {
+          rating: ratingToUse,
+          content: text,
+        })
         showSuccess('Reseña actualizada')
       } else {
         const created = await createReview(token, movie.id, ratingToUse, text)
@@ -1553,7 +1732,11 @@ export default function MovieDetailPage() {
       )
       const userMeta = Object.fromEntries(userPairs)
       setReviews(mapMovieReviews(freshReviews, userMeta))
+      const ownReview = freshReviews.find((review) => matchesCurrentMovie(review, movie.id, movieId))
+      setMyReviewId(ownReview?.id ?? null)
+      setUserRating(Number(ownReview?.rating ?? userRating))
       setComposerMode(null)
+      setEditingReviewId(null)
       setComposerText('')
     } catch (err) {
       showError((err as Error).message || 'No se pudo publicar la reseña')
@@ -1574,6 +1757,7 @@ export default function MovieDetailPage() {
     const base = ['Slow cinema', 'Cine de autor', 'Filosofía del deseo']
     return [...new Set([...fromGenres, ...base])]
   }, [movie])
+  const directorObj = useMemo(() => getDirectorObj(movie), [movie])
 
   if (loading) {
     return (
@@ -1619,7 +1803,7 @@ export default function MovieDetailPage() {
         isTablet={isTabletViewport}
       />
 
-      <DirectorQuote director={getDirector(movie)} isMobile={isMobileViewport} />
+      <DirectorQuote director={directorObj?.name || 'Desconocido'} isMobile={isMobileViewport} />
 
       <div
         style={{
@@ -1635,8 +1819,17 @@ export default function MovieDetailPage() {
           <Synopsis overview={movie.overview || ''} tagline={movie.tagline} />
           <Themes themes={themes} />
           {stills.length > 0 && <Stills stills={stills} isMobile={isMobileViewport} />}
-          <CastCrew cast={(movie.credits?.cast || []).slice(0, 12)} crew={(movie.credits?.crew || []).slice(0, 12)} />
-          <Reviews reviews={reviews} likedReviewIds={likedReviewIds} onToggleLike={handleToggleReviewLike} onReply={handleReplyReview} onWriteReview={handleWriteReview} />
+          <CastCrew cast={movie.credits?.cast || []} crew={movie.credits?.crew || []} />
+          <Reviews
+            reviews={reviews}
+            likedReviewIds={likedReviewIds}
+            viewerId={viewer?.id ?? null}
+            onToggleLike={handleToggleReviewLike}
+            onReply={handleReplyReview}
+            onEditReview={handleEditReview}
+            onDeleteReview={handleDeleteReview}
+            onWriteReview={handleWriteReview}
+          />
           <div ref={composerRef}>
             <InlineComposer
               mode={composerMode}
@@ -1651,7 +1844,7 @@ export default function MovieDetailPage() {
           </div>
         </main>
 
-        <Sidebar movie={movie} similar={similar} compact={isCompactSidebar} />
+        <Sidebar movie={movie} similar={similar} compact={isCompactSidebar} directorObj={directorObj ? { id: directorObj.id, name: directorObj.name } : null} />
       </div>
 
       <Footer isMobile={isMobileViewport} isTablet={isTabletViewport} />

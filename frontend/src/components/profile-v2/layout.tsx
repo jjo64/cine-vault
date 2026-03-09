@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Bell, Search, Settings, Share2, Edit3, X } from 'lucide-react'
+import { Bell, Search, Settings, Share2, Edit3, X, UserPlus, UserMinus } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useNavigate } from 'react-router-dom'
 import { backdropImages, IMG } from './assets'
@@ -358,6 +358,12 @@ export function ProfileHero({
   following,
   onNavigateToUser,
   canEditProfile,
+  isPublicProfile,
+  isFollowing,
+  followBusy,
+  onToggleFollow,
+  onEditProfile,
+  onOpenSettings,
   isMobile,
   isTablet,
 }: {
@@ -367,6 +373,12 @@ export function ProfileHero({
   following: ProfileConnection[]
   onNavigateToUser: (username: string) => void
   canEditProfile: boolean
+  isPublicProfile?: boolean
+  isFollowing?: boolean
+  followBusy?: boolean
+  onToggleFollow?: () => void
+  onEditProfile?: () => void
+  onOpenSettings?: () => void
   isMobile: boolean
   isTablet: boolean
 }) {
@@ -458,6 +470,7 @@ export function ProfileHero({
           {canEditProfile && (
             <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
               <button
+                onClick={onEditProfile}
                 style={{
                   padding: '8px 20px',
                   background: C.accent,
@@ -493,8 +506,34 @@ export function ProfileHero({
               >
                 <Share2 size={11} /> Compartir
               </button>
-              <button style={{ padding: '8px 12px', background: 'transparent', color: C.textSoft, border: `1px solid ${C.border}`, cursor: 'pointer' }}>
+              <button onClick={onOpenSettings} style={{ padding: '8px 12px', background: 'transparent', color: C.textSoft, border: `1px solid ${C.border}`, cursor: 'pointer' }}>
                 <Settings size={13} />
+              </button>
+            </div>
+          )}
+
+          {!canEditProfile && isPublicProfile && (
+            <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+              <button
+                onClick={onToggleFollow}
+                disabled={followBusy}
+                style={{
+                  padding: '8px 16px',
+                  background: isFollowing ? 'transparent' : C.accent,
+                  color: isFollowing ? C.textSoft : C.bg,
+                  border: `1px solid ${isFollowing ? C.border : C.accentDim}`,
+                  fontFamily: SANS,
+                  fontSize: 11,
+                  letterSpacing: '0.16em',
+                  textTransform: 'uppercase',
+                  cursor: followBusy ? 'default' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                {isFollowing ? <UserMinus size={11} /> : <UserPlus size={11} />}
+                {followBusy ? 'Actualizando...' : isFollowing ? 'Dejar de seguir' : 'Seguir'}
               </button>
             </div>
           )}

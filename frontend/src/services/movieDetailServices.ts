@@ -36,6 +36,7 @@ export type ReviewApi = {
   id: number
   user_id: number
   movie_id: number
+  tmdb_id?: number | null
   content: string | null
   rating: number | null
   likes?: number
@@ -101,8 +102,25 @@ export const updateReview = (token: string, reviewId: number, rating: number) =>
     body: { rating },
   })
 
+export const updateReviewContent = (
+  token: string,
+  reviewId: number,
+  payload: { rating?: number; content?: string }
+) =>
+  apiRequest<ReviewApi>(`/api/reviews/${reviewId}`, {
+    token,
+    method: 'PATCH',
+    body: payload,
+  })
+
+export const deleteReview = (token: string, reviewId: number) =>
+  apiRequest<{ message: string }>(`/api/reviews/${reviewId}`, {
+    token,
+    method: 'DELETE',
+  })
+
 export const fetchMyWatchlist = (token: string) =>
-  apiRequest<Array<{ movie_id: number }>>('/api/watchlist', { token })
+  apiRequest<Array<{ movie_id: number; tmdb_id?: number | null }>>('/api/watchlist', { token })
 
 export const addToWatchlist = (token: string, movieId: number) =>
   apiRequest<{ message: string }>('/api/watchlist', {
@@ -115,15 +133,13 @@ export const removeFromWatchlist = (token: string, movieId: number) =>
   apiRequest<{ message: string }>(`/api/watchlist/${movieId}`, {
     token,
     method: 'DELETE',
-    // El backend actual toma movie_id desde body.
-    body: { movie_id: movieId },
   })
 
 export const fetchMyFavorites = async (token: string) => {
   try {
-    return await apiRequest<Array<{ movie_id: number }>>('/api/favorites', { token })
+    return await apiRequest<Array<{ movie_id: number; tmdb_id?: number | null }>>('/api/favorites', { token })
   } catch {
-    return [] as Array<{ movie_id: number }>
+    return [] as Array<{ movie_id: number; tmdb_id?: number | null }>
   }
 }
 
@@ -142,9 +158,9 @@ export const removeFromFavorites = (token: string, movieId: number) =>
 
 export const fetchMyDiary = async (token: string) => {
   try {
-    return await apiRequest<{ diary?: Array<{ movie_id: number }> }>('/api/diary', { token })
+    return await apiRequest<{ diary?: Array<{ movie_id: number; tmdb_id?: number | null }> }>('/api/diary', { token })
   } catch {
-    return { diary: [] as Array<{ movie_id: number }> }
+    return { diary: [] as Array<{ movie_id: number; tmdb_id?: number | null }> }
   }
 }
 
