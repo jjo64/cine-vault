@@ -133,7 +133,7 @@ export default function ProfilePage() {
       <GrainOverlay />
       <Navbar onNavigateHome={() => navigate('/')} onSearch={searchFromNavbar} isMobile={isMobile} />
 
-      <div style={{ paddingTop: 64 }}>
+      <div style={{ paddingTop: isMobile ? 56 : 64 }}>
         <ProfileHero
           header={profileHeader}
           stats={displayStats}
@@ -163,7 +163,7 @@ export default function ProfilePage() {
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: isTabletOrDown ? '1fr' : '1fr 280px', gap: isTabletOrDown ? 24 : 40 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isTabletOrDown ? '1fr' : '1fr 280px', gap: isTabletOrDown ? (isMobile ? 16 : 24) : 40 }}>
           <div>
             <AnimatePresence mode="wait">
               <motion.div
