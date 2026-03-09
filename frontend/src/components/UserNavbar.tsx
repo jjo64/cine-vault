@@ -1,17 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Bell } from 'lucide-react';
+import { authorizedFetch } from '../services/authServices';
+import { socket } from '../context/SocketContext';
+import { Notificaciones } from './Notificaciones';
 
 const UserNavbar: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [showUserMenu, setShowUserMenu] = useState(false);
+    const [showNotifications, setShowNotifications] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
     const navigate = useNavigate();
     const menuRef = useRef<HTMLDivElement>(null);
+    const notificationsRef = useRef<HTMLDivElement>(null);
 
     // Cerrar menú al hacer clic fuera
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
                 setShowUserMenu(false);
+            }
+            if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
+                setShowNotifications(false);
             }
         };
 
@@ -24,7 +34,33 @@ const UserNavbar: React.FC = () => {
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [showUserMenu]);
+    }, [showUserMenu, showNotifications]);
+
+    useEffect(() => {
+        let active = true;
+
+        const loadUnread = async () => {
+            const res = await authorizedFetch('/api/notifications/unread');
+            if (!res.ok || !active) return;
+
+            const data = (await res.json()) as { count?: unknown };
+            if (typeof data.count === 'number') {
+                setUnreadCount(data.count);
+            }
+        };
+
+        const handleNewNotification = () => {
+            setUnreadCount((prev) => prev + 1);
+        };
+
+        loadUnread();
+        socket.on('nueva_notificacion', handleNewNotification);
+
+        return () => {
+            active = false;
+            socket.off('nueva_notificacion', handleNewNotification);
+        };
+    }, []);
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -32,6 +68,18 @@ const UserNavbar: React.FC = () => {
             navigate(`/search/${searchQuery.trim()}`);
         }
     };
+
+    const handleToggleNotifications = () => {
+        setShowNotifications((prev) => {
+            const next = !prev;
+            if (next) {
+                setUnreadCount(0);
+            }
+            return next;
+        });
+    };
+
+    const badgeText = unreadCount > 9 ? '9+' : String(unreadCount);
 
     return (
         <nav className="user-navbar" style={{
@@ -86,6 +134,55 @@ const UserNavbar: React.FC = () => {
                     </form>
 
                     <div className="user-area" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                        <div ref={notificationsRef} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                            <button
+                                onClick={handleToggleNotifications}
+                                style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    color: '#9ab',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    padding: 0,
+                                    width: 24,
+                                    height: 24,
+                                    position: 'relative'
+                                }}
+                                aria-label="Abrir notificaciones"
+                            >
+                                <Bell size={18} strokeWidth={2} />
+                                {unreadCount > 0 && (
+                                    <span style={{
+                                        position: 'absolute',
+                                        top: 0,
+                                        right: 0,
+                                        width: 16,
+                                        height: 16,
+                                        borderRadius: '50%',
+                                        background: '#D4AF7A',
+                                        color: '#080808',
+                                        fontFamily: "'Syne', sans-serif",
+                                        fontSize: 9,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        lineHeight: 1,
+                                        transform: 'translate(35%, -35%)'
+                                    }}>
+                                        {badgeText}
+                                    </span>
+                                )}
+                            </button>
+
+                            {showNotifications && (
+                                <div style={{ position: 'absolute', top: '130%', right: 0 }}>
+                                    <Notificaciones open={showNotifications} showTrigger={false} />
+                                </div>
+                            )}
+                        </div>
+
                         <div className="user-profile" onClick={() => setShowUserMenu(!showUserMenu)} ref={menuRef} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', position: 'relative' }}>
                             <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="User" style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1px solid #456' }} />
                             <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#fff' }}>JJO64</span>

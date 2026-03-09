@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { notify } from '../lib/notify'
 
 const C = {
   bg: '#080808',
@@ -15,6 +16,7 @@ const SANS = "'Syne', sans-serif"
 const SERIF = "'Cormorant Garamond', serif"
 
 export default function VerifyEmailPage() {
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -55,6 +57,8 @@ export default function VerifyEmailPage() {
 
         if (!active) return
         setDone(true)
+        notify.emailVerified()
+        setTimeout(() => navigate('/'), 1500)
       } catch (err) {
         if (!active) return
         setError((err as Error).message || 'No se pudo verificar el correo')

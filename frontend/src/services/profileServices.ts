@@ -8,6 +8,7 @@ export type ProfileUser = {
   avatar_url?: string | null
   bio?: string | null
   created_at?: string
+  is_following?: boolean
   _count?: {
     reviews?: number
     diary_entries?: number
@@ -58,6 +59,14 @@ export type FollowUserEntry = {
   id: number
   username: string
   avatar_url?: string | null
+}
+
+export type SessionEntry = {
+  id: string
+  user_agent?: string | null
+  ip_address?: string | null
+  created_at: string
+  expires_at: string
 }
 
 type FetchOptions<T> = {
@@ -156,4 +165,86 @@ export const fetchFollowers = (userId: number) =>
 export const fetchFollowing = (userId: number) =>
   apiFetch<FollowUserEntry[]>(`/api/users/${userId}/following`, {
     defaultValue: [],
+  })
+
+export const followUser = async (targetUserId: number, token: string) =>
+  apiFetch<{ message: string }>(`/api/users/follow/${targetUserId}`, {
+    token,
+    method: 'POST',
+    defaultValue: { message: '' },
+  })
+
+export const unfollowUser = async (targetUserId: number, token: string) =>
+  apiFetch<{ message: string }>(`/api/users/unfollow/${targetUserId}`, {
+    token,
+    method: 'DELETE',
+    defaultValue: { message: '' },
+  })
+
+export const checkUsernameAvailability = async (username: string) => {
+  const candidate = username.trim()
+  if (!candidate) return { available: false }
+
+  try {
+    const response = await fetch(`${API_URL}/api/users/username/${encodeURIComponent(candidate)}`)
+    if (response.status === 404) return { available: true }
+    if (!response.ok) throw new Error('No se pudo validar username')
+    return { available: false }
+  } catch (error) {
+    throw error
+  }
+}
+
+export const updateProfileSettings = (token: string, body: { username?: string; email?: string; bio?: string }) =>
+  apiFetch<{ message: string }>('/api/settings', {
+    token,
+    method: 'PATCH',
+    body,
+    defaultValue: { message: '' },
+  })
+
+export const updateAvatarSettings = (token: string, avatar: string) =>
+  apiFetch<{ message: string; avatar_url?: string }>('/api/settings/avatar', {
+    token,
+    method: 'PATCH',
+    body: { avatar },
+    defaultValue: { message: '' },
+  })
+
+export const updateAuthSettings = (
+  token: string,
+  body: { password_actual: string; password_nueva: string; password_confirmacion: string }
+) =>
+  apiFetch<{ message: string }>('/api/settings/auth', {
+    token,
+    method: 'PATCH',
+    body,
+    defaultValue: { message: '' },
+  })
+
+export const deleteAccountSettings = (token: string) =>
+  apiFetch<{ message: string }>('/api/settings', {
+    token,
+    method: 'DELETE',
+    defaultValue: { message: '' },
+  })
+
+export const fetchAuthSessions = (token: string) =>
+  apiFetch<{ sessions: SessionEntry[] }>('/api/auth/sessions', {
+    token,
+    defaultValue: { sessions: [] },
+  })
+
+export const revokeAuthSession = (token: string, sessionId: string) =>
+  apiFetch<{ message: string }>(`/api/auth/sessions/${sessionId}`, {
+    token,
+    method: 'DELETE',
+    defaultValue: { message: '' },
+  })
+
+export const revokeAllAuthSessions = (token: string) =>
+  apiFetch<{ message: string }>('/api/auth/revocar-sesiones', {
+    token,
+    method: 'POST',
+    defaultValue: { message: '' },
   })

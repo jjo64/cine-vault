@@ -42,8 +42,8 @@ export const actualizarPerfilService = async (
   }
 
   if (datos.bio !== undefined) {
-    if (typeof datos.bio !== "string" || datos.bio.length > 160) {
-      throw new ValidationError("La bio es inválida (máximo 160 caracteres)")
+    if (typeof datos.bio !== "string" || datos.bio.length > 280) {
+      throw new ValidationError("La bio es inválida (máximo 280 caracteres)")
     }
     datosActualizar.bio = datos.bio
   }
@@ -132,7 +132,10 @@ export const obtenerUsuariosService = async () => {
  * Devuelve solo _count de relaciones (reviews, diary, watchlist) en vez de los datos completos
  * para evitar devolver miles de registros sin límite.
  */
-export const obtenerUsuarioPorIdService = async (id: number) => {
+export const obtenerUsuarioPorIdService = async (
+  id: number,
+  viewerId: number | null = null
+) => {
   const usuario = await prisma.users.findUnique({
     where: { id },
     select: {
@@ -153,7 +156,28 @@ export const obtenerUsuarioPorIdService = async (id: number) => {
     },
   })
   if (!usuario) throw new NotFoundError("Usuario no encontrado")
-  return usuario
+
+  if (!viewerId || viewerId === id) {
+    return {
+      ...usuario,
+      is_following: false,
+    }
+  }
+
+  const relacion = await prisma.follows.findUnique({
+    where: {
+      follower_id_following_id: {
+        follower_id: viewerId,
+        following_id: id,
+      },
+    },
+    select: { follower_id: true },
+  })
+
+  return {
+    ...usuario,
+    is_following: Boolean(relacion),
+  }
 }
 
 /**

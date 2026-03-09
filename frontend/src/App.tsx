@@ -8,6 +8,8 @@ import './App.css'
 const Home = lazy(() => import('./pages/Home'))
 const MovieDetail = lazy(() => import('./pages/MovieDetail'))
 const SearchResults = lazy(() => import('./pages/SearchResults'))
+const PersonPage = lazy(() => import('./pages/PersonPage.tsx'))
+const SettingsPage = lazy(() => import('./pages/Settings.tsx'))
 const Profile = lazy(() => import('./pages/Profile'))
 const ProfileIndexPage = lazy(() => import('./pages/ProfileIndex'))
 const VerifyEmailPage = lazy(() => import('./pages/VerifyEmail'))
@@ -35,6 +37,9 @@ function App() {
             <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/movie/:slugOrId" element={<MovieDetail />} />
+                <Route path="/person/:id" element={<PersonPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/search" element={<SearchResults />} />
                 <Route path="/search-results" element={<SearchResults />} />
                 <Route path="/search/:query" element={<SearchResults />} />
                 <Route path="/profile" element={<ProfileIndexPage />} />

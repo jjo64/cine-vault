@@ -99,9 +99,19 @@ export const getPersonSearch = async (req: Request, res: Response) => {
 
 export const getMovieSearch = async (req: Request, res: Response) => {
   await assertNotRateLimited(req.ip!)
+  const withGenres = req.query.with_genres as string | undefined
   const datos = await consultarTMDB("search/movie", {
     query: req.query.q as string,
     ...(req.query.page && { page: req.query.page as string }),
+    ...(withGenres && { with_genres: withGenres }),
+  })
+  res.status(200).json(datos)
+}
+
+export const getMovieGenres = async (req: Request, res: Response) => {
+  await assertNotRateLimited(req.ip!)
+  const datos = await consultarTMDB("genre/movie/list", {
+    language: (req.query.language as string) || "es-ES",
   })
   res.status(200).json(datos)
 }

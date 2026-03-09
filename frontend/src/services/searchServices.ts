@@ -3,9 +3,15 @@ const API_URL = import.meta.env.VITE_API_URL
 export type SearchMovieResult = {
   id: number
   title: string
+  name?: string
+  media_type?: 'movie' | 'tv' | 'person'
   original_title?: string
+  original_name?: string
   release_date?: string
+  first_air_date?: string
   poster_path?: string | null
+  profile_path?: string | null
+  known_for_department?: string
   director?: string
   overview?: string
 }
@@ -17,10 +23,62 @@ export type SearchResponse = {
   results?: SearchMovieResult[]
 }
 
-export async function searchMovies(query: string, page = 1): Promise<SearchResponse> {
-  const response = await fetch(`${API_URL}/api/search?q=${encodeURIComponent(query)}&page=${page}`)
+export type GenreItem = {
+  id: number
+  name: string
+}
+
+type SearchScope = 'general' | 'multi' | 'movie' | 'person' | 'tv'
+
+const scopePath: Record<SearchScope, string> = {
+  general: '/api/search',
+  multi: '/api/search/multi',
+  movie: '/api/search/movie',
+  person: '/api/search/person',
+  tv: '/api/search/tv',
+}
+
+type SearchParams = {
+  query: string
+  page?: number
+  withGenres?: number[]
+}
+
+async function runSearch(scope: SearchScope, params: SearchParams): Promise<SearchResponse> {
+  const query = params.query.trim()
+  if (!query) return { page: 1, total_pages: 1, total_results: 0, results: [] }
+
+  const search = new URLSearchParams()
+  search.set('q', query)
+  search.set('page', String(params.page || 1))
+
+  if (scope === 'movie' && params.withGenres && params.withGenres.length > 0) {
+    search.set('with_genres', params.withGenres.join(','))
+  }
+
+  const response = await fetch(`${API_URL}${scopePath[scope]}?${search.toString()}`)
   if (!response.ok) {
     throw new Error(`Error ${response.status}`)
   }
   return (await response.json()) as SearchResponse
+}
+
+export async function searchMovies(query: string, page = 1): Promise<SearchResponse> {
+  return runSearch('general', { query, page })
+}
+
+export const searchMulti = (query: string, page = 1) => runSearch('multi', { query, page })
+
+export const searchMovie = (query: string, page = 1, withGenres: number[] = []) =>
+  runSearch('movie', { query, page, withGenres })
+
+export const searchPerson = (query: string, page = 1) => runSearch('person', { query, page })
+
+export const searchTV = (query: string, page = 1) => runSearch('tv', { query, page })
+
+export async function fetchMovieGenres(): Promise<GenreItem[]> {
+  const response = await fetch(`${API_URL}/api/search/genres/movie`)
+  if (!response.ok) return []
+  const data = (await response.json()) as { genres?: GenreItem[] }
+  return Array.isArray(data.genres) ? data.genres : []
 }

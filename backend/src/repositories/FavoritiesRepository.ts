@@ -13,7 +13,9 @@ import type { AgregarFavoritoDTO } from "../schemas/favorites.js"
 export interface IFavoritiesRepository {
   findByUserId(
     userId: number
-  ): Promise<Pick<favorites, "movie_id" | "rank_position">[]>
+  ): Promise<
+    Array<{ movie_id: number; rank_position: number | null; tmdb_id: number | null }>
+  >
   findFirst(userId: number, movieId: number): Promise<favorites | null>
   create(userId: number, data: AgregarFavoritoDTO): Promise<favorites>
   delete(id: number): Promise<void>
@@ -21,10 +23,22 @@ export interface IFavoritiesRepository {
 
 export class FavoritiesRepository implements IFavoritiesRepository {
   async findByUserId(userId: number) {
-    return prisma.favorites.findMany({
+    const rows = await prisma.favorites.findMany({
       where: { user_id: userId },
-      select: { movie_id: true, rank_position: true },
+      select: {
+        movie_id: true,
+        rank_position: true,
+        movies_ref: {
+          select: { tmdb_id: true },
+        },
+      },
     })
+
+    return rows.map((row) => ({
+      movie_id: row.movie_id,
+      rank_position: row.rank_position,
+      tmdb_id: row.movies_ref?.tmdb_id ?? null,
+    }))
   }
 
   async findFirst(userId: number, movieId: number) {

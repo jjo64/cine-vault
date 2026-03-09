@@ -3,6 +3,20 @@ import type { ReactNode } from "react"
 import { io } from "socket.io-client"
 import { authorizedFetch, clearStoredAccessToken, getStoredAccessToken } from "../services/authServices"
 
+export const socket = io(import.meta.env.VITE_API_URL, {
+  withCredentials: true,
+  autoConnect: false,
+})
+
+export const conectarSocket = (token: string) => {
+  socket.auth = { token }
+  socket.connect()
+}
+
+export const desconectarSocket = () => {
+  socket.disconnect()
+}
+
 interface Notificacion {
   id: number
   user_id: number
@@ -39,7 +53,6 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
   }
 
   useEffect(() => {
-    let socketInstance: ReturnType<typeof io> | null = null
     let active = true
 
     const start = async () => {
@@ -57,15 +70,13 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       }
 
       try {
-        socketInstance = io(import.meta.env.VITE_API_URL, {
-          withCredentials: true,
+        conectarSocket(token)
+
+        socket.on("connect", () => {
+          socket.emit("registrar_usuario", userId)
         })
 
-        socketInstance.on("connect", () => {
-          socketInstance?.emit("registrar_usuario", userId)
-        })
-
-        socketInstance.on("nueva_notificacion", (notificacion: Notificacion) => {
+        socket.on("nueva_notificacion", (notificacion: Notificacion) => {
           setNotificaciones((prev) => [notificacion, ...prev])
         })
 
@@ -86,7 +97,9 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
 
     return () => {
       active = false
-      socketInstance?.disconnect()
+      socket.off("connect")
+      socket.off("nueva_notificacion")
+      desconectarSocket()
     }
   }, [])
 

@@ -9,7 +9,7 @@ type SeoConfig = {
   description: string
 }
 
-const RESERVED_PATHS = new Set(['movie', 'search-results', 'search', 'profile'])
+const RESERVED_PATHS = new Set(['movie', 'search-results', 'search', 'profile', 'settings', 'person'])
 
 function getSeoConfig(pathname: string): SeoConfig {
   if (pathname === '/') {
@@ -28,7 +28,7 @@ function getSeoConfig(pathname: string): SeoConfig {
     }
   }
 
-  if (pathname === '/search-results' || pathname.startsWith('/search/')) {
+  if (pathname === '/search' || pathname === '/search-results' || pathname.startsWith('/search/')) {
     return {
       title: 'Buscar peliculas | Cinevault',
       description:
@@ -41,6 +41,22 @@ function getSeoConfig(pathname: string): SeoConfig {
       title: 'Tu perfil | Cinevault',
       description:
         'Gestiona tu perfil, tu actividad y tu historial de peliculas dentro de Cinevault.',
+    }
+  }
+
+  if (pathname === '/settings') {
+    return {
+      title: 'Ajustes | Cinevault',
+      description:
+        'Configura tu perfil, seguridad, sesiones y preferencias de cuenta en Cinevault.',
+    }
+  }
+
+  if (pathname.startsWith('/person/')) {
+    return {
+      title: 'Biografía | Cinevault',
+      description:
+        'Descubre la biografía y filmografía de actores, directores y crew dentro de Cinevault.',
     }
   }
 

@@ -77,3 +77,7 @@ body::before {
   background: var(--color-accent);
   color: var(--color-bg);
 }
+
+[data-sonner-toast][data-type='success'] { border-left: 3px solid #D4AF7A; }
+[data-sonner-toast][data-type='error']   { border-left: 3px solid #8B3A3A; }
+[data-sonner-toast][data-type='info']    { border-left: 3px solid #252525; }

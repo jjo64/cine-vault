@@ -19,7 +19,7 @@ export const actualizarPerfilSchema = z
     email: z.string().email("El email no tiene un formato válido").optional(),
     bio: z
       .string()
-      .max(300, "La bio no puede superar 300 caracteres")
+      .max(280, "La bio no puede superar 280 caracteres")
       .optional(),
   })
   .refine(
