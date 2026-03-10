@@ -4,7 +4,8 @@ import { motion, useScroll, useTransform } from 'motion/react'
 import { Search, ChevronRight, Star, Users, BookOpen, Layers, ArrowRight, Film, Sparkles, Lock, Clapperboard, Menu, X } from 'lucide-react'
 import InfiniteSlider from './InfiniteSlider'
 import { createSlug } from '../utils/stringUtils'
-import { getCurrentUser, getStoredAccessToken, logoutCurrentUser } from '../services/authServices'
+import { getCurrentUser, logoutCurrentUser } from '../services/authServices'
+import { resolveNavPathWithFallback } from '../lib/navigation'
 
 const C = {
   bg: '#080808',
@@ -237,27 +238,17 @@ function Navbar({ isMobile, isTablet }: { isMobile: boolean; isTablet: boolean }
     useEffect(() => {
       let alive = true
 
-      const initialToken = getStoredAccessToken()
-      if (!initialToken) {
-        setViewerUsername(null)
-      } else {
-        getCurrentUser()
-          .then((user) => {
-            if (!alive) return
-            setViewerUsername(user.username)
-          })
-          .catch(() => {
-            if (!alive) return
-            setViewerUsername(null)
-          })
-      }
+      getCurrentUser()
+        .then((user) => {
+          if (!alive) return
+          setViewerUsername(user.username)
+        })
+        .catch(() => {
+          if (!alive) return
+          setViewerUsername(null)
+        })
 
       const onAuthChange = () => {
-        if (!getStoredAccessToken()) {
-          setViewerUsername(null)
-          return
-        }
-
         getCurrentUser()
           .then((user) => setViewerUsername(user.username))
           .catch(() => setViewerUsername(null))
@@ -362,7 +353,12 @@ function Navbar({ isMobile, isTablet }: { isMobile: boolean; isTablet: boolean }
                 {link}
               </button>
             ) : (
-              <span style={{ fontFamily: SANS, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.text, textDecoration: 'none' }}>{link}</span>
+              <button
+                onClick={() => navigate(resolveNavPathWithFallback(link))}
+                style={{ fontFamily: SANS, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.text, textDecoration: 'none', border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}
+              >
+                {link}
+              </button>
             )}
           </li>
         ))}
@@ -546,6 +542,8 @@ function Navbar({ isMobile, isTablet }: { isMobile: boolean; isTablet: boolean }
                           detail: { mode: link === 'Create account' ? 'register' : 'login' },
                         })
                       )
+                    } else {
+                      navigate(resolveNavPathWithFallback(link))
                     }
                     setMenuOpen(false)
                   }}

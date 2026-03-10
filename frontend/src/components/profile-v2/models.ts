@@ -32,13 +32,12 @@ export type VaultMockItem = {
   img: string
 }
 
-export type UserListMock = {
+export type UserListSummaryItem = {
   id: number
-  title: string
-  count: number
-  visibility: 'public' | 'private'
-  desc: string
-  covers: string[]
+  name: string
+  itemsCount: number
+  isPublic: boolean
+  description: string | null
 }
 
 export type ProfileHeaderData = {

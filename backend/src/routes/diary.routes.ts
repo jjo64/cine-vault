@@ -146,4 +146,10 @@ router.post(
   manejadorAsincrono(createDiary)
 ) // crear diario
 
+router.delete(
+  "/:id",
+  middlewareAutenticacion,
+  manejadorAsincrono(removeDiary)
+) // eliminar entrada por id
+
 export default router

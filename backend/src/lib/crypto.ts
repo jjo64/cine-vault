@@ -2,7 +2,17 @@ import crypto from "crypto"
 import * as OTPAuth from "otpauth"
 import bcrypt from "bcrypt"
 
-const ENCRYPTION_KEY = process.env.TWO_FACTOR_ENCRYPTION_KEY! // 32 chars
+const RAW_ENCRYPTION_KEY = process.env.TWO_FACTOR_ENCRYPTION_KEY || ""
+
+if (!RAW_ENCRYPTION_KEY) {
+  throw new Error("TWO_FACTOR_ENCRYPTION_KEY no está configurada")
+}
+
+// Always derive a valid 32-byte key for AES-256, even if env length varies.
+const ENCRYPTION_KEY = crypto
+  .createHash("sha256")
+  .update(RAW_ENCRYPTION_KEY)
+  .digest()
 const IV_LENGTH = 16
 
 /* ==========================================================================
@@ -50,11 +60,29 @@ export const encriptarSecreto = (texto: string) => {
  * Desencripta el secreto TOTP almacenado en DB.
  */
 export const desencriptarSecreto = (texto: string) => {
+  if (!texto || typeof texto !== "string") {
+    throw new Error("Formato de secreto 2FA inválido")
+  }
+
+  // Backward compatibility: if a legacy plain secret exists, use it directly.
+  if (!texto.includes(":")) {
+    return texto
+  }
+
   const [iv, encriptado] = texto.split(":")
+  if (!iv || !encriptado || iv.length !== IV_LENGTH * 2) {
+    throw new Error("Formato de secreto 2FA inválido")
+  }
+
+  const ivBuffer = Buffer.from(iv, "hex")
+  if (ivBuffer.length !== IV_LENGTH) {
+    throw new Error("Formato de secreto 2FA inválido")
+  }
+
   const decipher = crypto.createDecipheriv(
     "aes-256-cbc",
     ENCRYPTION_KEY,
-    Buffer.from(iv, "hex")
+    ivBuffer
   )
   return Buffer.concat([
     decipher.update(Buffer.from(encriptado, "hex")),

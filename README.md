@@ -38,6 +38,10 @@ Plataforma social para descubrir, reseñar y gestionar películas. Backend en No
 - `RESEND_API_KEY`, `RESEND_FROM`
 - `CLOUDINARY_URL`
 
+### Variables de entorno clave (frontend)
+- `VITE_API_URL`
+- `VITE_AUTH_STORAGE_MODE` (`hybrid` por defecto, `cookie-only` para desactivar persistencia en `localStorage` y operar cookie-first)
+
 ### Scripts útiles
 - `npm run dev` / `npm run build` / `npm start`
 - `npm run test` / `npm run test:coverage`

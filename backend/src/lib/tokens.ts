@@ -14,9 +14,23 @@ const DIAS_EXPIRACION_TOKEN_REFRESCO = 7
 
 export const COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: true,
-  sameSite: "strict" as const,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax" as const,
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días en ms
+}
+
+export const ACCESS_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax" as const,
+  maxAge: 15 * 60 * 1000,
+}
+
+export const TRUSTED_DEVICE_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax" as const,
+  maxAge: 30 * 24 * 60 * 60 * 1000,
 }
 
 /* ==========================================================================

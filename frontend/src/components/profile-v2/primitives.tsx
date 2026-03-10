@@ -28,14 +28,28 @@ export function Img({ src, alt, style, ...rest }: ImgHTMLAttributes<HTMLImageEle
   return <img src={src} alt={alt} style={style} onError={() => setError(true)} {...rest} />
 }
 
-export function Stars({ rating, max = 5, size = 12 }: { rating: number; max?: number; size?: number }) {
+export function Stars({ rating, max = 5, size = 13 }: { rating: number; max?: number; size?: number }) {
+  const parsedRating = typeof rating === 'number' ? rating : Number(rating)
+  const safeRating = Number.isFinite(parsedRating) ? Math.max(0, Math.min(max, parsedRating)) : 0
   return (
     <div style={{ display: 'flex', gap: 2 }}>
-      {Array.from({ length: max }).map((_, index) => (
-        <svg key={index} width={size} height={size} viewBox="0 0 12 12" fill={index < rating ? C.gold : C.textMuted}>
-          <path d="M6 1l1.3 2.6L10 4l-2 2 .5 2.8L6 7.5 3.5 8.8 4 6 2 4l2.7-.4z" />
-        </svg>
-      ))}
+      {Array.from({ length: max }).map((_, index) => {
+        const fill = Math.max(0, Math.min(1, safeRating - index))
+        return (
+          <div key={index} style={{ position: 'relative', width: size, height: size }}>
+            <svg width={size} height={size} viewBox="0 0 12 12" fill={C.textMuted} style={{ display: 'block' }}>
+              <path d="M6 1l1.3 2.6L10 4l-2 2 .5 2.8L6 7.5 3.5 8.8 4 6 2 4l2.7-.4z" />
+            </svg>
+            {fill > 0 && (
+              <div style={{ position: 'absolute', inset: 0, width: `${fill * 100}%`, overflow: 'hidden' }}>
+                <svg width={size} height={size} viewBox="0 0 12 12" fill={C.gold} style={{ display: 'block' }}>
+                  <path d="M6 1l1.3 2.6L10 4l-2 2 .5 2.8L6 7.5 3.5 8.8 4 6 2 4l2.7-.4z" />
+                </svg>
+              </div>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }

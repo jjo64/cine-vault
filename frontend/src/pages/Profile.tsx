@@ -8,8 +8,7 @@ import { HistoryPanel, ListsPanel, OverviewPanel, ProfileSidebar, ReviewsPanel, 
 import { C, SANS } from '../components/profile-v2/theme'
 import { useProfilePageData } from '../hooks/useProfilePageData'
 import { useResponsive } from '../hooks/useResponsive'
-import { fetchUserProfileByUsername, followUser, unfollowUser } from '../services/profileServices'
-import { getStoredAccessToken } from '../services/authServices'
+import { followUser, unfollowUser } from '../services/profileServices'
 
 export default function ProfilePage() {
   const navigate = useNavigate()
@@ -27,13 +26,15 @@ export default function ProfilePage() {
     isOwnProfile,
     hasTargetProfile,
     isPublicProfile,
+    targetUserId,
+    initialIsFollowing,
     recentlyWatched,
     watchlistFilms,
     reviewItems,
+    userLists,
   } = useProfilePageData(username)
   const [isFollowing, setIsFollowing] = useState(false)
   const [followBusy, setFollowBusy] = useState(false)
-  const [targetUserId, setTargetUserId] = useState<number | null>(null)
   const [statsOverride, setStatsOverride] = useState<{ followers?: number; following?: number }>({})
 
   const searchFromNavbar = (query: string) => {
@@ -47,30 +48,12 @@ export default function ProfilePage() {
   }, [stats.followers, stats.following])
 
   useEffect(() => {
-    if (!username || !isPublicProfile) {
-      setTargetUserId(null)
+    if (!isPublicProfile) {
       setIsFollowing(false)
       return
     }
-
-    let active = true
-    const token = getStoredAccessToken()
-
-    fetchUserProfileByUsername(username, token)
-      .then((profile) => {
-        if (!active || !profile) return
-        setTargetUserId(profile.id)
-        setIsFollowing(Boolean(profile.is_following))
-      })
-      .catch(() => {
-        if (!active) return
-        setTargetUserId(null)
-      })
-
-    return () => {
-      active = false
-    }
-  }, [username, isPublicProfile])
+    setIsFollowing(initialIsFollowing)
+  }, [initialIsFollowing, isPublicProfile, targetUserId])
 
   const displayStats = useMemo(
     () => ({
@@ -82,8 +65,7 @@ export default function ProfilePage() {
   )
 
   const handleToggleFollow = async () => {
-    const token = getStoredAccessToken()
-    if (!token || !targetUserId || followBusy) return
+    if (!targetUserId || followBusy) return
 
     const previousFollowing = isFollowing
     const previousFollowers = displayStats.followers
@@ -96,9 +78,9 @@ export default function ProfilePage() {
 
     try {
       if (previousFollowing) {
-        await unfollowUser(targetUserId, token)
+        await unfollowUser(targetUserId)
       } else {
-        await followUser(targetUserId, token)
+        await followUser(targetUserId)
       }
     } catch {
       setIsFollowing(previousFollowing)
@@ -125,7 +107,7 @@ export default function ProfilePage() {
     Vault: <VaultPanel isMobile={isMobile} isTablet={isTablet} />,
     Watchlist: <WatchlistPanel watchlistFilms={watchlistFilms} isMobile={isMobile} />,
     Reseñas: <ReviewsPanel reviewItems={reviewItems} isMobile={isMobile} />,
-    Listas: <ListsPanel isMobile={isMobile} />,
+    Listas: <ListsPanel isMobile={isMobile} userLists={userLists} />,
   }
 
   return (

@@ -77,6 +77,14 @@ test('logged-in home renders activity dashboard', async ({ page }) => {
     localStorage.setItem('token', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxfQ.signature')
   })
 
+  await page.route('**/api/auth/refresh', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ accessToken: 'refreshed-token' }),
+    })
+  })
+
   await page.route('**/api/auth/verify', async (route) => {
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 1, username: 'josue' }) })
   })

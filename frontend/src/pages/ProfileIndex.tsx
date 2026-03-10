@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
-import { getCurrentUser } from '../services/authServices'
+import { getCurrentUser, getStoredAccessToken } from '../services/authServices'
 import NotFoundPage from './NotFound'
 
 export default function ProfileIndexPage() {
@@ -19,7 +19,7 @@ export default function ProfileIndexPage() {
         setStatus('authorized')
       } catch {
         if (!alive) return
-        const hasToken = Boolean(localStorage.getItem('token'))
+        const hasToken = Boolean(getStoredAccessToken())
         if (hasToken && retries < 3) {
           retries += 1
           window.setTimeout(load, 250)

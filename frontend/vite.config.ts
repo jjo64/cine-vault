@@ -8,6 +8,12 @@ export default defineConfig({
   server: {
     port: 5000,
     strictPort: true, // Para que falle si el puerto 5000 está ocupado en lugar de usar otro
+    proxy: {
+      '/api': {
+        target: 'http://localhost:4000',
+        changeOrigin: true,
+      },
+    },
   },
   resolve: {
     alias: {

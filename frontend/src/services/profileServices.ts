@@ -88,7 +88,7 @@ async function apiFetch<T>(path: string, options: FetchOptions<T>): Promise<T> {
     ...(options.body ? { body: JSON.stringify(options.body) } : {}),
   }
 
-  const response = options.token
+  const response = options.token !== undefined
     ? await authorizedFetch(path, requestInit)
     : await fetch(`${API_URL}${path}`, requestInit)
 
@@ -109,8 +109,6 @@ async function apiFetch<T>(path: string, options: FetchOptions<T>): Promise<T> {
 
 export async function resolveViewerId(): Promise<{ userId: number | null; username: string | null; token: string | null }> {
   const token = getStoredAccessToken()
-  if (!token) return { userId: null, username: null, token: null }
-
   try {
     const user = await getCurrentUser()
     return { userId: user.id, username: user.username, token }
@@ -167,14 +165,14 @@ export const fetchFollowing = (userId: number) =>
     defaultValue: [],
   })
 
-export const followUser = async (targetUserId: number, token: string) =>
+export const followUser = async (targetUserId: number, token?: string | null) =>
   apiFetch<{ message: string }>(`/api/users/follow/${targetUserId}`, {
     token,
     method: 'POST',
     defaultValue: { message: '' },
   })
 
-export const unfollowUser = async (targetUserId: number, token: string) =>
+export const unfollowUser = async (targetUserId: number, token?: string | null) =>
   apiFetch<{ message: string }>(`/api/users/unfollow/${targetUserId}`, {
     token,
     method: 'DELETE',
@@ -195,7 +193,7 @@ export const checkUsernameAvailability = async (username: string) => {
   }
 }
 
-export const updateProfileSettings = (token: string, body: { username?: string; email?: string; bio?: string }) =>
+export const updateProfileSettings = (token: string | null | undefined, body: { username?: string; email?: string; bio?: string }) =>
   apiFetch<{ message: string }>('/api/settings', {
     token,
     method: 'PATCH',
@@ -203,7 +201,7 @@ export const updateProfileSettings = (token: string, body: { username?: string; 
     defaultValue: { message: '' },
   })
 
-export const updateAvatarSettings = (token: string, avatar: string) =>
+export const updateAvatarSettings = (token: string | null | undefined, avatar: string) =>
   apiFetch<{ message: string; avatar_url?: string }>('/api/settings/avatar', {
     token,
     method: 'PATCH',
@@ -212,7 +210,7 @@ export const updateAvatarSettings = (token: string, avatar: string) =>
   })
 
 export const updateAuthSettings = (
-  token: string,
+  token: string | null | undefined,
   body: { password_actual: string; password_nueva: string; password_confirmacion: string }
 ) =>
   apiFetch<{ message: string }>('/api/settings/auth', {
@@ -222,27 +220,27 @@ export const updateAuthSettings = (
     defaultValue: { message: '' },
   })
 
-export const deleteAccountSettings = (token: string) =>
+export const deleteAccountSettings = (token: string | null | undefined) =>
   apiFetch<{ message: string }>('/api/settings', {
     token,
     method: 'DELETE',
     defaultValue: { message: '' },
   })
 
-export const fetchAuthSessions = (token: string) =>
+export const fetchAuthSessions = (token: string | null | undefined) =>
   apiFetch<{ sessions: SessionEntry[] }>('/api/auth/sessions', {
     token,
     defaultValue: { sessions: [] },
   })
 
-export const revokeAuthSession = (token: string, sessionId: string) =>
+export const revokeAuthSession = (token: string | null | undefined, sessionId: string) =>
   apiFetch<{ message: string }>(`/api/auth/sessions/${sessionId}`, {
     token,
     method: 'DELETE',
     defaultValue: { message: '' },
   })
 
-export const revokeAllAuthSessions = (token: string) =>
+export const revokeAllAuthSessions = (token: string | null | undefined) =>
   apiFetch<{ message: string }>('/api/auth/revocar-sesiones', {
     token,
     method: 'POST',

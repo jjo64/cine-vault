@@ -14,6 +14,7 @@ import rutasUsuarios from "./routes/users.routes.js"
 import rutasPeliculas from "./routes/movies.routes.js"
 import rutasDiario from "./routes/diary.routes.js"
 import rutasWatchlist from "./routes/watchlist.routes.js"
+import rutasListas from "./routes/lists.routes.js"
 import rutasResenas from "./routes/reviews.routes.js"
 import rutasBusqueda from "./routes/search.routes.js"
 import rutasPagos from "./routes/payments.routes.js"
@@ -123,6 +124,7 @@ app.use("/api/movies", rutasPeliculas)
 app.use("/api/search", rutasBusqueda)
 app.use("/api/diary", rutasDiario)
 app.use("/api/watchlist", rutasWatchlist)
+app.use("/api/lists", rutasListas)
 app.use("/api/reviews", rutasResenas)
 app.use("/api/payments", rutasPagos)
 app.use("/api/rbac", rutasRbac)

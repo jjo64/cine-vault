@@ -1,5 +1,9 @@
 import { Request, Response } from "express"
-import { COOKIE_OPTIONS } from "../lib/tokens.js"
+import {
+  ACCESS_COOKIE_OPTIONS,
+  COOKIE_OPTIONS,
+  TRUSTED_DEVICE_COOKIE_OPTIONS,
+} from "../lib/tokens.js"
 import * as authService from "../services/auth.services.js"
 import { UnauthorizedError, ValidationError } from "../errors/AppErrors.js"
 
@@ -14,7 +18,10 @@ import { UnauthorizedError, ValidationError } from "../errors/AppErrors.js"
 
 export const iniciarSesion = async (req: Request, res: Response) => {
   const { username, password } = req.body
-  const resultado = await authService.iniciarSesionService(username, password)
+  const resultado = await authService.iniciarSesionService(username, password, {
+    trustedDeviceToken: req.cookies?.trusted_device,
+    userAgent: req.get("user-agent") || "",
+  })
 
   if (resultado.type === "2FA_REQUIRED") {
     return res.json({
@@ -24,6 +31,7 @@ export const iniciarSesion = async (req: Request, res: Response) => {
   }
 
   res.cookie("refresh_token", resultado.tokenRefresco, COOKIE_OPTIONS)
+  res.cookie("access_token", resultado.tokenAcceso, ACCESS_COOKIE_OPTIONS)
   res.json({ accessToken: resultado.tokenAcceso })
 }
 
@@ -75,12 +83,15 @@ export const renovarToken = async (req: Request, res: Response) => {
   const { accessToken, refreshToken } =
     await authService.renovarTokenService(token)
   res.cookie("refresh_token", refreshToken, COOKIE_OPTIONS)
+  res.cookie("access_token", accessToken, ACCESS_COOKIE_OPTIONS)
   res.json({ accessToken })
 }
 
 export const cerrarSesion = async (req: Request, res: Response) => {
   await authService.cerrarSesionService(req.cookies.refresh_token)
   res.clearCookie("refresh_token")
+  res.clearCookie("access_token")
+  res.clearCookie("trusted_device")
   res.json({ message: "Sesión cerrada exitosamente" })
 }
 
@@ -97,12 +108,7 @@ export const controladorCallback = async (req: Request, res: Response) => {
     await authService.googleCallbackService(usuarioPassport)
 
   res.cookie("refresh_token", tokenRefresco, COOKIE_OPTIONS)
-  res.cookie("access_token", tokenAcceso, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    maxAge: 60 * 1000,
-    sameSite: "lax",
-  })
+  res.cookie("access_token", tokenAcceso, ACCESS_COOKIE_OPTIONS)
 
   res.redirect(`${process.env.FRONTEND_URL}/auth/callback`)
 }
@@ -114,19 +120,42 @@ export const activar2FA = async (req: Request, res: Response) => {
 
 export const confirmar2FA = async (req: Request, res: Response) => {
   const { codigo } = req.body
-  await authService.confirmar2FAService(req.user!.user_id, codigo)
-  res.json({ message: "2FA activado correctamente" })
+  const { recoveryCodes } = await authService.confirmar2FAService(
+    req.user!.user_id,
+    codigo
+  )
+  res.json({ message: "2FA activado correctamente", recoveryCodes })
 }
 
 export const verificar2FA = async (req: Request, res: Response) => {
-  const { codigo, tokenTemporal } = req.body
-  const { tokenAcceso, tokenRefresco } = await authService.verificar2FAService(
+  const { codigo, tokenTemporal, rememberDevice } = req.body
+  const {
+    tokenAcceso,
+    tokenRefresco,
+    trustedDeviceToken,
+    usedRecoveryCode,
+    remainingRecoveryCodes,
+  } = await authService.verificar2FAService(
     codigo,
-    tokenTemporal
+    tokenTemporal,
+    Boolean(rememberDevice),
+    req.get("user-agent") || ""
   )
 
   res.cookie("refresh_token", tokenRefresco, COOKIE_OPTIONS)
-  res.json({ accessToken: tokenAcceso })
+  res.cookie("access_token", tokenAcceso, ACCESS_COOKIE_OPTIONS)
+  if (trustedDeviceToken) {
+    res.cookie(
+      "trusted_device",
+      trustedDeviceToken,
+      TRUSTED_DEVICE_COOKIE_OPTIONS
+    )
+  }
+  res.json({
+    accessToken: tokenAcceso,
+    usedRecoveryCode,
+    remainingRecoveryCodes,
+  })
 }
 
 export const olvidarContrasena = async (req: Request, res: Response) => {
@@ -144,6 +173,7 @@ export const resetearContrasena = async (req: Request, res: Response) => {
 export const desactivar2FA = async (req: Request, res: Response) => {
   const { codigo } = req.body
   await authService.desactivar2FAService(req.user!.user_id, codigo)
+  res.clearCookie("trusted_device")
   res.json({ message: "2FA desactivado correctamente" })
 }
 
@@ -161,7 +191,23 @@ export const cambiarContrasena = async (req: Request, res: Response) => {
 export const revocarSesiones = async (req: Request, res: Response) => {
   await authService.revocarSesionesService(req.user!.user_id)
   res.clearCookie("refresh_token")
+  res.clearCookie("access_token")
+  res.clearCookie("trusted_device")
   res.json({ message: "Todas las sesiones han sido cerradas" })
+}
+
+export const recoveryCodesStatus = async (req: Request, res: Response) => {
+  const status = await authService.recoveryCodesStatusService(req.user!.user_id)
+  res.json(status)
+}
+
+export const regenerarRecoveryCodes = async (req: Request, res: Response) => {
+  const { codigo } = req.body
+  const result = await authService.regenerarRecoveryCodesService(
+    req.user!.user_id,
+    codigo
+  )
+  res.json(result)
 }
 
 export const listarSesiones = async (req: Request, res: Response) => {

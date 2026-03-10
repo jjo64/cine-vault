@@ -9,8 +9,9 @@ import {
   fetchWatchlist,
   resolveViewerId,
 } from '../services/profileServices'
+import { getMyLists } from '../services/listsServices'
 import { IMG } from '../components/profile-v2/assets'
-import type { EnrichedMovie, ProfileConnection, ProfileHeaderData, ProfileStatsData, RecentlyWatchedItem, ReviewItem, WatchlistItem } from '../components/profile-v2/models'
+import type { EnrichedMovie, ProfileConnection, ProfileHeaderData, ProfileStatsData, RecentlyWatchedItem, ReviewItem, UserListSummaryItem, WatchlistItem } from '../components/profile-v2/models'
 import type { FollowUserEntry, ProfileUser, RichDiaryEntry, RichWatchlistEntry, ReviewEntry } from '../services/profileServices'
 
 const API_URL = import.meta.env.VITE_API_URL
@@ -33,6 +34,12 @@ const cleanReviewText = (content: string | null) => {
   return content.replace(/\n/g, ' ').trim()
 }
 
+const parseRatingValue = (value: unknown) => {
+  const parsed = typeof value === 'number' ? value : Number(value)
+  if (!Number.isFinite(parsed)) return 0
+  return Math.max(0, Math.min(5, parsed))
+}
+
 const pickTags = (content: string | null): string[] => {
   const normalized = (content || '').toLowerCase()
   const tags: string[] = []
@@ -41,6 +48,17 @@ const pickTags = (content: string | null): string[] => {
   if (normalized.includes('surreal')) tags.push('Surrealismo')
   if (normalized.includes('cine')) tags.push('Cine')
   return tags.length > 0 ? tags : ['Resena', 'CineVault']
+}
+
+const isQuickRatingPlaceholder = (content: string | null) => {
+  if (!content) return true
+  const normalized = content
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+
+  return normalized === 'rating rapido desde movie detail'
 }
 
 type MovieMetaTarget = {
@@ -94,6 +112,7 @@ export function useProfilePageData(userParam?: string) {
   const [followers, setFollowers] = useState<FollowUserEntry[]>([])
   const [following, setFollowing] = useState<FollowUserEntry[]>([])
   const [movieMap, setMovieMap] = useState<Map<number, EnrichedMovie>>(new Map())
+  const [userLists, setUserLists] = useState<UserListSummaryItem[]>([])
   const [viewerId, setViewerId] = useState<number | null>(null)
   const [targetId, setTargetId] = useState<number | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -125,6 +144,7 @@ export function useProfilePageData(userParam?: string) {
           setFollowers([])
           setFollowing([])
           setMovieMap(new Map())
+          setUserLists([])
           return
         }
 
@@ -141,6 +161,7 @@ export function useProfilePageData(userParam?: string) {
           setFollowers([])
           setFollowing([])
           setMovieMap(new Map())
+          setUserLists([])
           setError('Perfil no encontrado')
           return
         }
@@ -154,7 +175,8 @@ export function useProfilePageData(userParam?: string) {
         const authToken = isSelf ? token : null
 
         const [fullProfileData, diaryData, watchlistData, reviewsData, followersData, followingData] = await Promise.all([
-          fetchUserProfile(resolvedTargetId, authToken),
+          // Always include viewer token when available so backend can resolve `is_following` on public profiles.
+          fetchUserProfile(resolvedTargetId, token),
           fetchDiary(resolvedTargetId, authToken, isSelf),
           fetchWatchlist(resolvedTargetId, authToken, isSelf),
           fetchReviews(resolvedTargetId, authToken, isSelf),
@@ -178,6 +200,22 @@ export function useProfilePageData(userParam?: string) {
         setReviews(nextReviews)
         setFollowers(followersData)
         setFollowing(followingData)
+
+        if (isSelf) {
+          const lists = await getMyLists().catch(() => [])
+          if (!active) return
+          setUserLists(
+            (Array.isArray(lists) ? lists : []).map((list) => ({
+              id: list.id,
+              name: list.name,
+              itemsCount: list.items_count,
+              isPublic: list.is_public,
+              description: list.description ?? null,
+            }))
+          )
+        } else {
+          setUserLists([])
+        }
 
         const tmdbByMovieId = new Map<number, number | null>()
         nextDiary.forEach((item) => tmdbByMovieId.set(item.movie_id, item.tmdb_id))
@@ -220,13 +258,18 @@ export function useProfilePageData(userParam?: string) {
     }
   }, [profile])
 
+  const writtenReviews = useMemo(
+    () => reviews.filter((entry) => !isQuickRatingPlaceholder(entry.content)),
+    [reviews]
+  )
+
   const stats: ProfileStatsData = useMemo(() => ({
     views: profile?._count?.diary_entries ?? diary.length,
-    reviews: profile?._count?.reviews ?? reviews.length,
+    reviews: writtenReviews.length,
     watchlist: profile?._count?.watchlist ?? watchlist.length,
     following: profile?._count?.follows_follows_follower_idTousers ?? following.length,
     followers: profile?._count?.follows_follows_following_idTousers ?? followers.length,
-  }), [profile, diary.length, reviews.length, watchlist.length, following.length, followers.length])
+  }), [profile, diary.length, writtenReviews.length, watchlist.length, following.length, followers.length])
 
   const followerUsers: ProfileConnection[] = useMemo(() => followers.map((item) => ({
     id: item.id,
@@ -250,7 +293,7 @@ export function useProfilePageData(userParam?: string) {
         year: fromMovieMap?.year ?? null,
         director: fromMovieMap?.director || 'Desconocido',
         posterUrl: entry.movie_info?.poster_path ? moviePoster(entry.movie_info.poster_path, 'w500') : fromMovieMap?.posterUrl || IMG.grain,
-        rating: entry.review?.rating ? Math.round(entry.review.rating) : 0,
+        rating: parseRatingValue(entry.review?.rating),
       }
     })
   ), [diary, movieMap])
@@ -271,7 +314,7 @@ export function useProfilePageData(userParam?: string) {
   ), [watchlist, movieMap])
 
   const reviewItems: ReviewItem[] = useMemo(() => (
-    reviews.slice(0, 12).map((entry) => {
+    writtenReviews.slice(0, 12).map((entry) => {
       const fromMovieMap = movieMap.get(entry.movie_id)
       const fromDiary = diary.find((diaryEntry) => diaryEntry.movie_id === entry.movie_id)
       const fromWatchlist = watchlist.find((watchlistEntry) => watchlistEntry.movie_id === entry.movie_id)
@@ -283,13 +326,13 @@ export function useProfilePageData(userParam?: string) {
         year: fromMovieMap?.year ?? null,
         director: fromMovieMap?.director || 'Desconocido',
         posterUrl: fromMovieMap?.posterUrl || (fromDiary?.movie_info?.poster_path || fromWatchlist?.movie_info?.poster_path ? moviePoster(fromDiary?.movie_info?.poster_path || fromWatchlist?.movie_info?.poster_path, 'w500') : IMG.grain),
-        rating: entry.rating ? Math.round(entry.rating) : 0,
+        rating: parseRatingValue(entry.rating),
         createdAtLabel: relativeDateLabel(entry.created_at),
         text: cleanReviewText(entry.content),
         tags: pickTags(entry.content),
       }
     })
-  ), [reviews, movieMap, diary, watchlist])
+  ), [writtenReviews, movieMap, diary, watchlist])
 
   return {
     loading,
@@ -298,6 +341,8 @@ export function useProfilePageData(userParam?: string) {
     hasTargetProfile: Boolean(targetId),
     isOwnProfile: Boolean(viewerId && targetId && viewerId === targetId),
     isPublicProfile: Boolean(targetId && viewerId !== targetId),
+    targetUserId: targetId,
+    initialIsFollowing: Boolean(profile?.is_following),
     profileHeader,
     stats,
     followerUsers,
@@ -305,5 +350,6 @@ export function useProfilePageData(userParam?: string) {
     recentlyWatched,
     watchlistFilms,
     reviewItems,
+    userLists,
   }
 }

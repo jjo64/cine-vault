@@ -110,6 +110,7 @@ export class DiaryRepository implements IDiaryRepository {
       }),
       prisma.reviews.findMany({
         where: { user_id: userId, movie_id: { in: movieIds } },
+        orderBy: { created_at: "desc" },
         select: {
           movie_id: true,
           rating: true,
@@ -141,7 +142,13 @@ export class DiaryRepository implements IDiaryRepository {
       })
     )
     const movieMap = new Map(movies.map((m) => [m.id, m.tmdb_id]))
-    const reviewMap = new Map(reviews.map((r) => [r.movie_id, r]))
+    // Keep only the latest review per movie.
+    const reviewMap = new Map<number, (typeof reviews)[number]>()
+    for (const review of reviews) {
+      if (!reviewMap.has(review.movie_id)) {
+        reviewMap.set(review.movie_id, review)
+      }
+    }
 
     return entries.map((entry) => ({
       movie_id: entry.movie_id,

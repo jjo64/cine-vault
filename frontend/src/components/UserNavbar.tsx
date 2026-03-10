@@ -2,8 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Bell } from 'lucide-react';
 import { authorizedFetch } from '../services/authServices';
+import { logoutCurrentUser } from '../services/authServices';
 import { socket } from '../context/SocketContext';
 import { Notificaciones } from './Notificaciones';
+import { resolveNavPathWithFallback } from '../lib/navigation'
 
 const UserNavbar: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -79,6 +81,11 @@ const UserNavbar: React.FC = () => {
         });
     };
 
+    const handleSignOut = async () => {
+        await logoutCurrentUser()
+        navigate('/')
+    }
+
     const badgeText = unreadCount > 9 ? '9+' : String(unreadCount);
 
     return (
@@ -100,7 +107,7 @@ const UserNavbar: React.FC = () => {
                     </Link>
                     <div className="nav-menu" style={{ display: 'flex', gap: '20px' }}>
                         {['FILMS', 'LISTS', 'MEMBERS', 'JOURNAL'].map(item => (
-                            <Link key={item} to={`/${item.toLowerCase()}`} style={{ color: '#9ab', textDecoration: 'none', fontSize: '13px', fontWeight: 'bold', letterSpacing: '1px' }}>
+                            <Link key={item} to={resolveNavPathWithFallback(item)} style={{ color: '#9ab', textDecoration: 'none', fontSize: '13px', fontWeight: 'bold', letterSpacing: '1px' }}>
                                 {item}
                             </Link>
                         ))}
@@ -201,9 +208,15 @@ const UserNavbar: React.FC = () => {
                                     zIndex: 1000
                                 }}>
                                     {['Home', 'Profile', 'Films', 'Diary', 'Reviews', 'Watchlist', 'Lists', 'Settings', 'Sign Out'].map(link => (
-                                        <Link key={link} to={`/${link.toLowerCase().replace(' ', '')}`} style={{ display: 'block', padding: '8px 15px', color: '#9ab', textDecoration: 'none', fontSize: '13px' }}>
-                                            {link}
-                                        </Link>
+                                        link === 'Sign Out' ? (
+                                            <button key={link} onClick={handleSignOut} style={{ display: 'block', width: '100%', textAlign: 'left', border: 'none', background: 'transparent', padding: '8px 15px', color: '#9ab', fontSize: '13px', cursor: 'pointer' }}>
+                                                {link}
+                                            </button>
+                                        ) : (
+                                            <Link key={link} to={resolveNavPathWithFallback(link)} style={{ display: 'block', padding: '8px 15px', color: '#9ab', textDecoration: 'none', fontSize: '13px' }}>
+                                                {link}
+                                            </Link>
+                                        )
                                     ))}
                                 </div>
                             )}

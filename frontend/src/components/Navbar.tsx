@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { resolveNavPathWithFallback } from '../lib/navigation'
+import { logoutCurrentUser } from '../services/authServices'
 
 interface NavbarProps {
     className?: string;
@@ -38,16 +40,25 @@ const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
         }
     };
 
+    const goTo = (label: string) => {
+        navigate(resolveNavPathWithFallback(label))
+    }
+
+    const handleSignOut = async () => {
+        await logoutCurrentUser()
+        goTo('home')
+    }
+
     return (
         <nav className={`subpage-navbar ${className}`}>
             <div className="nav-container">
                 <div className="nav-left">
                     <Link to="/" className="nav-logo">🎬 Cinevault</Link>
                     <div className="nav-menu">
-                        <Link to="/films">FILMS</Link>
-                        <Link to="/lists">LISTS</Link>
-                        <Link to="/members">MEMBERS</Link>
-                        <Link to="/journal">JOURNAL</Link>
+                        <Link to={resolveNavPathWithFallback('films')}>FILMS</Link>
+                        <Link to={resolveNavPathWithFallback('lists')}>LISTS</Link>
+                        <Link to={resolveNavPathWithFallback('members')}>MEMBERS</Link>
+                        <Link to={resolveNavPathWithFallback('journal')}>JOURNAL</Link>
                     </div>
                 </div>
 
@@ -76,16 +87,16 @@ const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
 
                             {showUserMenu && (
                                 <div className="user-dropdown">
-                                    <Link to="/home">Home</Link>
+                                    <Link to="/">Home</Link>
                                     <Link to="/profile">Profile</Link>
-                                    <Link to="/films">Films</Link>
-                                    <Link to="/diary">Diary</Link>
-                                    <Link to="/reviews">Reviews</Link>
-                                    <Link to="/watchlist">Watchlist</Link>
-                                    <Link to="/lists">Lists</Link>
+                                    <Link to={resolveNavPathWithFallback('films')}>Films</Link>
+                                    <Link to={resolveNavPathWithFallback('diary')}>Diary</Link>
+                                    <Link to={resolveNavPathWithFallback('reviews')}>Reviews</Link>
+                                    <Link to={resolveNavPathWithFallback('watchlist')}>Watchlist</Link>
+                                    <Link to={resolveNavPathWithFallback('lists')}>Lists</Link>
                                     <div className="dropdown-divider"></div>
                                     <Link to="/settings">Settings</Link>
-                                    <Link to="/signout">Sign Out</Link>
+                                    <button type="button" onClick={handleSignOut} style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', cursor: 'pointer' }}>Sign Out</button>
                                 </div>
                             )}
                         </div>
