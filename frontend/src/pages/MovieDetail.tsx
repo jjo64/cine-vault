@@ -621,6 +621,18 @@ function parseMovieId(slugOrId?: string): number | null {
   return Number.isFinite(value) ? value : null
 }
 
+function isCurrentMovieMatch(
+  candidate: { movie_id?: number | null; tmdb_id?: number | null },
+  detailId: number,
+  routeMovieId: number | null
+) {
+  if (candidate.tmdb_id && candidate.tmdb_id === detailId) return true
+  if (routeMovieId && candidate.tmdb_id && candidate.tmdb_id === routeMovieId) return true
+  if (candidate.movie_id && candidate.movie_id === detailId) return true
+  if (routeMovieId && candidate.movie_id && candidate.movie_id === routeMovieId) return true
+  return false
+}
+
 function getDirectorObj(movie: MovieDetailApi | null) {
   return (movie?.credits?.crew || []).find((person) => person.job === 'Director') || null
 }
@@ -1642,18 +1654,6 @@ export default function MovieDetailPage() {
     return () => window.removeEventListener('auth-state-changed', syncToken)
   }, [])
 
-  const matchesCurrentMovie = (
-    candidate: { movie_id?: number | null; tmdb_id?: number | null },
-    detailId: number,
-    routeMovieId: number | null
-  ) => {
-    if (candidate.tmdb_id && candidate.tmdb_id === detailId) return true
-    if (routeMovieId && candidate.tmdb_id && candidate.tmdb_id === routeMovieId) return true
-    if (candidate.movie_id && candidate.movie_id === detailId) return true
-    if (routeMovieId && candidate.movie_id && candidate.movie_id === routeMovieId) return true
-    return false
-  }
-
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [slugOrId])
@@ -1754,15 +1754,15 @@ export default function MovieDetailPage() {
           if (!alive) return
 
           const myReview = myReviews.find((review) =>
-            matchesCurrentMovie(review, detail.id, movieId)
+            isCurrentMovieMatch(review, detail.id, movieId)
           )
           setMyReviewId(myReview?.id ?? null)
           setUserRating(Number(myReview?.rating ?? 0))
-          setInWatchlist(myWatchlist.some((entry) => matchesCurrentMovie(entry, detail.id, movieId)))
-          setLiked(myFavorites.some((entry) => matchesCurrentMovie(entry, detail.id, movieId)))
+          setInWatchlist(myWatchlist.some((entry) => isCurrentMovieMatch(entry, detail.id, movieId)))
+          setLiked(myFavorites.some((entry) => isCurrentMovieMatch(entry, detail.id, movieId)))
           setInVault(
             (myDiary.diary || []).some((entry) =>
-              matchesCurrentMovie(
+              isCurrentMovieMatch(
                 { movie_id: entry.movie_id, tmdb_id: entry.tmdb_id },
                 detail.id,
                 movieId
@@ -1858,7 +1858,7 @@ export default function MovieDetailPage() {
       if (inVault) {
         const myDiary = await fetchMyDiary(token)
         const currentEntry = (myDiary.diary || []).find((entry) =>
-          matchesCurrentMovie(
+          isCurrentMovieMatch(
             { movie_id: entry.movie_id, tmdb_id: entry.tmdb_id },
             movie.id,
             movieId
@@ -2190,7 +2190,7 @@ export default function MovieDetailPage() {
       const userMeta = Object.fromEntries(userPairs)
       setReviews(mapMovieReviews(freshReviews, userMeta))
 
-      const ownReview = freshReviews.find((review) => matchesCurrentMovie(review, movie.id, movieId))
+      const ownReview = freshReviews.find((review) => isCurrentMovieMatch(review, movie.id, movieId))
       setMyReviewId(ownReview?.id ?? null)
       setUserRating(Number(ownReview?.rating ?? reviewLogRating))
       setReviewLogOpen(false)
@@ -2304,7 +2304,7 @@ export default function MovieDetailPage() {
       )
       const userMeta = Object.fromEntries(userPairs)
       setReviews(mapMovieReviews(freshReviews, userMeta))
-      const ownReview = freshReviews.find((review) => matchesCurrentMovie(review, movie.id, movieId))
+      const ownReview = freshReviews.find((review) => isCurrentMovieMatch(review, movie.id, movieId))
       setMyReviewId(ownReview?.id ?? null)
       setUserRating(Number(ownReview?.rating ?? userRating))
       setComposerMode(null)
