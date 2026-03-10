@@ -1648,6 +1648,18 @@ export default function MovieDetailPage() {
   const [token, setToken] = useState<string | null>(() => getStoredAccessToken())
   const movieId = useMemo(() => parseMovieId(slugOrId), [slugOrId])
 
+  const matchesCurrentMovie = (
+    candidate: { movie_id?: number | null; tmdb_id?: number | null },
+    detailId: number,
+    routeMovieId: number | null
+  ) => {
+    if (candidate.tmdb_id && candidate.tmdb_id === detailId) return true
+    if (routeMovieId && candidate.tmdb_id && candidate.tmdb_id === routeMovieId) return true
+    if (candidate.movie_id && candidate.movie_id === detailId) return true
+    if (routeMovieId && candidate.movie_id && candidate.movie_id === routeMovieId) return true
+    return false
+  }
+
   useEffect(() => {
     const syncToken = () => setToken(getStoredAccessToken())
     window.addEventListener('auth-state-changed', syncToken)
