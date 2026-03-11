@@ -1,0 +1,349 @@
+/* Profile.css */
+
+/* Reusable responsive utilities */
+
+.profile-mobile-only {
+    display: none !important;
+}
+
+.profile-desktop-only {
+    display: block !important;
+}
+
+.profile-desktop-flex {
+    display: flex !important;
+}
+
+.profile-desktop-grid {
+    display: grid !important;
+}
+
+@media (max-width: 768px) {
+    .profile-mobile-only {
+        display: block !important;
+    }
+
+    .profile-mobile-only-flex {
+        display: flex !important;
+    }
+
+    body .profile-desktop-only,
+    body .profile-desktop-flex,
+    body .profile-desktop-grid {
+        display: none !important;
+    }
+}
+
+/* Specific layout adjustments */
+
+/* Profile wrapper padding */
+.profile-main-wrapper {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 48px 48px 0;
+}
+
+@media (max-width: 1024px) {
+    .profile-main-wrapper {
+        padding: 32px 24px 0;
+    }
+}
+
+@media (max-width: 768px) {
+    .profile-main-wrapper {
+        padding: 24px 14px 0;
+    }
+}
+
+/* Main Grid Layout */
+.profile-grid-layout {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 40px;
+    /* Prevent grid children from overflowing their track */
+    min-width: 0;
+    width: 100%;
+}
+
+/* Every direct child of the grid must have min-width: 0 to
+   prevent 1fr from inflating to content width.
+   overflow-x: clip constrains width without hiding vertical content. */
+.profile-grid-layout>* {
+    min-width: 0;
+    overflow-x: clip;
+}
+
+@media (max-width: 1024px) {
+    .profile-grid-layout {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+}
+
+@media (max-width: 768px) {
+    .profile-grid-layout {
+        gap: 16px;
+    }
+}
+
+/* Hero Section */
+.profile-hero-container {
+    padding-top: 64px;
+}
+
+@media (max-width: 768px) {
+    .profile-hero-container {
+        padding-top: 56px;
+    }
+}
+
+.profile-hero {
+    position: relative;
+    min-height: 480px;
+    height: 480px;
+    overflow: hidden;
+}
+
+.profile-hero-content {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 0 48px 40px;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    gap: 32px;
+}
+
+.profile-hero-avatar-wrapper {
+    width: 100px;
+    height: 100px;
+}
+
+.profile-hero-name {
+    font-size: 44px;
+}
+
+.profile-hero-stats-wrapper {
+    display: flex;
+    gap: 24px;
+    align-self: flex-end;
+    padding-bottom: 8px;
+    width: auto;
+    justify-content: flex-start;
+}
+
+.profile-hero-stat-num {
+    font-size: 32px;
+}
+
+.profile-hero-stat-label {
+    font-size: 10px;
+}
+
+.profile-hero-stat-item {
+    min-width: 86px;
+}
+
+@media (max-width: 1024px) {
+    .profile-hero {
+        min-height: 560px;
+        height: 560px;
+    }
+
+    .profile-hero-content {
+        padding: 0 24px 30px;
+    }
+}
+
+@media (max-width: 768px) {
+    .profile-hero {
+        min-height: 620px;
+        height: auto;
+    }
+
+    .profile-hero-content {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 0 16px 24px;
+        gap: 16px;
+    }
+
+    .profile-hero-avatar-wrapper {
+        width: 80px;
+        height: 80px;
+    }
+
+    .profile-hero-name {
+        font-size: 34px;
+    }
+
+    .profile-hero-stats-wrapper {
+        gap: 12px;
+        align-self: stretch;
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .profile-hero-stat-item {
+        min-width: 56px;
+    }
+
+    .profile-hero-stat-num {
+        font-size: 26px;
+    }
+
+    .profile-hero-stat-label {
+        font-size: 9px;
+    }
+}
+
+/* Navbar */
+.profile-nav {
+    padding: 20px 48px;
+}
+
+.profile-nav-links {
+    display: flex;
+}
+
+.profile-nav-search-wrapper {
+    width: 270px;
+}
+
+.profile-nav-actions {
+    gap: 20px;
+}
+
+@media (max-width: 768px) {
+    .profile-nav {
+        padding: 14px 16px;
+    }
+
+    .profile-nav-links {
+        display: none;
+    }
+
+    .profile-nav-search-wrapper {
+        width: min(132px, calc(100vw - 220px));
+    }
+
+    .profile-nav-actions {
+        gap: 8px;
+    }
+}
+
+/* Tabs Bar */
+.profile-tabs-bar {
+    padding: 0 48px;
+}
+
+.profile-tab-btn {
+    padding: 18px 24px;
+}
+
+@media (max-width: 768px) {
+    .profile-tabs-bar {
+        padding: 0 10px;
+    }
+
+    .profile-tab-btn {
+        padding: 14px 14px;
+    }
+}
+
+/* Panel Headers */
+.profile-panel-header {
+    font-size: 26px;
+}
+
+.profile-panel-header-em {
+    font-size: 20px;
+}
+
+.profile-night-rec {
+    padding: 24px 28px;
+    flex-direction: row;
+    align-items: center;
+    gap: 24px;
+}
+
+.profile-night-rec-title {
+    font-size: 24px;
+}
+
+.profile-night-rec-actions {
+    margin-left: auto;
+    width: auto;
+    align-items: flex-end;
+}
+
+@media (max-width: 768px) {
+    .profile-panel-header {
+        font-size: 22px;
+    }
+
+    .profile-panel-header-em {
+        font-size: 17px;
+    }
+
+    .profile-night-rec {
+        padding: 18px 16px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 14px;
+    }
+
+    .profile-night-rec-title {
+        font-size: 20px;
+    }
+
+    .profile-night-rec-actions {
+        margin-left: 0;
+        width: 100%;
+        align-items: flex-start;
+    }
+}
+
+/* Footer */
+.profile-footer {
+    padding: 20px 48px;
+    flex-direction: row;
+    gap: 0;
+}
+
+@media (max-width: 768px) {
+    .profile-footer {
+        padding: 16px;
+        flex-direction: column;
+        gap: 10px;
+    }
+}
+
+/* Grids */
+.profile-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+}
+
+@media (max-width: 1024px) {
+    .profile-grid-3 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .profile-grid-3 {
+        grid-template-columns: 1fr;
+    }
+}
+
+.profile-grid-auto {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 16px;
+}
+
+@media (max-width: 768px) {}

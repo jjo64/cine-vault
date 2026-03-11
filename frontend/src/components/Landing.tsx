@@ -6,6 +6,7 @@ import InfiniteSlider from './InfiniteSlider'
 import { createSlug } from '../utils/stringUtils'
 import { getCurrentUser, logoutCurrentUser } from '../services/authServices'
 import { resolveNavPathWithFallback } from '../lib/navigation'
+import './Landing.css'
 
 const C = {
   bg: '#080808',
@@ -230,36 +231,36 @@ function FilmCardMini({
   )
 }
 
-function Navbar({ isMobile, isTablet }: { isMobile: boolean; isTablet: boolean }) {
+function Navbar() {
   const navigate = useNavigate()
   const [viewerUsername, setViewerUsername] = useState<string | null>(null)
   const [isSearchFocused, setIsSearchFocused] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
-    useEffect(() => {
-      let alive = true
+  useEffect(() => {
+    let alive = true
 
+    getCurrentUser()
+      .then((user) => {
+        if (!alive) return
+        setViewerUsername(user.username)
+      })
+      .catch(() => {
+        if (!alive) return
+        setViewerUsername(null)
+      })
+
+    const onAuthChange = () => {
       getCurrentUser()
-        .then((user) => {
-          if (!alive) return
-          setViewerUsername(user.username)
-        })
-        .catch(() => {
-          if (!alive) return
-          setViewerUsername(null)
-        })
+        .then((user) => setViewerUsername(user.username))
+        .catch(() => setViewerUsername(null))
+    }
 
-      const onAuthChange = () => {
-        getCurrentUser()
-          .then((user) => setViewerUsername(user.username))
-          .catch(() => setViewerUsername(null))
-      }
-
-      window.addEventListener('auth-state-changed', onAuthChange)
-      return () => {
-        alive = false
-        window.removeEventListener('auth-state-changed', onAuthChange)
-      }
-    }, [])
+    window.addEventListener('auth-state-changed', onAuthChange)
+    return () => {
+      alive = false
+      window.removeEventListener('auth-state-changed', onAuthChange)
+    }
+  }, [])
 
   const [scrolled, setScrolled] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -312,13 +313,14 @@ function Navbar({ isMobile, isTablet }: { isMobile: boolean; isTablet: boolean }
 
   const visibleResults = useMemo(() => searchResults.slice(0, 6), [searchResults])
   const navLinks = viewerUsername ? ['Films', 'Lists', 'Members', 'Journal'] : ['Sign in', 'Create account', 'Films', 'Lists', 'Members', 'Journal']
-  const visibleNavLinks = isMobile ? [] : isTablet ? navLinks.slice(0, 4) : navLinks
+  const visibleNavLinks = navLinks
 
   return (
     <motion.nav
       initial={{ opacity: 0, y: -12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.7, ease: 'easeOut' }}
+      className="landing-navbar"
       style={{
         position: 'fixed',
         top: 0,
@@ -328,15 +330,13 @@ function Navbar({ isMobile, isTablet }: { isMobile: boolean; isTablet: boolean }
         display: 'grid',
         gridTemplateColumns: '1fr auto',
         alignItems: 'center',
-        padding: isMobile ? '0 14px' : isTablet ? '0 24px' : '0 40px',
-        height: isMobile ? 56 : 64,
         background: scrolled ? 'rgba(8,8,8,0.97)' : 'rgba(8,8,8,0.6)',
         backdropFilter: 'blur(20px)',
         borderBottom: scrolled ? `1px solid ${C.border}` : '1px solid transparent',
         transition: 'background 0.4s, border-color 0.4s',
       }}
     >
-      <ul style={{ display: 'flex', gap: isTablet ? 18 : 34, listStyle: 'none', margin: 0, padding: 0, alignItems: 'center' }}>
+      <ul className="landing-desktop-links landing-nav-links" style={{ display: 'flex', listStyle: 'none', margin: 0, padding: 0, alignItems: 'center' }}>
         {visibleNavLinks.map((link) => (
           <li key={link}>
             {link === 'Sign in' || link === 'Create account' ? (
@@ -387,121 +387,119 @@ function Navbar({ isMobile, isTablet }: { isMobile: boolean; isTablet: boolean }
       </ul>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      <div ref={containerRef} style={{ position: 'relative', width: isMobile ? 150 : isTablet ? 200 : 260 }}>
-        <div
-          style={{
-            height: 40,
-            borderRadius: 999,
-            border: `1px solid ${C.border}`,
-            background: 'rgba(255,255,255,0.14)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '0 12px 0 14px',
-          }}
-        >
-          <input
-            placeholder="Buscar"
-            value={searchQuery}
-            onFocus={() => setIsSearchFocused(true)}
-            onChange={(event) => {
-              const nextValue = event.target.value
-              setSearchQuery(nextValue)
-              if (!nextValue.trim()) {
-                setSearchResults([])
-              }
-            }}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' && searchQuery.trim()) {
-                navigate(`/search/${searchQuery.trim().replace(/\s+/g, '+')}`)
-                setIsSearchFocused(false)
-              }
-            }}
-            style={{
-              width: '100%',
-              border: 'none',
-              outline: 'none',
-              background: 'transparent',
-              color: C.text,
-              fontFamily: SANS,
-              fontSize: isMobile ? 11 : 12,
-              letterSpacing: '0.04em',
-            }}
-          />
-          <button
-            onClick={() => {
-              if (!searchQuery.trim()) return
-              navigate(`/search/${searchQuery.trim().replace(/\s+/g, '+')}`)
-              setIsSearchFocused(false)
-            }}
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: C.textSoft,
-              display: 'grid',
-              placeItems: 'center',
-              padding: 0,
-            }}
-          >
-            <Search size={16} />
-          </button>
-        </div>
-
-        {isSearchFocused && searchQuery.trim() && (
+        <div ref={containerRef} className="landing-search" style={{ position: 'relative' }}>
           <div
             style={{
-              position: 'absolute',
-              top: 46,
-              left: 0,
-              width: '100%',
+              height: 40,
+              borderRadius: 999,
               border: `1px solid ${C.border}`,
-              background: 'rgba(8,8,8,0.98)',
-              borderRadius: 6,
-              overflow: 'hidden',
+              background: 'rgba(255,255,255,0.14)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '0 12px 0 14px',
             }}
           >
-            {visibleResults.length > 0 ? (
-              visibleResults.map((movie) => (
-                <button
-                  key={movie.id}
-                  onClick={() => {
-                    navigate(`/movie/${movie.id}-${createSlug(movie.title)}`)
-                    setIsSearchFocused(false)
-                    setSearchQuery('')
-                  }}
-                  style={{
-                    width: '100%',
-                    border: 'none',
-                    background: 'transparent',
-                    borderBottom: `1px solid ${C.border}`,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    padding: 10,
-                    textAlign: 'left',
-                    color: C.text,
-                  }}
-                >
-                  <Img
-                    src={movie.poster_path ? `https://image.tmdb.org/t/p/w92${movie.poster_path}` : '/no-poster.svg'}
-                    alt={movie.title}
-                    style={{ width: 30, height: 46, objectFit: 'cover' }}
-                  />
-                  <span style={{ fontFamily: SANS, fontSize: 13, letterSpacing: '0.04em' }}>{movie.title}</span>
-                </button>
-              ))
-            ) : (
-              <div style={{ padding: 12, fontFamily: SANS, fontSize: 11, color: C.textSoft, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                Sin resultados
-              </div>
-            )}
+            <input
+              placeholder="Buscar"
+              value={searchQuery}
+              onFocus={() => setIsSearchFocused(true)}
+              onChange={(event) => {
+                const nextValue = event.target.value
+                setSearchQuery(nextValue)
+                if (!nextValue.trim()) {
+                  setSearchResults([])
+                }
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && searchQuery.trim()) {
+                  navigate(`/search/${searchQuery.trim().replace(/\s+/g, '+')}`)
+                  setIsSearchFocused(false)
+                }
+              }}
+              style={{
+                width: '100%',
+                border: 'none',
+                outline: 'none',
+                background: 'transparent',
+                color: C.text,
+                fontFamily: SANS,
+                letterSpacing: '0.04em',
+              }}
+            />
+            <button
+              onClick={() => {
+                if (!searchQuery.trim()) return
+                navigate(`/search/${searchQuery.trim().replace(/\s+/g, '+')}`)
+                setIsSearchFocused(false)
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: C.textSoft,
+                display: 'grid',
+                placeItems: 'center',
+                padding: 0,
+              }}
+            >
+              <Search size={16} />
+            </button>
           </div>
-        )}
-      </div>
-      {isMobile && (
-        <div style={{ position: 'relative' }}>
+
+          {isSearchFocused && searchQuery.trim() && (
+            <div
+              style={{
+                position: 'absolute',
+                top: 46,
+                left: 0,
+                width: '100%',
+                border: `1px solid ${C.border}`,
+                background: 'rgba(8,8,8,0.98)',
+                borderRadius: 6,
+                overflow: 'hidden',
+              }}
+            >
+              {visibleResults.length > 0 ? (
+                visibleResults.map((movie) => (
+                  <button
+                    key={movie.id}
+                    onClick={() => {
+                      navigate(`/movie/${movie.id}-${createSlug(movie.title)}`)
+                      setIsSearchFocused(false)
+                      setSearchQuery('')
+                    }}
+                    style={{
+                      width: '100%',
+                      border: 'none',
+                      background: 'transparent',
+                      borderBottom: `1px solid ${C.border}`,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      padding: 10,
+                      textAlign: 'left',
+                      color: C.text,
+                    }}
+                  >
+                    <Img
+                      src={movie.poster_path ? `https://image.tmdb.org/t/p/w92${movie.poster_path}` : '/no-poster.svg'}
+                      alt={movie.title}
+                      style={{ width: 30, height: 46, objectFit: 'cover' }}
+                    />
+                    <span style={{ fontFamily: SANS, fontSize: 13, letterSpacing: '0.04em' }}>{movie.title}</span>
+                  </button>
+                ))
+              ) : (
+                <div style={{ padding: 12, fontFamily: SANS, fontSize: 11, color: C.textSoft, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                  Sin resultados
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="landing-mobile-menu" style={{ position: 'relative' }}>
           <button
             onClick={() => setMenuOpen((value) => !value)}
             style={{
@@ -566,7 +564,6 @@ function Navbar({ isMobile, isTablet }: { isMobile: boolean; isTablet: boolean }
             </div>
           )}
         </div>
-      )}
       </div>
     </motion.nav>
   )
@@ -711,7 +708,7 @@ function SectionHeader({ eyebrow, title }: { eyebrow: string; title: string }) {
   )
 }
 
-function MovieGridSection({ endpoint, eyebrow, title, isMobile, isTablet }: { endpoint: string; eyebrow: string; title: string; isMobile: boolean; isTablet: boolean }) {
+function MovieGridSection({ endpoint, eyebrow, title }: { endpoint: string; eyebrow: string; title: string }) {
   const [movies, setMovies] = useState<ApiMovie[]>([])
 
   useEffect(() => {
@@ -733,7 +730,7 @@ function MovieGridSection({ endpoint, eyebrow, title, isMobile, isTablet }: { en
   }, [endpoint])
 
   return (
-    <section style={{ padding: isMobile ? '56px 14px' : isTablet ? '72px 24px' : '100px 80px', background: C.surface, borderTop: `1px solid ${C.border}` }}>
+    <section className="landing-section-sm" style={{ background: C.surface, borderTop: `1px solid ${C.border}` }}>
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -769,7 +766,7 @@ function MovieGridSection({ endpoint, eyebrow, title, isMobile, isTablet }: { en
   )
 }
 
-function HowItWorks({ isMobile, isTablet }: { isMobile: boolean; isTablet: boolean }) {
+function HowItWorks() {
   const pillars = [
     {
       icon: <Layers size={22} color={C.accent} />,
@@ -795,7 +792,7 @@ function HowItWorks({ isMobile, isTablet }: { isMobile: boolean; isTablet: boole
   ]
 
   return (
-    <section id="como-funciona" style={{ padding: isMobile ? '56px 14px' : isTablet ? '72px 24px' : '100px 80px', background: C.surface, borderTop: `1px solid ${C.border}` }}>
+    <section id="como-funciona" className="landing-section" style={{ background: C.surface, borderTop: `1px solid ${C.border}` }}>
       <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }} style={{ textAlign: 'center', marginBottom: 64 }}>
         <div style={{ fontFamily: SANS, fontSize: 10, letterSpacing: '0.3em', textTransform: 'uppercase', color: C.accent, marginBottom: 14 }}>Tres pilares</div>
         <h2 style={{ fontFamily: SERIF, fontSize: 48, fontWeight: 400, color: C.text, margin: '0 auto 16px', lineHeight: 1.1, maxWidth: 600 }}>El alma de CineVault</h2>
@@ -804,7 +801,7 @@ function HowItWorks({ isMobile, isTablet }: { isMobile: boolean; isTablet: boole
         </p>
       </motion.div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? '1fr 1fr' : 'repeat(3, 1fr)', gap: 2 }}>
+      <div className="landing-grid-3">
         {pillars.map((pillar, i) => (
           <motion.div
             key={pillar.label}
@@ -837,10 +834,10 @@ function HowItWorks({ isMobile, isTablet }: { isMobile: boolean; isTablet: boole
   )
 }
 
-function NightFeature({ isMobile, isTablet }: { isMobile: boolean; isTablet: boolean }) {
+function NightFeature() {
   return (
-    <section style={{ padding: isMobile ? '56px 14px' : isTablet ? '72px 24px' : '100px 80px', background: C.bg, borderTop: `1px solid ${C.border}` }}>
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 28 : 80, alignItems: 'center', maxWidth: 1200, margin: '0 auto' }}>
+    <section className="landing-section" style={{ background: C.bg, borderTop: `1px solid ${C.border}` }}>
+      <div className="landing-grid-night">
         <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}>
           <div style={{ fontFamily: SANS, fontSize: 10, letterSpacing: '0.3em', textTransform: 'uppercase', color: C.accent, marginBottom: 16 }}>Feature estrella</div>
           <h2 style={{ fontFamily: SERIF, fontSize: 52, fontWeight: 400, color: C.text, margin: '0 0 20px', lineHeight: 1.05 }}>Esta noche,<br />sin excusas.</h2>
@@ -911,15 +908,15 @@ const publicReviews = [
   },
 ]
 
-function ReviewsSection({ isMobile, isTablet }: { isMobile: boolean; isTablet: boolean }) {
+function ReviewsSection() {
   return (
-    <section style={{ padding: isMobile ? '56px 14px' : isTablet ? '72px 24px' : '100px 80px', background: C.surface, borderTop: `1px solid ${C.border}` }}>
+    <section className="landing-section" style={{ background: C.surface, borderTop: `1px solid ${C.border}` }}>
       <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }} style={{ textAlign: 'center', marginBottom: 56 }}>
         <div style={{ fontFamily: SANS, fontSize: 10, letterSpacing: '0.3em', textTransform: 'uppercase', color: C.accent, marginBottom: 14 }}>La comunidad opina</div>
         <h2 style={{ fontFamily: SERIF, fontSize: 44, fontWeight: 400, color: C.text, margin: 0, lineHeight: 1.1 }}>Resenas que son literatura</h2>
       </motion.div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? '1fr 1fr' : 'repeat(3, 1fr)', gap: 2 }}>
+      <div className="landing-grid-3">
         {publicReviews.map((review, i) => (
           <motion.div
             key={review.id}
@@ -951,9 +948,9 @@ function ReviewsSection({ isMobile, isTablet }: { isMobile: boolean; isTablet: b
   )
 }
 
-function FinalCTA({ isMobile, isTablet }: { isMobile: boolean; isTablet: boolean }) {
+function FinalCTA() {
   return (
-    <section style={{ padding: isMobile ? '72px 14px' : isTablet ? '92px 24px' : '120px 80px', background: C.bg, borderTop: `1px solid ${C.border}`, textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+    <section className="landing-section-lg" style={{ background: C.bg, borderTop: `1px solid ${C.border}`, textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
       <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 600, height: 400, background: `radial-gradient(ellipse, ${C.accentGlow} 0%, transparent 70%)`, pointerEvents: 'none' }} />
       <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.9 }} style={{ position: 'relative', zIndex: 1 }}>
         <div style={{ fontFamily: SANS, fontSize: 10, letterSpacing: '0.35em', textTransform: 'uppercase', color: C.accent, marginBottom: 20 }}>
@@ -1005,7 +1002,7 @@ function FinalCTA({ isMobile, isTablet }: { isMobile: boolean; isTablet: boolean
   )
 }
 
-function Footer({ isMobile, isTablet }: { isMobile: boolean; isTablet: boolean }) {
+function Footer() {
   const cols = [
     { title: 'Explorar', links: ['Films', 'Directores', 'Listas', 'Journal', 'Miembros'] },
     { title: 'Tu cuenta', links: ['Iniciar sesion', 'Crear cuenta', 'El Vault', 'Watchlist', 'Resenas'] },
@@ -1013,8 +1010,8 @@ function Footer({ isMobile, isTablet }: { isMobile: boolean; isTablet: boolean }
   ]
 
   return (
-    <footer style={{ background: C.surface, borderTop: `1px solid ${C.border}`, padding: isMobile ? '40px 14px 28px' : isTablet ? '56px 24px 32px' : '64px 80px 40px' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? '1.5fr 1fr 1fr' : '2fr 1fr 1fr 1fr', gap: isMobile ? 28 : 48, marginBottom: 48 }}>
+    <footer className="landing-footer" style={{ background: C.surface, borderTop: `1px solid ${C.border}` }}>
+      <div className="landing-footer-grid">
         <div>
           <div style={{ fontFamily: SERIF, fontSize: 24, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text, marginBottom: 16 }}>
             Cine<span style={{ color: C.accent }}>Vault</span>
@@ -1056,35 +1053,25 @@ function Footer({ isMobile, isTablet }: { isMobile: boolean; isTablet: boolean }
 }
 
 export default function Landing() {
-  const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth)
-  const isMobile = viewportWidth < 768
-  const isTablet = viewportWidth >= 768 && viewportWidth < 1100
-
-  useEffect(() => {
-    const onResize = () => setViewportWidth(window.innerWidth)
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
-  }, [])
-
   return (
     <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: SANS, overflowX: 'hidden' }}>
       <GrainOverlay />
-      <Navbar isMobile={isMobile} isTablet={isTablet} />
+      <Navbar />
       <Hero />
 
-      <section style={{ padding: isMobile ? '52px 14px' : isTablet ? '68px 24px' : '80px 80px', background: C.bg }}>
+      <section className="landing-section-sm" style={{ background: C.bg }}>
         <SectionHeader eyebrow="Lo que otros usuarios estan viendo" title="El canon esta vivo" />
         <InfiniteSlider />
       </section>
 
-      <MovieGridSection endpoint="/api/movies/top-rated" eyebrow="Coleccion" title="Aclamados por la critica" isMobile={isMobile} isTablet={isTablet} />
-      <MovieGridSection endpoint="/api/movies/upcoming" eyebrow="Coleccion" title="Pronto en cine" isMobile={isMobile} isTablet={isTablet} />
+      <MovieGridSection endpoint="/api/movies/top-rated" eyebrow="Coleccion" title="Aclamados por la critica" />
+      <MovieGridSection endpoint="/api/movies/upcoming" eyebrow="Coleccion" title="Pronto en cine" />
 
-      <HowItWorks isMobile={isMobile} isTablet={isTablet} />
-      <NightFeature isMobile={isMobile} isTablet={isTablet} />
-      <ReviewsSection isMobile={isMobile} isTablet={isTablet} />
-      <FinalCTA isMobile={isMobile} isTablet={isTablet} />
-      <Footer isMobile={isMobile} isTablet={isTablet} />
+      <HowItWorks />
+      <NightFeature />
+      <ReviewsSection />
+      <FinalCTA />
+      <Footer />
     </div>
   )
 }

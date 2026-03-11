@@ -20,11 +20,9 @@ type SearchMovieResult = {
 export function Navbar({
   onNavigateHome,
   onSearch,
-  isMobile,
 }: {
   onNavigateHome: () => void
   onSearch: (query: string) => void
-  isMobile: boolean
 }) {
   const navigate = useNavigate()
   const wrapperRef = useRef<HTMLDivElement | null>(null)
@@ -94,6 +92,7 @@ export function Navbar({
 
   return (
     <nav
+      className="profile-nav"
       style={{
         position: 'fixed',
         top: 0,
@@ -103,7 +102,6 @@ export function Navbar({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: isMobile ? '14px 16px' : '20px 48px',
         background: 'linear-gradient(to bottom, rgba(8,8,8,0.98) 0%, transparent 100%)',
         fontFamily: SANS,
       }}
@@ -126,7 +124,7 @@ export function Navbar({
         Cine<span style={{ color: C.accent }}>Vault</span>
       </button>
 
-      <ul style={{ display: isMobile ? 'none' : 'flex', gap: 36, listStyle: 'none', margin: 0, padding: 0 }}>
+      <ul className="profile-nav-links" style={{ gap: 36, listStyle: 'none', margin: 0, padding: 0 }}>
         {['Explorar', 'Feed', 'Esta noche', 'Perfil'].map((link) => {
           const isActive = link === 'Perfil'
           return (
@@ -154,8 +152,8 @@ export function Navbar({
         })}
       </ul>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 20 }}>
-        <div ref={wrapperRef} style={{ position: 'relative', width: isMobile ? 'min(132px, calc(100vw - 220px))' : 270 }}>
+      <div className="profile-nav-actions" style={{ display: 'flex', alignItems: 'center' }}>
+        <div ref={wrapperRef} className="profile-nav-search-wrapper" style={{ position: 'relative' }}>
           <form
             onSubmit={(event) => {
               event.preventDefault()
@@ -250,9 +248,9 @@ export function Navbar({
                         style={{ width: 44, height: 64, objectFit: 'cover', borderRadius: 2, flexShrink: 0 }}
                       />
                       <span
+                        className="profile-search-title"
                         style={{
                           fontFamily: SANS,
-                          fontSize: isMobile ? 13 : 16,
                           fontWeight: 700,
                           letterSpacing: '0.01em',
                           textTransform: 'uppercase',
@@ -290,62 +288,60 @@ export function Navbar({
           />
         </button>
 
-        {isMobile && (
-          <div style={{ position: 'relative' }}>
-            <button
-              onClick={() => setIsMobileMenuOpen((value) => !value)}
+        <div className="profile-mobile-only" style={{ position: 'relative', display: 'none' }}>
+          <button
+            onClick={() => setIsMobileMenuOpen((value) => !value)}
+            style={{
+              ...inputButtonReset,
+              color: C.textSoft,
+              padding: '8px 9px',
+              border: `1px solid ${C.border}`,
+              borderRadius: 999,
+            }}
+          >
+            <span style={{ fontSize: 11, letterSpacing: '0.08em' }}>Menu</span>
+          </button>
+
+          {isMobileMenuOpen && (
+            <div
               style={{
-                ...inputButtonReset,
-                color: C.textSoft,
-                padding: '8px 9px',
+                position: 'absolute',
+                right: 0,
+                top: 42,
+                minWidth: 170,
                 border: `1px solid ${C.border}`,
-                borderRadius: 999,
+                background: 'rgba(7,8,11,0.98)',
+                padding: 8,
+                display: 'grid',
+                gap: 6,
               }}
             >
-              <span style={{ fontSize: 11, letterSpacing: '0.08em' }}>Menu</span>
-            </button>
-
-            {isMobileMenuOpen && (
-              <div
-                style={{
-                  position: 'absolute',
-                  right: 0,
-                  top: 42,
-                  minWidth: 170,
-                  border: `1px solid ${C.border}`,
-                  background: 'rgba(7,8,11,0.98)',
-                  padding: 8,
-                  display: 'grid',
-                  gap: 6,
-                }}
-              >
-                {['Explorar', 'Feed', 'Esta noche', 'Perfil'].map((label) => (
-                  <button
-                    key={label}
-                    onClick={() => {
-                      if (label === 'Explorar') onNavigateHome()
-                      setIsMobileMenuOpen(false)
-                    }}
-                    style={{
-                      border: 'none',
-                      background: 'transparent',
-                      color: C.text,
-                      textAlign: 'left',
-                      padding: '8px 10px',
-                      fontFamily: SANS,
-                      fontSize: 11,
-                      letterSpacing: '0.12em',
-                      textTransform: 'uppercase',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+              {['Explorar', 'Feed', 'Esta noche', 'Perfil'].map((label) => (
+                <button
+                  key={label}
+                  onClick={() => {
+                    if (label === 'Explorar') onNavigateHome()
+                    setIsMobileMenuOpen(false)
+                  }}
+                  style={{
+                    border: 'none',
+                    background: 'transparent',
+                    color: C.text,
+                    textAlign: 'left',
+                    padding: '8px 10px',
+                    fontFamily: SANS,
+                    fontSize: 11,
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </nav>
   )
@@ -364,8 +360,6 @@ export function ProfileHero({
   onToggleFollow,
   onEditProfile,
   onOpenSettings,
-  isMobile,
-  isTablet,
 }: {
   header: ProfileHeaderData
   stats: ProfileStatsData
@@ -379,8 +373,6 @@ export function ProfileHero({
   onToggleFollow?: () => void
   onEditProfile?: () => void
   onOpenSettings?: () => void
-  isMobile: boolean
-  isTablet: boolean
 }) {
   const [openList, setOpenList] = useState<'followers' | 'following' | null>(null)
   const listItems = openList === 'followers' ? followers : following
@@ -397,14 +389,7 @@ export function ProfileHero({
   }, [openList])
 
   return (
-    <div
-      style={{
-        position: 'relative',
-        minHeight: isMobile ? 620 : isTablet ? 560 : 480,
-        height: isMobile ? 'auto' : isTablet ? 560 : 480,
-        overflow: 'hidden',
-      }}
-    >
+    <div className="profile-hero">
       <div
         style={{
           position: 'absolute',
@@ -432,26 +417,15 @@ export function ProfileHero({
       />
 
       <motion.div
+        className="profile-hero-content"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.9, ease: 'easeOut', delay: 0.1 }}
-        style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          padding: isMobile ? '0 16px 24px' : isTablet ? '0 24px 30px' : '0 48px 40px',
-          display: 'flex',
-          flexDirection: isMobile ? 'column' : 'row',
-          alignItems: isMobile ? 'flex-start' : 'flex-end',
-          gap: isMobile ? 16 : 32,
-        }}
       >
         <div style={{ position: 'relative', flexShrink: 0 }}>
           <div
+            className="profile-hero-avatar-wrapper"
             style={{
-              width: isMobile ? 80 : 100,
-              height: isMobile ? 80 : 100,
               borderRadius: '50%',
               border: `2px solid ${C.accent}`,
               overflow: 'hidden',
@@ -464,7 +438,7 @@ export function ProfileHero({
         </div>
 
         <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: SERIF, fontSize: isMobile ? 34 : 44, fontWeight: 400, lineHeight: 1, letterSpacing: '-0.01em', color: C.text, marginBottom: 6 }}>
+          <div className="profile-hero-name" style={{ fontFamily: SERIF, fontWeight: 400, lineHeight: 1, letterSpacing: '-0.01em', color: C.text, marginBottom: 6 }}>
             {header.displayName}
           </div>
           <div style={{ fontSize: 12, color: C.textSoft, letterSpacing: '0.12em', fontFamily: SANS, marginBottom: 12 }}>
@@ -546,34 +520,36 @@ export function ProfileHero({
           )}
         </div>
 
-        <div style={{ display: 'flex', gap: isMobile ? 12 : 24, alignSelf: isMobile ? 'stretch' : 'flex-end', paddingBottom: 8, width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'space-between' : 'flex-start', flexWrap: 'wrap' }}>
+        <div className="profile-hero-stats-wrapper">
           {[
             { num: String(stats.views), label: 'vistas' },
             { num: String(stats.reviews), label: 'reseñas' },
             { num: String(stats.watchlist), label: 'watchlist' },
           ].map((item) => (
-            <div key={item.label} style={{ textAlign: 'center', minWidth: isMobile ? 56 : 76 }}>
-              <span style={{ fontFamily: SERIF, fontSize: isMobile ? 26 : 32, fontWeight: 300, display: 'block', color: C.text, lineHeight: 1 }}>{item.num}</span>
-              <span style={{ fontSize: isMobile ? 9 : 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.textSoft, marginTop: 3, display: 'block', fontFamily: SANS }}>
+            <div key={item.label} className="profile-hero-stat-item" style={{ textAlign: 'center' }}>
+              <span className="profile-hero-stat-num" style={{ fontFamily: SERIF, fontWeight: 300, display: 'block', color: C.text, lineHeight: 1 }}>{item.num}</span>
+              <span className="profile-hero-stat-label" style={{ letterSpacing: '0.2em', textTransform: 'uppercase', color: C.textSoft, marginTop: 3, display: 'block', fontFamily: SANS }}>
                 {item.label}
               </span>
             </div>
           ))}
           <button
             onClick={() => setOpenList(openList === 'following' ? null : 'following')}
-            style={{ border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'center', minWidth: isMobile ? 56 : 86, padding: 0 }}
+            className="profile-hero-stat-item"
+            style={{ border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'center', padding: 0 }}
           >
-            <span style={{ fontFamily: SERIF, fontSize: isMobile ? 26 : 32, fontWeight: 300, display: 'block', color: C.text, lineHeight: 1 }}>{stats.following}</span>
-            <span style={{ fontSize: isMobile ? 9 : 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.textSoft, marginTop: 3, display: 'block', fontFamily: SANS }}>
+            <span className="profile-hero-stat-num" style={{ fontFamily: SERIF, fontWeight: 300, display: 'block', color: C.text, lineHeight: 1 }}>{stats.following}</span>
+            <span className="profile-hero-stat-label" style={{ letterSpacing: '0.2em', textTransform: 'uppercase', color: C.textSoft, marginTop: 3, display: 'block', fontFamily: SANS }}>
               following
             </span>
           </button>
           <button
             onClick={() => setOpenList(openList === 'followers' ? null : 'followers')}
-            style={{ border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'center', minWidth: isMobile ? 56 : 86, padding: 0 }}
+            className="profile-hero-stat-item"
+            style={{ border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'center', padding: 0 }}
           >
-            <span style={{ fontFamily: SERIF, fontSize: isMobile ? 26 : 32, fontWeight: 300, display: 'block', color: C.text, lineHeight: 1 }}>{stats.followers}</span>
-            <span style={{ fontSize: isMobile ? 9 : 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.textSoft, marginTop: 3, display: 'block', fontFamily: SANS }}>
+            <span className="profile-hero-stat-num" style={{ fontFamily: SERIF, fontWeight: 300, display: 'block', color: C.text, lineHeight: 1 }}>{stats.followers}</span>
+            <span className="profile-hero-stat-label" style={{ letterSpacing: '0.2em', textTransform: 'uppercase', color: C.textSoft, marginTop: 3, display: 'block', fontFamily: SANS }}>
               followers
             </span>
           </button>
@@ -597,7 +573,7 @@ export function ProfileHero({
               backdropFilter: 'blur(2px)',
               display: 'grid',
               placeItems: 'center',
-              padding: isMobile ? '16px' : '24px',
+              padding: '16px',
             }}
           >
             <motion.div
@@ -616,70 +592,70 @@ export function ProfileHero({
                 boxShadow: '0 28px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.03)',
               }}
             >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '14px 14px 10px',
-                borderBottom: `1px solid ${C.border}`,
-              }}
-            >
-              <div style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.accent, fontFamily: SANS }}>
-                {openList === 'followers' ? 'Followers' : 'Following'}
-              </div>
-              <button
-                type="button"
-                onClick={() => setOpenList(null)}
-                aria-label="Cerrar popup"
+              <div
                 style={{
-                  border: `1px solid ${C.border}`,
-                  background: 'transparent',
-                  color: C.textSoft,
-                  width: 30,
-                  height: 30,
-                  display: 'grid',
-                  placeItems: 'center',
-                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '14px 14px 10px',
+                  borderBottom: `1px solid ${C.border}`,
                 }}
               >
-                <X size={14} />
-              </button>
-            </div>
-
-            <div style={{ maxHeight: 'calc(min(78vh, 620px) - 56px)', overflowY: 'auto', padding: '8px 10px 10px' }}>
-              {listItems.length === 0 && (
-                <div style={{ color: C.textSoft, fontFamily: SERIF, fontStyle: 'italic', padding: '10px 6px 12px' }}>
-                  Aún no hay usuarios aquí.
+                <div style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.accent, fontFamily: SANS }}>
+                  {openList === 'followers' ? 'Followers' : 'Following'}
                 </div>
-              )}
-              {listItems.map((user) => (
                 <button
-                  key={`${openList}-${user.id}`}
-                  onClick={() => {
-                    setOpenList(null)
-                    onNavigateToUser(user.username)
-                  }}
+                  type="button"
+                  onClick={() => setOpenList(null)}
+                  aria-label="Cerrar popup"
                   style={{
-                    width: '100%',
-                    border: 'none',
+                    border: `1px solid ${C.border}`,
                     background: 'transparent',
+                    color: C.textSoft,
+                    width: 30,
+                    height: 30,
+                    display: 'grid',
+                    placeItems: 'center',
                     cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    padding: '10px 8px',
-                    color: C.text,
-                    textAlign: 'left',
                   }}
                 >
-                  <div style={{ width: 34, height: 34, borderRadius: '50%', overflow: 'hidden', border: `1px solid ${C.border}`, flexShrink: 0 }}>
-                    <Img src={user.avatarUrl || IMG.avatar} alt={user.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  </div>
-                  <span style={{ fontFamily: SANS, fontSize: 13 }}>@{user.username}</span>
+                  <X size={14} />
                 </button>
-              ))}
-            </div>
+              </div>
+
+              <div style={{ maxHeight: 'calc(min(78vh, 620px) - 56px)', overflowY: 'auto', padding: '8px 10px 10px' }}>
+                {listItems.length === 0 && (
+                  <div style={{ color: C.textSoft, fontFamily: SERIF, fontStyle: 'italic', padding: '10px 6px 12px' }}>
+                    Aún no hay usuarios aquí.
+                  </div>
+                )}
+                {listItems.map((user) => (
+                  <button
+                    key={`${openList}-${user.id}`}
+                    onClick={() => {
+                      setOpenList(null)
+                      onNavigateToUser(user.username)
+                    }}
+                    style={{
+                      width: '100%',
+                      border: 'none',
+                      background: 'transparent',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      padding: '10px 8px',
+                      color: C.text,
+                      textAlign: 'left',
+                    }}
+                  >
+                    <div style={{ width: 34, height: 34, borderRadius: '50%', overflow: 'hidden', border: `1px solid ${C.border}`, flexShrink: 0 }}>
+                      <Img src={user.avatarUrl || IMG.avatar} alt={user.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                    <span style={{ fontFamily: SANS, fontSize: 13 }}>@{user.username}</span>
+                  </button>
+                ))}
+              </div>
             </motion.div>
           </motion.div>
         )}
@@ -688,9 +664,10 @@ export function ProfileHero({
   )
 }
 
-export function TabsBar({ active, onSelect, isMobile }: { active: string; onSelect: (tab: string) => void; isMobile: boolean }) {
+export function TabsBar({ active, onSelect }: { active: string; onSelect: (tab: string) => void }) {
   return (
     <div
+      className="profile-tabs-bar"
       style={{
         position: 'sticky',
         top: 0,
@@ -698,7 +675,6 @@ export function TabsBar({ active, onSelect, isMobile }: { active: string; onSele
         background: 'rgba(8,8,8,0.96)',
         backdropFilter: 'blur(20px)',
         borderBottom: `1px solid ${C.border}`,
-        padding: isMobile ? '0 10px' : '0 48px',
         display: 'flex',
         overflowX: 'auto',
         gap: 0,
@@ -709,8 +685,8 @@ export function TabsBar({ active, onSelect, isMobile }: { active: string; onSele
         <button
           key={tab}
           onClick={() => onSelect(tab)}
+          className="profile-tab-btn"
           style={{
-            padding: isMobile ? '14px 14px' : '18px 24px',
             fontSize: 11,
             letterSpacing: '0.16em',
             textTransform: 'uppercase',
@@ -731,16 +707,14 @@ export function TabsBar({ active, onSelect, isMobile }: { active: string; onSele
   )
 }
 
-export function Footer({ isMobile }: { isMobile: boolean }) {
+export function Footer() {
   return (
     <div
+      className="profile-footer"
       style={{
         borderTop: `1px solid ${C.border}`,
-        padding: isMobile ? '16px' : '20px 48px',
         display: 'flex',
         alignItems: 'center',
-        flexDirection: isMobile ? 'column' : 'row',
-        gap: isMobile ? 10 : 0,
         justifyContent: 'space-between',
         marginTop: 24,
       }}

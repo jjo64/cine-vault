@@ -7,6 +7,7 @@ import { getStoredAccessToken, refreshAccessToken } from './services/authService
 import './App.css'
 
 const Home = lazy(() => import('./pages/Home'))
+const FeedPage = lazy(() => import('./pages/Feed'))
 const MovieDetail = lazy(() => import('./pages/MovieDetail'))
 const SearchResults = lazy(() => import('./pages/SearchResults'))
 const PersonPage = lazy(() => import('./pages/PersonPage.tsx'))
@@ -76,33 +77,34 @@ function App() {
 
     return (
         <SocketProvider>
-        <SeoManager />
-        <Suspense fallback={<div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#080808', color: '#7A7A7A' }}>Cargando...</div>}>
-            <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/movie/:slugOrId" element={<MovieDetail />} />
-                <Route path="/person/:id" element={<PersonPage />} />
-                <Route path="/settings" element={<SettingsPage />} />
-                <Route path="/search" element={<SearchResults />} />
-                <Route path="/search-results" element={<SearchResults />} />
-                <Route path="/search/:query" element={<SearchResults />} />
-                <Route path="/profile" element={<ProfileIndexPage />} />
-                <Route path="/verify-email" element={<VerifyEmailPage />} />
-                <Route path="/auth/callback" element={<AuthCallbackPage />} />
-                <Route path="/coming-soon/:section" element={<ComingSoonPage />} />
-                <Route path="/films" element={<ComingSoonPage />} />
-                <Route path="/lists" element={<ListsPage />} />
-                <Route path="/members" element={<ComingSoonPage />} />
-                <Route path="/journal" element={<ComingSoonPage />} />
-                <Route path="/:username" element={<Profile />} />
-                <Route path="*" element={<NotFoundPage />} />
-            </Routes>
-        </Suspense>
-        <AuthModal
-            isOpen={isAuthModalOpen}
-            onClose={() => setIsAuthModalOpen(false)}
-            initialMode={authMode}
-        />
+            <SeoManager />
+            <Suspense fallback={<div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#080808', color: '#7A7A7A' }}>Cargando...</div>}>
+                <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/feed" element={<FeedPage />} />
+                    <Route path="/movie/:slugOrId" element={<MovieDetail />} />
+                    <Route path="/person/:id" element={<PersonPage />} />
+                    <Route path="/settings" element={<SettingsPage />} />
+                    <Route path="/search" element={<SearchResults />} />
+                    <Route path="/search-results" element={<SearchResults />} />
+                    <Route path="/search/:query" element={<SearchResults />} />
+                    <Route path="/profile" element={<ProfileIndexPage />} />
+                    <Route path="/verify-email" element={<VerifyEmailPage />} />
+                    <Route path="/auth/callback" element={<AuthCallbackPage />} />
+                    <Route path="/coming-soon/:section" element={<ComingSoonPage />} />
+                    <Route path="/films" element={<ComingSoonPage />} />
+                    <Route path="/lists" element={<ListsPage />} />
+                    <Route path="/members" element={<ComingSoonPage />} />
+                    <Route path="/journal" element={<ComingSoonPage />} />
+                    <Route path="/:username" element={<Profile />} />
+                    <Route path="*" element={<NotFoundPage />} />
+                </Routes>
+            </Suspense>
+            <AuthModal
+                isOpen={isAuthModalOpen}
+                onClose={() => setIsAuthModalOpen(false)}
+                initialMode={authMode}
+            />
         </SocketProvider>
     )
 }

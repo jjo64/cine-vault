@@ -71,7 +71,7 @@ export default function VerifyEmailPage() {
     return () => {
       active = false
     }
-  }, [token, status])
+  }, [token, status, navigate])
 
   return (
     <div style={{ minHeight: '100vh', background: C.bg, color: C.text, display: 'grid', placeItems: 'center', padding: '20px', fontFamily: SANS }}>

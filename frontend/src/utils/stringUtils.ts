@@ -8,3 +8,7 @@ export const createSlug = (title: string): string => {
         .replace(/\s+/g, "-") // Replace spaces with hyphens
         .replace(/-+/g, "-"); // Remove duplicate hyphens
 };
+
+export function fmtCount(n: number) {
+  return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
+}

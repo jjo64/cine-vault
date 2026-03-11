@@ -28,7 +28,7 @@ import {
   regenerateRecoveryCodes,
   authorizedFetch,
 } from '../services/authServices'
-import { useResponsive } from '../hooks/useResponsive'
+import './Settings.css'
 
 type SectionKey = 'perfil' | 'seguridad' | 'cuenta'
 
@@ -66,7 +66,6 @@ function FieldError({ children }: { children?: string | null }) {
 
 export default function SettingsPage() {
   const navigate = useNavigate()
-  const { isMobile } = useResponsive()
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -456,15 +455,16 @@ export default function SettingsPage() {
   return (
     <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: SANS }}>
       <GrainOverlay />
-      <Navbar onNavigateHome={() => navigate('/')} onSearch={(query) => navigate(`/search?q=${encodeURIComponent(query)}`)} isMobile={isMobile} />
+      <Navbar onNavigateHome={() => navigate('/')} onSearch={(query) => navigate(`/search?q=${encodeURIComponent(query)}`)} />
 
-      <main style={{ maxWidth: 980, margin: '0 auto', padding: isMobile ? '90px 14px 120px' : '96px 20px 130px' }}>
-        <button
-          onClick={handleTryLeave}
-          style={{ border: `1px solid ${C.border}`, background: 'transparent', color: C.textSoft, display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 12px', cursor: 'pointer', fontFamily: SANS, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 16 }}
-        >
-          <ArrowLeft size={14} /> Volver
-        </button>
+      <main className="settings-main">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 40, cursor: 'pointer' }} onClick={handleTryLeave}>
+          <button
+            style={{ border: `1px solid ${C.border}`, background: 'transparent', color: C.textSoft, display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 12px', cursor: 'pointer', fontFamily: SANS, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 16 }}
+          >
+            <ArrowLeft size={14} /> Volver
+          </button>
+        </div>
 
         <h1 style={{ margin: '0 0 12px', fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(36px, 6vw, 52px)' }}>Editar perfil</h1>
 

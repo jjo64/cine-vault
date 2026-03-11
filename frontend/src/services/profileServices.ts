@@ -183,14 +183,10 @@ export const checkUsernameAvailability = async (username: string) => {
   const candidate = username.trim()
   if (!candidate) return { available: false }
 
-  try {
-    const response = await fetch(`${API_URL}/api/users/username/${encodeURIComponent(candidate)}`)
-    if (response.status === 404) return { available: true }
-    if (!response.ok) throw new Error('No se pudo validar username')
-    return { available: false }
-  } catch (error) {
-    throw error
-  }
+  const response = await fetch(`${API_URL}/api/users/username/${encodeURIComponent(candidate)}`)
+  if (response.status === 404) return { available: true }
+  if (!response.ok) throw new Error('No se pudo validar username')
+  return { available: false }
 }
 
 export const updateProfileSettings = (token: string | null | undefined, body: { username?: string; email?: string; bio?: string }) =>

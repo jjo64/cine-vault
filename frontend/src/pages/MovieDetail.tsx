@@ -1,20 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { motion, useScroll, useTransform } from 'motion/react'
-import {
-  ChevronLeft,
-  Bookmark,
-  Heart,
-  Share2,
-  List,
-  MessageSquare,
-  ChevronRight,
-  ExternalLink,
-  Menu,
-  X,
-  Pencil,
-  Trash2,
-} from 'lucide-react'
+import { motion, useScroll, useTransform } from 'framer-motion'
+import { Bookmark, ChevronLeft, ChevronRight, ExternalLink, Heart, List, Menu, MessageSquare, Pencil, Share2, Trash2, X } from 'lucide-react'
+import './MovieDetail.css'
 import { createSlug } from '../utils/stringUtils'
 import { resolveNavPathWithFallback } from '../lib/navigation'
 import {
@@ -649,7 +637,7 @@ function mapPlatforms(movie: MovieDetailApi | null): PlatformEntry[] {
 
   const entries: PlatformEntry[] = []
   const addEntries = (items: Array<{ provider_name: string }> | undefined, type: string) => {
-    ;(items || []).forEach((provider) => {
+    ; (items || []).forEach((provider) => {
       if (entries.some((entry) => entry.name === provider.provider_name && entry.type === type)) return
       entries.push({
         name: provider.provider_name,
@@ -713,13 +701,9 @@ function NoticeBar({ message, type }: { message: string | null; type: 'success' 
 function Navbar({
   viewer,
   onLogout,
-  isMobile,
-  isTablet,
 }: {
   viewer: Viewer | null
   onLogout: () => void
-  isMobile: boolean
-  isTablet: boolean
 }) {
   const navigate = useNavigate()
   const [scrolled, setScrolled] = useState(false)
@@ -769,13 +753,13 @@ function Navbar({
   }, [])
 
   const navLinks = viewer ? ['Films', 'Lists', 'Members', 'Journal'] : ['Sign in', 'Create account', 'Films', 'Lists', 'Members', 'Journal']
-  const visibleNavLinks = isMobile ? [] : isTablet ? navLinks.slice(0, 3) : navLinks
   const openAuthModal = (mode: 'login' | 'register') => {
     window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: { mode } }))
   }
 
   return (
     <nav
+      className="md-navbar"
       style={{
         position: 'fixed',
         top: 0,
@@ -785,20 +769,18 @@ function Navbar({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: isMobile ? '0 14px' : isTablet ? '0 24px' : '0 52px',
-        height: isMobile ? 56 : 64,
         background: scrolled ? 'rgba(8,8,8,0.97)' : 'linear-gradient(to bottom, rgba(8,8,8,0.97) 0%, transparent 100%)',
         backdropFilter: scrolled ? 'blur(20px)' : 'none',
         borderBottom: scrolled ? `1px solid ${C.border}` : '1px solid transparent',
         transition: 'background 0.4s, border-color 0.4s',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 12 : 30 }}>
+      <div className="md-nav-logo" style={{ display: 'flex', alignItems: 'center' }}>
         <Link to="/" style={{ fontFamily: SERIF, fontSize: 21, fontWeight: 500, letterSpacing: '0.13em', textTransform: 'uppercase', color: C.text, textDecoration: 'none' }}>
           Cine<span style={{ color: C.accent }}>Vault</span>
         </Link>
-        <ul style={{ display: 'flex', alignItems: 'center', gap: isTablet ? 14 : 24, listStyle: 'none', margin: 0, padding: 0 }}>
-          {visibleNavLinks.map((item) => {
+        <ul className="md-desktop-links md-nav-links" style={{ display: 'flex', alignItems: 'center', listStyle: 'none', margin: 0, padding: 0 }}>
+          {navLinks.map((item) => {
             const isAuthLink = item === 'Sign in' || item === 'Create account'
             return (
               <li key={item}>
@@ -823,8 +805,8 @@ function Navbar({
         </ul>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 12 }}>
-        <div ref={wrapperRef} style={{ position: 'relative', width: isMobile ? 130 : isTablet ? 190 : 240 }}>
+      <div className="md-nav-right" style={{ display: 'flex', alignItems: 'center' }}>
+        <div className="md-search-wrapper" ref={wrapperRef} style={{ position: 'relative' }}>
           <div style={{ height: 38, borderRadius: 999, border: `1px solid ${C.border}`, background: 'rgba(255,255,255,0.14)', display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px' }}>
             <input
               value={query}
@@ -867,36 +849,34 @@ function Navbar({
           )}
         </div>
 
-        {isMobile && (
-          <div style={{ position: 'relative' }}>
-            <button
-              onClick={() => setMobileNavOpen((value) => !value)}
-              style={{ width: 36, height: 36, border: `1px solid ${C.border}`, background: 'transparent', color: C.textSoft, cursor: 'pointer', display: 'grid', placeItems: 'center' }}
-            >
-              {mobileNavOpen ? <X size={14} /> : <Menu size={14} />}
-            </button>
-            {mobileNavOpen && (
-              <div style={{ position: 'absolute', right: 0, top: 42, minWidth: 170, border: `1px solid ${C.border}`, background: 'rgba(8,8,8,0.98)', padding: 8, display: 'grid', gap: 6 }}>
-                {navLinks.map((item) => (
-                  <button
-                    key={item}
-                    onClick={() => {
-                      if (item === 'Sign in' || item === 'Create account') {
-                        openAuthModal(item === 'Create account' ? 'register' : 'login')
-                      } else {
-                        navigate(resolveNavPathWithFallback(item))
-                      }
-                      setMobileNavOpen(false)
-                    }}
-                    style={{ border: 'none', background: 'transparent', color: C.text, textAlign: 'left', padding: '8px 10px', fontFamily: SANS, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}
-                  >
-                    {item}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+        <div className="md-mobile-menu-btn" style={{ position: 'relative' }}>
+          <button
+            onClick={() => setMobileNavOpen((value) => !value)}
+            style={{ width: 36, height: 36, border: `1px solid ${C.border}`, background: 'transparent', color: C.textSoft, cursor: 'pointer', display: 'grid', placeItems: 'center' }}
+          >
+            {mobileNavOpen ? <X size={14} /> : <Menu size={14} />}
+          </button>
+          {mobileNavOpen && (
+            <div style={{ position: 'absolute', right: 0, top: 42, minWidth: 170, border: `1px solid ${C.border}`, background: 'rgba(8,8,8,0.98)', padding: 8, display: 'grid', gap: 6 }}>
+              {navLinks.map((item) => (
+                <button
+                  key={item}
+                  onClick={() => {
+                    if (item === 'Sign in' || item === 'Create account') {
+                      openAuthModal(item === 'Create account' ? 'register' : 'login')
+                    } else {
+                      navigate(resolveNavPathWithFallback(item))
+                    }
+                    setMobileNavOpen(false)
+                  }}
+                  style={{ border: 'none', background: 'transparent', color: C.text, textAlign: 'left', padding: '8px 10px', fontFamily: SANS, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         {!viewer ? (
           <button
@@ -938,8 +918,6 @@ function Hero({
   onAddToList,
   onWriteReview,
   onShare,
-  isMobile,
-  isTablet,
 }: {
   movie: MovieDetailApi
   userRating: number
@@ -953,8 +931,6 @@ function Hero({
   onAddToList: () => void
   onWriteReview: () => void
   onShare: () => void
-  isMobile: boolean
-  isTablet: boolean
 }) {
   const heroRef = useRef<HTMLDivElement>(null)
   const actionMenuRef = useRef<HTMLDivElement | null>(null)
@@ -1012,7 +988,7 @@ function Hero({
   const backdropUrl = movie.backdrop_path ? `${TMDB_IMAGE}${movie.backdrop_path}` : ''
 
   return (
-    <div ref={heroRef} style={{ position: 'relative', minHeight: isMobile ? '78vh' : '100vh', display: 'flex', alignItems: 'flex-end', overflow: 'hidden' }}>
+    <div ref={heroRef} className="md-hero" style={{ position: 'relative', display: 'flex', alignItems: 'flex-end', overflow: 'hidden' }}>
       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #0d1118 0%, #08090d 40%, #0a0c08 100%)' }} />
 
       {backdropUrl && (
@@ -1031,12 +1007,13 @@ function Hero({
       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(8,8,8,0.92) 0%, rgba(8,8,8,0.8) 40%, rgba(8,8,8,0.45) 70%, rgba(8,8,8,0.78) 100%)' }} />
       <div style={{ position: 'absolute', bottom: 0, left: 0, width: 500, height: 400, background: `radial-gradient(ellipse at bottom left, ${C.accentGlow}, transparent 70%)`, pointerEvents: 'none' }} />
 
-      {posterUrl && !isMobile && (
+      {posterUrl && (
         <motion.div
+          className="md-hero-poster"
           initial={{ opacity: 0, y: -24, scale: 0.94 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.3 }}
-          style={{ position: 'absolute', right: isTablet ? '5%' : '12%', top: '50%', y: posterY, width: isTablet ? 180 : 220, zIndex: 10, transform: 'translateY(-50%)' }}
+          style={{ position: 'absolute', top: '50%', y: posterY, zIndex: 10, transform: 'translateY(-50%)' }}
         >
           <div style={{ aspectRatio: '2/3', borderRadius: 2, overflow: 'hidden', boxShadow: '0 40px 100px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.04)', position: 'relative' }}>
             <Img src={posterUrl} alt={`${movie.title} poster`} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(0.6) brightness(0.85)' }} />
@@ -1046,7 +1023,7 @@ function Hero({
         </motion.div>
       )}
 
-      <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, ease: 'easeOut', delay: 0.1 }} style={{ position: 'relative', zIndex: 10, padding: isMobile ? '0 16px 28px' : isTablet ? '0 28px 40px' : '0 52px 64px', maxWidth: isMobile ? '100%' : 680 }}>
+      <motion.div className="md-hero-content" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, ease: 'easeOut', delay: 0.1 }} style={{ position: 'relative', zIndex: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 10, letterSpacing: '0.22em', textTransform: 'uppercase', color: C.accent, padding: '4px 10px', border: `1px solid ${C.accentDim}`, fontFamily: SANS }}>
             {genresText}
@@ -1058,15 +1035,15 @@ function Hero({
         </div>
 
         <div style={{ marginBottom: 4 }}>
-          <h1 style={{ fontFamily: SERIF, fontSize: isMobile ? 'clamp(36px, 12vw, 52px)' : 'clamp(52px, 6vw, 76px)', fontWeight: 300, lineHeight: 0.92, letterSpacing: '-0.02em', color: C.text, margin: 0 }}>
+          <h1 className="md-hero-title" style={{ fontFamily: SERIF, fontWeight: 300, lineHeight: 0.92, letterSpacing: '-0.02em', color: C.text, margin: 0 }}>
             {movie.title}
           </h1>
-          <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: isMobile ? 'clamp(26px, 9vw, 36px)' : 'clamp(40px, 4.5vw, 64px)', fontWeight: 300, lineHeight: 1, color: 'rgba(226,226,226,0.35)', letterSpacing: '-0.01em', marginTop: 2 }}>
+          <div className="md-hero-subtitle" style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 300, lineHeight: 1, color: 'rgba(226,226,226,0.35)', letterSpacing: '-0.01em', marginTop: 2 }}>
             {movie.original_title || movie.title}
           </div>
         </div>
 
-        <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: isMobile ? 17 : 20, color: C.textSoft, marginBottom: 20, letterSpacing: '0.02em', marginTop: 14 }}>
+        <div className="md-hero-director" style={{ fontFamily: SERIF, fontStyle: 'italic', color: C.textSoft, marginBottom: 20, letterSpacing: '0.02em', marginTop: 14 }}>
           Una película de{' '}
           {directorObj ? (
             <Link
@@ -1080,23 +1057,23 @@ function Hero({
           )}
         </div>
 
-        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? 12 : 24, marginBottom: 24 }}>
+        <div className="md-hero-ratings" style={{ display: 'flex', marginBottom: 24 }}>
           <StarRating value={userRating} onChange={onRate} />
 
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, paddingLeft: isMobile ? 0 : 24, borderLeft: isMobile ? 'none' : `1px solid ${C.border}` }}>
+          <div className="md-hero-score" style={{ display: 'flex', alignItems: 'baseline', gap: 5 }}>
             <span style={{ fontFamily: SERIF, fontSize: 34, fontWeight: 300, color: C.gold, lineHeight: 1 }}>{score}</span>
             <span style={{ fontSize: 14, color: C.textMuted, fontFamily: SANS }}>/5</span>
             <span style={{ fontSize: 11, color: C.textSoft, fontFamily: SANS, marginLeft: 4 }}>en CineVault</span>
           </div>
-          <div style={{ fontSize: 11, color: C.textMuted, fontFamily: SANS }}>{votes} ratings</div>
+          <div style={{ fontSize: 11, color: C.textMuted, fontFamily: SANS, display: 'flex', alignItems: 'center' }}>{votes} ratings</div>
         </div>
 
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
           <button
             onClick={onToggleVault}
+            className="md-hero-action-btn"
             style={{
               padding: '12px 20px',
-              width: isMobile ? '100%' : 'auto',
               background: inVault ? C.accentDim : C.accent,
               color: C.bg,
               border: 'none',
@@ -1113,9 +1090,9 @@ function Hero({
 
           <button
             onClick={onWriteReview}
+            className="md-hero-action-btn"
             style={{
               padding: '12px 20px',
-              width: isMobile ? '100%' : 'auto',
               background: 'transparent',
               color: C.textSoft,
               border: `1px solid ${C.border}`,
@@ -1229,19 +1206,19 @@ function Hero({
         </div>
       </motion.div>
 
-      {!isMobile && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2 }} style={{ position: 'absolute', bottom: 28, left: 52, display: 'flex', alignItems: 'center', gap: 12, zIndex: 10 }}>
+      <motion.div className="md-hero-scroll-prompt" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2 }} style={{ position: 'absolute', bottom: 28, left: 52, alignItems: 'center', gap: 12, zIndex: 10 }}>
         <div style={{ width: 32, height: 1, background: C.textMuted, position: 'relative', overflow: 'hidden' }}>
           <motion.div animate={{ x: ['-100%', '0%', '100%'] }} transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }} style={{ position: 'absolute', inset: 0, background: C.accent }} />
         </div>
         <span style={{ fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.textMuted, fontFamily: SANS }}>Seguir leyendo</span>
-      </motion.div>}
+      </motion.div>
     </div>
   )
 }
 
-function DirectorQuote({ director, isMobile }: { director: string; isMobile: boolean }) {
+function DirectorQuote({ director }: { director: string }) {
   return (
-    <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.9 }} style={{ padding: isMobile ? '32px 16px' : '48px 52px', borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}`, background: C.surface, textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+    <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.9 }} className="md-quote" style={{ borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}`, background: C.surface, textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
       <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 400, height: 200, background: `radial-gradient(ellipse, ${C.accentGlow}, transparent 70%)`, pointerEvents: 'none' }} />
       <div style={{ fontFamily: SERIF, fontSize: 'clamp(20px, 2.5vw, 28px)', fontStyle: 'italic', fontWeight: 300, lineHeight: 1.65, color: C.textSoft, maxWidth: 760, margin: '0 auto 16px', position: 'relative' }}>
         <span style={{ color: C.accent, fontSize: '1.3em' }}>&quot;</span>
@@ -1303,15 +1280,15 @@ function Themes({ themes }: { themes: string[] }) {
   )
 }
 
-function Stills({ stills, isMobile }: { stills: string[]; isMobile: boolean }) {
+function Stills({ stills }: { stills: string[] }) {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
 
   return (
     <motion.section initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }} style={{ marginBottom: 64 }}>
       <SectionLabel>Imágenes de la película</SectionLabel>
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '2fr 1fr 1fr', gridTemplateRows: isMobile ? 'auto' : 'auto auto', gap: 4 }}>
+      <div className="md-stills-grid" style={{ gap: 4 }}>
         {stills.map((still, i) => (
-          <div key={still + i} onMouseEnter={() => setHoveredIdx(i)} onMouseLeave={() => setHoveredIdx(null)} style={{ gridColumn: !isMobile && i === 0 ? '1 / 2' : undefined, gridRow: !isMobile && i === 0 ? '1 / 3' : undefined, aspectRatio: i === 0 && !isMobile ? '3/4' : '16/10', position: 'relative', overflow: 'hidden', cursor: 'pointer', background: C.elevated }}>
+          <div key={still + i} className={i === 0 ? 'md-stills-item-1' : ''} onMouseEnter={() => setHoveredIdx(i)} onMouseLeave={() => setHoveredIdx(null)} style={{ position: 'relative', overflow: 'hidden', cursor: 'pointer', background: C.elevated }}>
             <Img src={still} alt={`Still ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: hoveredIdx === i ? 'saturate(0.85) brightness(0.85)' : 'saturate(0.35) brightness(0.65)', transform: hoveredIdx === i ? 'scale(1.03)' : 'scale(1)', transition: 'filter 0.4s, transform 0.4s' }} />
             <div style={{ position: 'absolute', inset: 0, background: 'rgba(8,8,8,0.35)', opacity: hoveredIdx === i ? 1 : 0, transition: 'opacity 0.3s', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <span style={{ fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.8)', fontFamily: SANS }}>Still {i + 1}</span>
@@ -1339,15 +1316,17 @@ function CastCrew({
   const hasPrev = castPage > 0
   const hasNext = start + pageSize < people.length
 
-  useEffect(() => {
-    setCastPage(0)
-  }, [tab])
-
   return (
     <motion.section initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }} style={{ marginBottom: 64 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-        <button onClick={() => setTab('cast')} style={{ border: `1px solid ${tab === 'cast' ? C.accentDim : C.border}`, background: tab === 'cast' ? C.accentGlow : 'transparent', color: tab === 'cast' ? C.accent : C.textSoft, padding: '6px 12px', cursor: 'pointer', fontFamily: SANS, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.12em' }}>Reparto</button>
-        <button onClick={() => setTab('crew')} style={{ border: `1px solid ${tab === 'crew' ? C.accentDim : C.border}`, background: tab === 'crew' ? C.accentGlow : 'transparent', color: tab === 'crew' ? C.accent : C.textSoft, padding: '6px 12px', cursor: 'pointer', fontFamily: SANS, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.12em' }}>Crew</button>
+        <button onClick={() => {
+          setTab('cast')
+          setCastPage(0)
+        }} style={{ border: `1px solid ${tab === 'cast' ? C.accentDim : C.border}`, background: tab === 'cast' ? C.accentGlow : 'transparent', color: tab === 'cast' ? C.accent : C.textSoft, padding: '6px 12px', cursor: 'pointer', fontFamily: SANS, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.12em' }}>Reparto</button>
+        <button onClick={() => {
+          setTab('crew')
+          setCastPage(0)
+        }} style={{ border: `1px solid ${tab === 'crew' ? C.accentDim : C.border}`, background: tab === 'crew' ? C.accentGlow : 'transparent', color: tab === 'crew' ? C.accent : C.textSoft, padding: '6px 12px', cursor: 'pointer', fontFamily: SANS, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.12em' }}>Crew</button>
       </div>
       <SectionLabel>{tab === 'cast' ? 'Reparto' : 'Crew técnico'}</SectionLabel>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))', gap: 16, paddingBottom: 8 }}>
@@ -1491,12 +1470,10 @@ function Reviews({
 function Sidebar({
   movie,
   similar,
-  compact,
   directorObj,
 }: {
   movie: MovieDetailApi
   similar: SimilarFilm[]
-  compact: boolean
   directorObj: { id: number; name: string } | null
 }) {
   const photography = getCrewByJob(movie, ['Director of Photography', 'Cinematography'])
@@ -1516,33 +1493,34 @@ function Sidebar({
 
   return (
     <aside>
-      <div style={{ position: compact ? 'static' : 'sticky', top: 80 }}>
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: compact ? 16 : 24, marginBottom: 20 }}>
+      <div className="md-sidebar-sticky">
+        <div className="md-sidebar-panel" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
           <div style={{ fontSize: 10, letterSpacing: '0.24em', textTransform: 'uppercase', color: C.accent, marginBottom: 18, fontFamily: SANS }}>Ficha técnica</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ display: 'flex', flexDirection: compact ? 'column' : 'row', justifyContent: 'space-between', alignItems: compact ? 'flex-start' : 'baseline', gap: compact ? 4 : 0 }}>
+            <div className="md-sidebar-row">
               <span style={{ fontSize: 11, color: C.textMuted, letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: SANS }}>Director</span>
               {directorObj ? (
                 <Link
                   to={`/person/${directorObj.id}`}
-                  style={{ fontFamily: SERIF, fontSize: compact ? 15 : 16, color: C.accent, textAlign: compact ? 'left' : 'right', maxWidth: '100%', ...textClampOneLine, textDecoration: 'none', borderBottom: `1px solid ${C.accentDim}`, paddingBottom: 1 }}
+                  className="md-sidebar-value"
+                  style={{ fontFamily: SERIF, fontSize: 16, color: C.accent, maxWidth: '100%', ...textClampOneLine, textDecoration: 'none', borderBottom: `1px solid ${C.accentDim}`, paddingBottom: 1 }}
                 >
                   {directorObj.name}
                 </Link>
               ) : (
-                <span style={{ fontFamily: SERIF, fontSize: compact ? 15 : 16, color: C.textSoft, textAlign: compact ? 'left' : 'right', maxWidth: '100%', ...textClampOneLine }}>Desconocido</span>
+                <span className="md-sidebar-value" style={{ fontFamily: SERIF, fontSize: 16, color: C.textSoft, maxWidth: '100%', ...textClampOneLine }}>Desconocido</span>
               )}
             </div>
             {metaRows.map((row) => (
-              <div key={row.key} style={{ display: 'flex', flexDirection: compact ? 'column' : 'row', justifyContent: 'space-between', alignItems: compact ? 'flex-start' : 'baseline', gap: compact ? 4 : 0 }}>
+              <div key={row.key} className="md-sidebar-row">
                 <span style={{ fontSize: 11, color: C.textMuted, letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: SANS }}>{row.key}</span>
-                <span style={{ fontFamily: SERIF, fontSize: compact ? 15 : 16, color: C.textSoft, textAlign: compact ? 'left' : 'right', maxWidth: '100%', ...textClampOneLine }}>{row.val}</span>
+                <span className="md-sidebar-value" style={{ fontFamily: SERIF, fontSize: 16, color: C.textSoft, maxWidth: '100%', ...textClampOneLine }}>{row.val}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: compact ? 16 : 24, marginBottom: 20 }}>
+        <div className="md-sidebar-panel" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
           <div style={{ fontSize: 10, letterSpacing: '0.24em', textTransform: 'uppercase', color: C.accent, marginBottom: 18, fontFamily: SANS }}>Géneros</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {(movie.genres || []).map((genre) => (
@@ -1553,25 +1531,25 @@ function Sidebar({
           </div>
         </div>
 
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: compact ? 16 : 24, marginBottom: 20 }}>
+        <div className="md-sidebar-panel" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
           <div style={{ fontSize: 10, letterSpacing: '0.24em', textTransform: 'uppercase', color: C.accent, marginBottom: 18, fontFamily: SANS }}>Dónde ver</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {platforms.length === 0 && <div style={{ color: C.textSoft, fontFamily: SERIF, fontStyle: 'italic' }}>No hay plataformas disponibles.</div>}
             {platforms.map((platform) => (
-              <a key={`${platform.name}-${platform.type}`} href={platform.url} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: compact ? 'flex-start' : 'center', justifyContent: 'space-between', gap: 10, padding: '10px 12px', background: C.elevated, border: '1px solid transparent', textDecoration: 'none', cursor: 'pointer' }}>
+              <a key={`${platform.name}-${platform.type}`} href={platform.url} target="_blank" rel="noreferrer" className="md-sidebar-platforms" style={{ display: 'flex', justifyContent: 'space-between', gap: 10, padding: '10px 12px', background: C.elevated, border: '1px solid transparent', textDecoration: 'none', cursor: 'pointer' }}>
                 <div>
                   <div style={{ fontSize: 13, fontFamily: SANS, color: C.text, ...textClampOneLine }}>{platform.name}</div>
                   <div style={{ fontSize: 11, fontFamily: SANS, color: C.textMuted }}>{platform.type}</div>
                 </div>
-                {!compact && <ExternalLink size={12} color={C.textMuted} strokeWidth={1.5} />}
+                <ExternalLink className="md-platform-icon" size={12} color={C.textMuted} strokeWidth={1.5} />
               </a>
             ))}
           </div>
         </div>
 
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: compact ? 16 : 24, marginBottom: 20 }}>
+        <div className="md-sidebar-panel" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
           <div style={{ fontSize: 10, letterSpacing: '0.24em', textTransform: 'uppercase', color: C.accent, marginBottom: 18, fontFamily: SANS }}>También te puede interesar</div>
-          <div style={{ display: 'grid', gridTemplateColumns: compact ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: 8 }}>
+          <div className="md-sidebar-grid">
             {similar.map((film) => (
               <Link key={film.id} to={`/movie/${film.id}`} style={{ textDecoration: 'none' }}>
                 <div style={{ aspectRatio: '2/3', borderRadius: 1, overflow: 'hidden', background: C.elevated, marginBottom: 7, position: 'relative' }}>
@@ -1588,9 +1566,9 @@ function Sidebar({
   )
 }
 
-function Footer({ isMobile, isTablet }: { isMobile: boolean; isTablet: boolean }) {
+function Footer() {
   return (
-    <footer style={{ borderTop: `1px solid ${C.border}`, padding: isMobile ? '16px' : isTablet ? '20px 24px' : '24px 52px', display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 8 : 0, alignItems: 'center', justifyContent: 'space-between' }}>
+    <footer className="md-footer" style={{ borderTop: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
       <Link to="/" style={{ fontFamily: SERIF, fontSize: 16, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.textMuted, textDecoration: 'none' }}>
         Cine<span style={{ color: C.accent }}>Vault</span>
       </Link>
@@ -1639,11 +1617,6 @@ export default function MovieDetailPage() {
   const [inWatchlist, setInWatchlist] = useState(false)
   const [liked, setLiked] = useState(false)
   const [viewer, setViewer] = useState<Viewer | null>(null)
-  const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth)
-  const isCompactSidebar = viewportWidth < 1500
-  const shouldStackLayout = viewportWidth < 1320
-  const isMobileViewport = viewportWidth < 768
-  const isTabletViewport = viewportWidth >= 768 && viewportWidth < 1100
 
   const [token, setToken] = useState<string | null>(() => getStoredAccessToken())
   const movieId = useMemo(() => parseMovieId(slugOrId), [slugOrId])
@@ -1657,12 +1630,6 @@ export default function MovieDetailPage() {
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [slugOrId])
-
-  useEffect(() => {
-    const onResize = () => setViewportWidth(window.innerWidth)
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
-  }, [])
 
   useEffect(() => {
     if (!token) {
@@ -1789,7 +1756,7 @@ export default function MovieDetailPage() {
     return () => {
       alive = false
     }
-  }, [slugOrId, token])
+  }, [slugOrId, token, movieId])
 
   useEffect(() => {
     if (!notice) return
@@ -2390,7 +2357,7 @@ export default function MovieDetailPage() {
         onCreateList={handleCreateListFromModal}
         onConfirm={handleConfirmAddToList}
       />
-      <Navbar viewer={viewer} onLogout={handleLogout} isMobile={isMobileViewport} isTablet={isTabletViewport} />
+      <Navbar viewer={viewer} onLogout={handleLogout} />
 
       <Hero
         movie={movie}
@@ -2405,26 +2372,15 @@ export default function MovieDetailPage() {
         onAddToList={handleAddToList}
         onWriteReview={handleWriteReview}
         onShare={handleShare}
-        isMobile={isMobileViewport}
-        isTablet={isTabletViewport}
       />
 
-      <DirectorQuote director={directorObj?.name || 'Desconocido'} isMobile={isMobileViewport} />
+      <DirectorQuote director={directorObj?.name || 'Desconocido'} />
 
-      <div
-        style={{
-          padding: shouldStackLayout ? '56px 20px' : viewportWidth < 1500 ? '72px 28px' : '80px 52px',
-          display: 'grid',
-          gridTemplateColumns: shouldStackLayout ? 'minmax(0, 1fr)' : viewportWidth < 1500 ? 'minmax(0, 1fr) 300px' : 'minmax(0, 1fr) 320px',
-          gap: shouldStackLayout ? 28 : viewportWidth < 1500 ? 32 : 80,
-          maxWidth: 1300,
-          margin: '0 auto',
-        }}
-      >
+      <div className="md-main-layout">
         <main>
           <Synopsis overview={movie.overview || ''} tagline={movie.tagline} />
           <Themes themes={themes} />
-          {stills.length > 0 && <Stills stills={stills} isMobile={isMobileViewport} />}
+          {stills.length > 0 && <Stills stills={stills} />}
           <CastCrew cast={movie.credits?.cast || []} crew={movie.credits?.crew || []} />
           <Reviews
             reviews={reviews}
@@ -2450,10 +2406,10 @@ export default function MovieDetailPage() {
           </div>
         </main>
 
-        <Sidebar movie={movie} similar={similar} compact={isCompactSidebar} directorObj={directorObj ? { id: directorObj.id, name: directorObj.name } : null} />
+        <Sidebar movie={movie} similar={similar} directorObj={directorObj ? { id: directorObj.id, name: directorObj.name } : null} />
       </div>
 
-      <Footer isMobile={isMobileViewport} isTablet={isTabletViewport} />
+      <Footer />
     </div>
   )
 }
