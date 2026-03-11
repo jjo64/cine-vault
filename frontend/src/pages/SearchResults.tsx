@@ -208,7 +208,7 @@ export function Navbar({
               }}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' && query.trim()) {
-                  navigate(`/search?q=${encodeURIComponent(query.trim())}`)
+                  navigate(`/ search ? q = ${encodeURIComponent(query.trim())} `)
                   setOpenDropdown(false)
                 }
               }}
@@ -223,7 +223,7 @@ export function Navbar({
                   <button
                     key={movie.id}
                     onClick={() => {
-                      navigate(`/movie/${movie.id}-${createSlug(movie.title)}`)
+                      navigate(`/ movie / ${movie.id} -${createSlug(movie.title)} `)
                       setOpenDropdown(false)
                       setQuery('')
                     }}
