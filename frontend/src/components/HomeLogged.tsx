@@ -121,7 +121,6 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
           <button
             onClick={async () => {
               await logoutCurrentUser()
-              window.dispatchEvent(new CustomEvent('auth-state-changed'))
               navigate('/')
             }}
             style={{ marginTop: 14, border: `1px solid ${C.border}`, background: C.elevated, color: '#FF8A8A', padding: '9px 12px', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}

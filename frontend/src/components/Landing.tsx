@@ -4,7 +4,7 @@ import { motion, useScroll, useTransform } from 'motion/react'
 import { Search, ChevronRight, Star, Users, BookOpen, Layers, ArrowRight, Film, Sparkles, Lock, Clapperboard, Menu, X } from 'lucide-react'
 import InfiniteSlider from './InfiniteSlider'
 import { createSlug } from '../utils/stringUtils'
-import { getCurrentUser, logoutCurrentUser } from '../services/authServices'
+import { getCurrentUser, logoutCurrentUser, notifyAuthStateChanged } from '../services/authServices'
 import { resolveNavPathWithFallback } from '../lib/navigation'
 import './Landing.css'
 
@@ -249,7 +249,13 @@ function Navbar() {
         setViewerUsername(null)
       })
 
-    const onAuthChange = () => {
+    const onAuthChange = (event: Event) => {
+      const authEvent = event as CustomEvent<{ authenticated?: boolean }>
+      if (authEvent.detail?.authenticated === false) {
+        setViewerUsername(null)
+        return
+      }
+
       getCurrentUser()
         .then((user) => setViewerUsername(user.username))
         .catch(() => setViewerUsername(null))
@@ -320,7 +326,7 @@ function Navbar() {
       initial={{ opacity: 0, y: -12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.7, ease: 'easeOut' }}
-      className="landing-navbar"
+      className={`landing-navbar ${menuOpen ? 'landing-menu-open' : ''}`}
       style={{
         position: 'fixed',
         top: 0,
@@ -328,7 +334,7 @@ function Navbar() {
         right: 0,
         zIndex: 200,
         display: 'grid',
-        gridTemplateColumns: '1fr auto',
+        gridTemplateColumns: 'auto 1fr auto',
         alignItems: 'center',
         background: scrolled ? 'rgba(8,8,8,0.97)' : 'rgba(8,8,8,0.6)',
         backdropFilter: 'blur(20px)',
@@ -336,6 +342,23 @@ function Navbar() {
         transition: 'background 0.4s, border-color 0.4s',
       }}
     >
+      <Link
+        className="landing-logo"
+        to="/"
+        style={{
+          fontFamily: SERIF,
+          fontSize: 21,
+          fontWeight: 500,
+          letterSpacing: '0.13em',
+          textTransform: 'uppercase',
+          color: C.text,
+          textDecoration: 'none',
+          lineHeight: 1,
+        }}
+      >
+        Cine<span style={{ color: C.accent }}>Vault</span>
+      </Link>
+
       <ul className="landing-desktop-links landing-nav-links" style={{ display: 'flex', listStyle: 'none', margin: 0, padding: 0, alignItems: 'center' }}>
         {visibleNavLinks.map((link) => (
           <li key={link}>
@@ -374,7 +397,7 @@ function Navbar() {
                 onClick={async () => {
                   await logoutCurrentUser()
                   setViewerUsername(null)
-                  window.dispatchEvent(new CustomEvent('auth-state-changed'))
+                  notifyAuthStateChanged(false)
                   navigate('/')
                 }}
                 style={{ fontFamily: SANS, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#ff8d8d', textDecoration: 'none', border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}
@@ -386,9 +409,10 @@ function Navbar() {
         )}
       </ul>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <div ref={containerRef} className="landing-search" style={{ position: 'relative' }}>
+      <div className="landing-nav-right" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div ref={containerRef} className={`landing-search ${menuOpen ? 'landing-search-compressed' : ''}`} style={{ position: 'relative' }}>
           <div
+            className="landing-search-shell"
             style={{
               height: 40,
               borderRadius: 999,
@@ -449,15 +473,18 @@ function Navbar() {
 
           {isSearchFocused && searchQuery.trim() && (
             <div
+              className="landing-search-dropdown"
               style={{
                 position: 'absolute',
                 top: 46,
-                left: 0,
-                width: '100%',
+                right: 0,
+                width: 'min(92vw, 420px)',
                 border: `1px solid ${C.border}`,
                 background: 'rgba(8,8,8,0.98)',
                 borderRadius: 6,
                 overflow: 'hidden',
+                maxHeight: '65vh',
+                overflowY: 'auto',
               }}
             >
               {visibleResults.length > 0 ? (
@@ -488,7 +515,7 @@ function Navbar() {
                       alt={movie.title}
                       style={{ width: 30, height: 46, objectFit: 'cover' }}
                     />
-                    <span style={{ fontFamily: SANS, fontSize: 13, letterSpacing: '0.04em' }}>{movie.title}</span>
+                    <span className="landing-search-title" style={{ fontFamily: SANS, fontSize: 13, letterSpacing: '0.04em' }}>{movie.title}</span>
                   </button>
                 ))
               ) : (
@@ -501,7 +528,13 @@ function Navbar() {
         </div>
         <div className="landing-mobile-menu" style={{ position: 'relative' }}>
           <button
-            onClick={() => setMenuOpen((value) => !value)}
+            onClick={() => {
+              setMenuOpen((value) => {
+                const next = !value
+                if (next) setIsSearchFocused(false)
+                return next
+              })
+            }}
             style={{
               width: 36,
               height: 36,
@@ -518,6 +551,7 @@ function Navbar() {
           </button>
           {menuOpen && (
             <div
+              className="landing-mobile-menu-panel"
               style={{
                 position: 'absolute',
                 right: 0,
@@ -600,6 +634,28 @@ function Hero() {
           margin: '0 auto',
         }}
       >
+        <motion.div
+          className="landing-hero-logo-mobile"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.22 }}
+          style={{
+            fontFamily: SERIF,
+            fontSize: 52,
+            fontWeight: 500,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: C.text,
+            lineHeight: 1,
+            alignSelf: 'center',
+            width: 'auto',
+            textAlign: 'center',
+            marginBottom: 16,
+          }}
+        >
+          Cine<span style={{ color: C.accent }}>Vault</span>
+        </motion.div>
+
         <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }} style={{ marginBottom: 24 }}>
           <span
             style={{

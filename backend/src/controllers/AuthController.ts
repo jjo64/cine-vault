@@ -1,8 +1,11 @@
 import { Request, Response } from "express"
 import {
   ACCESS_COOKIE_OPTIONS,
+  ACCESS_COOKIE_CLEAR_OPTIONS,
   COOKIE_OPTIONS,
+  COOKIE_CLEAR_OPTIONS,
   TRUSTED_DEVICE_COOKIE_OPTIONS,
+  TRUSTED_DEVICE_COOKIE_CLEAR_OPTIONS,
 } from "../lib/tokens.js"
 import * as authService from "../services/auth.services.js"
 import { UnauthorizedError, ValidationError } from "../errors/AppErrors.js"
@@ -88,10 +91,17 @@ export const renovarToken = async (req: Request, res: Response) => {
 }
 
 export const cerrarSesion = async (req: Request, res: Response) => {
-  await authService.cerrarSesionService(req.cookies.refresh_token)
-  res.clearCookie("refresh_token")
-  res.clearCookie("access_token")
-  res.clearCookie("trusted_device")
+  try {
+    if (req.cookies.refresh_token) {
+      await authService.cerrarSesionService(req.cookies.refresh_token)
+    }
+  } catch {
+    // Logout should still clear cookies even if session revocation fails.
+  }
+
+  res.clearCookie("refresh_token", COOKIE_CLEAR_OPTIONS)
+  res.clearCookie("access_token", ACCESS_COOKIE_CLEAR_OPTIONS)
+  res.clearCookie("trusted_device", TRUSTED_DEVICE_COOKIE_CLEAR_OPTIONS)
   res.json({ message: "Sesión cerrada exitosamente" })
 }
 
@@ -173,7 +183,7 @@ export const resetearContrasena = async (req: Request, res: Response) => {
 export const desactivar2FA = async (req: Request, res: Response) => {
   const { codigo } = req.body
   await authService.desactivar2FAService(req.user!.user_id, codigo)
-  res.clearCookie("trusted_device")
+  res.clearCookie("trusted_device", TRUSTED_DEVICE_COOKIE_CLEAR_OPTIONS)
   res.json({ message: "2FA desactivado correctamente" })
 }
 
@@ -190,9 +200,9 @@ export const cambiarContrasena = async (req: Request, res: Response) => {
 
 export const revocarSesiones = async (req: Request, res: Response) => {
   await authService.revocarSesionesService(req.user!.user_id)
-  res.clearCookie("refresh_token")
-  res.clearCookie("access_token")
-  res.clearCookie("trusted_device")
+  res.clearCookie("refresh_token", COOKIE_CLEAR_OPTIONS)
+  res.clearCookie("access_token", ACCESS_COOKIE_CLEAR_OPTIONS)
+  res.clearCookie("trusted_device", TRUSTED_DEVICE_COOKIE_CLEAR_OPTIONS)
   res.json({ message: "Todas las sesiones han sido cerradas" })
 }
 

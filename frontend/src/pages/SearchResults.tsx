@@ -8,7 +8,6 @@ import {
   fetchMovieGenres,
   searchMovie,
   searchMovies,
-  searchMulti,
   searchPerson,
   searchTV,
   type GenreItem,
@@ -209,7 +208,7 @@ export function Navbar({
               }}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' && query.trim()) {
-                  navigate(`/ search ? q = ${encodeURIComponent(query.trim())} `)
+                  navigate(`/search?q=${encodeURIComponent(query.trim())}`)
                   setOpenDropdown(false)
                 }
               }}
@@ -218,20 +217,21 @@ export function Navbar({
             />
           </div>
           {openDropdown && query.trim() && (
-            <div style={{ position: 'absolute', top: 44, left: 0, right: 0, border: `1px solid ${C.border} `, background: 'rgba(8,8,8,0.98)', borderRadius: 6, overflow: 'hidden' }}>
+            <div className="search-nav-dropdown" style={{ position: 'absolute', top: 44, right: 0, width: 'min(92vw, 420px)', border: `1px solid ${C.border} `, background: 'rgba(8,8,8,0.98)', borderRadius: 6, overflow: 'hidden', maxHeight: '65vh', overflowY: 'auto' }}>
               {visibleResults.length > 0 ? (
                 visibleResults.map((movie) => (
                   <button
                     key={movie.id}
                     onClick={() => {
-                      navigate(`/ movie / ${movie.id} -${createSlug(movie.title)} `)
+                      navigate(`/movie/${movie.id}-${createSlug(movie.title)}`)
                       setOpenDropdown(false)
                       setQuery('')
                     }}
-                    style={{ width: '100%', border: 'none', borderBottom: `1px solid ${C.border} `, background: 'transparent', color: C.text, display: 'flex', alignItems: 'center', gap: 10, padding: 8, cursor: 'pointer', textAlign: 'left' }}
+                    className="search-nav-dropdown-item"
+                    style={{ width: '100%', border: 'none', borderBottom: `1px solid ${C.border} `, background: 'transparent', color: C.text, display: 'flex', alignItems: 'flex-start', gap: 10, padding: 8, cursor: 'pointer', textAlign: 'left' }}
                   >
                     <Img src={movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : ''} alt={movie.title} style={{ width: 30, height: 45, objectFit: 'cover' }} />
-                    <span style={{ fontFamily: SANS, fontSize: 12 }}>{movie.title}</span>
+                    <span className="search-nav-dropdown-title" style={{ fontFamily: SANS, fontSize: 12 }}>{movie.title}</span>
                   </button >
                 ))
               ) : (
@@ -450,7 +450,7 @@ export default function SearchResultsPage() {
 
       try {
         if (tab === 'all') {
-          const multi = await searchMulti(query, currentPage)
+          const multi = await searchMovie(query, currentPage)
           if (!alive) return
 
           const multiResults = Array.isArray(multi.results) ? multi.results : []

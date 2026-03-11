@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import './AuthModal.css';
-import { setStoredAccessToken, verifyTwoFactorLogin } from '../services/authServices'
+import { notifyAuthStateChanged, setStoredAccessToken, verifyTwoFactorLogin } from '../services/authServices'
 import { notify } from '../lib/notify'
 import { conectarSocket } from '../context/SocketContext'
 
@@ -55,7 +55,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
     const completeAuth = (accessToken: string) => {
         setStoredAccessToken(accessToken)
         conectarSocket(accessToken)
-        window.dispatchEvent(new CustomEvent('auth-state-changed'))
+        notifyAuthStateChanged(true)
         notify.loginOk()
         onClose()
     }
