@@ -172,13 +172,19 @@ const TextType = ({
   const shouldHideCursor =
     hideCursorWhileTyping && (currentCharIndex < textArray[currentTextIndex].length || isDeleting);
 
+  const componentProps: React.HTMLAttributes<HTMLElement> & { ref?: React.Ref<HTMLElement> } = {
+    className: `text-type ${className}`,
+    ...props
+  };
+
+  // Avoid passing refs to custom function components during render.
+  if (typeof Component === 'string') {
+    componentProps.ref = containerRef;
+  }
+
   return createElement(
     Component,
-    {
-      ref: containerRef,
-      className: `text-type ${className}`,
-      ...props
-    },
+    componentProps,
     <span className="text-type__content" style={{ color: getCurrentTextColor() || 'inherit' }}>
       {displayedText}
     </span>,

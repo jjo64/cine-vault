@@ -4,9 +4,8 @@ import { AnimatePresence, motion } from 'motion/react'
 import { ChevronLeft } from 'lucide-react'
 import { GrainOverlay, Img } from '../components/profile-v2/primitives'
 import { Navbar } from '../components/profile-v2/layout'
-import { C, SANS, SERIF } from '../components/profile-v2/theme'
 import { createSlug } from '../utils/stringUtils'
-import { useResponsive } from '../hooks/useResponsive'
+import './PersonPage.css'
 
 type PersonDetail = {
   id: number
@@ -64,7 +63,6 @@ function paginated<T>(items: T[], page: number, perPage = 12) {
 export default function PersonPage() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
-  const { isMobile } = useResponsive()
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -159,7 +157,7 @@ export default function PersonPage() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', background: C.bg, color: C.text, display: 'grid', placeItems: 'center', fontFamily: SERIF }}>
+      <div className="person-page-loading">
         <GrainOverlay />
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.34 }}>Cargando biografía...</motion.div>
       </div>
@@ -168,7 +166,7 @@ export default function PersonPage() {
 
   if (error || !person) {
     return (
-      <div style={{ minHeight: '100vh', background: C.bg, color: '#ff9d9d', display: 'grid', placeItems: 'center', fontFamily: SANS }}>
+      <div className="person-page-error">
         <GrainOverlay />
         {error || 'Persona no encontrada'}
       </div>
@@ -176,51 +174,59 @@ export default function PersonPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: SANS }}>
+    <div className="person-page-container">
       <GrainOverlay />
-      <Navbar onNavigateHome={() => navigate('/')} onSearch={onSearch} isMobile={isMobile} />
+      <Navbar onNavigateHome={() => navigate('/')} onSearch={onSearch} />
 
-      <main style={{ maxWidth: 1280, margin: '0 auto', padding: isMobile ? '90px 14px 34px' : '96px 24px 54px' }}>
+      <main className="person-page-main">
         <button
           onClick={() => navigate(-1)}
-          style={{ border: `1px solid ${C.border}`, background: 'transparent', color: C.textSoft, display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 12px', cursor: 'pointer', fontFamily: SANS, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 18 }}
+          className="back-button"
         >
           <ChevronLeft size={14} /> Volver
         </button>
 
-        <section style={{ border: `1px solid ${C.border}`, background: C.surface, padding: isMobile ? 14 : 18, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '280px minmax(0, 1fr)', gap: 16, marginBottom: 22 }}>
-          <div>
-            <Img src={personImage(person.profile_path)} alt={person.name} style={{ width: '100%', height: isMobile ? 320 : 420, objectFit: 'cover', border: `1px solid ${C.border}` }} />
-          </div>
+        <AnimatePresence>
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+          >
+            <section className="person-detail-layout">
+              <div>
+                <Img src={personImage(person.profile_path)} alt={person.name} className="person-profile-image" />
+              </div>
 
-          <div>
-            <h1 style={{ margin: 0, fontFamily: SERIF, fontSize: 'clamp(34px, 6vw, 48px)', fontWeight: 400 }}>{person.name}</h1>
-            <p style={{ margin: '12px 0 14px', fontFamily: SERIF, fontStyle: 'italic', fontSize: 18, lineHeight: 1.65, color: C.textSoft }}>
-              {person.biography || 'Sin biografía disponible.'}
-            </p>
+              <div>
+                <h1 className="person-name">{person.name}</h1>
+                <p className="person-biography">
+                  {person.biography || 'Sin biografía disponible.'}
+                </p>
 
-            <div style={{ display: 'grid', gap: 8 }}>
-              <div style={{ fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.accent }}>Nacimiento</div>
-              <div style={{ fontFamily: SERIF, color: C.textSoft }}>{person.birthday || 'Sin dato'}</div>
-              <div style={{ fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.accent }}>Nacionalidad / Lugar</div>
-              <div style={{ fontFamily: SERIF, color: C.textSoft }}>{person.place_of_birth || 'Sin dato'}</div>
-              <div style={{ fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.accent }}>Departamento</div>
-              <div style={{ fontFamily: SERIF, color: C.textSoft }}>{person.known_for_department || 'Sin dato'}</div>
-            </div>
-          </div>
-        </section>
+                <div className="person-info-grid">
+                  <div className="person-info-label">Nacimiento</div>
+                  <div className="person-info-value">{person.birthday || 'Sin dato'}</div>
+                  <div className="person-info-label">Nacionalidad / Lugar</div>
+                  <div className="person-info-value">{person.place_of_birth || 'Sin dato'}</div>
+                  <div className="person-info-label">Departamento</div>
+                  <div className="person-info-value">{person.known_for_department || 'Sin dato'}</div>
+                </div>
+              </div>
+            </section>
+          </motion.div>
+        </AnimatePresence>
 
         {hasActor && hasCrew && (
-          <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+          <div className="role-tabs">
             <button
               onClick={() => setTab('actor')}
-              style={{ border: `1px solid ${tab === 'actor' ? C.accentDim : C.border}`, background: tab === 'actor' ? C.accentGlow : 'transparent', color: tab === 'actor' ? C.accent : C.textSoft, padding: '8px 12px', fontFamily: SANS, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.12em', cursor: 'pointer' }}
+              className={`tab-button ${tab === 'actor' ? 'active' : ''}`}
             >
               Como actor
             </button>
             <button
               onClick={() => setTab('crew')}
-              style={{ border: `1px solid ${tab === 'crew' ? C.accentDim : C.border}`, background: tab === 'crew' ? C.accentGlow : 'transparent', color: tab === 'crew' ? C.accent : C.textSoft, padding: '8px 12px', fontFamily: SANS, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.12em', cursor: 'pointer' }}
+              className={`tab-button ${tab === 'crew' ? 'active' : ''}`}
             >
               Como director o crew
             </button>
@@ -230,30 +236,30 @@ export default function PersonPage() {
         <AnimatePresence mode="wait">
           {tab === 'actor' && hasActor && (
             <motion.section key="actor" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.34 }}>
-              <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+              <div className="actor-filter-buttons">
                 <button
                   onClick={() => setActorFilter('lead')}
-                  style={{ border: `1px solid ${actorFilter === 'lead' ? C.accentDim : C.border}`, background: actorFilter === 'lead' ? C.accentGlow : 'transparent', color: actorFilter === 'lead' ? C.accent : C.textSoft, padding: '7px 10px', fontFamily: SANS, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}
+                  className={`filter-button ${actorFilter === 'lead' ? 'active' : ''}`}
                 >
                   Actor principal
                 </button>
                 <button
                   onClick={() => setActorFilter('support')}
-                  style={{ border: `1px solid ${actorFilter === 'support' ? C.accentDim : C.border}`, background: actorFilter === 'support' ? C.accentGlow : 'transparent', color: actorFilter === 'support' ? C.accent : C.textSoft, padding: '7px 10px', fontFamily: SANS, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}
+                  className={`filter-button ${actorFilter === 'support' ? 'active' : ''}`}
                 >
                   Actor secundario
                 </button>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 10 }}>
+              <div className="person-credits-grid">
                 {actorPageItems.map((item) => {
                   const title = item.title || item.name || 'Sin título'
                   return (
-                    <Link key={`actor-${item.id}-${title}`} to={`/movie/${item.id}-${createSlug(title)}`} style={{ border: `1px solid ${C.border}`, background: C.surface, textDecoration: 'none', color: C.text }}>
-                      <Img src={personImage(item.poster_path)} alt={title} style={{ width: '100%', height: 220, objectFit: 'cover' }} />
-                      <div style={{ padding: 10 }}>
-                        <div style={{ fontFamily: SANS, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{title}</div>
-                        <div style={{ fontFamily: SERIF, fontStyle: 'italic', color: C.textSoft, marginTop: 4 }}>{item.character || 'Sin rol'}</div>
+                    <Link key={`actor-${item.id}-${title}`} to={`/movie/${item.id}-${createSlug(title)}`} className="credit-card">
+                      <Img src={personImage(item.poster_path)} alt={title} className="credit-card-image" />
+                      <div className="credit-card-info">
+                        <div className="credit-card-title">{title}</div>
+                        <div className="credit-card-role">{item.character || 'Sin rol'}</div>
                       </div>
                     </Link>
                   )
@@ -261,12 +267,12 @@ export default function PersonPage() {
               </div>
 
               {actorTotalPages > 1 && (
-                <div style={{ marginTop: 14, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <div className="pagination-controls">
                   {Array.from({ length: Math.min(actorTotalPages, 8) }, (_, index) => index + 1).map((pageItem) => (
                     <button
                       key={`ap-${pageItem}`}
                       onClick={() => setPage(pageItem)}
-                      style={{ border: `1px solid ${page === pageItem ? C.accentDim : C.border}`, background: page === pageItem ? C.accentGlow : 'transparent', color: page === pageItem ? C.accent : C.textSoft, padding: '6px 10px', fontFamily: SANS, fontSize: 11, cursor: 'pointer' }}
+                      className={`pagination-button ${page === pageItem ? 'active' : ''}`}
                     >
                       {pageItem}
                     </button>
@@ -278,19 +284,19 @@ export default function PersonPage() {
 
           {tab === 'crew' && hasCrew && (
             <motion.section key="crew" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.34 }}>
-              <div style={{ display: 'grid', gap: 16 }}>
+              <div className="crew-departments">
                 {crewGroups.map(([department, items]) => (
                   <div key={department}>
-                    <h2 style={{ margin: '0 0 8px', fontFamily: SERIF, fontSize: 30, fontWeight: 400 }}>{department}</h2>
-                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 10 }}>
+                    <h2 className="crew-department-title">{department}</h2>
+                    <div className="person-credits-grid">
                       {items.slice(0, 16).map((item) => {
                         const title = item.title || item.name || 'Sin título'
                         return (
-                          <Link key={`crew-${department}-${item.id}-${title}`} to={`/movie/${item.id}-${createSlug(title)}`} style={{ border: `1px solid ${C.border}`, background: C.surface, textDecoration: 'none', color: C.text }}>
-                            <Img src={personImage(item.poster_path)} alt={title} style={{ width: '100%', height: 220, objectFit: 'cover' }} />
-                            <div style={{ padding: 10 }}>
-                              <div style={{ fontFamily: SANS, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{title}</div>
-                              <div style={{ fontFamily: SERIF, fontStyle: 'italic', color: C.textSoft, marginTop: 4 }}>{item.job || 'Crew'}</div>
+                          <Link key={`crew-${department}-${item.id}-${title}`} to={`/movie/${item.id}-${createSlug(title)}`} className="credit-card">
+                            <Img src={personImage(item.poster_path)} alt={title} className="credit-card-image" />
+                            <div className="credit-card-info">
+                              <div className="credit-card-title">{title}</div>
+                              <div className="credit-card-role">{item.job || 'Crew'}</div>
                             </div>
                           </Link>
                         )
