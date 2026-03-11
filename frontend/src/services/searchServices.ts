@@ -3,6 +3,10 @@ const API_URL = import.meta.env.VITE_API_URL
 export type SearchMovieResult = {
   id: number
   title: string
+  title_en?: string | null
+  title_es?: string | null
+  localized_title?: string | null
+  localized_titles?: string[]
   name?: string
   media_type?: 'movie' | 'tv' | 'person'
   original_title?: string
@@ -14,6 +18,7 @@ export type SearchMovieResult = {
   known_for_department?: string
   director?: string
   overview?: string
+  alternative_titles?: Array<{ iso_3166_1?: string; title?: string }>
 }
 
 export type SearchResponse = {

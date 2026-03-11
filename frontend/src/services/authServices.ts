@@ -25,6 +25,14 @@ const COOKIE_ONLY_MODES = new Set(['cookie', 'cookie-only'])
 const IS_COOKIE_ONLY_MODE = COOKIE_ONLY_MODES.has(AUTH_STORAGE_MODE_RAW)
 let refreshInFlight: Promise<string | null> | null = null
 let volatileAccessToken: string | null = null
+let refreshBlockedUntil = 0
+let lastAuthEventState: boolean | null = null
+
+export const notifyAuthStateChanged = (authenticated: boolean) => {
+  if (lastAuthEventState === authenticated) return
+  lastAuthEventState = authenticated
+  window.dispatchEvent(new CustomEvent('auth-state-changed', { detail: { authenticated } }))
+}
 
 export const isCookieOnlyAuthMode = () => IS_COOKIE_ONLY_MODE
 
@@ -61,6 +69,7 @@ export const clearStoredAccessToken = () => {
 }
 
 export async function refreshAccessToken(): Promise<string | null> {
+  if (Date.now() < refreshBlockedUntil) return null
   if (refreshInFlight) return refreshInFlight
 
   refreshInFlight = (async () => {
@@ -71,19 +80,22 @@ export async function refreshAccessToken(): Promise<string | null> {
 
     if (!res.ok) {
       clearStoredAccessToken()
-      window.dispatchEvent(new CustomEvent('auth-state-changed'))
+      refreshBlockedUntil = Date.now() + 5000
+      notifyAuthStateChanged(false)
       return null
     }
 
     const data = (await res.json()) as { accessToken?: string }
     if (!data.accessToken) {
       clearStoredAccessToken()
-      window.dispatchEvent(new CustomEvent('auth-state-changed'))
+      refreshBlockedUntil = Date.now() + 5000
+      notifyAuthStateChanged(false)
       return null
     }
 
+    refreshBlockedUntil = 0
     setStoredAccessToken(data.accessToken)
-    window.dispatchEvent(new CustomEvent('auth-state-changed'))
+    notifyAuthStateChanged(true)
     return data.accessToken
   })().finally(() => {
     refreshInFlight = null
@@ -134,7 +146,7 @@ export async function authorizedFetch(
 
   if (response.status === 401) {
     clearStoredAccessToken()
-    window.dispatchEvent(new CustomEvent('auth-state-changed'))
+    notifyAuthStateChanged(false)
   }
 
   return response
@@ -156,7 +168,10 @@ export async function authorizedJson<T>(
 }
 
 export async function getCurrentUser(): Promise<AuthUser> {
-  const res = await authorizedFetch('/api/auth/verify')
+  // Important: user presence checks should not silently refresh a logged-out session.
+  const res = await authorizedFetch('/api/auth/verify', {}, {
+    allowRefreshWithoutToken: false,
+  })
 
   if (!res.ok) {
     throw new Error("Usuario no autorizado")
@@ -168,6 +183,10 @@ export async function getCurrentUser(): Promise<AuthUser> {
 export async function logoutCurrentUser() {
   const token = getStoredAccessToken()
 
+  // Optimistic logout: update local auth state immediately.
+  clearStoredAccessToken()
+  notifyAuthStateChanged(false)
+
   try {
     await fetch(`${API_URL}/api/auth/logout`, {
       method: "POST",
@@ -177,9 +196,8 @@ export async function logoutCurrentUser() {
       },
       credentials: "include",
     })
-  } finally {
-    clearStoredAccessToken()
-    window.dispatchEvent(new CustomEvent('auth-state-changed'))
+  } catch {
+    // Local logout already happened; network failure should not block UI state.
   }
 }
 
@@ -211,6 +229,7 @@ export async function verifyTwoFactorLogin(
   }
 
   setStoredAccessToken(data.accessToken)
+  notifyAuthStateChanged(true)
   return data.accessToken
 }
 

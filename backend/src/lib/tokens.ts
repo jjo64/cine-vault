@@ -16,6 +16,7 @@ export const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
   sameSite: "lax" as const,
+  path: "/",
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días en ms
 }
 
@@ -23,6 +24,7 @@ export const ACCESS_COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
   sameSite: "lax" as const,
+  path: "/",
   maxAge: 15 * 60 * 1000,
 }
 
@@ -30,7 +32,29 @@ export const TRUSTED_DEVICE_COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
   sameSite: "lax" as const,
+  path: "/",
   maxAge: 30 * 24 * 60 * 60 * 1000,
+}
+
+export const COOKIE_CLEAR_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax" as const,
+  path: "/",
+}
+
+export const ACCESS_COOKIE_CLEAR_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax" as const,
+  path: "/",
+}
+
+export const TRUSTED_DEVICE_COOKIE_CLEAR_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax" as const,
+  path: "/",
 }
 
 /* ==========================================================================

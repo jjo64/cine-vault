@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { conectarSocket } from '../context/SocketContext'
-import { finalizeOAuthCallback } from '../services/authServices'
+import { finalizeOAuthCallback, notifyAuthStateChanged } from '../services/authServices'
 import { notify } from '../lib/notify'
 
 const C = {
@@ -27,7 +27,7 @@ export default function AuthCallbackPage() {
         if (!alive) return
 
         conectarSocket(accessToken)
-        window.dispatchEvent(new CustomEvent('auth-state-changed'))
+        notifyAuthStateChanged(true)
         notify.loginOk()
         navigate('/profile', { replace: true })
       } catch {

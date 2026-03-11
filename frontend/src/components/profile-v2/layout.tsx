@@ -204,16 +204,19 @@ export function Navbar({
 
           {isSearchOpen && trimmedQuery && (
             <div
+              className="profile-search-dropdown"
               style={{
                 position: 'absolute',
                 top: 48,
-                left: 0,
-                width: '100%',
+                right: 0,
+                width: 'min(92vw, 420px)',
                 borderRadius: 8,
                 border: `1px solid ${C.border}`,
                 background: 'rgba(7,8,11,0.98)',
                 overflow: 'hidden',
                 boxShadow: '0 20px 50px rgba(0,0,0,0.45)',
+                maxHeight: '65vh',
+                overflowY: 'auto',
               }}
             >
               {isSearching && (
@@ -228,10 +231,11 @@ export function Navbar({
                     <button
                       key={movie.id}
                       onClick={() => goToMovie(movie)}
+                      className="profile-search-item"
                       style={{
                         width: '100%',
                         display: 'flex',
-                        alignItems: 'center',
+                        alignItems: 'flex-start',
                         gap: 14,
                         padding: 10,
                         background: 'transparent',
@@ -254,7 +258,7 @@ export function Navbar({
                           fontWeight: 700,
                           letterSpacing: '0.01em',
                           textTransform: 'uppercase',
-                          lineHeight: 1.1,
+                          lineHeight: 1.2,
                         }}
                       >
                         {movie.title}
@@ -676,7 +680,10 @@ export function TabsBar({ active, onSelect }: { active: string; onSelect: (tab: 
         backdropFilter: 'blur(20px)',
         borderBottom: `1px solid ${C.border}`,
         display: 'flex',
+        flexWrap: 'nowrap',
         overflowX: 'auto',
+        WebkitOverflowScrolling: 'touch',
+        scrollbarWidth: 'none',
         gap: 0,
         fontFamily: SANS,
       }}
@@ -698,6 +705,8 @@ export function TabsBar({ active, onSelect }: { active: string; onSelect: (tab: 
             marginBottom: -1,
             transition: 'color 0.2s, border-color 0.2s',
             fontFamily: SANS,
+            flex: '0 0 auto',
+            whiteSpace: 'nowrap',
           }}
         >
           {tab}

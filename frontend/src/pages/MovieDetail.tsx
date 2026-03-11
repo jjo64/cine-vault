@@ -776,7 +776,7 @@ function Navbar({
       }}
     >
       <div className="md-nav-logo" style={{ display: 'flex', alignItems: 'center' }}>
-        <Link to="/" style={{ fontFamily: SERIF, fontSize: 21, fontWeight: 500, letterSpacing: '0.13em', textTransform: 'uppercase', color: C.text, textDecoration: 'none' }}>
+        <Link className="md-logo-link" to="/" style={{ fontFamily: SERIF, fontSize: 21, fontWeight: 500, letterSpacing: '0.13em', textTransform: 'uppercase', color: C.text, textDecoration: 'none' }}>
           Cine<span style={{ color: C.accent }}>Vault</span>
         </Link>
         <ul className="md-desktop-links md-nav-links" style={{ display: 'flex', alignItems: 'center', listStyle: 'none', margin: 0, padding: 0 }}>
@@ -826,7 +826,7 @@ function Navbar({
             />
           </div>
           {openDropdown && query.trim() && (
-            <div style={{ position: 'absolute', top: 44, left: 0, right: 0, border: `1px solid ${C.border}`, background: 'rgba(8,8,8,0.98)', borderRadius: 6, overflow: 'hidden' }}>
+            <div className="md-search-dropdown" style={{ position: 'absolute', top: 44, right: 0, width: 'min(92vw, 420px)', border: `1px solid ${C.border}`, background: 'rgba(8,8,8,0.98)', borderRadius: 6, overflow: 'hidden', maxHeight: '65vh', overflowY: 'auto' }}>
               {visibleResults.length > 0 ? (
                 visibleResults.map((movie) => (
                   <button
@@ -836,10 +836,11 @@ function Navbar({
                       setOpenDropdown(false)
                       setQuery('')
                     }}
-                    style={{ width: '100%', border: 'none', borderBottom: `1px solid ${C.border}`, background: 'transparent', color: C.text, display: 'flex', alignItems: 'center', gap: 10, padding: 8, cursor: 'pointer', textAlign: 'left' }}
+                    className="md-search-item"
+                    style={{ width: '100%', border: 'none', borderBottom: `1px solid ${C.border}`, background: 'transparent', color: C.text, display: 'flex', alignItems: 'flex-start', gap: 10, padding: 8, cursor: 'pointer', textAlign: 'left' }}
                   >
                     <Img src={movie.poster_path ? `${TMDB_POSTER}${movie.poster_path}` : ''} alt={movie.title} style={{ width: 30, height: 45, objectFit: 'cover' }} />
-                    <span style={{ fontFamily: SANS, fontSize: 12 }}>{movie.title}</span>
+                    <span className="md-search-title" style={{ fontFamily: SANS, fontSize: 12 }}>{movie.title}</span>
                   </button>
                 ))
               ) : (
@@ -858,6 +859,25 @@ function Navbar({
           </button>
           {mobileNavOpen && (
             <div style={{ position: 'absolute', right: 0, top: 42, minWidth: 170, border: `1px solid ${C.border}`, background: 'rgba(8,8,8,0.98)', padding: 8, display: 'grid', gap: 6 }}>
+              <div style={{ height: 36, borderRadius: 999, border: `1px solid ${C.border}`, background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', padding: '0 10px' }}>
+                <input
+                  value={query}
+                  onFocus={() => setOpenDropdown(true)}
+                  onChange={(event) => {
+                    setQuery(event.target.value)
+                    setOpenDropdown(true)
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' && query.trim()) {
+                      navigate(`/search?q=${encodeURIComponent(query.trim())}`)
+                      setOpenDropdown(false)
+                      setMobileNavOpen(false)
+                    }
+                  }}
+                  placeholder="Buscar"
+                  style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', color: C.text, fontFamily: SANS, fontSize: 12 }}
+                />
+              </div>
               {navLinks.map((item) => (
                 <button
                   key={item}
@@ -874,12 +894,55 @@ function Navbar({
                   {item}
                 </button>
               ))}
+              {!viewer && (
+                <button
+                  onClick={() => {
+                    navigate(-1)
+                    setMobileNavOpen(false)
+                  }}
+                  style={{ border: 'none', background: 'transparent', color: C.textSoft, textAlign: 'left', padding: '8px 10px', fontFamily: SANS, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}
+                >
+                  Volver
+                </button>
+              )}
+              {viewer && (
+                <>
+                  <button
+                    onClick={() => {
+                      navigate('/profile')
+                      setMobileNavOpen(false)
+                    }}
+                    style={{ border: 'none', background: 'transparent', color: C.text, textAlign: 'left', padding: '8px 10px', fontFamily: SANS, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}
+                  >
+                    Mi perfil
+                  </button>
+                  <button
+                    onClick={() => {
+                      navigate('/settings')
+                      setMobileNavOpen(false)
+                    }}
+                    style={{ border: 'none', background: 'transparent', color: C.text, textAlign: 'left', padding: '8px 10px', fontFamily: SANS, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}
+                  >
+                    Configuración
+                  </button>
+                  <button
+                    onClick={() => {
+                      onLogout()
+                      setMobileNavOpen(false)
+                    }}
+                    style={{ border: 'none', background: 'transparent', color: '#ff8d8d', textAlign: 'left', padding: '8px 10px', fontFamily: SANS, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}
+                  >
+                    Cerrar sesión
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>
 
         {!viewer ? (
           <button
+            className="md-user-actions"
             onClick={() => navigate(-1)}
             style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.textSoft, background: 'none', border: 'none', cursor: 'pointer', fontFamily: SANS }}
           >
@@ -887,7 +950,7 @@ function Navbar({
             Volver
           </button>
         ) : (
-          <div ref={menuRef} style={{ position: 'relative' }}>
+          <div ref={menuRef} className="md-user-actions" style={{ position: 'relative' }}>
             <button onClick={() => setMenuOpen((v) => !v)} style={{ border: `1px solid ${C.border}`, background: 'transparent', cursor: 'pointer', borderRadius: 999, width: 38, height: 38, overflow: 'hidden', padding: 0 }}>
               {viewer.avatar_url ? <Img src={viewer.avatar_url} alt={viewer.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', color: C.textSoft, fontFamily: SANS, fontSize: 11 }}>{initials(viewer.username)}</div>}
             </button>

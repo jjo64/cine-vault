@@ -2,6 +2,10 @@ import { Router, Request, Response } from "express"
 import { consultarTMDB } from "../helpers/fetchTMDB.js"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
 import { getOSet } from "../config/redis.js"
+import {
+  mergeEnglishAndSpanishResults,
+  rankMovieByQuery,
+} from "../helpers/titleRanking.js"
 
 /**
  * @swagger
@@ -117,7 +121,39 @@ router.get(
       // Cachear también la resolución slug → id
       const datosBusqueda = (await getOSet(
         `tmdb:slug:${idOSlug}`,
-        () => consultarTMDB("search/movie", { query: nombreLimpio }),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        async () => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const [enData, esData]: any[] = await Promise.all([
+            consultarTMDB(
+              "search/movie",
+              { query: nombreLimpio, language: "en-US" },
+              { includeDefaultLanguage: false }
+            ),
+            consultarTMDB(
+              "search/movie",
+              { query: nombreLimpio, language: "es-ES" },
+              { includeDefaultLanguage: false }
+            ),
+          ])
+
+          const { merged } = mergeEnglishAndSpanishResults(
+            Array.isArray(enData?.results) ? enData.results : [],
+            Array.isArray(esData?.results) ? esData.results : []
+          )
+
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const ranked = (merged as any[])
+            .map((movie) => ({
+              ...movie,
+              _title_rank: rankMovieByQuery(movie, nombreLimpio),
+            }))
+            .sort((a, b) => Number(b._title_rank || 0) - Number(a._title_rank || 0))
+
+          return {
+            results: ranked,
+          }
+        },
         TTL.detalle
       )) as { results: { id: number }[] }
 
@@ -140,14 +176,14 @@ router.get(
             consultarTMDB(`movie/${idPelicula}`),
             consultarTMDB(`movie/${idPelicula}/credits`),
             consultarTMDB(`movie/${idPelicula}/watch/providers`, {
-              language: "",
+              language: "es-ES",
             }),
             consultarTMDB(`movie/${idPelicula}/alternative_titles`, {
               language: "",
-            }),
+            }, { includeDefaultLanguage: false }),
             consultarTMDB(`movie/${idPelicula}/images`, {
               include_image_language: "en,null",
-            }),
+            }, { includeDefaultLanguage: false }),
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ])) as [any, any, any, any, any]
 
