@@ -7,15 +7,9 @@ import { createSlug } from '../../utils/stringUtils'
 import { C, SANS, SERIF, inputButtonReset } from './theme'
 import { Img } from './primitives'
 import type { ProfileConnection, ProfileHeaderData, ProfileStatsData } from './models'
-import { searchMovies } from '../../services/searchServices'
+import { searchMovies, type SearchSuggestionItem } from '../../services/searchServices'
 
 export const TAB_LIST = ['Resumen', 'Historial', 'Vault', 'Watchlist', 'Reseñas', 'Listas'] as const
-
-type SearchMovieResult = {
-  id: number
-  title: string
-  poster_path?: string | null
-}
 
 export function Navbar({
   onNavigateHome,
@@ -28,7 +22,7 @@ export function Navbar({
   const wrapperRef = useRef<HTMLDivElement | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<SearchMovieResult[]>([])
+  const [searchResults, setSearchResults] = useState<SearchSuggestionItem[]>([])
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [isSearching, setIsSearching] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -49,7 +43,7 @@ export function Navbar({
     }
 
     searchMovies(debouncedQuery)
-      .then((data: { results?: SearchMovieResult[] }) => {
+      .then((data: { results?: SearchSuggestionItem[] }) => {
         setSearchResults(Array.isArray(data?.results) ? data.results : [])
       })
       .catch(() => {
@@ -73,7 +67,7 @@ export function Navbar({
   }, [])
 
   const visibleResults = useMemo(() => {
-    if (!debouncedQuery) return [] as SearchMovieResult[]
+    if (!debouncedQuery) return [] as SearchSuggestionItem[]
     return searchResults.slice(0, 6)
   }, [debouncedQuery, searchResults])
 
@@ -83,8 +77,15 @@ export function Navbar({
     setIsSearchOpen(false)
   }
 
-  const goToMovie = (movie: SearchMovieResult) => {
-    navigate(`/movie/${movie.id}-${createSlug(movie.title)}`)
+  const goToItem = (item: SearchSuggestionItem) => {
+    const label = item.title || item.name || 'sin-titulo'
+    if (item.media_type === 'person') {
+      navigate(`/person/${item.id}`)
+    } else if (item.media_type === 'tv') {
+      navigate(`/tv/${item.id}`)
+    } else {
+      navigate(`/movie/${item.id}-${createSlug(label)}`)
+    }
     setIsSearchOpen(false)
     setSearchQuery('')
     setSearchResults([])
@@ -229,8 +230,8 @@ export function Navbar({
                 <div>
                   {visibleResults.map((movie) => (
                     <button
-                      key={movie.id}
-                      onClick={() => goToMovie(movie)}
+                      key={`${movie.media_type || 'movie'}-${movie.id}`}
+                      onClick={() => goToItem(movie)}
                       className="profile-search-item"
                       style={{
                         width: '100%',
@@ -247,8 +248,10 @@ export function Navbar({
                       }}
                     >
                       <Img
-                        src={movie.poster_path ? `https://image.tmdb.org/t/p/w92${movie.poster_path}` : '/no-poster.svg'}
-                        alt={movie.title}
+                        src={movie.media_type === 'person'
+                          ? (movie.profile_path ? `https://image.tmdb.org/t/p/w92${movie.profile_path}` : '/no-poster.svg')
+                          : (movie.poster_path ? `https://image.tmdb.org/t/p/w92${movie.poster_path}` : '/no-poster.svg')}
+                        alt={movie.title || movie.name || 'Sin titulo'}
                         style={{ width: 44, height: 64, objectFit: 'cover', borderRadius: 2, flexShrink: 0 }}
                       />
                       <span
@@ -261,7 +264,7 @@ export function Navbar({
                           lineHeight: 1.2,
                         }}
                       >
-                        {movie.title}
+                        {movie.title || movie.name || 'Sin titulo'}
                       </span>
                     </button>
                   ))}

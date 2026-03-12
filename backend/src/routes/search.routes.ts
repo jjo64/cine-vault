@@ -6,6 +6,7 @@ import {
   getMovieSearch,
   getMovieGenres,
   getPersonSearch,
+  getTVDetail,
   getTVSearch,
 } from "../controllers/SearchController.js"
 
@@ -204,5 +205,6 @@ router.get("/person", manejadorAsincrono(getPersonSearch)) // busqueda personas
  *               total_results: 1
  */
 router.get("/tv", manejadorAsincrono(getTVSearch)) // busqueda series
+router.get("/tv/:id", manejadorAsincrono(getTVDetail)) // detalle serie
 
 export default router

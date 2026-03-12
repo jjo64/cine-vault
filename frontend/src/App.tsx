@@ -9,6 +9,7 @@ import './App.css'
 const Home = lazy(() => import('./pages/Home'))
 const FeedPage = lazy(() => import('./pages/Feed'))
 const MovieDetail = lazy(() => import('./pages/MovieDetail'))
+const TVDetail = lazy(() => import('./pages/TVDetail'))
 const SearchResults = lazy(() => import('./pages/SearchResults'))
 const PersonPage = lazy(() => import('./pages/PersonPage.tsx'))
 const SettingsPage = lazy(() => import('./pages/Settings.tsx'))
@@ -83,16 +84,18 @@ function App() {
                     <Route path="/" element={<Home />} />
                     <Route path="/feed" element={<FeedPage />} />
                     <Route path="/movie/:slugOrId" element={<MovieDetail />} />
+                    <Route path="/tv/:id" element={<TVDetail />} />
                     <Route path="/person/:id" element={<PersonPage />} />
                     <Route path="/settings" element={<SettingsPage />} />
                     <Route path="/search" element={<SearchResults />} />
                     <Route path="/search-results" element={<SearchResults />} />
-                    <Route path="/search/:query" element={<SearchResults />} />
                     <Route path="/profile" element={<ProfileIndexPage />} />
                     <Route path="/verify-email" element={<VerifyEmailPage />} />
                     <Route path="/auth/callback" element={<AuthCallbackPage />} />
                     <Route path="/coming-soon/:section" element={<ComingSoonPage />} />
                     <Route path="/films" element={<ComingSoonPage />} />
+                    <Route path="/news" element={<ComingSoonPage />} />
+                    <Route path="/news/:id" element={<ComingSoonPage />} />
                     <Route path="/lists" element={<ListsPage />} />
                     <Route path="/members" element={<ComingSoonPage />} />
                     <Route path="/journal" element={<ComingSoonPage />} />

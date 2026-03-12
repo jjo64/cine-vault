@@ -105,12 +105,24 @@ function setCanonical(url: string) {
   canonical.setAttribute('href', url)
 }
 
+function setRobotsMeta(content: string) {
+  let element = document.querySelector<HTMLMetaElement>('meta[name="robots"]')
+  if (!element) {
+    element = document.createElement('meta')
+    element.setAttribute('name', 'robots')
+    document.head.appendChild(element)
+  }
+  element.setAttribute('content', content)
+}
+
 export default function SeoManager() {
   const { pathname, search } = useLocation()
 
   useEffect(() => {
     const { title, description } = getSeoConfig(pathname)
-    const canonicalUrl = `${BASE_URL}${pathname}${search}`
+    const canonicalUrl = pathname === '/search' ? `${BASE_URL}/search` : `${BASE_URL}${pathname}`
+    const noIndexPaths = ['/settings', '/profile', '/verify-email', '/auth/callback']
+    const shouldNoIndex = noIndexPaths.some((route) => pathname === route || pathname.startsWith(`${route}/`))
 
     document.title = title
 
@@ -125,6 +137,7 @@ export default function SeoManager() {
     setMetaByProperty('og:image', DEFAULT_IMAGE)
 
     setCanonical(canonicalUrl)
+    setRobotsMeta(shouldNoIndex ? 'noindex, nofollow' : 'index, follow')
   }, [pathname, search])
 
   return null

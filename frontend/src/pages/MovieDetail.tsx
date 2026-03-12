@@ -91,6 +91,15 @@ type Viewer = {
   avatar_url?: string | null
 }
 
+type SearchSuggestion = {
+  id: number
+  title?: string
+  name?: string
+  media_type?: 'movie' | 'tv' | 'person'
+  poster_path?: string | null
+  profile_path?: string | null
+}
+
 function Img({ src, alt, style, className, ...rest }: React.ImgHTMLAttributes<HTMLImageElement>) {
   const [err, setErr] = useState(false)
   if (err) return <div style={{ ...style, background: C.elevated }} className={className} />
@@ -708,7 +717,7 @@ function Navbar({
   const navigate = useNavigate()
   const [scrolled, setScrolled] = useState(false)
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<Array<{ id: number; title: string; poster_path: string | null }>>([])
+  const [results, setResults] = useState<SearchSuggestion[]>([])
   const [openDropdown, setOpenDropdown] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
@@ -755,6 +764,19 @@ function Navbar({
   const navLinks = viewer ? ['Films', 'Lists', 'Members', 'Journal'] : ['Sign in', 'Create account', 'Films', 'Lists', 'Members', 'Journal']
   const openAuthModal = (mode: 'login' | 'register') => {
     window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: { mode } }))
+  }
+
+  const navigateByType = (item: SearchSuggestion) => {
+    const label = item.title || item.name || 'sin-titulo'
+    if (item.media_type === 'person') {
+      navigate(`/person/${item.id}`)
+      return
+    }
+    if (item.media_type === 'tv') {
+      navigate(`/tv/${item.id}`)
+      return
+    }
+    navigate(`/movie/${item.id}-${createSlug(label)}`)
   }
 
   return (
@@ -830,17 +852,17 @@ function Navbar({
               {visibleResults.length > 0 ? (
                 visibleResults.map((movie) => (
                   <button
-                    key={movie.id}
+                    key={`${movie.media_type || 'movie'}-${movie.id}`}
                     onClick={() => {
-                      navigate(`/movie/${movie.id}-${createSlug(movie.title)}`)
+                      navigateByType(movie)
                       setOpenDropdown(false)
                       setQuery('')
                     }}
                     className="md-search-item"
                     style={{ width: '100%', border: 'none', borderBottom: `1px solid ${C.border}`, background: 'transparent', color: C.text, display: 'flex', alignItems: 'flex-start', gap: 10, padding: 8, cursor: 'pointer', textAlign: 'left' }}
                   >
-                    <Img src={movie.poster_path ? `${TMDB_POSTER}${movie.poster_path}` : ''} alt={movie.title} style={{ width: 30, height: 45, objectFit: 'cover' }} />
-                    <span className="md-search-title" style={{ fontFamily: SANS, fontSize: 12 }}>{movie.title}</span>
+                    <Img src={movie.media_type === 'person' ? (movie.profile_path ? `${TMDB_POSTER}${movie.profile_path}` : '') : (movie.poster_path ? `${TMDB_POSTER}${movie.poster_path}` : '')} alt={movie.title || movie.name || 'Sin titulo'} style={{ width: 30, height: 45, objectFit: 'cover' }} />
+                    <span className="md-search-title" style={{ fontFamily: SANS, fontSize: 12 }}>{movie.title || movie.name || 'Sin titulo'}</span>
                   </button>
                 ))
               ) : (

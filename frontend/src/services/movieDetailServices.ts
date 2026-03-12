@@ -81,7 +81,14 @@ export const fetchPopularMovies = () => apiRequest<{ results?: Array<{ id: numbe
 export const fetchTopRatedMovies = () => apiRequest<{ results?: Array<{ id: number; title: string; poster_path: string | null; release_date?: string }> }>(`/api/movies/top-rated`)
 
 export const fetchSearchMovies = (query: string) =>
-  apiRequest<{ results?: Array<{ id: number; title: string; poster_path: string | null }> }>(`/api/search?q=${encodeURIComponent(query)}`)
+  apiRequest<{ results?: Array<{
+    id: number
+    title?: string
+    name?: string
+    media_type?: 'movie' | 'tv' | 'person'
+    poster_path?: string | null
+    profile_path?: string | null
+  }> }>(`/api/search?q=${encodeURIComponent(query)}`)
 
 export const fetchUserById = (userId: number) =>
   apiRequest<{ id: number; username?: string; avatar_url?: string | null }>(`/api/users/${userId}`)

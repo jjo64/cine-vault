@@ -193,7 +193,7 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
             )}
 
             <div style={{ display: 'grid', gap: 8, marginTop: 14 }}>
-              <Link to="/search/blade+runner" style={{ border: `1px solid ${C.border}`, color: C.text, background: C.elevated, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8, padding: '9px 10px', fontSize: 12, letterSpacing: '0.09em', textTransform: 'uppercase' }}>
+              <Link to="/search?q=blade%20runner" style={{ border: `1px solid ${C.border}`, color: C.text, background: C.elevated, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8, padding: '9px 10px', fontSize: 12, letterSpacing: '0.09em', textTransform: 'uppercase' }}>
                 <Search size={14} color={C.accentSoft} />
                 Explorar títulos
               </Link>
