@@ -5,6 +5,16 @@ import react from '@vitejs/plugin-react-swc'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          tmdb: ['gsap', 'motion'],
+        },
+      },
+    },
+  },
   server: {
     port: 5000,
     strictPort: true, // Para que falle si el puerto 5000 está ocupado en lugar de usar otro

@@ -5,6 +5,8 @@ import { Bookmark, ChevronLeft, ChevronRight, ExternalLink, Heart, List, Menu, M
 import './MovieDetail.css'
 import { createSlug } from '../utils/stringUtils'
 import { resolveNavPathWithFallback } from '../lib/navigation'
+import { SeoHead } from '../components/SeoHead'
+import { buildMovieSchema } from '../utils/seo/buildMovieSchema'
 import {
   addToDiary,
   removeFromDiary,
@@ -357,7 +359,14 @@ function ReviewLogModal({
         <div style={{ display: 'grid', gridTemplateColumns: '130px minmax(0, 1fr)', gap: 16, padding: 16 }}>
           <div>
             <div style={{ aspectRatio: '2/3', overflow: 'hidden', border: `1px solid ${C.border}`, background: C.elevated }}>
-              <Img src={posterUrl} alt={movie.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <Img
+                src={posterUrl}
+                alt={movie.title}
+                loading="lazy"
+                width={260}
+                height={390}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
             </div>
             <div style={{ marginTop: 8, fontFamily: SERIF, color: C.text, fontSize: 15, ...textClampOneLine }}>{movie.title}</div>
           </div>
@@ -616,6 +625,10 @@ function parseMovieId(slugOrId?: string): number | null {
   if (!match) return null
   const value = Number(match[0])
   return Number.isFinite(value) ? value : null
+}
+
+function buildMovieCanonicalPath(movieId: number, title: string) {
+  return `/movie/${movieId}-${createSlug(title)}`
 }
 
 function isCurrentMovieMatch(
@@ -1101,7 +1114,15 @@ function Hero({
           style={{ position: 'absolute', top: '50%', y: posterY, zIndex: 10, transform: 'translateY(-50%)' }}
         >
           <div style={{ aspectRatio: '2/3', borderRadius: 2, overflow: 'hidden', boxShadow: '0 40px 100px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.04)', position: 'relative' }}>
-            <Img src={posterUrl} alt={`${movie.title} poster`} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(0.6) brightness(0.85)' }} />
+            <Img
+              src={posterUrl}
+              alt={`${movie.title} poster`}
+              loading="eager"
+              fetchPriority="high"
+              width={500}
+              height={750}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(0.6) brightness(0.85)' }}
+            />
             <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 50%, rgba(0,0,0,0.25) 100%)' }} />
             <div style={{ position: 'absolute', inset: 0, border: `1px solid rgba(212,175,122,0.15)`, borderRadius: 2 }} />
           </div>
@@ -2383,29 +2404,99 @@ export default function MovieDetailPage() {
   }, [movie])
   const directorObj = useMemo(() => getDirectorObj(movie), [movie])
 
+  const seo = useMemo(() => {
+    if (!movie) {
+      return {
+        title: 'Ficha de pelicula | CineVault',
+        description: 'Consulta ficha, reparto, plataformas y reseñas en CineVault.',
+        canonical: 'https://cinevault.art/movie',
+        image: 'https://cinevault.art/whiplash2.jpg',
+        structuredData: undefined as string | undefined,
+      }
+    }
+
+    const year = movie.release_date ? new Date(movie.release_date).getFullYear() : null
+    const title = year ? `${movie.title} (${year}) | CineVault` : `${movie.title} | CineVault`
+    const description = (movie.overview || movie.tagline || `Descubre ${movie.title} en CineVault.`).slice(0, 155)
+    const image = movie.backdrop_path
+      ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}`
+      : movie.poster_path
+        ? `https://image.tmdb.org/t/p/w780${movie.poster_path}`
+        : 'https://cinevault.art/whiplash2.jpg'
+    const canonicalPath = buildMovieCanonicalPath(movie.id, movie.title)
+
+    return {
+      title,
+      description,
+      canonical: `https://cinevault.art${canonicalPath}`,
+      image,
+      structuredData: buildMovieSchema({
+        name: movie.title,
+        description,
+        image,
+        datePublished: movie.release_date,
+        directorName: directorObj?.name,
+        genres: (movie.genres || []).map((genre) => genre.name),
+        ratingValue: movie.vote_average,
+        ratingCount: movie.vote_count,
+      }),
+    }
+  }, [movie, directorObj])
+
+  useEffect(() => {
+    if (!movie || !slugOrId) return
+
+    const canonicalPath = buildMovieCanonicalPath(movie.id, movie.title)
+    const currentPath = `/movie/${slugOrId}`
+    if (currentPath !== canonicalPath) {
+      navigate(canonicalPath, { replace: true })
+    }
+  }, [movie, slugOrId, navigate])
+
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: C.bg, color: C.textSoft, fontFamily: SERIF, fontStyle: 'italic' }}>
-        Cargando película...
-      </div>
+      <>
+        <SeoHead.Page
+          title="Cargando pelicula | CineVault"
+          description="Cargando ficha de pelicula y reseñas en CineVault."
+          canonical="https://cinevault.art/movie"
+        />
+        <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: C.bg, color: C.textSoft, fontFamily: SERIF, fontStyle: 'italic' }}>
+          Cargando película...
+        </div>
+      </>
     )
   }
 
   if (error || !movie || !movieId) {
     return (
-      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: C.bg, color: '#ff8a8a', fontFamily: SANS }}>
-        <div style={{ textAlign: 'center' }}>
-          <p>{error || 'No se pudo cargar la película'}</p>
-          <button onClick={() => navigate('/')} style={{ border: `1px solid ${C.border}`, background: 'transparent', color: C.text, padding: '8px 14px', cursor: 'pointer' }}>
-            Volver al inicio
-          </button>
+      <>
+        <SeoHead.NoIndex
+          title="Error de pelicula | CineVault"
+          description="No se pudo cargar esta ficha de pelicula en este momento."
+          canonical="https://cinevault.art/movie"
+        />
+        <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: C.bg, color: '#ff8a8a', fontFamily: SANS }}>
+          <div style={{ textAlign: 'center' }}>
+            <p>{error || 'No se pudo cargar la película'}</p>
+            <button onClick={() => navigate('/')} style={{ border: `1px solid ${C.border}`, background: 'transparent', color: C.text, padding: '8px 14px', cursor: 'pointer' }}>
+              Volver al inicio
+            </button>
+          </div>
         </div>
-      </div>
+      </>
     )
   }
 
   return (
     <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: SANS, overflowX: 'hidden' }}>
+      <SeoHead.Movie
+        title={seo.title}
+        description={seo.description}
+        canonical={seo.canonical}
+        image={seo.image}
+        structuredData={seo.structuredData || ''}
+      />
       <Grain />
       <NoticeBar message={notice} type={noticeType} />
       <ReviewLogModal

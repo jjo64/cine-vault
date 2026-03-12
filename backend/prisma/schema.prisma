@@ -44,6 +44,9 @@ model follows {
 model movies_ref {
   id            Int             @id @default(autoincrement())
   tmdb_id       Int             @unique(map: "tmdb_id")
+  slug          String?         @unique(map: "slug") @db.VarChar(255)
+  is_public     Boolean         @default(true)
+  updated_at    DateTime        @default(now()) @updatedAt @db.Timestamp(0)
   diary_entries diary_entries[]
   favorites     favorites[]
   list_items    user_list_items[]
@@ -185,6 +188,7 @@ model users {
   role                                users_role?       @default(user)
   membership                          users_membership? @default(free)
   is_verified                         Boolean           @default(false)
+  is_public                           Boolean           @default(false)
   google_id                           String?           @unique(map: "google_id") @db.VarChar(255)
   two_factor_enabled                  Boolean           @default(false)
   two_factor_secret                   String?           @db.VarChar(255)

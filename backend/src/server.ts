@@ -28,6 +28,7 @@ import rutasSeo from "./routes/seo.routes.js"
 // Middlewares
 import { manejadorErrores } from "./middlewares/error.middlewares.js"
 import { limitadorGlobal } from "./middlewares/rateLimit.middleware.js"
+import { seoHeaders } from "./middlewares/seoHeaders.js"
 
 // Importación de helpers
 import { limpiarUsuariosNoVerificados } from "./lib/jobs.js"
@@ -78,6 +79,7 @@ app.use(
     credentials: true,
   })
 )
+app.use(seoHeaders)
 
 app.use(limitadorGlobal)
 // Stripe Webhook necesita el cuerpo raw para verificar la firma

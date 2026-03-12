@@ -80,6 +80,9 @@ const MovieSection: React.FC<MovieSectionProps> = ({ title, endpoint }) => {
                             <img
                                 src={`https://image.tmdb.org/t/p/w200${movie.poster_path}`}
                                 alt={movie.title}
+                                loading="lazy"
+                                width={140}
+                                height={210}
                                 style={{
                                     width: '140px',
                                     height: '210px',
