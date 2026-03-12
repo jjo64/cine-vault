@@ -25,7 +25,7 @@ function getSeoConfig(pathname: string, search: string): RouteSeoConfig {
     return {
       title: 'Feed de cinefilos | CineVault',
       description: 'Explora actividad reciente, listas y resenas de la comunidad cinefila.',
-      canonical: `${BASE_URL}/feed`,
+      canonical: `${BASE_URL}/discover`,
     }
   }
 
@@ -103,21 +103,11 @@ function getSeoConfig(pathname: string, search: string): RouteSeoConfig {
   }
 }
 
-function setRobotsMeta(content: string) {
-  let element = document.querySelector<HTMLMetaElement>('meta[name="robots"]')
-  if (!element) {
-    element = document.createElement('meta')
-    element.setAttribute('name', 'robots')
-    document.head.appendChild(element)
-  }
-  element.setAttribute('content', content)
-}
-
 export default function SeoManager() {
   const { pathname, search } = useLocation()
 
   const config = useMemo(() => getSeoConfig(pathname, search), [pathname, search])
-  const noIndexPaths = ['/settings', '/profile', '/verify-email', '/auth/callback', '/admin', '/dashboard']
+  const noIndexPaths = ['/settings', '/profile', '/verify-email', '/auth/callback', '/admin', '/dashboard', '/feed']
   const shouldNoIndex = noIndexPaths.some((route) => pathname === route || pathname.startsWith(`${route}/`))
 
   if (shouldNoIndex) {

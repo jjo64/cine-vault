@@ -35,4 +35,3 @@ User-agent: meta-externalagent
 Disallow: /
 
 Sitemap: https://cinevault.art/sitemap.xml
-Sitemap: https://cinevault.art/api/sitemap.xml

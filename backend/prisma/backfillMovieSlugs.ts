@@ -5,8 +5,6 @@ import { generateSlug } from '../src/helpers/generateSlug.js'
 
 const prisma = new PrismaClient()
 
-const uniqueSlug = (slug: string, movieId: number) => `${slug}-${movieId}`
-
 async function run() {
   const movies = await prisma.movies_ref.findMany({
     select: {
@@ -28,7 +26,7 @@ async function run() {
 
       const title = detail.title || `movie-${movie.tmdb_id}`
       const year = detail.release_date ? new Date(detail.release_date).getFullYear() : new Date().getFullYear()
-      const nextSlug = uniqueSlug(generateSlug(title, year), movie.tmdb_id)
+      const nextSlug = generateSlug(title, year)
 
       await prisma.movies_ref.update({
         where: { id: movie.id },

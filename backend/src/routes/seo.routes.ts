@@ -53,6 +53,15 @@ const buildSitemapIndexXml = (locs: string[]) => {
   ].join("\n")
 }
 
+const buildMoviePath = (tmdbId: number, slug: string | null) => {
+  if (!slug) return `/movie/${tmdbId}`
+  const normalizedSlug = slug.trim().replace(/^\/+/, '')
+  if (!normalizedSlug) return `/movie/${tmdbId}`
+  return normalizedSlug.startsWith(`${tmdbId}-`)
+    ? `/movie/${normalizedSlug}`
+    : `/movie/${tmdbId}-${normalizedSlug}`
+}
+
 const getSitemapEntries = async () => {
   const [movies, users, news] = await Promise.all([
     prisma.movies_ref.findMany({
@@ -93,10 +102,6 @@ const getSitemapEntries = async () => {
       lastmod: nowIso,
     },
     {
-      loc: `${SITE_URL}/feed`,
-      lastmod: nowIso,
-    },
-    {
       loc: `${SITE_URL}/lists`,
       lastmod: nowIso,
     },
@@ -111,7 +116,7 @@ const getSitemapEntries = async () => {
   ]
 
   const movieEntries: SitemapEntry[] = movies.map((movie) => ({
-      loc: movie.slug ? `${SITE_URL}/movie/${movie.slug}` : `${SITE_URL}/movie/${movie.tmdb_id}`,
+      loc: `${SITE_URL}${buildMoviePath(movie.tmdb_id, movie.slug)}`,
       lastmod: toIsoDate(movie.updated_at),
     }))
 
