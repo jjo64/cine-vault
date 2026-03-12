@@ -9,6 +9,7 @@ import { C, SANS } from '../components/profile-v2/theme'
 import { useProfilePageData } from '../hooks/useProfilePageData'
 import '../components/profile-v2/Profile.css'
 import { followUser, unfollowUser } from '../services/profileServices'
+import { SeoHead } from '../components/SeoHead'
 
 export default function ProfilePage() {
   const navigate = useNavigate()
@@ -90,6 +91,10 @@ export default function ProfilePage() {
   }
 
   const showGuestHint = !loading && !hasTargetProfile && !isAuthenticated
+  const profileSlug = encodeURIComponent((profileHeader.username || username || '').trim())
+  const canonical = profileSlug ? `https://cinevault.art/${profileSlug}` : 'https://cinevault.art/'
+  const seoTitle = `${profileHeader.displayName} | Perfil en CineVault`
+  const seoDescription = `Actividad, listas y reseñas de ${profileHeader.displayName} en CineVault.`
 
   const panels: Record<string, ReactNode> = {
     Resumen: (
@@ -109,6 +114,11 @@ export default function ProfilePage() {
 
   return (
     <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: SANS, overflowX: 'hidden' }}>
+      {isPublicProfile ? (
+        <SeoHead.Profile title={seoTitle} description={seoDescription} canonical={canonical} image={profileHeader.avatarUrl} />
+      ) : (
+        <SeoHead.NoIndex title={seoTitle} description={seoDescription} canonical={canonical} image={profileHeader.avatarUrl} />
+      )}
       <GrainOverlay />
       <Navbar onNavigateHome={() => navigate('/')} onSearch={searchFromNavbar} />
 

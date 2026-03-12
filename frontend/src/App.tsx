@@ -83,6 +83,7 @@ function App() {
                 <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/feed" element={<FeedPage />} />
+                    <Route path="/discover" element={<FeedPage />} />
                     <Route path="/movie/:slugOrId" element={<MovieDetail />} />
                     <Route path="/tv/:id" element={<TVDetail />} />
                     <Route path="/person/:id" element={<PersonPage />} />

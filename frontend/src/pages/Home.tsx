@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 import Landing from '../components/Landing';
 import HomeLogged from '../components/HomeLogged';
 import { getCurrentUser } from '../services/authServices';
+import { SeoHead } from '../components/SeoHead';
+import { buildWebSiteSchema } from '../utils/seo/buildMovieSchema';
 
 interface User {
     username: string;
@@ -57,7 +59,17 @@ const Home: React.FC = () => {
 
   if (loading) return <p>Cargando...</p>
 
-  return user ? <HomeLogged username={user.username} /> : <Landing />
+  return (
+    <>
+      <SeoHead.Page
+        title="CineVault | Tu vault cinematografico"
+        description="Descubre peliculas, guarda tu diario y comparte reseñas con la comunidad cinefila."
+        canonical="https://cinevault.art/"
+        structuredData={buildWebSiteSchema('https://cinevault.art')}
+      />
+      {user ? <HomeLogged username={user.username} /> : <Landing />}
+    </>
+  )
 
 }
 export default Home;

@@ -17,6 +17,8 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "prisma:generate": "prisma generate",
+    "prisma:backfill:movie-slugs": "tsx prisma/backfillMovieSlugs.ts",
     "kill-node": "taskkill /F /IM node.exe /T || exit 0",
     "stop": "npm run kill-node",
     "lint": "eslint src/**/*.ts",

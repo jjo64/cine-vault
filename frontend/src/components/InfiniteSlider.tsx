@@ -78,6 +78,9 @@ const InfiniteSlider: React.FC = () => {
                             <img
                                 src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
                                 alt={movie.title}
+                                loading="lazy"
+                                width={180}
+                                height={270}
                                 style={{
                                     width: '180px',
                                     height: '270px',
