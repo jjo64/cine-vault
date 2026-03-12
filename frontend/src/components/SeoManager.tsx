@@ -103,6 +103,16 @@ function getSeoConfig(pathname: string, search: string): RouteSeoConfig {
   }
 }
 
+function setRobotsMeta(content: string) {
+  let element = document.querySelector<HTMLMetaElement>('meta[name="robots"]')
+  if (!element) {
+    element = document.createElement('meta')
+    element.setAttribute('name', 'robots')
+    document.head.appendChild(element)
+  }
+  element.setAttribute('content', content)
+}
+
 export default function SeoManager() {
   const { pathname, search } = useLocation()
 
