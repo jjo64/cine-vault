@@ -1,4 +1,15 @@
 User-agent: *
 Allow: /
+Disallow: /settings
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /profile
+Disallow: /verify-email
+Disallow: /reset-password
+Disallow: /api/auth/
+Disallow: /api/rbac/
+Disallow: /api/payments/
+Disallow: /api/settings/
 
 Sitemap: https://cinevault.art/sitemap.xml
+Sitemap: https://cinevault.art/api/sitemap.xml

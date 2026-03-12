@@ -118,7 +118,7 @@ export default function ProfilePage() {
           stats={displayStats}
           followers={followerUsers}
           following={followingUsers}
-          onNavigateToUser={(targetUsername) => navigate(`/${targetUsername}`)}
+          onNavigateToUser={(targetUsername) => navigate(`/${encodeURIComponent(targetUsername.trim())}`)}
           canEditProfile={canEditProfile && !isPublicProfile}
           isPublicProfile={isPublicProfile}
           isFollowing={isFollowing}

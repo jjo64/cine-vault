@@ -67,7 +67,7 @@ const UserNavbar: React.FC = () => {
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         if (searchQuery.trim()) {
-            navigate(`/search/${searchQuery.trim()}`);
+            navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
         }
     };
 

@@ -28,8 +28,11 @@ const SANS = "'Syne', sans-serif"
 
 type SearchMovie = {
   id: number
-  title: string
-  poster_path: string | null
+  title?: string
+  name?: string
+  media_type?: 'movie' | 'tv' | 'person'
+  poster_path?: string | null
+  profile_path?: string | null
 }
 
 type ApiMovie = {
@@ -321,6 +324,19 @@ function Navbar() {
   const navLinks = viewerUsername ? ['Films', 'Lists', 'Members', 'Journal'] : ['Sign in', 'Create account', 'Films', 'Lists', 'Members', 'Journal']
   const visibleNavLinks = navLinks
 
+  const navigateByType = (item: SearchMovie) => {
+    const label = item.title || item.name || 'sin-titulo'
+    if (item.media_type === 'person') {
+      navigate(`/person/${item.id}`)
+      return
+    }
+    if (item.media_type === 'tv') {
+      navigate(`/tv/${item.id}`)
+      return
+    }
+    navigate(`/movie/${item.id}-${createSlug(label)}`)
+  }
+
   return (
     <motion.nav
       initial={{ opacity: 0, y: -12 }}
@@ -437,7 +453,7 @@ function Navbar() {
               }}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' && searchQuery.trim()) {
-                  navigate(`/search/${searchQuery.trim().replace(/\s+/g, '+')}`)
+                  navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
                   setIsSearchFocused(false)
                 }
               }}
@@ -454,7 +470,7 @@ function Navbar() {
             <button
               onClick={() => {
                 if (!searchQuery.trim()) return
-                navigate(`/search/${searchQuery.trim().replace(/\s+/g, '+')}`)
+                navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
                 setIsSearchFocused(false)
               }}
               style={{
@@ -492,7 +508,7 @@ function Navbar() {
                   <button
                     key={movie.id}
                     onClick={() => {
-                      navigate(`/movie/${movie.id}-${createSlug(movie.title)}`)
+                      navigateByType(movie)
                       setIsSearchFocused(false)
                       setSearchQuery('')
                     }}
@@ -511,11 +527,13 @@ function Navbar() {
                     }}
                   >
                     <Img
-                      src={movie.poster_path ? `https://image.tmdb.org/t/p/w92${movie.poster_path}` : '/no-poster.svg'}
-                      alt={movie.title}
+                      src={movie.media_type === 'person'
+                        ? (movie.profile_path ? `https://image.tmdb.org/t/p/w92${movie.profile_path}` : '/no-poster.svg')
+                        : (movie.poster_path ? `https://image.tmdb.org/t/p/w92${movie.poster_path}` : '/no-poster.svg')}
+                      alt={movie.title || movie.name || 'Sin titulo'}
                       style={{ width: 30, height: 46, objectFit: 'cover' }}
                     />
-                    <span className="landing-search-title" style={{ fontFamily: SANS, fontSize: 13, letterSpacing: '0.04em' }}>{movie.title}</span>
+                    <span className="landing-search-title" style={{ fontFamily: SANS, fontSize: 13, letterSpacing: '0.04em' }}>{movie.title || movie.name || 'Sin titulo'}</span>
                   </button>
                 ))
               ) : (

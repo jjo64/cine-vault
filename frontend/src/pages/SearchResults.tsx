@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import { ChevronDown, Menu, X, Filter } from 'lucide-react'
 import { createSlug } from '../utils/stringUtils'
@@ -11,7 +11,9 @@ import {
   searchPerson,
   searchTV,
   type GenreItem,
+  type SearchPersonPanel,
   type SearchMovieResult,
+  type SearchSuggestionItem,
 } from '../services/searchServices'
 import { getCurrentUser, logoutCurrentUser } from '../services/authServices'
 import './SearchResults.css'
@@ -81,6 +83,19 @@ function parseTmdbImage(path: string | null | undefined, size: 'w500' | 'origina
   return path ? `https://image.tmdb.org/t/p/${size}${path}` : ''
 }
 
+function navigateByResultType(navigate: ReturnType<typeof useNavigate>, item: SearchSuggestionItem) {
+  const label = item.title || item.name || 'sin-titulo'
+  if (item.media_type === 'person') {
+    navigate(`/person/${item.id}`)
+    return
+  }
+  if (item.media_type === 'tv') {
+    navigate(`/tv/${item.id}`)
+    return
+  }
+  navigate(`/movie/${item.id}-${createSlug(label)}`)
+}
+
 export function Navbar({
   viewer,
   onLogout,
@@ -91,7 +106,7 @@ export function Navbar({
   const navigate = useNavigate()
   const [scrolled, setScrolled] = useState(false)
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<Array<{ id: number; title: string; poster_path: string | null }>>([])
+  const [results, setResults] = useState<SearchSuggestionItem[]>([])
   const [openDropdown, setOpenDropdown] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
@@ -118,8 +133,11 @@ export function Navbar({
           Array.isArray(data.results)
             ? data.results.slice(0, 6).map((item) => ({
               id: item.id,
-              title: item.title || item.name || 'Sin título',
+              title: item.title,
+              name: item.name,
+              media_type: item.media_type,
               poster_path: item.poster_path || null,
+              profile_path: item.profile_path || null,
             }))
             : []
         )
@@ -219,19 +237,19 @@ export function Navbar({
           {openDropdown && query.trim() && (
             <div className="search-nav-dropdown" style={{ position: 'absolute', top: 44, right: 0, width: 'min(92vw, 420px)', border: `1px solid ${C.border} `, background: 'rgba(8,8,8,0.98)', borderRadius: 6, overflow: 'hidden', maxHeight: '65vh', overflowY: 'auto' }}>
               {visibleResults.length > 0 ? (
-                visibleResults.map((movie) => (
+                visibleResults.map((item) => (
                   <button
-                    key={movie.id}
+                    key={`${item.media_type || 'movie'}-${item.id}`}
                     onClick={() => {
-                      navigate(`/movie/${movie.id}-${createSlug(movie.title)}`)
+                      navigateByResultType(navigate, item)
                       setOpenDropdown(false)
                       setQuery('')
                     }}
                     className="search-nav-dropdown-item"
                     style={{ width: '100%', border: 'none', borderBottom: `1px solid ${C.border} `, background: 'transparent', color: C.text, display: 'flex', alignItems: 'flex-start', gap: 10, padding: 8, cursor: 'pointer', textAlign: 'left' }}
                   >
-                    <Img src={movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : ''} alt={movie.title} style={{ width: 30, height: 45, objectFit: 'cover' }} />
-                    <span className="search-nav-dropdown-title" style={{ fontFamily: SANS, fontSize: 12 }}>{movie.title}</span>
+                    <Img src={parseTmdbImage(item.media_type === 'person' ? item.profile_path : item.poster_path)} alt={item.title || item.name || 'Sin titulo'} style={{ width: 30, height: 45, objectFit: 'cover' }} />
+                    <span className="search-nav-dropdown-title" style={{ fontFamily: SANS, fontSize: 12 }}>{item.title || item.name || 'Sin titulo'}</span>
                   </button >
                 ))
               ) : (
@@ -332,7 +350,7 @@ function ResultCard({ item }: { item: SearchMovieResult }) {
   const navigate = useNavigate()
   const title = item.title || item.name || 'Sin título'
   const year = item.release_date || item.first_air_date
-  const isPerson = item.media_type === 'person' || Boolean(item.known_for_department)
+  const isPerson = item.media_type === 'person'
   const isTV = item.media_type === 'tv'
   const typeLabel = isPerson ? 'Persona' : isTV ? 'Serie' : 'Película'
 
@@ -408,16 +426,77 @@ function ResultCard({ item }: { item: SearchMovieResult }) {
   return <Link to={linkTarget} style={{ textDecoration: 'none', color: 'inherit' }}>{content}</Link>
 }
 
+function PeoplePanel({ people }: { people: SearchPersonPanel[] }) {
+  if (people.length === 0) return null
+
+  return (
+    <section style={{ display: 'grid', gap: 12, marginTop: 18 }}>
+      <h3 style={{ margin: 0, fontFamily: SERIF, fontSize: 30, fontWeight: 400 }}>Personas</h3>
+      <div style={{ display: 'grid', gap: 10 }}>
+        {people.map((person) => (
+          <Link
+            key={`person-panel-${person.id}`}
+            to={`/person/${person.id}`}
+            style={{
+              textDecoration: 'none',
+              color: 'inherit',
+              border: `1px solid ${C.border}`,
+              background: C.surface,
+              padding: 12,
+              display: 'grid',
+              gridTemplateColumns: '70px 1fr',
+              gap: 12,
+              alignItems: 'center',
+            }}
+          >
+            <Img
+              src={parseTmdbImage(person.profile_path || null)}
+              alt={person.name}
+              style={{ width: 70, height: 92, objectFit: 'cover', background: C.elevated }}
+            />
+            <div>
+              <div style={{ fontFamily: SERIF, fontSize: 24, lineHeight: 1.1 }}>{person.name}</div>
+              <div style={{ color: C.accentDim, fontFamily: SANS, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: 4 }}>
+                {person.known_for_department || 'Departamento desconocido'}
+              </div>
+              {Array.isArray(person.known_for) && person.known_for.length > 0 && (
+                <div style={{ marginTop: 8, display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
+                  {person.known_for.slice(0, 3).map((credit) => (
+                    <div key={`known-${person.id}-${credit.id}`} style={{ minWidth: 0 }}>
+                      <Img
+                        src={parseTmdbImage(credit.poster_path || null)}
+                        alt={credit.title || credit.name || 'Título'}
+                        style={{ width: '100%', height: 64, objectFit: 'cover', background: C.elevated }}
+                      />
+                      <div style={{ marginTop: 4, color: C.textSoft, fontFamily: SANS, fontSize: 10, lineHeight: 1.3 }}>
+                        {credit.title || credit.name || 'Título'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </Link>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 export default function SearchResultsPage() {
-  const { query: urlQuery } = useParams<{ query: string }>()
   const [params] = useSearchParams()
   const navigate = useNavigate()
 
-  const queryFromParams = params.get('q') || ''
-  const query = (urlQuery ? decodeURIComponent(urlQuery).replace(/\+/g, ' ') : queryFromParams).trim()
+  const query = (params.get('q') || '').replace(/\s+/g, ' ').trim()
 
   const [results, setResults] = useState<SearchMovieResult[]>([])
-  const [tab, setTab] = useState<SearchTab>('all')
+  const [allResults, setAllResults] = useState<SearchMovieResult[]>([])
+  const [allPeopleResults, setAllPeopleResults] = useState<SearchPersonPanel[]>([])
+  const tabParam = (params.get('tab') || '').toLowerCase()
+  const initialTab: SearchTab = tabParam === 'movie' || tabParam === 'person' || tabParam === 'tv'
+    ? tabParam
+    : 'all'
+  const [tab, setTab] = useState<SearchTab>(initialTab)
   const [personFilter, setPersonFilter] = useState<PersonFilter>('all')
   const [genres, setGenres] = useState<GenreItem[]>([])
   const [selectedGenres, setSelectedGenres] = useState<number[]>([])
@@ -431,12 +510,20 @@ export default function SearchResultsPage() {
   const token = localStorage.getItem('token')
 
   useEffect(() => {
+    const raw = (params.get('tab') || '').toLowerCase()
+    const nextTab: SearchTab = raw === 'movie' || raw === 'person' || raw === 'tv' ? raw : 'all'
+    setTab((prev) => (prev === nextTab ? prev : nextTab))
+  }, [params])
+
+  useEffect(() => {
     fetchMovieGenres().then((data) => setGenres(data.slice(0, 14))).catch(() => setGenres([]))
   }, [])
 
   useEffect(() => {
     if (!query) {
       setResults([])
+      setAllResults([])
+      setAllPeopleResults([])
       setTotalPages(1)
       setTotalResults(0)
       return
@@ -450,19 +537,30 @@ export default function SearchResultsPage() {
 
       try {
         if (tab === 'all') {
-          const multi = await searchMovie(query, currentPage)
+          const multi = await searchMovies(query, currentPage)
           if (!alive) return
 
-          const multiResults = Array.isArray(multi.results) ? multi.results : []
-          setResults(multiResults)
+          const merged = Array.isArray(multi.results)
+            ? multi.results
+            : [
+              ...(Array.isArray(multi.movie_results) ? multi.movie_results : []),
+              ...(Array.isArray(multi.tv_results) ? multi.tv_results : []),
+            ]
+          const people = Array.isArray(multi.people_results) ? multi.people_results : []
+
+          setAllResults(merged)
+          setAllPeopleResults(people)
+          setResults(merged)
           setTotalPages(Number(multi.total_pages || 1))
-          setTotalResults(Number(multi.total_results || multiResults.length))
+          setTotalResults(Number(multi.total_results || merged.length))
           return
         }
 
         if (tab === 'movie') {
           const data = await searchMovie(query, currentPage, selectedGenres)
           if (!alive) return
+          setAllResults([])
+          setAllPeopleResults([])
           setResults(Array.isArray(data.results) ? data.results : [])
           setTotalPages(Number(data.total_pages || 1))
           setTotalResults(Number(data.total_results || 0))
@@ -472,6 +570,8 @@ export default function SearchResultsPage() {
         if (tab === 'person') {
           const data = await searchPerson(query, currentPage)
           if (!alive) return
+          setAllResults([])
+          setAllPeopleResults([])
           setResults(Array.isArray(data.results) ? data.results : [])
           setTotalPages(Number(data.total_pages || 1))
           setTotalResults(Number(data.total_results || 0))
@@ -480,6 +580,8 @@ export default function SearchResultsPage() {
 
         const data = await searchTV(query, currentPage)
         if (!alive) return
+        setAllResults([])
+        setAllPeopleResults([])
         setResults(Array.isArray(data.results) ? data.results : [])
         setTotalPages(Number(data.total_pages || 1))
         setTotalResults(Number(data.total_results || 0))
@@ -534,9 +636,10 @@ export default function SearchResultsPage() {
   }, [query, tab, personFilter, selectedGenres])
 
   const sortedResults = useMemo(() => {
+    const source = tab === 'all' ? allResults : results
     const list = tab === 'person'
-      ? results.filter((item) => personFilterMatch(item, personFilter))
-      : [...results]
+      ? source.filter((item) => personFilterMatch(item, personFilter))
+      : [...source]
 
     if (sortMode === 'relevance') return list
 
@@ -549,12 +652,13 @@ export default function SearchResultsPage() {
     }
 
     return list.sort((a, b) => Number((a.release_date || a.first_air_date || '').slice(0, 4) || 0) - Number((b.release_date || b.first_air_date || '').slice(0, 4) || 0))
-  }, [results, sortMode, tab, personFilter])
+  }, [results, allResults, sortMode, tab, personFilter])
 
   const updateSearchUrl = (nextQuery: string, nextGenres: number[]) => {
     const newParams = new URLSearchParams()
     if (nextQuery.trim()) newParams.set('q', nextQuery.trim())
     if (nextGenres.length > 0) newParams.set('genre', String(nextGenres[0]))
+    if (tab !== 'all') newParams.set('tab', tab)
     const next = newParams.toString()
     navigate(next ? `/search?${next}` : '/search')
   }
@@ -721,12 +825,18 @@ export default function SearchResultsPage() {
           >
             {tab === 'all' && !loading && (
               <section style={{ display: 'grid', gap: 18 }}>
-                {results.length > 0 ? (
-                  <div style={{ display: 'grid', gap: 10 }}>
-                    {results.map((item) => (
-                      <ResultCard key={`all-${item.media_type || 'mixed'}-${item.id}`} item={item} />
-                    ))}
-                  </div>
+                {sortedResults.length > 0 || allPeopleResults.length > 0 ? (
+                  <>
+                    {sortedResults.length > 0 && (
+                      <div style={{ display: 'grid', gap: 10 }}>
+                        {sortedResults.map((item) => (
+                          <ResultCard key={`all-${item.media_type || 'movie'}-${item.id}`} item={item} />
+                        ))}
+                      </div>
+                    )}
+
+                    <PeoplePanel people={allPeopleResults.slice(0, 3)} />
+                  </>
                 ) : (
                   <div style={{ border: `1px solid ${C.border}`, background: C.surface, padding: 18, color: C.textSoft }}>
                     No encontramos resultados para esa búsqueda.

@@ -35,8 +35,7 @@ const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         if (searchQuery.trim()) {
-            const formattedQuery = searchQuery.trim().replace(/\s+/g, '+');
-            navigate(`/search/${formattedQuery}`);
+            navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
         }
     };
 

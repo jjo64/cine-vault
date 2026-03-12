@@ -23,6 +23,7 @@ import rutasInformacion from "./routes/information.routes.js"
 import rutasFavorities from "./routes/favorities.routes.js"
 import rutasSettings from "./routes/settings.routes.js"
 import rutasNotificaciones from "./routes/notifications.routes.js"
+import rutasSeo from "./routes/seo.routes.js"
 
 // Middlewares
 import { manejadorErrores } from "./middlewares/error.middlewares.js"
@@ -118,6 +119,7 @@ app.get("/", (req, res) => {
 //   console.error(error)
 // }
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec))
+app.use("/", rutasSeo)
 app.use("/api/auth", rutasAuth)
 app.use("/api/users", rutasUsuarios)
 app.use("/api/movies", rutasPeliculas)
@@ -132,6 +134,7 @@ app.use("/api/information", rutasInformacion)
 app.use("/api/favorites", rutasFavorities)
 app.use("/api/settings", rutasSettings)
 app.use("/api/notifications", rutasNotificaciones)
+app.use("/api", rutasSeo)
 
 /* ==========================================================================
    MIDDLEWARE DE MANEJO DE ERRORES (SIEMPRE AL FINAL)
