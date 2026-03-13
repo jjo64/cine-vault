@@ -2,6 +2,7 @@ import { Router } from "express"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
 import {
   getSearch,
+  getSearchDebug,
   getMultiSearch,
   getMovieSearch,
   getMovieGenres,
@@ -65,6 +66,7 @@ const router = Router()
  *               error: "Debe proporcionar un término de búsqueda."
  */
 router.get("/", manejadorAsincrono(getSearch)) // busqueda general
+router.get("/debug", manejadorAsincrono(getSearchDebug)) // debug de ranking
 
 /**
  * @swagger

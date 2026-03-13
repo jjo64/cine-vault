@@ -7,6 +7,7 @@ import { resolveNavPathWithFallback } from '../lib/navigation'
 import {
   fetchMovieGenres,
   searchMovie,
+  searchMoviesDebug,
   searchMovies,
   searchPerson,
   searchTV,
@@ -488,6 +489,7 @@ export default function SearchResultsPage() {
   const navigate = useNavigate()
 
   const query = (params.get('q') || '').replace(/\s+/g, ' ').trim()
+  const debugMode = params.get('debug') === '1'
 
   const [results, setResults] = useState<SearchMovieResult[]>([])
   const [allResults, setAllResults] = useState<SearchMovieResult[]>([])
@@ -537,7 +539,9 @@ export default function SearchResultsPage() {
 
       try {
         if (tab === 'all') {
-          const multi = await searchMovies(query, currentPage)
+          const multi = debugMode
+            ? await searchMoviesDebug(query, currentPage)
+            : await searchMovies(query, currentPage)
           if (!alive) return
 
           const merged = Array.isArray(multi.results)
@@ -561,7 +565,11 @@ export default function SearchResultsPage() {
           if (!alive) return
           setAllResults([])
           setAllPeopleResults([])
-          setResults(Array.isArray(data.results) ? data.results : [])
+          setResults(
+            Array.isArray(data.results)
+              ? data.results.map((item) => ({ ...item, media_type: item.media_type || 'movie' }))
+              : []
+          )
           setTotalPages(Number(data.total_pages || 1))
           setTotalResults(Number(data.total_results || 0))
           return
@@ -572,7 +580,11 @@ export default function SearchResultsPage() {
           if (!alive) return
           setAllResults([])
           setAllPeopleResults([])
-          setResults(Array.isArray(data.results) ? data.results : [])
+          setResults(
+            Array.isArray(data.results)
+              ? data.results.map((item) => ({ ...item, media_type: 'person' }))
+              : []
+          )
           setTotalPages(Number(data.total_pages || 1))
           setTotalResults(Number(data.total_results || 0))
           return
@@ -582,7 +594,11 @@ export default function SearchResultsPage() {
         if (!alive) return
         setAllResults([])
         setAllPeopleResults([])
-        setResults(Array.isArray(data.results) ? data.results : [])
+        setResults(
+          Array.isArray(data.results)
+            ? data.results.map((item) => ({ ...item, media_type: item.media_type || 'tv' }))
+            : []
+        )
         setTotalPages(Number(data.total_pages || 1))
         setTotalResults(Number(data.total_results || 0))
       } catch (err) {
@@ -683,6 +699,32 @@ export default function SearchResultsPage() {
             <h1 style={{ margin: 0, fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(30px, 4vw, 52px)', lineHeight: 1.08 }}>
               {totalResults.toLocaleString('es-ES')} coincidencias para &quot;{query || '...'}&quot;
             </h1>
+            {debugMode && tab === 'all' && allResults.length > 0 && (
+              <div style={{ marginTop: 10, border: `1px solid ${C.border}`, padding: 10, background: C.surface }}>
+                <div style={{ color: C.accentDim, fontFamily: SANS, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 6 }}>
+                  Debug ranking activo
+                </div>
+                <div style={{ color: C.textSoft, fontFamily: SANS, fontSize: 12 }}>
+                  Añade o quita <strong>debug=1</strong> en la URL para activar/desactivar este panel.
+                </div>
+                {allResults[0]?._score_debug && (
+                  <div style={{ marginTop: 8, color: C.textSoft, fontFamily: SANS, fontSize: 12 }}>
+                    Top 1 score: {Math.round(
+                      (allResults[0]._score_debug.title_rank || 0) +
+                      (allResults[0]._score_debug.title_source_boost || 0) +
+                      (allResults[0]._score_debug.token_source_boost || 0) +
+                      (allResults[0]._score_debug.exact_title_boost || 0) +
+                      (allResults[0]._score_debug.exact_token_boost || 0) +
+                      (allResults[0]._score_debug.fuzzy_boost || 0) +
+                      (allResults[0]._score_debug.contextual_token_boost || 0) +
+                      (allResults[0]._score_debug.person_role_boost || 0) +
+                      (allResults[0]._score_debug.strong_person_match_boost || 0) +
+                      (allResults[0]._score_debug.local_boost || 0)
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

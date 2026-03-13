@@ -19,6 +19,19 @@ export type SearchMovieResult = {
   director?: string
   overview?: string
   alternative_titles?: Array<{ iso_3166_1?: string; title?: string }>
+  _score_debug?: {
+    title_rank?: number
+    title_source_boost?: number
+    token_source_boost?: number
+    exact_title_boost?: number
+    exact_token_boost?: number
+    fuzzy_boost?: number
+    contextual_token_boost?: number
+    person_role_boost?: number
+    strong_person_match_boost?: number
+    local_boost?: number
+    token_matches?: number
+  }
 }
 
 export type SearchSuggestionItem = {
@@ -51,6 +64,14 @@ export type SearchResponse = {
   movie_results?: SearchMovieResult[]
   tv_results?: SearchMovieResult[]
   people_results?: SearchPersonPanel[]
+  _debug?: {
+    query?: string
+    analysis?: {
+      tipo_detectado?: string
+      tokens?: string[]
+      estrategia?: string[]
+    }
+  }
 }
 
 export type GenreItem = {
@@ -58,10 +79,11 @@ export type GenreItem = {
   name: string
 }
 
-type SearchScope = 'general' | 'multi' | 'movie' | 'person' | 'tv'
+type SearchScope = 'general' | 'debug' | 'multi' | 'movie' | 'person' | 'tv'
 
 const scopePath: Record<SearchScope, string> = {
   general: '/api/search',
+  debug: '/api/search/debug',
   multi: '/api/search/multi',
   movie: '/api/search/movie',
   person: '/api/search/person',
@@ -95,6 +117,10 @@ async function runSearch(scope: SearchScope, params: SearchParams): Promise<Sear
 
 export async function searchMovies(query: string, page = 1): Promise<SearchResponse> {
   return runSearch('general', { query, page })
+}
+
+export async function searchMoviesDebug(query: string, page = 1): Promise<SearchResponse> {
+  return runSearch('debug', { query, page })
 }
 
 export const searchMulti = (query: string, page = 1) => runSearch('multi', { query, page })
