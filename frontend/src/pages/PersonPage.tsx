@@ -28,6 +28,8 @@ type CreditItem = {
   department?: string
   release_date?: string
   first_air_date?: string
+  vote_average?: number
+  popularity?: number
 }
 
 type CombinedCredits = {
@@ -151,6 +153,20 @@ export default function PersonPage() {
 
   const crewGroups = groupCrewByDepartment(movieCrew)
 
+  const knownForTop = useMemo(() => {
+    const unique = new Map<number, CreditItem>()
+    movieCast.forEach((item) => {
+      if (!unique.has(item.id)) unique.set(item.id, item)
+    })
+    movieCrew.forEach((item) => {
+      if (!unique.has(item.id)) unique.set(item.id, item)
+    })
+
+    return Array.from(unique.values())
+      .sort((a, b) => Number(b.vote_average || b.popularity || 0) - Number(a.vote_average || a.popularity || 0))
+      .slice(0, 3)
+  }, [movieCast, movieCrew])
+
   const onSearch = (query: string) => {
     navigate(`/search?q=${encodeURIComponent(query.trim())}`)
   }
@@ -210,6 +226,25 @@ export default function PersonPage() {
                   <div className="person-info-value">{person.place_of_birth || 'Sin dato'}</div>
                   <div className="person-info-label">Departamento</div>
                   <div className="person-info-value">{person.known_for_department || 'Sin dato'}</div>
+                </div>
+
+                <div className="person-metrics-grid">
+                  <article className="person-metric-card">
+                    <div className="person-metric-label">Acting credits</div>
+                    <div className="person-metric-value">{movieCast.length}</div>
+                  </article>
+                  <article className="person-metric-card">
+                    <div className="person-metric-label">Crew credits</div>
+                    <div className="person-metric-value">{movieCrew.length}</div>
+                  </article>
+                  <article className="person-metric-card">
+                    <div className="person-metric-label">Known for</div>
+                    <div className="person-metric-list">
+                      {knownForTop.length === 0
+                        ? 'Sin títulos destacados'
+                        : knownForTop.map((item) => item.title || item.name || 'Sin título').join(' · ')}
+                    </div>
+                  </article>
                 </div>
               </div>
             </section>
