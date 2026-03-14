@@ -108,6 +108,47 @@ export const fuzzyTokenMatchAny = (tokens: string[], candidates: string[]) => {
   return tokens.some((token) => normalizedCandidates.some((candidate) => fuzzyMatch(token, candidate)))
 }
 
+export function calcularPersonNameScore(query: string, nombrePersona: string): number {
+  const q = normalizeToken(query)
+  const n = normalizeToken(nombrePersona)
+  if (!q || !n) return 0
+
+  const fullSim = 1 - levenshtein(q, n) / Math.max(q.length, n.length)
+  if (fullSim >= 0.82) return fullSim
+
+  const queryTokens = q.split(/\s+/).filter(Boolean)
+  const nameTokens = n.split(/\s+/).filter(Boolean)
+
+  if (queryTokens.length >= 2 && nameTokens.length > 0) {
+    const tokenScores = queryTokens.map((queryToken) =>
+      Math.max(
+        ...nameTokens.map(
+          (nameToken) => 1 - levenshtein(queryToken, nameToken) / Math.max(queryToken.length, nameToken.length)
+        )
+      )
+    )
+
+    const strongTokenMatches = tokenScores.filter((score) => score >= 0.82).length
+    const avgTokenScore = tokenScores.reduce((acc, score) => acc + score, 0) / tokenScores.length
+
+    if (strongTokenMatches >= Math.min(2, queryTokens.length) && avgTokenScore >= 0.72) {
+      return avgTokenScore * 0.98
+    }
+  }
+
+  if (queryTokens.length === 1 && nameTokens.length > 0) {
+    const mejorToken = Math.max(
+      ...nameTokens.map(
+        (nameToken) =>
+          1 - levenshtein(queryTokens[0], nameToken) / Math.max(queryTokens[0].length, nameToken.length)
+      )
+    )
+    return mejorToken * 0.88
+  }
+
+  return fullSim
+}
+
 export function analizarQuery(raw: string): QueryAnalizado {
   const tokens = tokenizarQuery(raw)
   const estrategia: string[] = []
@@ -118,6 +159,7 @@ export function analizarQuery(raw: string): QueryAnalizado {
     (token) => token.length >= 4 && !NON_PERSON_HINTS.test(token)
   )
   const hasLongTokenPair = tokens.length === 2 && tokens.every((token) => token.length >= 5)
+  const hasSingleLongToken = tokens.length === 1 && tokens[0].length >= 5
 
   let tipo: SearchIntent = "titulo"
   const queries_tmdb: QueryAnalizado["queries_tmdb"] = {
@@ -137,6 +179,15 @@ export function analizarQuery(raw: string): QueryAnalizado {
     queries_tmdb.termino_persona = raw
     delete queries_tmdb.termino_pelicula
     delete queries_tmdb.termino_tv
+  } else if (hasSingleLongToken) {
+    tipo = "mixto"
+    estrategia.push("Token unico largo detectado: combinar personas, peliculas y tv")
+    queries_tmdb.buscar_personas = true
+    queries_tmdb.buscar_peliculas = true
+    queries_tmdb.buscar_tv = true
+    queries_tmdb.termino_persona = raw
+    queries_tmdb.termino_pelicula = raw
+    queries_tmdb.termino_tv = raw
   } else if ((tokens.length >= 3 && tokensImprobables.length >= 2) || hasLongTokenPair) {
     tipo = "mixto"
     estrategia.push("Query mixto detectado: combinar personas, peliculas y tv")
