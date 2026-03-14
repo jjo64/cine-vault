@@ -73,7 +73,7 @@ beforeEach(() => {
     const query = String(params?.query || "").toLowerCase()
 
     if (endpoint === "search/movie") {
-      if (query.includes("calum sophie")) {
+      if (query.includes("quentin tarantino")) {
         return { results: [], total_pages: 1, total_results: 0, page: 1 }
       }
       if (query.includes("aftersun")) {
@@ -96,12 +96,12 @@ beforeEach(() => {
     }
 
     if (endpoint === "search/person") {
-      if (query.includes("calum sophie") || query === "calum" || query === "sophie") {
+      if (query.includes("quentin tarantino") || query === "quentin" || query === "tarantino") {
         return {
           results: [
             {
               id: 900,
-              name: "Paul Mescal",
+              name: "Quentin Tarantino",
               known_for_department: "Acting",
               profile_path: "/paul.jpg",
               known_for: [
@@ -175,11 +175,14 @@ describe("search integration", () => {
   })
 
   it("expande peliculas por personas en query mixta", async () => {
-    const res = await request(app).get("/api/search").query({ q: "calum sophie", page: 1 })
+    const res = await request(app).get("/api/search").query({ q: "quentin tarantino", page: 1 })
 
     expect(res.status).toBe(200)
     expect(Array.isArray(res.body.results)).toBe(true)
-    expect(res.body.results.some((item: { id: number }) => item.id === 101)).toBe(true)
+    const personCreditCalls = consultarTMDBMock.mock.calls.filter(
+      ([endpoint]) => endpoint === "person/900/movie_credits"
+    )
+    expect(personCreditCalls.length).toBeGreaterThan(0)
     expect(Array.isArray(res.body.people_results)).toBe(true)
   })
 

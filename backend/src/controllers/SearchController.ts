@@ -11,6 +11,7 @@ import {
 } from "../helpers/titleRanking.js"
 import {
   analizarQuery,
+  calcularPersonNameScore,
   enriquecerConDatosLocales,
   fuzzyTokenMatchAny,
 } from "../services/search.services.js"
@@ -18,7 +19,7 @@ import {
 const TTL_BUSQUEDA = 60 * 60 * 2
 const SEARCH_PAGE_SIZE = 20
 const FIRST_PAGE_CANDIDATE_PAGES = ["1", "2", "3"]
-const SEARCH_CACHE_VERSION = "v18"
+const SEARCH_CACHE_VERSION = "v20"
 
 const getEnvNumber = (name: string, fallback: number) => {
   const raw = process.env[name]
@@ -38,6 +39,7 @@ const LOCAL_VAULT_BOOST = getEnvNumber("SEARCH_LOCAL_VAULT_BOOST", 240)
 const LOCAL_REVIEW_BOOST = getEnvNumber("SEARCH_LOCAL_REVIEW_BOOST", 180)
 const LOCAL_WATCHLIST_BOOST = getEnvNumber("SEARCH_LOCAL_WATCHLIST_BOOST", 90)
 const PERSON_STRONG_MATCH_BOOST = getEnvNumber("SEARCH_PERSON_STRONG_MATCH_BOOST", 3600)
+const PERSON_TITLE_NOISE_PENALTY = getEnvNumber("SEARCH_PERSON_TITLE_NOISE_PENALTY", 1600)
 const TV_NON_EXACT_PENALTY = getEnvNumber("SEARCH_TV_NON_EXACT_PENALTY", 1200)
 const VOTE_COUNT_BOOST_WEIGHT = getEnvNumber("SEARCH_VOTE_COUNT_BOOST_WEIGHT", 700)
 const VOTE_AVERAGE_BOOST_WEIGHT = getEnvNumber("SEARCH_VOTE_AVERAGE_BOOST_WEIGHT", 140)
@@ -48,6 +50,7 @@ type AnyRecord = any
 type PersonCandidate = {
   id: number
   name: string
+  personNameScore: number
   popularity?: number
   profile_path?: string | null
   known_for_department?: string
@@ -67,6 +70,7 @@ type MovieAggregate = {
   hasTokenSource: boolean
   tokenMatches: number
   personRoleScore: number
+  personNameScore: number
 }
 
 const normalizeQuery = (raw: string) =>
@@ -255,14 +259,32 @@ const collectPersonCandidates = (
   tokenPersonResults: AnyRecord[] = []
 ): PersonCandidate[] => {
   const normalizedQuery = normalizeQuery(query).toLowerCase()
+  const minPersonNameScore = queryTokens.length >= 2 ? 0.72 : 0.82
+
+  const computePersonNameScore = (personName: string) => {
+    const fullScore = calcularPersonNameScore(normalizedQuery, personName)
+    if (queryTokens.length < 3) return fullScore
+
+    const tokenScores = queryTokens
+      .map((token) => calcularPersonNameScore(token, personName))
+      .filter((score) => Number.isFinite(score))
+
+    const bestTokenScore = tokenScores.length > 0 ? Math.max(...tokenScores) : 0
+    return Math.max(fullScore, bestTokenScore * 0.98)
+  }
+
   const byId = new Map<number, PersonCandidate>()
   for (const person of [...personResults, ...tokenPersonResults]) {
     if (!person?.id || !person?.name) continue
     if (byId.has(person.id)) continue
 
+    const personNameScore = computePersonNameScore(String(person.name || ""))
+    if (personNameScore < minPersonNameScore) continue
+
     byId.set(person.id, {
       id: person.id,
       name: person.name,
+      personNameScore,
       popularity: Number(person.popularity || 0),
       profile_path: person.profile_path || null,
       known_for_department: person.known_for_department,
@@ -287,10 +309,16 @@ const collectPersonCandidates = (
       const knownForTitles = Array.isArray(candidate.known_for)
         ? candidate.known_for.map((item) => String(item.title || item.name || "")).filter(Boolean)
         : []
+      const nameTokenCount = nameNormalized.split(/\s+/).filter(Boolean).length
 
       let score = Number(candidate.popularity || 0) * 0.05
+      score += candidate.personNameScore * 500
       if (nameNormalized === normalizedQuery) score += 600
       if (nameNormalized.includes(normalizedQuery) && normalizedQuery.length >= 4) score += 320
+      if (queryTokens.length === 1 && normalizedQuery.length >= 5) {
+        if (nameTokenCount === 1 && nameNormalized === normalizedQuery) score -= 380
+        if (nameTokenCount >= 2 && nameNormalized.includes(normalizedQuery)) score += 220
+      }
       if (fuzzyTokenMatchAny(queryTokens, [candidate.name])) score += 260
       if (fuzzyTokenMatchAny(queryTokens, knownForTitles)) score += 120
       if (department.includes("direct")) score += 80
@@ -318,9 +346,13 @@ const fetchCreditsForPerson = async (person: PersonCandidate) =>
 const mergeMovieFromPersonCredit = (
   map: Map<number, MovieAggregate>,
   movieCredit: AnyRecord,
-  role: PersonRole
+  role: PersonRole,
+  personNameScore: number
 ) => {
   if (!movieCredit?.id) return
+
+  const personRoleBase = role === "director" ? DIRECTOR_CREDIT_BOOST : ACTOR_CREDIT_BOOST
+  const personRoleScore = personRoleBase * personNameScore
 
   const existing = map.get(movieCredit.id)
   if (!existing) {
@@ -339,15 +371,17 @@ const mergeMovieFromPersonCredit = (
       hasTitleSource: false,
       hasTokenSource: false,
       tokenMatches: 0,
-      personRoleScore: role === "director" ? DIRECTOR_CREDIT_BOOST : ACTOR_CREDIT_BOOST,
+      personRoleScore,
+      personNameScore,
     })
     return
   }
 
-  existing.personRoleScore = Math.max(
-    existing.personRoleScore,
-    role === "director" ? DIRECTOR_CREDIT_BOOST : ACTOR_CREDIT_BOOST
-  )
+  if (personRoleScore > existing.personRoleScore) {
+    existing.personRoleScore = personRoleScore
+    existing.personNameScore = personNameScore
+  }
+
   map.set(movieCredit.id, existing)
 }
 
@@ -365,6 +399,7 @@ const mergeMovieFromTitleSearch = (map: Map<number, MovieAggregate>, movie: AnyR
       hasTokenSource: false,
       tokenMatches: 0,
       personRoleScore: 0,
+      personNameScore: 0,
     })
     return
   }
@@ -396,6 +431,7 @@ const mergeMovieFromTokenSearch = (
       hasTokenSource: true,
       tokenMatches: matchedTokenCount,
       personRoleScore: 0,
+      personNameScore: 0,
     })
     return
   }
@@ -424,10 +460,10 @@ const runPersonMovieMatches = async (candidates: PersonCandidate[]): Promise<Map
       const actedMovies = Array.isArray(credits?.cast) ? credits.cast.slice(0, 20) : []
 
       for (const movie of directedMovies) {
-        mergeMovieFromPersonCredit(map, movie, "director")
+        mergeMovieFromPersonCredit(map, movie, "director", person.personNameScore)
       }
       for (const movie of actedMovies) {
-        mergeMovieFromPersonCredit(map, movie, "actor")
+        mergeMovieFromPersonCredit(map, movie, "actor", person.personNameScore)
       }
     },
     { concurrency: 2 }
@@ -545,6 +581,30 @@ const runSmartUnifiedSearch = async ({
     tokenPersonPayloads.flatMap((payload) => extractTmdbResults(payload))
   )
 
+  if (personCandidates.length === 0 && isCombinedQuery && queries_tmdb.buscar_personas) {
+    const tokenPersonFallbackPayloads = await pMap(
+      likelyPersonTokens,
+      async (token) =>
+        consultarTMDB("search/person", { query: token, page: "2" }, { includeDefaultLanguage: false }),
+      { concurrency: 2 }
+    )
+
+    personCandidates.push(
+      ...collectPersonCandidates(
+        normalizedQuery,
+        tokens,
+        extractTmdbResults(personData),
+        [
+          ...tokenPersonPayloads.flatMap((payload) => extractTmdbResults(payload)),
+          ...tokenPersonFallbackPayloads.flatMap((payload) => extractTmdbResults(payload)),
+        ]
+      )
+    )
+  }
+
+  const topPersonDepartment = String(personCandidates[0]?.known_for_department || "").toLowerCase()
+  const preferDirectorCredits = topPersonDepartment.includes("direct")
+
   const personMovieMatches = await runPersonMovieMatches(personCandidates)
 
   const movieMap = new Map<number, MovieAggregate>()
@@ -560,6 +620,7 @@ const runSmartUnifiedSearch = async ({
     }
 
     existing.personRoleScore = Math.max(existing.personRoleScore, fromPerson.personRoleScore)
+    existing.personNameScore = Math.max(existing.personNameScore, fromPerson.personNameScore)
     movieMap.set(movieId, existing)
   }
 
@@ -594,9 +655,18 @@ const runSmartUnifiedSearch = async ({
     const fuzzyBoost = hasFuzzyTokenTitleMatch(entry.movie, tokens) ? 900 : 0
     const contextualTokenBoost = entry.tokenMatches > 0 ? entry.tokenMatches * 550 : 0
     const personBoost = entry.personRoleScore * personIntentMultiplier
+    const personNameScore = Number(entry.personNameScore || 0)
+    const roleThreshold =
+      (preferDirectorCredits ? DIRECTOR_CREDIT_BOOST : ACTOR_CREDIT_BOOST) * Math.max(0.75, personNameScore)
+    const hasStrongRoleSignal = entry.personRoleScore >= roleThreshold
     const strongPersonMatchBoost =
-      entry.personRoleScore > 0 && fuzzyTokenMatchAny(tokens, toContextCandidates(entry.movie))
-        ? PERSON_STRONG_MATCH_BOOST
+      personNameScore >= 0.82 && hasStrongRoleSignal ? PERSON_STRONG_MATCH_BOOST * personNameScore : 0
+    const personTitleNoisePenalty =
+      (analisis.tipo_detectado === "persona" || analisis.tipo_detectado === "mixto") &&
+      personNameScore >= 0.8 &&
+      entry.hasTitleSource &&
+      !hasStrongRoleSignal
+        ? PERSON_TITLE_NOISE_PENALTY
         : 0
     const localBoost = localSignalScore(localCounts)
     const tmdbSignal = tmdbRatingSignalScore(entry.movie)
@@ -611,7 +681,8 @@ const runSmartUnifiedSearch = async ({
       contextualTokenBoost +
       personBoost +
       strongPersonMatchBoost +
-      localBoost +
+      localBoost -
+      personTitleNoisePenalty +
       tmdbSignal.total
 
     return {
@@ -630,7 +701,9 @@ const runSmartUnifiedSearch = async ({
               contextual_token_boost: contextualTokenBoost,
               token_matches: entry.tokenMatches,
               person_role_boost: personBoost,
+              person_name_score: personNameScore,
               strong_person_match_boost: strongPersonMatchBoost,
+              person_title_noise_penalty: personTitleNoisePenalty,
               local_boost: localBoost,
               vote_count_boost: tmdbSignal.voteCountBoost,
               vote_average_boost: tmdbSignal.voteAverageBoost,
@@ -727,6 +800,8 @@ const runSmartUnifiedSearch = async ({
   rankedMovies.sort((a, b) => {
     const aExact = hasExactTitleMatch(a, normalizedQuery)
     const bExact = hasExactTitleMatch(b, normalizedQuery)
+    const directorRoleThreshold =
+      ((DIRECTOR_CREDIT_BOOST + ACTOR_CREDIT_BOOST) / 2) * personIntentMultiplier
 
     if (aExact && bExact) {
       const byVotes = Number(b.vote_count || 0) - Number(a.vote_count || 0)
@@ -734,6 +809,17 @@ const runSmartUnifiedSearch = async ({
     }
 
     if (aExact !== bExact) return aExact ? -1 : 1
+
+    const aPersonNameScore = Number(a?._score_debug?.person_name_score || 0)
+    const bPersonNameScore = Number(b?._score_debug?.person_name_score || 0)
+    const aRoleBoost = Number(a?._score_debug?.person_role_boost || 0)
+    const bRoleBoost = Number(b?._score_debug?.person_role_boost || 0)
+
+    const aDirectorLike = aPersonNameScore >= 0.82 && aRoleBoost >= directorRoleThreshold
+    const bDirectorLike = bPersonNameScore >= 0.82 && bRoleBoost >= directorRoleThreshold
+    if (aDirectorLike !== bDirectorLike) return aDirectorLike ? -1 : 1
+
+    if (aRoleBoost !== bRoleBoost) return bRoleBoost - aRoleBoost
 
     return Number(b._smart_rank || 0) - Number(a._smart_rank || 0)
   })
