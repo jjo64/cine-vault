@@ -45,7 +45,8 @@ type NoIndexSeoProps = {
   image?: string
 }
 
-const DEFAULT_IMAGE = 'https://cinevault.art/whiplash2.jpg'
+// CAMBIADO: imagen OG propia de la app en lugar de whiplash2.jpg
+const DEFAULT_IMAGE = 'https://cinevault.art/og-home.jpg'
 
 const clampText = (value: string, max: number) => value.trim().slice(0, max)
 
@@ -78,12 +79,18 @@ const SeoBase = ({
       <meta name="description" content={safeDescription} />
       <meta name="robots" content={robots} />
 
+      {/* Open Graph */}
+      <meta property="og:site_name" content="CineVault" />
       <meta property="og:title" content={safeTitle} />
       <meta property="og:description" content={safeDescription} />
       <meta property="og:image" content={image} />
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
       <meta property="og:url" content={safeCanonical} />
       <meta property="og:type" content={type} />
+      <meta property="og:locale" content="es_ES" />
 
+      {/* Twitter / X */}
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={safeTitle} />
       <meta name="twitter:description" content={safeDescription} />
