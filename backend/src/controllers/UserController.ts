@@ -1,7 +1,7 @@
 import { Request, Response } from "express"
 import type { SolicitudAutenticada } from "../middlewares/auth.middlewares.js"
 import * as userService from "../services/user.services.js"
-import { emitirNotificacion } from "./NotificationsController.js"
+import { emitirNotificacionService } from "../services/notifications.services.js"
 import jwt from "jsonwebtoken"
 import type { PayloadAcceso } from "../middlewares/auth.middlewares.js"
 
@@ -56,7 +56,7 @@ export const seguirUsuario = async (
 
   // Notificar al usuario seguido
   if (req.user!.user_id !== Number(req.params.id)) {
-    await emitirNotificacion({
+    await emitirNotificacionService({
       user_id: Number(req.params.id),
       sender_id: req.user!.user_id,
       type: "follow",
