@@ -36,14 +36,7 @@ import { initSocketIO } from "./config/socketio.config.js"
 
 // Swagger & Documentación
 import swaggerUi from "swagger-ui-express"
-//import fs from "fs"
-//import path from "path"
-//import yaml from "yaml"
-//import { fileURLToPath } from "url"
 import { swaggerSpec } from "../docs/swagger.js"
-
-//const __filename = fileURLToPath(import.meta.url)
-//const __dirname = path.dirname(__filename)
 
 // Configuración inicial
 const app = express()
@@ -108,18 +101,6 @@ app.get("/", (req, res) => {
 /* ==========================================================================   
    DOCUMENTACIÓN API (OpenAPI)
    ========================================================================== */
-// try {
-//   const swaggerPath = path.join(__dirname, "../docs", "openapi.yaml")
-//   const swaggerFile = fs.readFileSync(swaggerPath, "utf8")
-//   const swaggerDocument = yaml.parse(swaggerFile)
-
-//   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument))
-// } catch (error) {
-//   console.warn(
-//     "No se pudo cargar la documentación Swagger OpenAPI en /api-docs. Verifica que backend/docs/openapi.yaml exista."
-//   )
-//   console.error(error)
-// }
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 app.use("/", rutasSeo)
 app.use("/api/auth", rutasAuth)
