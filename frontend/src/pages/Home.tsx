@@ -62,8 +62,8 @@ const Home: React.FC = () => {
   return (
     <>
       <SeoHead.Page
-        title="CineVault | Tu vault cinematografico"
-        description="Descubre peliculas, guarda tu diario y comparte reseñas con la comunidad cinefila."
+        title="CineVault — El diario cinematográfico que te define"
+        description="Guardá películas en tu vault, escribí reseñas, llevá tu diario de cine y recibí una recomendación irrechazable cada noche. Para los que hacen del cine su vida."
         canonical="https://cinevault.art/"
         structuredData={buildWebSiteSchema('https://cinevault.art')}
       />
