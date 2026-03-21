@@ -7,6 +7,7 @@ import {
 } from "../errors/AppErrors.js"
 import { invalidateKeys, getCache, setCache } from "../lib/cache.js"
 import { diaryRepository } from "../repositories/DiaryRepository.js"
+import { userRepository } from "../repositories/UserRepository.js"
 import type {
   CrearResenaDTO,
   ActualizarResenaDTO,
@@ -59,6 +60,14 @@ const verificarYCrearResenaUnica = async (
   userId: number,
   data: CrearResenaDTO
 ) => {
+  const usuario = await userRepository.findById(userId)
+  if (!usuario) throw new NotFoundError("Usuario no encontrado")
+
+  if (data.mode === "CRITICO" && !canUseCriticalMode(usuario.membership, usuario.role)) {
+    throw new ForbiddenError("El modo crítico es exclusivo para miembros Pro")
+  }
+
+  const normalized = normalizeReviewPayload(data)
   const movieId = await ensureMovieRefId(data.movie_id)
   const existente = await reviewsRepository.findByUserAndMovie(
     userId,
@@ -67,7 +76,7 @@ const verificarYCrearResenaUnica = async (
   if (existente)
     throw new ConflictError("Ya tienes una reseña para esta película")
   const resena = await reviewsRepository.create(userId, {
-    ...data,
+    ...normalized,
     movie_id: movieId,
   })
   await invalidateResenaCache(movieId)
@@ -84,7 +93,15 @@ export const actualizarResenaService = async (
   if (!resena) throw new NotFoundError("Reseña no encontrada")
   if (resena.user_id !== userId)
     throw new ForbiddenError("No tienes permiso para editar esta reseña")
-  const updated = await reviewsRepository.update(id, data)
+
+  const usuario = await userRepository.findById(userId)
+  if (!usuario) throw new NotFoundError("Usuario no encontrado")
+
+  if (data.mode === "CRITICO" && !canUseCriticalMode(usuario.membership, usuario.role)) {
+    throw new ForbiddenError("El modo crítico es exclusivo para miembros Pro")
+  }
+
+  const updated = await reviewsRepository.update(id, normalizeReviewPayload(data))
   await invalidateResenaCache(resena.movie_id)
   return updated
 }
@@ -241,4 +258,57 @@ type MovieAggregate = {
   avg_rating: number | null
   likes_total: number
   diary_entries: number
+}
+
+const maybeRoundHalf = (value: number | null | undefined) => {
+  if (value === null || value === undefined) return undefined
+  if (!Number.isFinite(value)) return undefined
+  return Math.round(value * 2) / 2
+}
+
+const computeReadingTime = (content: string | undefined) => {
+  const words = (content || "").trim().split(/\s+/).filter(Boolean).length
+  if (words === 0) return null
+  return Math.max(1, Math.ceil(words / 200))
+}
+
+const normalizeReviewPayload = (
+  data: Partial<CrearResenaDTO> & Partial<ActualizarResenaDTO>
+) => {
+  const ratings = [
+    maybeRoundHalf(data.rating_direccion),
+    maybeRoundHalf(data.rating_guion),
+    maybeRoundHalf(data.rating_fotografia),
+    maybeRoundHalf(data.rating_actuaciones),
+    maybeRoundHalf(data.rating_banda_sonora),
+  ].filter((n): n is number => typeof n === "number")
+
+  let rating = maybeRoundHalf(data.rating)
+  if ((rating === undefined || rating === null) && ratings.length > 0) {
+    const avg = ratings.reduce((acc, n) => acc + n, 0) / ratings.length
+    rating = Math.round(avg * 2) / 2
+  }
+
+  const mode = data.mode || "RAPIDO"
+  const content = data.content?.trim()
+
+  return {
+    ...data,
+    content,
+    rating,
+    mode,
+    es_critica_larga: mode === "CRITICO",
+    tiempo_lectura_min: computeReadingTime(content),
+    rating_direccion: maybeRoundHalf(data.rating_direccion),
+    rating_guion: maybeRoundHalf(data.rating_guion),
+    rating_fotografia: maybeRoundHalf(data.rating_fotografia),
+    rating_actuaciones: maybeRoundHalf(data.rating_actuaciones),
+    rating_banda_sonora: maybeRoundHalf(data.rating_banda_sonora),
+  }
+}
+
+const canUseCriticalMode = (membership?: string | null, role?: string | null) => {
+  const normalizedMembership = String(membership || "").toLowerCase()
+  const normalizedRole = String(role || "").toLowerCase()
+  return normalizedMembership === "pro" || normalizedRole === "admin"
 }

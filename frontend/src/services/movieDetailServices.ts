@@ -37,10 +37,42 @@ export type ReviewApi = {
   user_id: number
   movie_id: number
   tmdb_id?: number | null
+  mode?: 'RAPIDO' | 'ESTANDAR' | 'CRITICO'
   content: string | null
   rating: number | null
+  veredicto?: string | null
+  rating_direccion?: number | null
+  rating_guion?: number | null
+  rating_fotografia?: number | null
+  rating_actuaciones?: number | null
+  rating_banda_sonora?: number | null
+  cita_dialogo?: string | null
+  cita_personaje?: string | null
+  timestamps?: Array<{ minuto: string; descripcion: string }> | null
+  contiene_spoilers?: boolean
+  es_critica_larga?: boolean
+  tiempo_lectura_min?: number | null
   likes?: number
   created_at: string
+}
+
+export type ReviewMode = 'RAPIDO' | 'ESTANDAR' | 'CRITICO'
+
+export type ReviewPayload = {
+  movie_id: number
+  mode: ReviewMode
+  content?: string
+  rating?: number
+  veredicto?: string
+  rating_direccion?: number
+  rating_guion?: number
+  rating_fotografia?: number
+  rating_actuaciones?: number
+  rating_banda_sonora?: number
+  cita_dialogo?: string
+  cita_personaje?: string
+  timestamps?: Array<{ minuto: string; descripcion: string }>
+  contiene_spoilers?: boolean
 }
 
 export type ReviewCommentApi = {
@@ -108,11 +140,11 @@ export const fetchUserById = (userId: number) =>
 
 export const fetchMyReviews = (token: string | null) => apiRequest<ReviewApi[]>('/api/reviews', { token })
 
-export const createReview = (token: string | null, movieId: number, rating: number, content: string) =>
+export const createReview = (token: string | null, payload: ReviewPayload) =>
   apiRequest<ReviewApi>('/api/reviews', {
     token,
     method: 'POST',
-    body: { movie_id: movieId, rating, content },
+    body: payload,
   })
 
 export const updateReview = (token: string | null, reviewId: number, rating: number) =>
@@ -125,7 +157,7 @@ export const updateReview = (token: string | null, reviewId: number, rating: num
 export const updateReviewContent = (
   token: string | null,
   reviewId: number,
-  payload: { rating?: number; content?: string }
+  payload: Omit<Partial<ReviewPayload>, 'movie_id'>
 ) =>
   apiRequest<ReviewApi>(`/api/reviews/${reviewId}`, {
     token,

@@ -20,6 +20,7 @@ const NotFoundPage = lazy(() => import('./pages/NotFound'))
 const ComingSoonPage = lazy(() => import('./pages/ComingSoon'))
 const AuthCallbackPage = lazy(() => import('./pages/AuthCallback'))
 const VaultPage = lazy(() => import('./pages/Vault').then((module) => ({ default: module.Vault })))
+const CommunityDiscoverPage = lazy(() => import('./pages/CommunityDiscover'))
 const ArcosPage = lazy(() => import('./pages/Arcos').then((module) => ({ default: module.Arcos })))
 const ArcoDetailPage = lazy(() => import('./pages/ArcoDetail').then((module) => ({ default: module.ArcoDetail })))
 const DiaryPage = lazy(() => import('./pages/Diary').then((module) => ({ default: module.Diary })))
@@ -98,7 +99,7 @@ function App() {
                     <Route path="/profile" element={<ProfileIndexPage />} />
                     <Route path="/:username/vault" element={<VaultPage />} />
                     <Route path="/vault/:username" element={<VaultPage />} />
-                    <Route path="/vault" element={<ComingSoonPage />} />
+                    <Route path="/vault" element={<CommunityDiscoverPage />} />
                     <Route path="/for-you" element={<ComingSoonPage />} />
                     <Route path="/arcos" element={<ArcosPage />} />
                     <Route path="/arcos/:id" element={<ArcoDetailPage />} />
@@ -111,7 +112,7 @@ function App() {
                     <Route path="/films" element={<ComingSoonPage />} />
                     <Route path="/news" element={<ComingSoonPage />} />
                     <Route path="/news/:id" element={<ComingSoonPage />} />
-                    <Route path="/lists" element={<ComingSoonPage />} />
+                    <Route path="/lists" element={<CommunityDiscoverPage />} />
                     <Route path="/members" element={<ComingSoonPage />} />
                     <Route path="/journal" element={<ComingSoonPage />} />
                     <Route path="/search-results" element={<SearchResults />} />

@@ -2,6 +2,8 @@ export type AuthUser = {
   id: number
   username: string
   avatar_url?: string | null
+  membership?: string | null
+  role?: string | null
   two_factor_enabled?: boolean | null
 }
 

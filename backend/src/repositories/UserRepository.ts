@@ -46,6 +46,7 @@ export class UserRepository implements IUserRepository {
         id: true,
         username: true,
         role: true,
+        membership: true,
         avatar_url: true,
         two_factor_enabled: true,
         is_verified: true,
