@@ -256,3 +256,86 @@ export const obtenerSiguiendoService = async (id: number) => {
     .map((f) => f.users_follows_following_idTousers)
     .filter(Boolean)
 }
+
+export const obtenerFirmaCinematograficaPublicaService = async (id: number) => {
+  const user = await prisma.users.findUnique({
+    where: { id },
+    select: { id: true },
+  })
+
+  if (!user) throw new NotFoundError("Usuario no encontrado")
+
+  try {
+    const rows = await prisma.$queryRaw<Array<Record<string, string | number | null>>>(Prisma.sql`
+      SELECT
+        user_id,
+        pivotal_film,
+        pivotal_film_detail,
+        formative_director,
+        formative_director_detail,
+        unforgettable_scene,
+        unforgettable_scene_detail,
+        cinema_turning_year,
+        cinema_turning_year_detail
+      FROM cinematographic_signature
+      WHERE user_id = ${id}
+      LIMIT 1
+    `)
+
+    const row = rows[0]
+    if (!row) {
+      return {
+        user_id: id,
+        pivotal_film: null,
+        pivotal_film_detail: null,
+        formative_director: null,
+        formative_director_detail: null,
+        unforgettable_scene: null,
+        unforgettable_scene_detail: null,
+        cinema_turning_year: null,
+        cinema_turning_year_detail: null,
+      }
+    }
+
+    return row
+  } catch {
+    return {
+      user_id: id,
+      pivotal_film: null,
+      pivotal_film_detail: null,
+      formative_director: null,
+      formative_director_detail: null,
+      unforgettable_scene: null,
+      unforgettable_scene_detail: null,
+      cinema_turning_year: null,
+      cinema_turning_year_detail: null,
+    }
+  }
+}
+
+export const obtenerGaleriaCuradaPublicaService = async (id: number) => {
+  const user = await prisma.users.findUnique({
+    where: { id },
+    select: { id: true },
+  })
+
+  if (!user) throw new NotFoundError("Usuario no encontrado")
+
+  try {
+    const items = await prisma.$queryRaw<Array<Record<string, string | number | null>>>(Prisma.sql`
+      SELECT
+        cgi.movie_id,
+        cgi.order_index,
+        cgi.note,
+        mr.tmdb_id
+      FROM curated_gallery_items cgi
+      INNER JOIN movies_ref mr ON mr.id = cgi.movie_id
+      WHERE cgi.user_id = ${id}
+      ORDER BY cgi.order_index ASC
+    `)
+
+    return { items }
+  } catch {
+    return { items: [] }
+  }
+}

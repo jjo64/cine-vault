@@ -14,6 +14,7 @@ import rutasUsuarios from "./routes/users.routes.js"
 import rutasPeliculas from "./routes/movies.routes.js"
 import rutasDiario from "./routes/diary.routes.js"
 import rutasWatchlist from "./routes/watchlist.routes.js"
+import rutasVault from "./routes/vault.routes.js"
 import rutasListas from "./routes/lists.routes.js"
 import rutasResenas from "./routes/reviews.routes.js"
 import rutasBusqueda from "./routes/search.routes.js"
@@ -24,6 +25,9 @@ import rutasFavorities from "./routes/favorities.routes.js"
 import rutasSettings from "./routes/settings.routes.js"
 import rutasNotificaciones from "./routes/notifications.routes.js"
 import rutasSeo from "./routes/seo.routes.js"
+import rutasDirectors from "./routes/directors.routes.js"
+import rutasMentiras from "./routes/mentiras.routes.js"
+import rutasArcos from "./routes/arcos.routes.js"
 
 // Middlewares
 import { manejadorErrores } from "./middlewares/error.middlewares.js"
@@ -109,6 +113,7 @@ app.use("/api/movies", rutasPeliculas)
 app.use("/api/search", rutasBusqueda)
 app.use("/api/diary", rutasDiario)
 app.use("/api/watchlist", rutasWatchlist)
+app.use("/api/vault", rutasVault)
 app.use("/api/lists", rutasListas)
 app.use("/api/reviews", rutasResenas)
 app.use("/api/payments", rutasPagos)
@@ -117,6 +122,9 @@ app.use("/api/information", rutasInformacion)
 app.use("/api/favorites", rutasFavorities)
 app.use("/api/settings", rutasSettings)
 app.use("/api/notifications", rutasNotificaciones)
+app.use("/api/directors", rutasDirectors)
+app.use("/api/mentiras", rutasMentiras)
+app.use("/api/arcos", rutasArcos)
 app.use("/api", rutasSeo)
 
 /* ==========================================================================

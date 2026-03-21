@@ -5,6 +5,9 @@ export type EnrichedMovie = {
   year: number | null
   director: string
   posterUrl: string
+  runtimeMinutes?: number | null
+  primaryGenre?: string | null
+  curatedNote?: string | null
 }
 
 export type RecentlyWatchedItem = EnrichedMovie & {
@@ -60,4 +63,18 @@ export type ProfileStatsData = {
   watchlist: number
   following: number
   followers: number
+}
+
+export type DiaryTimelineItem = {
+  movieId: number
+  tmdbId: number | null
+  title: string
+  year: number | null
+  director: string
+  posterUrl: string
+  rating: number
+  watchedDateLabel: string
+  moodLabel: string
+  stageLabel: string
+  note: string | null
 }

@@ -167,6 +167,11 @@ export default function PersonPage() {
       .slice(0, 3)
   }, [movieCast, movieCrew])
 
+  const canOpenAutopsy = useMemo(() => {
+    const department = (person?.known_for_department || '').toLowerCase()
+    return movieCrew.length > 0 || department.includes('direct')
+  }, [movieCrew.length, person?.known_for_department])
+
   const onSearch = (query: string) => {
     navigate(`/search?q=${encodeURIComponent(query.trim())}`)
   }
@@ -218,6 +223,12 @@ export default function PersonPage() {
                 <p className="person-biography">
                   {person.biography || 'Sin biografía disponible.'}
                 </p>
+
+                {canOpenAutopsy && (
+                  <Link to={`/director/${personId}/autopsy`} className="person-autopsy-button">
+                    Ver autopsia de su filmografía
+                  </Link>
+                )}
 
                 <div className="person-info-grid">
                   <div className="person-info-label">Nacimiento</div>

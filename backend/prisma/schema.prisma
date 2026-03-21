@@ -47,6 +47,9 @@ model movies_ref {
   slug          String?         @unique(map: "slug") @db.VarChar(255)
   is_public     Boolean         @default(true)
   updated_at    DateTime        @default(now()) @updatedAt @db.Timestamp(0)
+  arco_movies   arco_movies[]
+  arco_progress user_arco_progress[]
+  curated_gallery_items curated_gallery_items[]
   diary_entries diary_entries[]
   favorites     favorites[]
   list_items    user_list_items[]
@@ -197,6 +200,9 @@ model users {
   created_at                          DateTime          @default(now()) @db.Timestamp(0)
   updated_at                          DateTime          @default(now()) @db.Timestamp(0)
   auth_tokens                         auth_tokens[]
+  arco_progress                       user_arco_progress[]
+  cinematographic_signature           cinematographic_signature?
+  curated_gallery_items               curated_gallery_items[]
   diary_entries                       diary_entries[]
   favorites                           favorites[]
   follows_follows_follower_idTousers  follows[]         @relation("follows_follower_idTousers")
@@ -243,6 +249,51 @@ model watchlist {
 
   @@unique([user_id, movie_id], map: "user_id")
   @@index([movie_id], map: "movie_id")
+}
+
+model arcos {
+  id                 Int                  @id @default(autoincrement())
+  slug               String               @unique(map: "slug") @db.VarChar(120)
+  title              String               @db.VarChar(180)
+  description        String?              @db.Text
+  level              String               @default("INTERMEDIO") @db.VarChar(20)
+  is_official        Boolean              @default(false)
+  created_at         DateTime             @default(now()) @db.Timestamp(0)
+  updated_at         DateTime             @default(now()) @db.Timestamp(0)
+  arco_movies        arco_movies[]
+  user_arco_progress user_arco_progress[]
+
+  @@index([is_official], map: "idx_arcos_is_official")
+}
+
+model arco_movies {
+  id         Int        @id @default(autoincrement())
+  arco_id    Int
+  movie_id   Int
+  order_index Int
+  note       String?    @db.Text
+  is_optional Boolean   @default(false)
+  arcos      arcos      @relation(fields: [arco_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  movies_ref movies_ref @relation(fields: [movie_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+
+  @@unique([arco_id, movie_id], map: "uniq_arco_movie")
+  @@unique([arco_id, order_index], map: "uniq_arco_order")
+  @@index([movie_id], map: "idx_arco_movies_movie_id")
+}
+
+model user_arco_progress {
+  id           Int        @id @default(autoincrement())
+  user_id      Int
+  arco_id      Int
+  movie_id     Int
+  completed_at DateTime   @default(now()) @db.Timestamp(0)
+  users        users      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  arcos        arcos      @relation(fields: [arco_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  movies_ref   movies_ref @relation(fields: [movie_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+
+  @@unique([user_id, arco_id, movie_id], map: "uniq_user_arco_movie")
+  @@index([arco_id], map: "idx_user_arco_progress_arco_id")
+  @@index([movie_id], map: "idx_user_arco_progress_movie_id")
 }
 
 model auth_tokens {
@@ -365,4 +416,39 @@ enum users_membership {
 enum auth_tokens_type {
   VERIFY_EMAIL
   RESET_PASSWORD
+}
+
+model cinematographic_signature {
+  id                    Int      @id @default(autoincrement())
+  user_id               Int      @unique(map: "uniq_signature_user")
+  pivotal_film          String?  @db.VarChar(255)
+  pivotal_film_detail   String?  @db.VarChar(255)
+  formative_director    String?  @db.VarChar(255)
+  formative_director_detail String? @db.VarChar(255)
+  unforgettable_scene   String?  @db.VarChar(255)
+  unforgettable_scene_detail String? @db.VarChar(255)
+  cinema_turning_year   String?  @db.VarChar(255)
+  cinema_turning_year_detail String? @db.VarChar(255)
+  created_at            DateTime @default(now()) @db.Timestamp(0)
+  updated_at            DateTime @default(now()) @updatedAt @db.Timestamp(0)
+  users                 users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+
+  @@index([user_id], map: "idx_signature_user_id")
+}
+
+model curated_gallery_items {
+  id          Int        @id @default(autoincrement())
+  user_id     Int
+  movie_id    Int
+  order_index Int
+  note        String?    @db.VarChar(255)
+  created_at  DateTime   @default(now()) @db.Timestamp(0)
+  updated_at  DateTime   @default(now()) @updatedAt @db.Timestamp(0)
+  users       users      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  movies_ref  movies_ref @relation(fields: [movie_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+
+  @@unique([user_id, movie_id], map: "uniq_curated_gallery_user_movie")
+  @@unique([user_id, order_index], map: "uniq_curated_gallery_user_order")
+  @@index([movie_id], map: "idx_curated_gallery_movie_id")
+  @@index([user_id], map: "idx_curated_gallery_user_id")
 }

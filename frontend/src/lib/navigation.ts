@@ -2,7 +2,6 @@ export const COMING_SOON_SECTIONS = new Set([
   'films',
   'members',
   'journal',
-  'diary',
   'reviews',
   'watchlist',
 ])
@@ -14,7 +13,8 @@ const navMap: Record<string, string> = {
   members: '/members',
   miembros: '/members',
   journal: '/journal',
-  diary: '/journal',
+  diary: '/diary',
+  arcos: '/arcos',
   profile: '/profile',
   home: '/',
   settings: '/settings',

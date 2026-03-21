@@ -1,7 +1,7 @@
 // import TextType from './TextType';
 import { useEffect, useState } from 'react';
 import Landing from '../components/Landing';
-import HomeLogged from '../components/HomeLogged';
+import HomeLogged from '@/components/HomeLogged.tsx';
 import { getCurrentUser } from '../services/authServices';
 import { SeoHead } from '../components/SeoHead';
 import { buildWebSiteSchema } from '../utils/seo/buildMovieSchema';
@@ -21,14 +21,17 @@ const Home: React.FC = () => {
     async function fetchUser(epoch: number) {
       try {
         const currentUser = await getCurrentUser()
-        if (!alive || epoch !== authEpoch) return
-        setUser(currentUser)
+        if (alive && epoch === authEpoch) {
+          setUser(currentUser)
+        }
       } catch {
-        if (!alive || epoch !== authEpoch) return
-        setUser(null)
+        if (alive && epoch === authEpoch) {
+          setUser(null)
+        }
       } finally {
-        if (!alive || epoch !== authEpoch) return
-        setLoading(false)
+        if (alive && epoch === authEpoch) {
+          setLoading(false)
+        }
       }
     }
 

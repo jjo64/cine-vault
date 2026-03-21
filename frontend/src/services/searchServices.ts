@@ -17,6 +17,9 @@ export type SearchMovieResult = {
   profile_path?: string | null
   known_for_department?: string
   director?: string
+  runtime?: number | null
+  genres?: Array<{ id: number; name: string }>
+  production_countries?: Array<{ iso_3166_1: string; name: string }>
   overview?: string
   alternative_titles?: Array<{ iso_3166_1?: string; title?: string }>
   _score_debug?: {
