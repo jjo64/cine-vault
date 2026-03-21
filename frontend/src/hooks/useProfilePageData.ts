@@ -480,6 +480,29 @@ export function useProfilePageData(userParam?: string) {
     })
   ), [diary, movieMap])
 
+  const diaryTimeline: DiaryTimelineItem[] = useMemo(() => (
+    diary.slice(0, 12).map((entry, index) => {
+      const fromMovieMap = movieMap.get(entry.movie_id)
+      const rating = parseRatingValue(entry.review?.rating)
+      const rawNote = cleanReviewText(entry.review?.content ?? null)
+      const note = isQuickRatingPlaceholder(rawNote) ? null : rawNote
+
+      return {
+        movieId: entry.movie_id,
+        tmdbId: entry.tmdb_id ?? fromMovieMap?.tmdbId ?? null,
+        title: entry.movie_info?.title || fromMovieMap?.title || `Pelicula ${entry.movie_id}`,
+        year: fromMovieMap?.year ?? null,
+        director: fromMovieMap?.director || 'Desconocido',
+        posterUrl: entry.movie_info?.poster_path ? moviePoster(entry.movie_info.poster_path, 'w500') : fromMovieMap?.posterUrl || IMG.grain,
+        rating,
+        watchedDateLabel: formatDiaryDateLabel(entry.watched_date),
+        moodLabel: mapMoodFromRating(rating),
+        stageLabel: mapStageFromIndex(index),
+        note,
+      }
+    })
+  ), [diary, movieMap])
+
   return {
     loading,
     error,
