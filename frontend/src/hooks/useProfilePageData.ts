@@ -3,6 +3,10 @@ import {
   fetchDiary,
   fetchFollowers,
   fetchFollowing,
+  fetchOwnerCinematicSignature,
+  fetchOwnerCuratedGallery,
+  fetchPublicCinematicSignature,
+  fetchPublicCuratedGallery,
   fetchReviews,
   fetchUserProfile,
   fetchUserProfileByUsername,
@@ -11,8 +15,16 @@ import {
 } from '../services/profileServices'
 import { getMyLists } from '../services/listsServices'
 import { IMG } from '../components/profile-v2/assets'
-import type { EnrichedMovie, ProfileConnection, ProfileHeaderData, ProfileStatsData, RecentlyWatchedItem, ReviewItem, UserListSummaryItem, WatchlistItem } from '../components/profile-v2/models'
-import type { FollowUserEntry, ProfileUser, RichDiaryEntry, RichWatchlistEntry, ReviewEntry } from '../services/profileServices'
+import type { DiaryTimelineItem, EnrichedMovie, ProfileConnection, ProfileHeaderData, ProfileStatsData, RecentlyWatchedItem, ReviewItem, UserListSummaryItem, WatchlistItem } from '../components/profile-v2/models'
+import type {
+  CinematicSignatureData,
+  CuratedGalleryItemData,
+  FollowUserEntry,
+  ProfileUser,
+  RichDiaryEntry,
+  RichWatchlistEntry,
+  ReviewEntry,
+} from '../services/profileServices'
 
 const API_URL = import.meta.env.VITE_API_URL
 
@@ -38,6 +50,30 @@ const parseRatingValue = (value: unknown) => {
   const parsed = typeof value === 'number' ? value : Number(value)
   if (!Number.isFinite(parsed)) return 0
   return Math.max(0, Math.min(5, parsed))
+}
+
+const formatDiaryDateLabel = (date: string | null) => {
+  if (!date) return 'Fecha desconocida'
+  const parsed = new Date(date)
+  if (Number.isNaN(parsed.getTime())) return 'Fecha desconocida'
+  return parsed.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })
+}
+
+const mapMoodFromRating = (rating: number) => {
+  if (rating >= 4.5) return 'eufórico'
+  if (rating >= 3.5) return 'contemplativo'
+  if (rating >= 2.5) return 'nostálgico'
+  return 'disonante'
+}
+
+const mapStageFromIndex = (index: number) => {
+  const stages = [
+    'Etapa de descubrimiento',
+    'Revisión del canon personal',
+    'Ritmo nocturno de visionado',
+    'Curaduría en construcción',
+  ]
+  return stages[index % stages.length]
 }
 
 const pickTags = (content: string | null): string[] => {
@@ -82,6 +118,10 @@ async function fetchMovieMetaMap(targets: MovieMetaTarget[]) {
       const data = await res.json()
       const director = (data.credits?.crew || []).find((person: { job?: string; name?: string }) => person.job === 'Director')?.name || 'Desconocido'
       const year = data.release_date ? Number(String(data.release_date).split('-')[0]) : null
+      const runtimeMinutes = typeof data.runtime === 'number' ? data.runtime : null
+      const primaryGenre = Array.isArray(data.genres) && data.genres.length > 0
+        ? (data.genres[0]?.name ?? null)
+        : null
       const meta: EnrichedMovie = {
         movieId,
         tmdbId,
@@ -89,6 +129,8 @@ async function fetchMovieMetaMap(targets: MovieMetaTarget[]) {
         year,
         director,
         posterUrl: moviePoster(data.poster_path, 'w500'),
+        runtimeMinutes,
+        primaryGenre,
       }
       return [movieId, meta] as const
     }),
@@ -113,6 +155,8 @@ export function useProfilePageData(userParam?: string) {
   const [following, setFollowing] = useState<FollowUserEntry[]>([])
   const [movieMap, setMovieMap] = useState<Map<number, EnrichedMovie>>(new Map())
   const [userLists, setUserLists] = useState<UserListSummaryItem[]>([])
+  const [signature, setSignature] = useState<CinematicSignatureData | null>(null)
+  const [curatedGalleryItems, setCuratedGalleryItems] = useState<CuratedGalleryItemData[]>([])
   const [viewerId, setViewerId] = useState<number | null>(null)
   const [targetId, setTargetId] = useState<number | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -145,6 +189,8 @@ export function useProfilePageData(userParam?: string) {
           setFollowing([])
           setMovieMap(new Map())
           setUserLists([])
+          setSignature(null)
+          setCuratedGalleryItems([])
           return
         }
 
@@ -162,6 +208,8 @@ export function useProfilePageData(userParam?: string) {
           setFollowing([])
           setMovieMap(new Map())
           setUserLists([])
+          setSignature(null)
+          setCuratedGalleryItems([])
           setError('Perfil no encontrado')
           return
         }
@@ -174,7 +222,28 @@ export function useProfilePageData(userParam?: string) {
             resolvedTargetId === resolvedViewerId)
         const authToken = isSelf ? token : null
 
-        const [fullProfileData, diaryData, watchlistData, reviewsData, followersData, followingData] = await Promise.all([
+        const signatureFallback = {
+          user_id: resolvedTargetId,
+          pivotal_film: null,
+          pivotal_film_detail: null,
+          formative_director: null,
+          formative_director_detail: null,
+          unforgettable_scene: null,
+          unforgettable_scene_detail: null,
+          cinema_turning_year: null,
+          cinema_turning_year_detail: null,
+        }
+
+        const [
+          fullProfileData,
+          diaryData,
+          watchlistData,
+          reviewsData,
+          followersData,
+          followingData,
+          signatureData,
+          curatedGalleryData,
+        ] = await Promise.all([
           // Always include viewer token when available so backend can resolve `is_following` on public profiles.
           fetchUserProfile(resolvedTargetId, token),
           fetchDiary(resolvedTargetId, authToken, isSelf),
@@ -182,6 +251,18 @@ export function useProfilePageData(userParam?: string) {
           fetchReviews(resolvedTargetId, authToken, isSelf),
           fetchFollowers(resolvedTargetId),
           fetchFollowing(resolvedTargetId),
+          isSelf
+            ? fetchOwnerCinematicSignature(authToken).catch(() => ({
+                ok: true,
+                data: signatureFallback,
+              }))
+            : fetchPublicCinematicSignature(resolvedTargetId).catch(() => signatureFallback),
+          isSelf
+            ? fetchOwnerCuratedGallery(authToken).catch(() => ({
+                ok: true,
+                data: { items: [] },
+              }))
+            : fetchPublicCuratedGallery(resolvedTargetId).catch(() => ({ items: [] })),
         ])
 
         if (!active) return
@@ -200,6 +281,20 @@ export function useProfilePageData(userParam?: string) {
         setReviews(nextReviews)
         setFollowers(followersData)
         setFollowing(followingData)
+        const resolvedSignature: CinematicSignatureData =
+          isSelf && typeof signatureData === 'object' && signatureData !== null && 'data' in signatureData
+            ? signatureData.data
+            : (signatureData as CinematicSignatureData)
+
+        const resolvedCuratedItems =
+          isSelf && typeof curatedGalleryData === 'object' && curatedGalleryData !== null && 'data' in curatedGalleryData
+            ? curatedGalleryData.data.items
+            : 'items' in curatedGalleryData
+              ? curatedGalleryData.items
+              : []
+
+        setSignature(resolvedSignature)
+        setCuratedGalleryItems(resolvedCuratedItems)
 
         if (isSelf) {
           const lists = await getMyLists().catch(() => [])
@@ -308,6 +403,8 @@ export function useProfilePageData(userParam?: string) {
         year: fromMovieMap?.year ?? null,
         director: fromMovieMap?.director || 'Desconocido',
         posterUrl: entry.movie_info?.poster_path ? moviePoster(entry.movie_info.poster_path, 'w500') : fromMovieMap?.posterUrl || IMG.grain,
+        runtimeMinutes: fromMovieMap?.runtimeMinutes ?? null,
+        primaryGenre: fromMovieMap?.primaryGenre ?? null,
         priority: index < 4 ? 'alta' : 'normal',
       }
     })
@@ -334,6 +431,29 @@ export function useProfilePageData(userParam?: string) {
     })
   ), [writtenReviews, movieMap, diary, watchlist])
 
+  const diaryTimeline: DiaryTimelineItem[] = useMemo(() => (
+    diary.slice(0, 12).map((entry, index) => {
+      const fromMovieMap = movieMap.get(entry.movie_id)
+      const rating = parseRatingValue(entry.review?.rating)
+      const rawNote = cleanReviewText(entry.review?.content ?? null)
+      const note = isQuickRatingPlaceholder(rawNote) ? null : rawNote
+
+      return {
+        movieId: entry.movie_id,
+        tmdbId: entry.tmdb_id ?? fromMovieMap?.tmdbId ?? null,
+        title: entry.movie_info?.title || fromMovieMap?.title || `Pelicula ${entry.movie_id}`,
+        year: fromMovieMap?.year ?? null,
+        director: fromMovieMap?.director || 'Desconocido',
+        posterUrl: entry.movie_info?.poster_path ? moviePoster(entry.movie_info.poster_path, 'w500') : fromMovieMap?.posterUrl || IMG.grain,
+        rating,
+        watchedDateLabel: formatDiaryDateLabel(entry.watched_date),
+        moodLabel: mapMoodFromRating(rating),
+        stageLabel: mapStageFromIndex(index),
+        note,
+      }
+    })
+  ), [diary, movieMap])
+
   return {
     loading,
     error,
@@ -350,6 +470,9 @@ export function useProfilePageData(userParam?: string) {
     recentlyWatched,
     watchlistFilms,
     reviewItems,
+    diaryTimeline,
     userLists,
+    signature,
+    curatedGalleryItems,
   }
 }

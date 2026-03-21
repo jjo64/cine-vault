@@ -10,16 +10,22 @@ const Home = lazy(() => import('./pages/Home'))
 const FeedPage = lazy(() => import('./pages/Feed'))
 const MovieDetail = lazy(() => import('./pages/MovieDetail'))
 const TVDetail = lazy(() => import('./pages/TVDetail'))
-const SearchResults = lazy(() => import('./pages/SearchResults'))
+const SearchResults = lazy(() => import('./pages/SearchResults').then((module) => ({ default: module.Search })))
 const PersonPage = lazy(() => import('./pages/PersonPage.tsx'))
 const SettingsPage = lazy(() => import('./pages/Settings.tsx'))
-const Profile = lazy(() => import('./pages/Profile'))
+const Profile = lazy(() => import('./pages/Profile').then((module) => ({ default: module.Profile })))
 const ProfileIndexPage = lazy(() => import('./pages/ProfileIndex'))
 const VerifyEmailPage = lazy(() => import('./pages/VerifyEmail'))
 const NotFoundPage = lazy(() => import('./pages/NotFound'))
 const ComingSoonPage = lazy(() => import('./pages/ComingSoon'))
 const AuthCallbackPage = lazy(() => import('./pages/AuthCallback'))
 const ListsPage = lazy(() => import('./pages/Lists'))
+const VaultPage = lazy(() => import('./pages/Vault').then((module) => ({ default: module.Vault })))
+const ArcosPage = lazy(() => import('./pages/Arcos').then((module) => ({ default: module.Arcos })))
+const ArcoDetailPage = lazy(() => import('./pages/ArcoDetail').then((module) => ({ default: module.ArcoDetail })))
+const DiaryPage = lazy(() => import('./pages/Diary').then((module) => ({ default: module.Diary })))
+const DirectorAutopsyPage = lazy(() => import('./pages/DirectorAutopsy').then((module) => ({ default: module.DirectorAutopsy })))
+const MentirasPage = lazy(() => import('./pages/Mentiras').then((module) => ({ default: module.Mentiras })))
 
 function App() {
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
@@ -89,8 +95,13 @@ function App() {
                     <Route path="/person/:id" element={<PersonPage />} />
                     <Route path="/settings" element={<SettingsPage />} />
                     <Route path="/search" element={<SearchResults />} />
-                    <Route path="/search-results" element={<SearchResults />} />
                     <Route path="/profile" element={<ProfileIndexPage />} />
+                    <Route path="/vault/:username" element={<VaultPage />} />
+                    <Route path="/arcos" element={<ArcosPage />} />
+                    <Route path="/arcos/:id" element={<ArcoDetailPage />} />
+                    <Route path="/diary" element={<DiaryPage />} />
+                    <Route path="/director/:id/autopsy" element={<DirectorAutopsyPage />} />
+                    <Route path="/mentiras" element={<MentirasPage />} />
                     <Route path="/verify-email" element={<VerifyEmailPage />} />
                     <Route path="/auth/callback" element={<AuthCallbackPage />} />
                     <Route path="/coming-soon/:section" element={<ComingSoonPage />} />
@@ -100,6 +111,7 @@ function App() {
                     <Route path="/lists" element={<ListsPage />} />
                     <Route path="/members" element={<ComingSoonPage />} />
                     <Route path="/journal" element={<ComingSoonPage />} />
+                    <Route path="/search-results" element={<SearchResults />} />
                     <Route path="/:username" element={<Profile />} />
                     <Route path="*" element={<NotFoundPage />} />
                 </Routes>

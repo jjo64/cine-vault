@@ -55,6 +55,7 @@ const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
                     <Link to="/" className="nav-logo">🎬 Cinevault</Link>
                     <div className="nav-menu">
                         <Link to={resolveNavPathWithFallback('films')}>FILMS</Link>
+                        <Link to={resolveNavPathWithFallback('diary')}>DIARY</Link>
                         <Link to={resolveNavPathWithFallback('lists')}>LISTS</Link>
                         <Link to={resolveNavPathWithFallback('members')}>MEMBERS</Link>
                         <Link to={resolveNavPathWithFallback('journal')}>JOURNAL</Link>

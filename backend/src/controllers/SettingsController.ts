@@ -46,3 +46,63 @@ export const eliminarCuenta = async (
   await settingsService.eliminarCuentaService(req.user!.user_id)
   res.json({ message: "Cuenta eliminada correctamente" })
 }
+
+export const obtenerFirmaCinematograficaController = async (
+  req: SolicitudAutenticada,
+  res: Response
+) => {
+  const userId = req.user!.user_id
+  const firma = await settingsService.obtenerFirmaCinematograficaService(userId)
+
+  return res.json({
+    ok: true,
+    data: firma,
+  })
+}
+
+export const actualizarFirmaCinematograficaController = async (
+  req: SolicitudAutenticada,
+  res: Response
+) => {
+  const userId = req.user!.user_id
+  const firma = await settingsService.actualizarFirmaCinematograficaService(
+    userId,
+    req.body
+  )
+
+  return res.json({
+    ok: true,
+    message: "Firma cinematográfica actualizada",
+    data: firma,
+  })
+}
+
+export const obtenerGaleriaCuradaController = async (
+  req: SolicitudAutenticada,
+  res: Response
+) => {
+  const userId = req.user!.user_id
+  const galeria = await settingsService.obtenerGaleriaCuradaService(userId)
+
+  return res.json({
+    ok: true,
+    data: galeria,
+  })
+}
+
+export const actualizarGaleriaCuradaController = async (
+  req: SolicitudAutenticada,
+  res: Response
+) => {
+  const userId = req.user!.user_id
+  const galeria = await settingsService.actualizarGaleriaCuradaService(
+    userId,
+    req.body
+  )
+
+  return res.json({
+    ok: true,
+    message: "Galería curada actualizada",
+    data: galeria,
+  })
+}

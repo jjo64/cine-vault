@@ -5,7 +5,11 @@ import {
   actualizarPerfil,
   actualizarAuth,
   actualizarAvatar,
+  actualizarFirmaCinematograficaController,
+  actualizarGaleriaCuradaController,
   eliminarCuenta,
+  obtenerFirmaCinematograficaController,
+  obtenerGaleriaCuradaController,
 } from "../controllers/SettingsController.js"
 import { validarBody } from "../middlewares/validation.middleware.js"
 import {
@@ -13,6 +17,10 @@ import {
   actualizarAuthSchema,
   actualizarAvatarSchema,
 } from "../schemas/settings.js"
+import {
+  actualizarFirmaSchema,
+  actualizarGaleriaCuradaSchema,
+} from "../schemas/profile.js"
 
 /**
  * @swagger
@@ -195,6 +203,32 @@ router.patch(
   middlewareAutenticacion,
   validarBody(actualizarAvatarSchema),
   manejadorAsincrono(actualizarAvatar)
+)
+
+router.get(
+  "/profile/signature",
+  middlewareAutenticacion,
+  manejadorAsincrono(obtenerFirmaCinematograficaController)
+)
+
+router.patch(
+  "/profile/signature",
+  middlewareAutenticacion,
+  validarBody(actualizarFirmaSchema),
+  manejadorAsincrono(actualizarFirmaCinematograficaController)
+)
+
+router.get(
+  "/profile/curated-gallery",
+  middlewareAutenticacion,
+  manejadorAsincrono(obtenerGaleriaCuradaController)
+)
+
+router.put(
+  "/profile/curated-gallery",
+  middlewareAutenticacion,
+  validarBody(actualizarGaleriaCuradaSchema),
+  manejadorAsincrono(actualizarGaleriaCuradaController)
 )
 
 export default router

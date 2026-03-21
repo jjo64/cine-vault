@@ -15,6 +15,7 @@ const RESERVED_PATHS = new Set([
   'movie', 'tv', 'search-results', 'search', 'profile', 'settings',
   'person', 'feed', 'discover', 'lists', 'news', 'members', 'journal',
   'verify-email', 'auth', 'coming-soon', 'films', 'admin', 'dashboard',
+  'vault', 'arcos', 'diary', 'director', 'mentiras',
 ])
 
 function getSeoConfig(pathname: string, search: string): RouteSeoConfig {
@@ -81,6 +82,60 @@ function getSeoConfig(pathname: string, search: string): RouteSeoConfig {
       title: query ? `Resultados para "${query}" — CineVault` : 'Buscar películas — CineVault',
       description: 'Buscá películas, series, directores y actores en la base de datos de CineVault.',
       canonical: `${BASE_URL}/search`,
+    }
+  }
+
+  // VAULT CREATIVO
+  if (pathname.startsWith('/vault/')) {
+    const username = pathname.replace('/vault/', '').trim()
+    return {
+      title: username ? `Vault de ${username} — CineVault` : 'Vault creativo — CineVault',
+      description: 'Explora el vault creativo con reseñas, mood boards, audio-notas, listas y piezas audiovisuales de la comunidad CineVault.',
+      canonical: `${BASE_URL}${pathname}`,
+    }
+  }
+
+  // ARCOS
+  if (pathname === '/arcos') {
+    return {
+      title: 'Arcos de formación cinematográfica — CineVault',
+      description: 'Rutas de formación cinematográfica por autores, movimientos y estilos. No son listas: son trayectos editoriales.',
+      canonical: `${BASE_URL}/arcos`,
+    }
+  }
+
+  if (pathname.startsWith('/arcos/')) {
+    return {
+      title: 'Detalle del arco — CineVault',
+      description: 'Secuencia editorial de películas con progreso, contexto y orden recomendado para aprender cine en serio.',
+      canonical: `${BASE_URL}${pathname}`,
+    }
+  }
+
+  // DIARIO
+  if (pathname === '/diary') {
+    return {
+      title: 'Diario cinematográfico — CineVault',
+      description: 'Tu autobiografía en películas: sesiones simples, dobles funciones, sesiones triples y maratones.',
+      canonical: `${BASE_URL}/diary`,
+    }
+  }
+
+  // DIRECTOR AUTOPSY
+  if (pathname.startsWith('/director/') && pathname.endsWith('/autopsy')) {
+    return {
+      title: 'Autopsia de director — CineVault',
+      description: 'Disección editorial de una filmografía: timeline, contexto histórico y métricas de comunidad en CineVault.',
+      canonical: `${BASE_URL}${pathname}`,
+    }
+  }
+
+  // MENTIRAS
+  if (pathname === '/mentiras') {
+    return {
+      title: 'Mentiras cinéfilas — CineVault',
+      description: 'Ranking comunitario de películas que todos dicen haber terminado. Vota con honestidad: nadie te está mirando.',
+      canonical: `${BASE_URL}/mentiras`,
     }
   }
 

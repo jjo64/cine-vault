@@ -6,6 +6,8 @@ import {
   obtenerUsuarioPorUsername,
   obtenerSeguidores,
   obtenerSiguiendo,
+  obtenerFirmaCinematograficaPublica,
+  obtenerGaleriaCuradaPublica,
   dejarDeSeguirUsuario,
   seguirUsuario,
 } from "../controllers/UserController.js"
@@ -93,6 +95,14 @@ router.get(
  *         $ref: '#/components/responses/NotFound'
  */
 router.get("/:id", manejadorAsincrono(obtenerUsuarioPorId)) // Datos del pefil (nombre, bio, avatar, stats)
+router.get(
+  "/:id/profile/signature",
+  manejadorAsincrono(obtenerFirmaCinematograficaPublica)
+)
+router.get(
+  "/:id/profile/curated-gallery",
+  manejadorAsincrono(obtenerGaleriaCuradaPublica)
+)
 
 // Rutas privadas
 /**

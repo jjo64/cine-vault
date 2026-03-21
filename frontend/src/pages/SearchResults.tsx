@@ -1,23 +1,21 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { AnimatePresence, motion } from 'motion/react'
-import { ChevronDown, Menu, X, Filter } from 'lucide-react'
-import { createSlug } from '../utils/stringUtils'
-import { resolveNavPathWithFallback } from '../lib/navigation'
+import { motion, AnimatePresence } from 'motion/react'
 import {
-  fetchMovieGenres,
-  searchMovie,
-  searchMoviesDebug,
-  searchMovies,
-  searchPerson,
-  searchTV,
-  type GenreItem,
-  type SearchPersonPanel,
-  type SearchMovieResult,
-  type SearchSuggestionItem,
-} from '../services/searchServices'
-import { getCurrentUser, logoutCurrentUser } from '../services/authServices'
-import './SearchResults.css'
+  Search as SearchIcon,
+  X,
+  SlidersHorizontal,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Globe,
+  Film,
+  User,
+  Bookmark,
+} from 'lucide-react'
+import { createSlug } from '../utils/stringUtils'
+import { fetchMovieDetail } from '../services/movieDetailServices'
+import { searchMovies, type SearchMovieResult, type SearchPersonPanel } from '../services/searchServices'
 
 const C = {
   bg: '#080808',
@@ -26,890 +24,927 @@ const C = {
   border: '#252525',
   accent: '#D4AF7A',
   accentDim: '#9A7A48',
-  accentGlow: 'rgba(212,175,122,0.12)',
+  accentGlow: 'rgba(212,175,122,0.10)',
   text: '#E2E2E2',
   textSoft: '#7A7A7A',
   textMuted: '#3A3A3A',
+  gold: '#C8A96E',
 } as const
 
-const SANS = "'Syne', sans-serif"
 const SERIF = "'Cormorant Garamond', serif"
+const SANS = "'Syne', sans-serif"
+const TMDB_IMG = 'https://image.tmdb.org/t/p/w500'
 
-type SortMode = 'relevance' | 'year-desc' | 'year-asc' | 'title-asc'
-type SearchTab = 'all' | 'movie' | 'person' | 'tv'
-type PersonFilter = 'all' | 'acting' | 'directing' | 'production' | 'crew'
-type Viewer = {
-  id: number
-  username: string
-  avatar_url?: string | null
+function Img({ src, alt, style, ...rest }: React.ImgHTMLAttributes<HTMLImageElement>) {
+  const [err, setErr] = useState(false)
+  if (err) return <div style={{ ...style, background: C.elevated }} />
+  return <img src={src} alt={alt} style={style} onError={() => setErr(true)} {...rest} />
 }
 
-const TAB_OPTIONS: Array<{ value: SearchTab; label: string }> = [
-  { value: 'all', label: 'Todo' },
-  { value: 'movie', label: 'Películas' },
-  { value: 'person', label: 'Personas' },
-  { value: 'tv', label: 'Series' },
-]
-
-function GrainOverlay() {
+function Grain() {
   return (
     <div
       style={{
         position: 'fixed',
         inset: 0,
         pointerEvents: 'none',
-        zIndex: 90,
+        zIndex: 900,
         backgroundImage:
-          'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\' opacity=\'0.04\'/%3E%3C/svg%3E")',
-        opacity: 0.35,
+          'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.85\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.045\'/%3E%3C/svg%3E")',
+        opacity: 0.38,
       }}
     />
   )
 }
 
-function Img({ src, alt, style, className, ...rest }: React.ImgHTMLAttributes<HTMLImageElement>) {
-  const [err, setErr] = useState(false)
-  if (err) return <div style={{ ...style, background: C.elevated }} className={className} />
-  return <img src={src} alt={alt} style={style} className={className} onError={() => setErr(true)} {...rest} />
+type FilmResult = {
+  id: number
+  mediaType: 'movie' | 'tv'
+  title: string
+  originalTitle: string
+  year: number | null
+  director?: string | null
+  description: string
+  rating: number
+  img: string
+  runtime?: number | null
+  genres?: string[]
+  country?: string | null
 }
 
-function initials(name: string) {
-  const parts = name.split(' ').filter(Boolean)
-  if (parts.length === 0) return 'CV'
-  if (parts.length === 1) return parts[0][0]?.toUpperCase() ?? 'CV'
-  return `${parts[0][0] ?? ''}${parts[1][0] ?? ''} `.toUpperCase()
+type FilmDetails = {
+  director?: string | null
+  runtime?: number | null
+  genres?: string[]
+  country?: string | null
 }
 
-function parseTmdbImage(path: string | null | undefined, size: 'w500' | 'original' = 'w500') {
-  return path ? `https://image.tmdb.org/t/p/${size}${path}` : ''
+type PersonResult = {
+  id: number
+  name: string
+  role: string
+  notable: string[]
+  img: string
 }
 
-function navigateByResultType(navigate: ReturnType<typeof useNavigate>, item: SearchSuggestionItem) {
-  const label = item.title || item.name || 'sin-titulo'
-  if (item.media_type === 'person') {
-    navigate(`/person/${item.id}`)
-    return
+type UserResult = {
+  id: string
+  username: string
+  handle: string
+  films: number
+  bio: string
+  avatar: string
+}
+
+type FiltersState = {
+  genres: string[]
+  yearFrom: string
+  yearTo: string
+  countries: string[]
+  minRating: number
+  duration: string | null
+  pendientes: boolean
+  palmares: boolean
+  noVistas: boolean
+}
+
+const GENRES = ['Drama', 'Sci-fi', 'Romance', 'Thriller', 'Horror', 'Documental', 'Comedia', 'Animación', 'Bélica', 'Histórica', 'Slow cinema', 'Experimental']
+const COUNTRIES = ['Francia', 'Italia', 'EE.UU.', 'Japón', 'Corea del Sur', 'Alemania', 'España', 'Argentina', 'URSS/Rusia', 'Reino Unido', 'Hong Kong', 'Suecia']
+const DURATIONS = [
+  { label: 'Corta', sub: '<90 min', key: 'short' },
+  { label: 'Media', sub: '90–130 min', key: 'medium' },
+  { label: 'Larga', sub: '130–180 min', key: 'long' },
+  { label: 'Épica', sub: '>3 horas', key: 'epic' },
+]
+
+const SPECIAL_FILTERS = [
+  { key: 'pendientes' as const, label: 'Solo mis pendientes' },
+  { key: 'palmares' as const, label: 'Palmarés (Cannes / Venecia)' },
+  { key: 'noVistas' as const, label: 'No vistas todavía' },
+]
+
+const TABS = [
+  { key: 'all', label: 'Todo', icon: <Film size={12} /> },
+  { key: 'film', label: 'Películas', icon: <Film size={12} /> },
+  { key: 'person', label: 'Personas', icon: <User size={12} /> },
+  { key: 'user', label: 'Usuarios', icon: <User size={12} /> },
+]
+
+function toPoster(path?: string | null) {
+  return path ? `${TMDB_IMG}${path}` : 'https://images.unsplash.com/photo-1698159929266-28e8e8ef6b33?w=400&q=80'
+}
+
+function toFilmResult(item: SearchMovieResult): FilmResult {
+  const rawDate = item.release_date || item.first_air_date || ''
+  const year = Number.parseInt(rawDate.slice(0, 4), 10)
+  const title = item.title || item.name || 'Sin título'
+  const mediaType = item.media_type === 'tv' ? 'tv' : 'movie'
+
+  return {
+    id: item.id,
+    mediaType,
+    title,
+    originalTitle: item.original_title || item.original_name || title,
+    year: Number.isNaN(year) ? null : year,
+    director: item.director?.trim() || null,
+    description: item.overview || 'Sin sinopsis disponible.',
+    rating: Math.max(0, Number((item as SearchMovieResult & { vote_average?: number }).vote_average || 0)),
+    img: toPoster(item.poster_path),
+    runtime: item.runtime ?? null,
+    genres: Array.isArray(item.genres) ? item.genres.map((genre) => genre.name).filter(Boolean) : [],
+    country: Array.isArray(item.production_countries) && item.production_countries[0]?.name
+      ? item.production_countries[0].name
+      : null,
   }
-  if (item.media_type === 'tv') {
-    navigate(`/tv/${item.id}`)
-    return
-  }
-  navigate(`/movie/${item.id}-${createSlug(label)}`)
 }
 
-export function Navbar({
-  viewer,
-  onLogout,
-}: {
-  viewer: Viewer | null
-  onLogout: () => void
-}) {
+function toPersonResult(item: SearchPersonPanel): PersonResult {
+  return {
+    id: item.id,
+    name: item.name,
+    role: item.known_for_department || 'Persona',
+    notable: (item.known_for || []).slice(0, 3).map((entry) => entry.title || entry.name || 'Sin título'),
+    img: toPoster(item.profile_path),
+  }
+}
+
+function Navbar({ query, onSearch }: { query: string; onSearch: (q: string) => void }) {
+  const [val, setVal] = useState(query)
   const navigate = useNavigate()
-  const [scrolled, setScrolled] = useState(false)
-  const [query, setQuery] = useState('')
-  const [results, setResults] = useState<SearchSuggestionItem[]>([])
-  const [openDropdown, setOpenDropdown] = useState(false)
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [mobileNavOpen, setMobileNavOpen] = useState(false)
-  const wrapperRef = useRef<HTMLDivElement>(null)
-  const menuRef = useRef<HTMLDivElement>(null)
-  const debouncedQuery = useMemo(() => query.trim(), [query])
-  const visibleResults = debouncedQuery ? results : []
+  const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    const h = () => setScrolled(window.scrollY > 60)
-    window.addEventListener('scroll', h)
-    return () => window.removeEventListener('scroll', h)
-  }, [])
+    setVal(query)
+  }, [query])
 
-  useEffect(() => {
-    if (!debouncedQuery) {
-      return
-    }
-
-    const timeoutId = window.setTimeout(async () => {
-      try {
-        const data = await searchMovies(debouncedQuery)
-        setResults(
-          Array.isArray(data.results)
-            ? data.results.slice(0, 6).map((item) => ({
-              id: item.id,
-              title: item.title,
-              name: item.name,
-              media_type: item.media_type,
-              poster_path: item.poster_path || null,
-              profile_path: item.profile_path || null,
-            }))
-            : []
-        )
-      } catch {
-        setResults([])
-      }
-    }, 250)
-
-    return () => window.clearTimeout(timeoutId)
-  }, [debouncedQuery])
-
-  useEffect(() => {
-    const onOutside = (event: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) setOpenDropdown(false)
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setMenuOpen(false)
-        setMobileNavOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', onOutside)
-    return () => document.removeEventListener('mousedown', onOutside)
-  }, [])
-
-  const navLinks = viewer ? ['Films', 'Lists', 'Members', 'Journal'] : ['Sign in', 'Create account', 'Films', 'Lists', 'Members', 'Journal']
-  const openAuthModal = () => navigate('/login?returnTo=' + encodeURIComponent(window.location.pathname + window.location.search))
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault()
+    if (val.trim()) onSearch(val.trim())
+  }
 
   return (
     <nav
-      className="search-nav"
       style={{
         position: 'fixed',
         top: 0,
         left: 0,
         right: 0,
         zIndex: 200,
+        height: 72,
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 14px',
-        height: 56,
-        background: scrolled ? 'rgba(8,8,8,0.97)' : 'linear-gradient(to bottom, rgba(8,8,8,0.97) 0%, transparent 100%)',
-        backdropFilter: scrolled ? 'blur(20px)' : 'none',
-        borderBottom: scrolled ? `1px solid ${C.border} ` : '1px solid transparent',
-        transition: 'background 0.4s, border-color 0.4s',
+        gap: 24,
+        padding: '0 40px',
+        background: 'rgba(8,8,8,0.97)',
+        backdropFilter: 'blur(24px)',
+        borderBottom: `1px solid ${C.border}`,
       }}
     >
-      <div className="search-nav-gap" style={{ display: 'flex', alignItems: 'center' }}>
-        <Link to="/" style={{ fontFamily: SERIF, fontSize: 21, fontWeight: 500, letterSpacing: '0.13em', textTransform: 'uppercase', color: C.text, textDecoration: 'none' }}>
-          Cine<span style={{ color: C.accent }}>Vault</span>
-        </Link>
-        <ul className="search-nav-links search-results-desktop-flex">
-          {navLinks.map((item) => {
-            const isAuthLink = item === 'Sign in' || item === 'Create account'
-            return (
-              <li key={item}>
-                {isAuthLink ? (
-                  <button
-                    onClick={openAuthModal}
-                    style={{ border: 'none', padding: 0, background: 'none', fontFamily: SANS, fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.textSoft, cursor: 'pointer' }}
-                  >
-                    {item}
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => navigate(resolveNavPathWithFallback(item))}
-                    style={{ border: 'none', padding: 0, background: 'none', fontFamily: SANS, fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.textSoft, cursor: 'pointer' }}
-                  >
-                    {item}
-                  </button>
-                )}
-              </li>
-            )
-          })}
-        </ul>
-      </div>
+      <Link to="/" style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 500, letterSpacing: '0.13em', textTransform: 'uppercase', color: C.text, textDecoration: 'none', flexShrink: 0 }}>
+        Cine<span style={{ color: C.accent }}>Vault</span>
+      </Link>
 
-      <div className="search-nav-actions-gap" style={{ display: 'flex', alignItems: 'center' }}>
-        <div ref={wrapperRef} className="search-input-wrapper" style={{ position: 'relative' }}>
-          <div style={{ height: 38, borderRadius: 999, border: `1px solid ${C.border} `, background: 'rgba(255,255,255,0.14)', display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px' }}>
-            <input
-              value={query}
-              onFocus={() => setOpenDropdown(true)}
-              onChange={(event) => {
-                setQuery(event.target.value)
-                setOpenDropdown(true)
-              }}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' && query.trim()) {
-                  navigate(`/search?q=${encodeURIComponent(query.trim())}`)
-                  setOpenDropdown(false)
-                }
-              }}
-              placeholder="Buscar"
-              style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', color: C.text, fontFamily: SANS, fontSize: 12 }}
-            />
-          </div>
-          {openDropdown && query.trim() && (
-            <div className="search-nav-dropdown" style={{ position: 'absolute', top: 44, right: 0, width: 'min(92vw, 420px)', border: `1px solid ${C.border} `, background: 'rgba(8,8,8,0.98)', borderRadius: 6, overflow: 'hidden', maxHeight: '65vh', overflowY: 'auto' }}>
-              {visibleResults.length > 0 ? (
-                visibleResults.map((item) => (
-                  <button
-                    key={`${item.media_type || 'movie'}-${item.id}`}
-                    onClick={() => {
-                      navigateByResultType(navigate, item)
-                      setOpenDropdown(false)
-                      setQuery('')
-                    }}
-                    className="search-nav-dropdown-item"
-                    style={{ width: '100%', border: 'none', borderBottom: `1px solid ${C.border} `, background: 'transparent', color: C.text, display: 'flex', alignItems: 'flex-start', gap: 10, padding: 8, cursor: 'pointer', textAlign: 'left' }}
-                  >
-                    <Img src={parseTmdbImage(item.media_type === 'person' ? item.profile_path : item.poster_path)} alt={item.title || item.name || 'Sin titulo'} style={{ width: 30, height: 45, objectFit: 'cover' }} />
-                    <span className="search-nav-dropdown-title" style={{ fontFamily: SANS, fontSize: 12 }}>{item.title || item.name || 'Sin titulo'}</span>
-                  </button >
-                ))
-              ) : (
-                <div style={{ padding: 10, color: C.textSoft, fontFamily: SANS, fontSize: 11 }}>Sin resultados</div>
-              )}
-            </div >
-          )}
-        </div >
-
-        <div className="search-results-mobile-only" style={{ position: 'relative' }}>
-          <button
-            onClick={() => setMobileNavOpen((value) => !value)}
-            style={{ width: 36, height: 36, border: `1px solid ${C.border}`, background: 'transparent', color: C.textSoft, cursor: 'pointer', display: 'grid', placeItems: 'center' }}
-          >
-            {mobileNavOpen ? <X size={14} /> : <Menu size={14} />}
-          </button>
-          {mobileNavOpen && (
-            <div style={{ position: 'absolute', right: 0, top: 42, minWidth: 170, border: `1px solid ${C.border}`, background: 'rgba(8,8,8,0.98)', padding: 8, display: 'grid', gap: 6 }}>
-              {navLinks.map((item) => (
-                <button
-                  key={item}
-                  onClick={() => {
-                    if (item === 'Sign in' || item === 'Create account') {
-                      openAuthModal()
-                    } else {
-                      navigate(resolveNavPathWithFallback(item))
-                    }
-                    setMobileNavOpen(false)
-                  }}
-                  style={{ border: 'none', background: 'transparent', color: C.text, textAlign: 'left', padding: '8px 10px', fontFamily: SANS, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}
-                >
-                  {item}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {
-          !viewer ? (
-            <button
-              onClick={() => navigate(-1)}
-              style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.textSoft, background: 'none', border: 'none', cursor: 'pointer', fontFamily: SANS }}
-            >
-              <ChevronDown size={14} strokeWidth={1.5} />
-              Volver
-            </button>
-          ) : (
-            <div ref={menuRef} style={{ position: 'relative' }}>
-              <button onClick={() => setMenuOpen((v) => !v)} style={{ border: `1px solid ${C.border}`, background: 'transparent', cursor: 'pointer', borderRadius: 999, width: 38, height: 38, overflow: 'hidden', padding: 0 }}>
-                {viewer.avatar_url ? <Img src={viewer.avatar_url} alt={viewer.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', color: C.textSoft, fontFamily: SANS, fontSize: 11 }}>{initials(viewer.username)}</div>}
-              </button>
-              {menuOpen && (
-                <div style={{ position: 'absolute', right: 0, top: 44, minWidth: 180, border: `1px solid ${C.border}`, background: 'rgba(8,8,8,0.98)', padding: 6 }}>
-                  <button onClick={() => navigate('/profile')} style={{ width: '100%', border: 'none', background: 'transparent', color: C.text, textAlign: 'left', padding: '8px 10px', cursor: 'pointer', fontFamily: SANS, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Mi perfil</button>
-                  <button onClick={() => navigate('/settings')} style={{ width: '100%', border: 'none', background: 'transparent', color: C.text, textAlign: 'left', padding: '8px 10px', cursor: 'pointer', fontFamily: SANS, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Configuración</button>
-                  <button onClick={onLogout} style={{ width: '100%', border: 'none', background: 'transparent', color: '#ff8d8d', textAlign: 'left', padding: '8px 10px', cursor: 'pointer', fontFamily: SANS, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Cerrar sesión</button>
-                </div>
-              )}
-            </div>
-          )
-        }
-      </div >
-    </nav >
-  )
-}
-
-function SkeletonGroup({ count = 6 }: { count?: number }) {
-  return (
-    <div style={{ display: 'grid', gap: 10 }}>
-      {Array.from({ length: count }).map((_, index) => (
-        <div
-          key={`sk-${index}`}
+      <form onSubmit={submit} style={{ flex: 1, maxWidth: 640, position: 'relative' }}>
+        <SearchIcon size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: C.textSoft, pointerEvents: 'none' }} />
+        <input
+          ref={inputRef}
+          value={val}
+          onChange={(event) => setVal(event.target.value)}
+          placeholder="Buscar película, persona, lista..."
           style={{
-            height: 122,
+            width: '100%',
+            padding: '10px 44px 10px 44px',
+            background: C.surface,
             border: `1px solid ${C.border}`,
-            background: `linear-gradient(90deg, ${C.surface} 0%, ${C.elevated} 50%, ${C.surface} 100%)`,
-            backgroundSize: '200% 100%',
-            animation: 'search-shimmer 1.2s linear infinite',
+            color: C.text,
+            fontFamily: SANS,
+            fontSize: 13,
+            letterSpacing: '0.04em',
+            outline: 'none',
+            transition: 'border-color 0.2s',
+            boxSizing: 'border-box',
+          }}
+          onFocus={(event) => {
+            event.target.style.borderColor = C.accentDim
+          }}
+          onBlur={(event) => {
+            event.target.style.borderColor = C.border
           }}
         />
-      ))}
-      <style>{`@keyframes search-shimmer {0% {background-position: 200% 0;} 100% {background-position: -200% 0;}}`}</style>
-    </div>
+        {val && (
+          <button type="button" onClick={() => setVal('')} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: C.textSoft, display: 'flex' }}>
+            <X size={14} />
+          </button>
+        )}
+      </form>
+
+      <button onClick={() => navigate(-1)} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.textSoft, background: 'none', border: 'none', cursor: 'pointer', fontFamily: SANS, flexShrink: 0, transition: 'color 0.2s' }}>
+        <ChevronLeft size={13} /> Volver
+      </button>
+    </nav>
   )
 }
 
-function personFilterMatch(item: SearchMovieResult, filter: PersonFilter) {
-  const dept = (item.known_for_department || '').toLowerCase()
-  if (filter === 'all') return true
-  if (filter === 'acting') return dept.includes('act')
-  if (filter === 'directing') return dept.includes('direct')
-  if (filter === 'production') return dept.includes('produc')
-  return dept.length > 0 && !dept.includes('act') && !dept.includes('direct') && !dept.includes('produc')
-}
+function FiltersPanel({ filters, onChange, onClear }: { filters: FiltersState; onChange: (k: keyof FiltersState, v: FiltersState[keyof FiltersState]) => void; onClear: () => void }) {
+  const [expandedGenres, setExpandedGenres] = useState(false)
+  const [expandedCountry, setExpandedCountry] = useState(false)
 
-function ResultCard({ item }: { item: SearchMovieResult }) {
-  const navigate = useNavigate()
-  const title = item.title || item.name || 'Sin título'
-  const year = item.release_date || item.first_air_date
-  const isPerson = item.media_type === 'person'
-  const isTV = item.media_type === 'tv'
-  const typeLabel = isPerson ? 'Persona' : isTV ? 'Serie' : 'Película'
-
-  const linkTarget = isPerson
-    ? `/person/${item.id}`
-    : isTV
-      ? undefined
-      : `/movie/${item.id}-${createSlug(title)}`
-
-  const content = (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.98 }}
-      className="search-result-card-layout"
-      style={{
-        background: C.surface,
-        border: `1px solid ${C.border}`,
-        cursor: 'pointer',
-        overflow: 'hidden',
-      }}
-      onClick={() => navigate(isPerson ? `/person/${item.id}` : isTV ? `/tv/${item.id}` : `/movie/${item.id}-${createSlug(title)}`)}
-      whileHover={{ borderColor: C.accentDim, y: -2 }}
-    >
-      <div style={{ position: 'relative' }}>
-        <Img
-          src={parseTmdbImage(isPerson ? item.profile_path : item.poster_path)}
-          alt={isPerson ? item.name : (item.title || item.name || 'Sin título')}
-          className="search-result-poster"
-          style={{ objectFit: 'cover', background: C.elevated }}
-        />
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,0.6)', color: C.text, padding: '4px 8px', fontFamily: SANS, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-          {typeLabel}
-        </div>
-      </div>
-
-      <div style={{ minWidth: 0 }}>
-        <h2 style={{ margin: '2px 0 4px', color: C.text, fontFamily: SERIF, fontSize: 'clamp(18px, 2vw, 22px)', fontWeight: 400, lineHeight: 1.08 }}>
-          {title}
-        </h2>
-
-        {year && (
-          <div style={{ marginBottom: 4, color: C.textMuted, fontFamily: SANS, fontSize: 12 }}>
-            {year.split('-')[0]}
-          </div>
-        )}
-
-        {!!item.original_title && item.original_title !== title && (
-          <div style={{ color: C.textSoft, fontFamily: SERIF, fontStyle: 'italic', fontSize: 14, marginBottom: 6 }}>
-            Título original: {item.original_title}
-          </div>
-        )}
-
-        {!!item.known_for_department && (
-          <div style={{ color: C.accentDim, fontFamily: SANS, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 8 }}>
-            {item.known_for_department}
-          </div>
-        )}
-
-        {!!item.director && <div style={{ color: C.accentDim, fontFamily: SANS, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 8 }}>{item.director}</div>}
-
-        <p style={{ margin: 0, color: C.textSoft, fontFamily: SERIF, fontStyle: 'italic', lineHeight: 1.6, fontSize: 16 }}>
-          {item.overview ? `${item.overview.slice(0, 220)}${item.overview.length > 220 ? '...' : ''}` : 'Sin descripción disponible.'}
-        </p>
-      </div>
-    </motion.div>
-  )
-
-  if (!linkTarget) {
-    return <div>{content}</div>
+  const toggleArr = (key: 'genres' | 'countries', val: string) => {
+    const arr = filters[key] || []
+    onChange(key, arr.includes(val) ? arr.filter((x: string) => x !== val) : [...arr, val])
   }
 
-  return <Link to={linkTarget} style={{ textDecoration: 'none', color: 'inherit' }}>{content}</Link>
-}
-
-function PeoplePanel({ people }: { people: SearchPersonPanel[] }) {
-  if (people.length === 0) return null
+  const activeCount = [
+    (filters.genres || []).length,
+    filters.yearFrom ? 1 : 0,
+    filters.yearTo ? 1 : 0,
+    (filters.countries || []).length,
+    filters.minRating ? 1 : 0,
+    filters.duration ? 1 : 0,
+    filters.pendientes ? 1 : 0,
+    filters.palmares ? 1 : 0,
+    filters.noVistas ? 1 : 0,
+  ].reduce((a, b) => a + b, 0)
 
   return (
-    <section style={{ display: 'grid', gap: 12, marginTop: 18 }}>
-      <h3 style={{ margin: 0, fontFamily: SERIF, fontSize: 30, fontWeight: 400 }}>Personas</h3>
-      <div style={{ display: 'grid', gap: 10 }}>
-        {people.map((person) => (
-          <Link
-            key={`person-panel-${person.id}`}
-            to={`/person/${person.id}`}
-            style={{
-              textDecoration: 'none',
-              color: 'inherit',
-              border: `1px solid ${C.border}`,
-              background: C.surface,
-              padding: 12,
-              display: 'grid',
-              gridTemplateColumns: '70px 1fr',
-              gap: 12,
-              alignItems: 'center',
-            }}
-          >
-            <Img
-              src={parseTmdbImage(person.profile_path || null)}
-              alt={person.name}
-              style={{ width: 70, height: 92, objectFit: 'cover', background: C.elevated }}
-            />
-            <div>
-              <div style={{ fontFamily: SERIF, fontSize: 24, lineHeight: 1.1 }}>{person.name}</div>
-              <div style={{ color: C.accentDim, fontFamily: SANS, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: 4 }}>
-                {person.known_for_department || 'Departamento desconocido'}
-              </div>
-              {Array.isArray(person.known_for) && person.known_for.length > 0 && (
-                <div style={{ marginTop: 8, display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
-                  {person.known_for.slice(0, 3).map((credit) => (
-                    <div key={`known-${person.id}-${credit.id}`} style={{ minWidth: 0 }}>
-                      <Img
-                        src={parseTmdbImage(credit.poster_path || null)}
-                        alt={credit.title || credit.name || 'Título'}
-                        style={{ width: '100%', height: 64, objectFit: 'cover', background: C.elevated }}
-                      />
-                      <div style={{ marginTop: 4, color: C.textSoft, fontFamily: SANS, fontSize: 10, lineHeight: 1.3 }}>
-                        {credit.title || credit.name || 'Título'}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </Link>
-        ))}
-      </div>
-    </section>
-  )
-}
-
-export default function SearchResultsPage() {
-  const [params] = useSearchParams()
-  const navigate = useNavigate()
-
-  const query = (params.get('q') || '').replace(/\s+/g, ' ').trim()
-  const debugMode = params.get('debug') === '1'
-
-  const [results, setResults] = useState<SearchMovieResult[]>([])
-  const [allResults, setAllResults] = useState<SearchMovieResult[]>([])
-  const [allPeopleResults, setAllPeopleResults] = useState<SearchPersonPanel[]>([])
-  const tabParam = (params.get('tab') || '').toLowerCase()
-  const initialTab: SearchTab = tabParam === 'movie' || tabParam === 'person' || tabParam === 'tv'
-    ? tabParam
-    : 'all'
-  const [tab, setTab] = useState<SearchTab>(initialTab)
-  const [personFilter, setPersonFilter] = useState<PersonFilter>('all')
-  const [genres, setGenres] = useState<GenreItem[]>([])
-  const [selectedGenres, setSelectedGenres] = useState<number[]>([])
-  const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [totalResults, setTotalResults] = useState(0)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [sortMode, setSortMode] = useState<SortMode>('relevance')
-  const [viewer, setViewer] = useState<Viewer | null>(null)
-  const token = localStorage.getItem('token')
-
-  useEffect(() => {
-    const raw = (params.get('tab') || '').toLowerCase()
-    const nextTab: SearchTab = raw === 'movie' || raw === 'person' || raw === 'tv' ? raw : 'all'
-    setTab((prev) => (prev === nextTab ? prev : nextTab))
-  }, [params])
-
-  useEffect(() => {
-    fetchMovieGenres().then((data) => setGenres(data.slice(0, 14))).catch(() => setGenres([]))
-  }, [])
-
-  useEffect(() => {
-    if (!query) {
-      setResults([])
-      setAllResults([])
-      setAllPeopleResults([])
-      setTotalPages(1)
-      setTotalResults(0)
-      return
-    }
-
-    let alive = true
-
-    const load = async () => {
-      setLoading(true)
-      setError(null)
-
-      try {
-        if (tab === 'all') {
-          const multi = debugMode
-            ? await searchMoviesDebug(query, currentPage)
-            : await searchMovies(query, currentPage)
-          if (!alive) return
-
-          const merged = Array.isArray(multi.results)
-            ? multi.results
-            : [
-              ...(Array.isArray(multi.movie_results) ? multi.movie_results : []),
-              ...(Array.isArray(multi.tv_results) ? multi.tv_results : []),
-            ]
-          const people = Array.isArray(multi.people_results) ? multi.people_results : []
-
-          setAllResults(merged)
-          setAllPeopleResults(people)
-          setResults(merged)
-          setTotalPages(Number(multi.total_pages || 1))
-          setTotalResults(Number(multi.total_results || merged.length))
-          return
-        }
-
-        if (tab === 'movie') {
-          const data = await searchMovie(query, currentPage, selectedGenres)
-          if (!alive) return
-          setAllResults([])
-          setAllPeopleResults([])
-          setResults(
-            Array.isArray(data.results)
-              ? data.results.map((item) => ({ ...item, media_type: item.media_type || 'movie' }))
-              : []
-          )
-          setTotalPages(Number(data.total_pages || 1))
-          setTotalResults(Number(data.total_results || 0))
-          return
-        }
-
-        if (tab === 'person') {
-          const data = await searchPerson(query, currentPage)
-          if (!alive) return
-          setAllResults([])
-          setAllPeopleResults([])
-          setResults(
-            Array.isArray(data.results)
-              ? data.results.map((item) => ({ ...item, media_type: 'person' }))
-              : []
-          )
-          setTotalPages(Number(data.total_pages || 1))
-          setTotalResults(Number(data.total_results || 0))
-          return
-        }
-
-        const data = await searchTV(query, currentPage)
-        if (!alive) return
-        setAllResults([])
-        setAllPeopleResults([])
-        setResults(
-          Array.isArray(data.results)
-            ? data.results.map((item) => ({ ...item, media_type: item.media_type || 'tv' }))
-            : []
-        )
-        setTotalPages(Number(data.total_pages || 1))
-        setTotalResults(Number(data.total_results || 0))
-      } catch (err) {
-        if (!alive) return
-        setError((err as Error).message || 'No se pudo buscar')
-      } finally {
-        if (alive) setLoading(false)
-      }
-    }
-
-    load()
-    return () => {
-      alive = false
-    }
-  }, [query, currentPage, tab, selectedGenres])
-
-  useEffect(() => {
-    if (!token) {
-      setViewer(null)
-      return
-    }
-
-    getCurrentUser()
-      .then((user) => {
-        setViewer({ id: user.id, username: user.username, avatar_url: user.avatar_url })
-      })
-      .catch(() => {
-        setViewer(null)
-        localStorage.removeItem('token')
-      })
-  }, [token])
-
-  useEffect(() => {
-    const genreParam = params.get('genre')
-    if (!genreParam) {
-      setSelectedGenres([])
-      return
-    }
-
-    const parsed = Number(genreParam)
-    if (!Number.isFinite(parsed)) {
-      setSelectedGenres([])
-      return
-    }
-
-    setSelectedGenres((prev) => (prev.length === 1 && prev[0] === parsed ? prev : [parsed]))
-  }, [params])
-
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [query, tab, personFilter, selectedGenres])
-
-  const sortedResults = useMemo(() => {
-    const source = tab === 'all' ? allResults : results
-    const list = tab === 'person'
-      ? source.filter((item) => personFilterMatch(item, personFilter))
-      : [...source]
-
-    if (sortMode === 'relevance') return list
-
-    if (sortMode === 'title-asc') {
-      return list.sort((a, b) => (a.title || a.name || '').localeCompare(b.title || b.name || '', 'es'))
-    }
-
-    if (sortMode === 'year-desc') {
-      return list.sort((a, b) => Number((b.release_date || b.first_air_date || '').slice(0, 4) || 0) - Number((a.release_date || a.first_air_date || '').slice(0, 4) || 0))
-    }
-
-    return list.sort((a, b) => Number((a.release_date || a.first_air_date || '').slice(0, 4) || 0) - Number((b.release_date || b.first_air_date || '').slice(0, 4) || 0))
-  }, [results, allResults, sortMode, tab, personFilter])
-
-  const updateSearchUrl = (nextQuery: string, nextGenres: number[]) => {
-    const newParams = new URLSearchParams()
-    if (nextQuery.trim()) newParams.set('q', nextQuery.trim())
-    if (nextGenres.length > 0) newParams.set('genre', String(nextGenres[0]))
-    if (tab !== 'all') newParams.set('tab', tab)
-    const next = newParams.toString()
-    navigate(next ? `/search?${next}` : '/search')
-  }
-
-  const handleLogout = () => {
-    logoutCurrentUser()
-    setViewer(null)
-    navigate('/')
-  }
-
-  const pageButtons = Array.from({ length: Math.min(totalPages, 8) }, (_, i) => i + 1)
-
-  return (
-    <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: SANS }}>
-      <GrainOverlay />
-      <Navbar viewer={viewer} onLogout={handleLogout} />
-
-      <main className="search-results-main">
-        <div style={{ marginBottom: 40 }}>
-          <div>
-            <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.22em', color: C.accent, marginBottom: 6 }}>Resultados</div>
-            <h1 style={{ margin: 0, fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(30px, 4vw, 52px)', lineHeight: 1.08 }}>
-              {totalResults.toLocaleString('es-ES')} coincidencias para &quot;{query || '...'}&quot;
-            </h1>
-            {debugMode && tab === 'all' && allResults.length > 0 && (
-              <div style={{ marginTop: 10, border: `1px solid ${C.border}`, padding: 10, background: C.surface }}>
-                <div style={{ color: C.accentDim, fontFamily: SANS, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 6 }}>
-                  Debug ranking activo
-                </div>
-                <div style={{ color: C.textSoft, fontFamily: SANS, fontSize: 12 }}>
-                  Añade o quita <strong>debug=1</strong> en la URL para activar/desactivar este panel.
-                </div>
-                {allResults[0]?._score_debug && (
-                  <div style={{ marginTop: 8, color: C.textSoft, fontFamily: SANS, fontSize: 12 }}>
-                    Top 1 score: {Math.round(
-                      (allResults[0]._score_debug.title_rank || 0) +
-                      (allResults[0]._score_debug.title_source_boost || 0) +
-                      (allResults[0]._score_debug.token_source_boost || 0) +
-                      (allResults[0]._score_debug.exact_title_boost || 0) +
-                      (allResults[0]._score_debug.exact_token_boost || 0) +
-                      (allResults[0]._score_debug.fuzzy_boost || 0) +
-                      (allResults[0]._score_debug.contextual_token_boost || 0) +
-                      (allResults[0]._score_debug.person_role_boost || 0) +
-                      (allResults[0]._score_debug.strong_person_match_boost || 0) +
-                      (allResults[0]._score_debug.local_boost || 0)
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
+    <div style={{ width: 240, flexShrink: 0 }}>
+      <div style={{ position: 'sticky', top: 88 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: SANS, fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.accent }}>
+            <SlidersHorizontal size={13} /> Filtros
+            {activeCount > 0 && <span style={{ width: 18, height: 18, borderRadius: '50%', background: C.accent, color: C.bg, fontSize: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{activeCount}</span>}
           </div>
-        </div>
-
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 32 }}>
-          <div className="search-results-filter-bar">
-            {TAB_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                onClick={() => setTab(option.value)}
-                style={{
-                  padding: '8px 12px',
-                  border: `1px solid ${tab === option.value ? C.accentDim : C.border}`,
-                  background: tab === option.value ? C.accentGlow : 'transparent',
-                  color: tab === option.value ? C.accent : C.textSoft,
-                  cursor: 'pointer',
-                  fontFamily: SANS,
-                  fontSize: 11,
-                  letterSpacing: '0.12em',
-                  textTransform: 'uppercase',
-                }}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, border: `1px solid ${C.border}`, background: C.surface, padding: '7px 10px' }}>
-            <Filter size={14} color={C.textSoft} />
-            <select value={sortMode} onChange={(event) => setSortMode(event.target.value as SortMode)} style={{ background: 'transparent', border: 'none', outline: 'none', color: C.textSoft, fontFamily: SANS, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.12em', cursor: 'pointer' }}>
-              <option value="relevance">Relevancia</option>
-              <option value="year-desc">Año: recientes</option>
-              <option value="year-asc">Año: antiguas</option>
-              <option value="title-asc">Título A-Z</option>
-            </select>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
-          {TAB_OPTIONS.map((option) => (
-            <button
-              key={option.value}
-              onClick={() => setTab(option.value)}
-              style={{
-                padding: '8px 12px',
-                border: `1px solid ${tab === option.value ? C.accentDim : C.border}`,
-                background: tab === option.value ? C.accentGlow : 'transparent',
-                color: tab === option.value ? C.accent : C.textSoft,
-                cursor: 'pointer',
-                fontFamily: SANS,
-                fontSize: 11,
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-              }}
-            >
-              {option.label}
+          {activeCount > 0 && (
+            <button onClick={onClear} style={{ fontSize: 10, letterSpacing: '0.14em', color: C.textSoft, background: 'none', border: 'none', cursor: 'pointer', fontFamily: SANS, textTransform: 'uppercase' }}>
+              Limpiar
             </button>
-          ))}
+          )}
         </div>
 
-        {tab === 'person' && (
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
-            {[
-              { value: 'all', label: 'Todos' },
-              { value: 'acting', label: 'Actores' },
-              { value: 'directing', label: 'Directores' },
-              { value: 'production', label: 'Productores' },
-              { value: 'crew', label: 'Crew' },
-            ].map((option) => (
-              <button
-                key={option.value}
-                onClick={() => setPersonFilter(option.value as PersonFilter)}
-                style={{
-                  padding: '7px 10px',
-                  border: `1px solid ${personFilter === option.value ? C.accentDim : C.border}`,
-                  background: personFilter === option.value ? C.accentGlow : 'transparent',
-                  color: personFilter === option.value ? C.accent : C.textSoft,
-                  cursor: 'pointer',
-                  fontFamily: SANS,
-                  fontSize: 11,
-                  letterSpacing: '0.1em',
-                  textTransform: 'uppercase',
-                }}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {tab === 'movie' && genres.length > 0 && (
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
-            {genres.map((genre) => {
-              const active = selectedGenres.includes(genre.id)
+        <FilterBlock title="Género">
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {(expandedGenres ? GENRES : GENRES.slice(0, 6)).map((g) => {
+              const active = (filters.genres || []).includes(g)
               return (
-                <button
-                  key={genre.id}
-                  onClick={() => {
-                    setSelectedGenres((prev) => {
-                      const next = prev.includes(genre.id)
-                        ? prev.filter((id) => id !== genre.id)
-                        : [...prev, genre.id]
-                      updateSearchUrl(query, next)
-                      return next
-                    })
-                  }}
-                  style={{
-                    padding: '7px 10px',
-                    border: `1px solid ${active ? C.accentDim : C.border}`,
-                    background: active ? C.accentGlow : 'transparent',
-                    color: active ? C.accent : C.textSoft,
-                    cursor: 'pointer',
-                    fontFamily: SANS,
-                    fontSize: 11,
-                    letterSpacing: '0.08em',
-                  }}
-                >
-                  {genre.name}
+                <button key={g} onClick={() => toggleArr('genres', g)} style={{ fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: active ? C.accent : C.textSoft, border: `1px solid ${active ? C.accentDim : C.border}`, background: active ? C.accentGlow : 'transparent', padding: '4px 10px', cursor: 'pointer', transition: 'all 0.2s', fontFamily: SANS }}>
+                  {g}
                 </button>
               )
             })}
           </div>
-        )}
+          <button onClick={() => setExpandedGenres((v) => !v)} style={{ marginTop: 8, fontSize: 10, color: C.accent, background: 'none', border: 'none', cursor: 'pointer', fontFamily: SANS, letterSpacing: '0.12em', textTransform: 'uppercase', padding: 0 }}>
+            {expandedGenres ? '— Menos' : '+ Ver más'}
+          </button>
+        </FilterBlock>
 
-        {loading && <SkeletonGroup count={6} />}
-        {error && <div style={{ color: '#ff8a8a', marginBottom: 14 }}>{error}</div>}
-
-        {!loading && tab !== 'all' && sortedResults.length === 0 && (
-          <div style={{ border: `1px solid ${C.border}`, background: C.surface, padding: 18, color: C.textSoft }}>
-            No encontramos resultados para esa búsqueda.
+        <FilterBlock title="Año">
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input type="number" placeholder="1920" value={filters.yearFrom || ''} onChange={(event) => onChange('yearFrom', event.target.value)} style={{ flex: 1, padding: '7px 10px', background: C.elevated, border: `1px solid ${C.border}`, color: C.text, fontFamily: SANS, fontSize: 12, outline: 'none' }} />
+            <span style={{ color: C.textMuted, fontSize: 12 }}>—</span>
+            <input type="number" placeholder="2026" value={filters.yearTo || ''} onChange={(event) => onChange('yearTo', event.target.value)} style={{ flex: 1, padding: '7px 10px', background: C.elevated, border: `1px solid ${C.border}`, color: C.text, fontFamily: SANS, fontSize: 12, outline: 'none' }} />
           </div>
-        )}
+        </FilterBlock>
 
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={`${tab}-${query}-${currentPage}-${personFilter}-${selectedGenres.join(',')}`}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={{ duration: 0.34 }}
-          >
-            {tab === 'all' && !loading && (
-              <section style={{ display: 'grid', gap: 18 }}>
-                {sortedResults.length > 0 || allPeopleResults.length > 0 ? (
+        <FilterBlock title="Rating mínimo">
+          <div style={{ display: 'flex', gap: 4 }}>
+            {[1, 2, 3, 4, 5].map((s) => (
+              <button key={s} onClick={() => onChange('minRating', filters.minRating === s ? 0 : s)} style={{ width: 32, height: 32, background: s <= (filters.minRating || 0) ? C.accentGlow : 'transparent', border: `1px solid ${s <= (filters.minRating || 0) ? C.accentDim : C.border}`, fontSize: 16, color: s <= (filters.minRating || 0) ? C.gold : C.textMuted, cursor: 'pointer' }}>
+                ★
+              </button>
+            ))}
+          </div>
+        </FilterBlock>
+
+        <FilterBlock title="Duración">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {DURATIONS.map((d) => {
+              const active = filters.duration === d.key
+              return (
+                <button key={d.key} onClick={() => onChange('duration', active ? null : d.key)} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: active ? C.accentGlow : C.elevated, border: `1px solid ${active ? C.accentDim : C.border}`, cursor: 'pointer', textAlign: 'left' }}>
+                  <span style={{ fontFamily: SANS, fontSize: 11, color: active ? C.accent : C.text }}>{d.label}</span>
+                  <span style={{ fontFamily: SANS, fontSize: 10, color: C.textMuted }}>{d.sub}</span>
+                </button>
+              )
+            })}
+          </div>
+        </FilterBlock>
+
+        <FilterBlock title="País / Idioma">
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+            {(expandedCountry ? COUNTRIES : COUNTRIES.slice(0, 5)).map((c) => {
+              const active = (filters.countries || []).includes(c)
+              return (
+                <button key={c} onClick={() => toggleArr('countries', c)} style={{ fontSize: 10, letterSpacing: '0.08em', color: active ? C.accent : C.textSoft, border: `1px solid ${active ? C.accentDim : C.border}`, background: active ? C.accentGlow : 'transparent', padding: '3px 9px', cursor: 'pointer', fontFamily: SANS }}>
+                  {c}
+                </button>
+              )
+            })}
+          </div>
+          <button onClick={() => setExpandedCountry((v) => !v)} style={{ marginTop: 8, fontSize: 10, color: C.accent, background: 'none', border: 'none', cursor: 'pointer', fontFamily: SANS, letterSpacing: '0.12em', textTransform: 'uppercase', padding: 0 }}>
+            {expandedCountry ? '— Menos' : '+ Ver más'}
+          </button>
+        </FilterBlock>
+
+        <FilterBlock title="Filtros especiales">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {SPECIAL_FILTERS.map((filter) => {
+              const active = Boolean(filters[filter.key])
+              return (
+                <button
+                  key={filter.key}
+                  onClick={() => onChange(filter.key, !active)}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    padding: '8px 12px',
+                    background: active ? C.accentGlow : C.elevated,
+                    border: `1px solid ${active ? C.accentDim : C.border}`,
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                  }}
+                >
+                  <span style={{ fontFamily: SANS, fontSize: 11, color: active ? C.accent : C.text }}>{filter.label}</span>
+                  <span style={{ fontFamily: SANS, fontSize: 10, color: active ? C.accent : C.textMuted }}>{active ? 'ON' : 'OFF'}</span>
+                </button>
+              )
+            })}
+          </div>
+        </FilterBlock>
+      </div>
+    </div>
+  )
+}
+
+function FilterBlock({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: 28 }}>
+      <div style={{ fontSize: 10, letterSpacing: '0.22em', textTransform: 'uppercase', color: C.accent, marginBottom: 12, fontFamily: SANS }}>{title}</div>
+      {children}
+    </div>
+  )
+}
+
+function normalizeCountryName(raw?: string | null) {
+  if (!raw) return null
+  if (raw === 'United States of America') return 'EE.UU.'
+  if (raw === 'United Kingdom') return 'Reino Unido'
+  if (raw === 'Soviet Union') return 'URSS'
+  if (raw === 'Russian Federation') return 'Rusia'
+  return raw
+}
+
+function getDirectorFromDetail(crew?: Array<{ id: number; name: string; job?: string; profile_path?: string | null }>) {
+  if (!Array.isArray(crew)) return null
+  const director = crew.find((person) => (person.job || '').toLowerCase() === 'director')
+  return director?.name || null
+}
+
+function SkeletonPill({ width = 64 }: { width?: number }) {
+  return (
+    <motion.span
+      animate={{ opacity: [0.28, 0.7, 0.28] }}
+      transition={{ duration: 1.05, repeat: Number.POSITIVE_INFINITY, ease: 'easeInOut' }}
+      style={{ display: 'inline-block', width, height: 10, borderRadius: 999, background: 'rgba(255,255,255,0.12)' }}
+    />
+  )
+}
+
+function FilmResultItem({ item, delay, isDetailsLoading }: { item: FilmResult; delay: number; isDetailsLoading: boolean }) {
+  const [hov, setHov] = useState(false)
+  const [vaulted, setVaulted] = useState(false)
+  const [bookmarked, setBookmarked] = useState(false)
+  const href = item.mediaType === 'tv' ? `/tv/${item.id}` : `/movie/${item.id}-${createSlug(item.title)}`
+  const visibleGenres = (item.genres || []).slice(0, 3)
+  const runtimeLabel = typeof item.runtime === 'number' && item.runtime > 0 ? `${item.runtime} min` : null
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay }} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={{ display: 'grid', gridTemplateColumns: '98px minmax(0, 1fr)', gap: 28, padding: '32px 0', borderBottom: `1px solid ${C.border}`, background: hov ? 'rgba(212,175,122,0.02)' : 'transparent', transition: 'background 0.2s', position: 'relative' }}>
+      <div style={{ position: 'absolute', left: -20, top: 0, bottom: 0, width: 2, background: `linear-gradient(to bottom, transparent, ${C.accent}, transparent)`, opacity: hov ? 0.6 : 0, transition: 'opacity 0.3s' }} />
+
+      <Link to={href} style={{ textDecoration: 'none', flexShrink: 0 }}>
+        <div style={{ aspectRatio: '2/3', borderRadius: 1, overflow: 'hidden', border: `1px solid ${hov ? C.accentDim : C.border}`, transition: 'border-color 0.3s' }}>
+          <Img src={item.img} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: `saturate(${hov ? 0.8 : 0.5})`, transition: 'filter 0.4s' }} />
+        </div>
+      </Link>
+
+      <div style={{ minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 4, flexWrap: 'wrap' }}>
+          <Link to={href} style={{ textDecoration: 'none' }}>
+            <span style={{ fontFamily: SERIF, fontSize: 28, fontWeight: 300, color: C.text, lineHeight: 1.08 }}>{item.title}</span>
+          </Link>
+          {item.year ? <span style={{ fontFamily: SERIF, fontSize: 18, color: C.gold, lineHeight: 1 }}>{item.year}</span> : null}
+        </div>
+
+        {item.director ? <div style={{ fontFamily: SANS, fontSize: 10, letterSpacing: '0.24em', textTransform: 'uppercase', color: C.accent, marginBottom: 8 }}>{item.director}</div> : null}
+        {item.originalTitle !== item.title && <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 14, color: C.textMuted, marginBottom: 10, lineHeight: 1.2 }}>{item.originalTitle}</div>}
+        <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 17, lineHeight: 1.66, color: C.textSoft, margin: '0 0 18px', maxWidth: 860 }}>{item.description}</p>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'end', gap: 18 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', minHeight: 24 }}>
+            {visibleGenres.map((genre) => (
+              <span key={genre} style={{ fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.textSoft, border: `1px solid ${C.border}`, padding: '3px 10px', fontFamily: SANS }}>
+                {genre}
+              </span>
+            ))}
+            {isDetailsLoading && visibleGenres.length === 0 && (
+              <>
+                <span style={{ border: `1px solid ${C.border}`, padding: '5px 13px' }}><SkeletonPill width={52} /></span>
+                <span style={{ border: `1px solid ${C.border}`, padding: '5px 13px' }}><SkeletonPill width={62} /></span>
+              </>
+            )}
+
+            <span style={{ fontSize: 11, color: C.textMuted, fontFamily: SANS, display: 'flex', alignItems: 'center', gap: 5 }}>
+              <Clock size={12} /> {isDetailsLoading && !runtimeLabel ? <SkeletonPill width={42} /> : runtimeLabel || 'N/D'}
+            </span>
+            <span style={{ fontSize: 11, color: C.textMuted, fontFamily: SANS, display: 'flex', alignItems: 'center', gap: 5 }}>
+              <Globe size={12} /> {isDetailsLoading && !item.country ? <SkeletonPill width={64} /> : item.country || 'N/D'}
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 5, minWidth: 138, paddingBottom: 2 }}>
+            <span style={{ fontFamily: SERIF, fontSize: 20, color: C.gold, lineHeight: 1 }}>{item.rating ? item.rating.toFixed(1) : '—'}</span>
+            <div style={{ display: 'flex', gap: 1 }}>{[1, 2, 3, 4, 5].map((s) => <span key={s} style={{ fontSize: 10, color: s <= Math.round(item.rating / 2) ? C.gold : 'rgba(255,255,255,0.15)' }}>★</span>)}</div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, marginTop: 16, opacity: hov ? 1 : 0, transform: hov ? 'translateY(0)' : 'translateY(4px)', transition: 'opacity 0.25s, transform 0.25s' }}>
+          <button onClick={() => setVaulted((v) => !v)} style={{ padding: '7px 18px', background: vaulted ? C.accentDim : C.accent, color: C.bg, border: 'none', fontFamily: SANS, fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', cursor: 'pointer' }}>
+            {vaulted ? '✓ En Vault' : '+ Vault'}
+          </button>
+          <button onClick={() => setBookmarked((v) => !v)} style={{ padding: '7px 14px', background: 'transparent', color: bookmarked ? C.accent : C.textSoft, border: `1px solid ${bookmarked ? C.accentDim : C.border}`, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: SANS, fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase' }}>
+            <Bookmark size={11} fill={bookmarked ? C.accent : 'none'} /> {bookmarked ? 'En watchlist' : 'Watchlist'}
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+function PersonResultItem({ item, delay }: { item: PersonResult; delay: number }) {
+  const [hov, setHov] = useState(false)
+  const [following, setFollowing] = useState(false)
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay }} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={{ display: 'grid', gridTemplateColumns: '64px 1fr', gap: 20, padding: '20px 0', borderBottom: `1px solid ${C.border}`, background: hov ? 'rgba(212,175,122,0.02)' : 'transparent' }}>
+      <Link to={`/person/${item.id}`} style={{ textDecoration: 'none', flexShrink: 0 }}>
+        <div style={{ width: 64, height: 64, borderRadius: '50%', overflow: 'hidden', border: `1px solid ${hov ? C.accentDim : C.border}` }}>
+          <Img src={item.img} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', filter: 'saturate(0.5)' }} />
+        </div>
+      </Link>
+
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
+          <Link to={`/person/${item.id}`} style={{ textDecoration: 'none' }}>
+            <span style={{ fontFamily: SERIF, fontSize: 24, color: C.text }}>{item.name}</span>
+          </Link>
+          <span style={{ fontFamily: SANS, fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase', color: C.accent, border: `1px solid ${C.accentDim}`, padding: '3px 8px' }}>Persona</span>
+        </div>
+
+        <div style={{ fontFamily: SANS, fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: C.accentDim, marginBottom: 6 }}>{item.role}</div>
+
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <span style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 14, color: C.textMuted }}>Conocido por:</span>
+          {item.notable.map((entry, index) => (
+            <span key={`${entry}-${index}`} style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 14, color: C.textSoft }}>
+              {entry}
+            </span>
+          ))}
+
+          <button onClick={() => setFollowing((v) => !v)} style={{ marginLeft: 'auto', padding: '6px 16px', background: 'transparent', color: following ? C.accent : C.textSoft, border: `1px solid ${following ? C.accentDim : C.border}`, fontFamily: SANS, fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', cursor: 'pointer' }}>
+            {following ? '✓ Siguiendo' : '+ Seguir'}
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+function UserResultItem({ item, delay }: { item: UserResult; delay: number }) {
+  const [hov, setHov] = useState(false)
+  return (
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay }} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: 16, padding: '16px 0', borderBottom: `1px solid ${C.border}`, background: hov ? 'rgba(212,175,122,0.02)' : 'transparent' }}>
+      <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(212,175,122,0.15)', border: `1px solid ${C.accentDim}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: SERIF, fontSize: 20, color: C.accent }}>{item.avatar}</div>
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+          <span style={{ fontFamily: SANS, fontSize: 14, color: C.text }}>{item.username}</span>
+          <span style={{ fontFamily: SANS, fontSize: 11, color: C.textSoft }}>{item.handle}</span>
+          <span style={{ fontFamily: SANS, fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase', color: C.textSoft, border: `1px solid ${C.border}`, padding: '2px 7px' }}>Usuario</span>
+        </div>
+        <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 15, color: C.textSoft }}>{item.bio}</div>
+        <div style={{ fontFamily: SANS, fontSize: 11, color: C.textMuted, marginTop: 4 }}>{item.films} películas vistas</div>
+      </div>
+    </motion.div>
+  )
+}
+
+function Pagination({ current, total, onPage }: { current: number; total: number; onPage: (n: number) => void }) {
+  const pages = Array.from({ length: total }, (_, i) => i + 1)
+  const visible = pages.filter((p) => p === 1 || p === total || Math.abs(p - current) <= 2)
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '48px 0 32px' }}>
+      <button onClick={() => onPage(Math.max(1, current - 1))} disabled={current === 1} style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: `1px solid ${current === 1 ? C.textMuted : C.border}`, color: current === 1 ? C.textMuted : C.textSoft, cursor: current === 1 ? 'default' : 'pointer' }}>
+        <ChevronLeft size={14} />
+      </button>
+
+      {visible.reduce((acc: React.ReactNode[], p, i) => {
+        if (i > 0 && visible[i - 1] !== p - 1) {
+          acc.push(<span key={`dots-${p}`} style={{ color: C.textMuted, fontFamily: SERIF, fontSize: 18, lineHeight: '36px', padding: '0 8px' }}>…</span>)
+        }
+
+        acc.push(
+          <button key={p} onClick={() => onPage(p)} style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', background: p === current ? C.accentGlow : 'transparent', border: `1px solid ${p === current ? C.accentDim : C.border}`, color: p === current ? C.accent : C.textSoft, cursor: 'pointer', fontFamily: SERIF, fontSize: 18 }}>
+            {p}
+          </button>
+        )
+
+        return acc
+      }, [])}
+
+      <button onClick={() => onPage(Math.min(total, current + 1))} disabled={current === total} style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: `1px solid ${current === total ? C.textMuted : C.border}`, color: current === total ? C.textMuted : C.textSoft, cursor: current === total ? 'default' : 'pointer' }}>
+        <ChevronRight size={14} />
+      </button>
+    </div>
+  )
+}
+
+function ActiveFilters({ filters, onRemove }: { filters: FiltersState; onRemove: (k: keyof FiltersState, v?: string) => void }) {
+  const chips: { label: string; onRemove: () => void }[] = []
+
+  ;(filters.genres || []).forEach((g: string) => chips.push({ label: `Género: ${g}`, onRemove: () => onRemove('genres', g) }))
+  if (filters.yearFrom) chips.push({ label: `Desde ${filters.yearFrom}`, onRemove: () => onRemove('yearFrom') })
+  if (filters.yearTo) chips.push({ label: `Hasta ${filters.yearTo}`, onRemove: () => onRemove('yearTo') })
+  if (filters.minRating) chips.push({ label: `★ ${filters.minRating}+`, onRemove: () => onRemove('minRating') })
+  if (filters.duration) chips.push({ label: `Duración: ${filters.duration}`, onRemove: () => onRemove('duration') })
+  ;(filters.countries || []).forEach((c: string) => chips.push({ label: c, onRemove: () => onRemove('countries', c) }))
+  if (filters.pendientes) chips.push({ label: 'Mis pendientes', onRemove: () => onRemove('pendientes') })
+  if (filters.palmares) chips.push({ label: 'Palmarés', onRemove: () => onRemove('palmares') })
+  if (filters.noVistas) chips.push({ label: 'No vistas', onRemove: () => onRemove('noVistas') })
+
+  if (chips.length === 0) return null
+
+  return (
+    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
+      {chips.map((chip, i) => (
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', background: C.accentGlow, border: `1px solid ${C.accentDim}`, fontFamily: SANS, fontSize: 10, letterSpacing: '0.1em', color: C.accent }}>
+          {chip.label}
+          <button onClick={chip.onRemove} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.accentDim, padding: 0, display: 'flex', lineHeight: 1 }}>
+            <X size={10} />
+          </button>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+const EMPTY_FILTERS = {
+  genres: [],
+  yearFrom: '',
+  yearTo: '',
+  countries: [],
+  minRating: 0,
+  duration: null,
+  pendientes: false,
+  palmares: false,
+  noVistas: false,
+} satisfies FiltersState
+
+export function Search() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const query = searchParams.get('q')?.trim() || ''
+  const [activeTab, setActiveTab] = useState('all')
+  const [filters, setFilters] = useState<FiltersState>({ ...EMPTY_FILTERS })
+  const [page, setPage] = useState(1)
+  const [showFilters, setShowFilters] = useState(true)
+  const [fetchError, setFetchError] = useState<string | null>(null)
+  const [filmResults, setFilmResults] = useState<FilmResult[]>([])
+  const [personResults, setPersonResults] = useState<PersonResult[]>([])
+  const [userResults, setUserResults] = useState<UserResult[]>([])
+  const [enrichedFilms, setEnrichedFilms] = useState<Record<number, FilmDetails>>({})
+  const [loadingFilmDetails, setLoadingFilmDetails] = useState<Record<number, boolean>>({})
+  const detailsCacheRef = useRef<Map<number, FilmDetails>>(new Map())
+  const inflightDetailsRef = useRef<Set<number>>(new Set())
+  const PER_PAGE = 5
+
+  useEffect(() => {
+    const q = query.trim()
+    if (!q) {
+      return
+    }
+
+    let active = true
+
+    searchMovies(q, page)
+      .then((data) => {
+        if (!active) return
+
+        const rawResults = Array.isArray(data.results) ? data.results : []
+        const moviesAndTv = rawResults.filter((item) => item.media_type !== 'person').map(toFilmResult)
+
+        const peopleFromPanel = Array.isArray(data.people_results) ? data.people_results.map(toPersonResult) : []
+        const peopleFromResults = rawResults
+          .filter((item) => item.media_type === 'person' && item.name)
+          .slice(0, 8)
+          .map((item) => ({
+            id: item.id,
+            name: item.name as string,
+            role: item.known_for_department || 'Persona',
+            notable: [],
+            img: toPoster(item.profile_path),
+          }))
+
+        const uniquePeople = new Map<number, PersonResult>()
+        ;[...peopleFromPanel, ...peopleFromResults].forEach((person) => {
+          uniquePeople.set(person.id, person)
+        })
+
+        setFilmResults(moviesAndTv)
+        setPersonResults(Array.from(uniquePeople.values()))
+        setUserResults([])
+      })
+      .catch(() => {
+        if (!active) return
+        setFetchError('No se pudieron cargar resultados. Intenta nuevamente.')
+        setFilmResults([])
+        setPersonResults([])
+        setUserResults([])
+      })
+
+    return () => {
+      active = false
+    }
+  }, [query, page])
+
+  const mergedFilms = useMemo(
+    () =>
+      filmResults.map((film) => {
+        const details = enrichedFilms[film.id]
+        return {
+          ...film,
+          ...details,
+          director: details?.director ?? film.director,
+          runtime: details?.runtime ?? film.runtime,
+          genres: details?.genres ?? film.genres,
+          country: details?.country ?? film.country,
+        }
+      }),
+    [filmResults, enrichedFilms]
+  )
+
+  const filteredFilms = useMemo(() => {
+    const selectedGenres = (filters.genres || []).map((genre) => genre.toLowerCase())
+    const selectedCountries = (filters.countries || []).map((country) => country.toLowerCase())
+
+    return mergedFilms.filter((film) => {
+      if (filters.yearFrom && film.year && film.year < parseInt(filters.yearFrom, 10)) return false
+      if (filters.yearTo && film.year && film.year > parseInt(filters.yearTo, 10)) return false
+
+      const stars = film.rating > 5 ? film.rating / 2 : film.rating
+      if (filters.minRating && stars < filters.minRating) return false
+
+      if (selectedGenres.length > 0) {
+        const filmGenres = (film.genres || []).map((genre) => genre.toLowerCase())
+        const hasGenre = selectedGenres.some((genre) => filmGenres.some((filmGenre) => filmGenre.includes(genre) || genre.includes(filmGenre)))
+        if (!hasGenre) return false
+      }
+
+      if (selectedCountries.length > 0) {
+        const country = (film.country || '').toLowerCase()
+        const hasCountry = selectedCountries.some((selected) => country.includes(selected) || selected.includes(country))
+        if (!hasCountry) return false
+      }
+
+      if (filters.duration) {
+        const runtime = typeof film.runtime === 'number' ? film.runtime : null
+        if (!runtime) return false
+        if (filters.duration === 'short' && !(runtime < 90)) return false
+        if (filters.duration === 'medium' && !(runtime >= 90 && runtime <= 130)) return false
+        if (filters.duration === 'long' && !(runtime > 130 && runtime <= 180)) return false
+        if (filters.duration === 'epic' && !(runtime > 180)) return false
+      }
+
+      return true
+    })
+  }, [mergedFilms, filters])
+
+  const displayedByTab =
+    activeTab === 'all'
+      ? [...filteredFilms, ...personResults, ...userResults]
+      : activeTab === 'film'
+      ? filteredFilms
+      : activeTab === 'person'
+      ? personResults
+      : userResults
+
+  const totalPages = Math.max(1, Math.ceil(filteredFilms.length / PER_PAGE))
+  const pageFilms = filteredFilms.slice((page - 1) * PER_PAGE, page * PER_PAGE)
+
+  useEffect(() => {
+    const movieIdsToEnrich = filmResults.filter((film) => film.mediaType === 'movie').map((film) => film.id)
+    if (movieIdsToEnrich.length === 0) return
+
+    let active = true
+
+    movieIdsToEnrich.forEach((movieId) => {
+      if (detailsCacheRef.current.has(movieId)) return
+      if (inflightDetailsRef.current.has(movieId)) return
+
+      inflightDetailsRef.current.add(movieId)
+
+      setLoadingFilmDetails((prev) => ({ ...prev, [movieId]: true }))
+
+      fetchMovieDetail(String(movieId))
+        .then((detail) => {
+          if (!active) return
+          const details: FilmDetails = {
+            director: getDirectorFromDetail(detail.credits?.crew),
+            runtime: detail.runtime ?? null,
+            genres: Array.isArray(detail.genres) ? detail.genres.map((genre) => genre.name).filter(Boolean) : [],
+            country: normalizeCountryName(detail.production_countries?.[0]?.name || null),
+          }
+          detailsCacheRef.current.set(movieId, details)
+          setEnrichedFilms((prev) => ({ ...prev, [movieId]: details }))
+        })
+        .catch(() => {
+          if (!active) return
+        })
+        .finally(() => {
+          inflightDetailsRef.current.delete(movieId)
+          if (!active) return
+          setLoadingFilmDetails((prev) => {
+            const next = { ...prev }
+            delete next[movieId]
+            return next
+          })
+        })
+    })
+
+    return () => {
+      active = false
+    }
+  }, [filmResults])
+
+  const handleFilterChange = (k: keyof FiltersState, v: FiltersState[keyof FiltersState]) => {
+    setFilters((prev) => ({ ...prev, [k]: v }))
+    setPage(1)
+  }
+
+  const handleFilterRemove = (k: keyof FiltersState, v?: string) => {
+    setFilters((prev) => {
+      if (!v) {
+        if (k === 'genres' || k === 'countries') {
+          return { ...prev, [k]: [] }
+        }
+        if (k === 'yearFrom' || k === 'yearTo') {
+          return { ...prev, [k]: '' }
+        }
+        if (k === 'minRating') {
+          return { ...prev, [k]: 0 }
+        }
+        if (k === 'duration') {
+          return { ...prev, [k]: null }
+        }
+        if (k === 'pendientes' || k === 'palmares' || k === 'noVistas') {
+          return { ...prev, [k]: false }
+        }
+        return {
+          ...prev,
+          [k]: null,
+        }
+      }
+      const arr = ((prev[k] as string[]) || []).filter((entry) => entry !== v)
+      return { ...prev, [k]: arr }
+    })
+    setPage(1)
+  }
+
+  const counts = {
+    all: filteredFilms.length + personResults.length + userResults.length,
+    film: filteredFilms.length,
+    person: personResults.length,
+    user: userResults.length,
+  }
+
+  return (
+    <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: SANS, textAlign: 'left' }}>
+      <Grain />
+      <Navbar
+        query={query}
+        onSearch={(q) => {
+          setPage(1)
+          setSearchParams({ q })
+        }}
+      />
+
+      <div style={{ paddingTop: 72 }}>
+        <div style={{ borderBottom: `1px solid ${C.border}`, padding: '20px 40px', display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+          <div>
+            <span style={{ fontFamily: SERIF, fontSize: 28, fontWeight: 300, color: C.text }}>{counts.all} resultado{counts.all !== 1 ? 's' : ''}</span>
+            <span style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 22, color: C.textSoft }}> para "{query || '...'}"</span>
+          </div>
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button onClick={() => setShowFilters((v) => !v)} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 16px', background: 'transparent', color: showFilters ? C.accent : C.textSoft, border: `1px solid ${showFilters ? C.accentDim : C.border}`, cursor: 'pointer', fontFamily: SANS, fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase' }}>
+              <SlidersHorizontal size={12} /> {showFilters ? 'Ocultar filtros' : 'Mostrar filtros'}
+            </button>
+          </div>
+        </div>
+
+        <div style={{ borderBottom: `1px solid ${C.border}`, padding: '0 40px', display: 'flex', gap: 0 }}>
+          {TABS.map((tab) => (
+            <button key={tab.key} onClick={() => { setActiveTab(tab.key); setPage(1) }} style={{ padding: '14px 20px', background: 'none', border: 'none', borderBottom: `2px solid ${activeTab === tab.key ? C.accent : 'transparent'}`, fontFamily: SANS, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: activeTab === tab.key ? C.text : C.textSoft, cursor: 'pointer', marginBottom: -1, display: 'flex', alignItems: 'center', gap: 7 }}>
+              <span style={{ color: activeTab === tab.key ? C.accent : C.textMuted }}>{tab.icon}</span>
+              {tab.label} <span style={{ fontSize: 10, color: C.textMuted }}>({counts[tab.key as keyof typeof counts]})</span>
+            </button>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', gap: 0 }}>
+          <AnimatePresence>
+            {showFilters && (
+              <motion.div initial={{ width: 0, opacity: 0 }} animate={{ width: 280, opacity: 1 }} exit={{ width: 0, opacity: 0 }} transition={{ duration: 0.35, ease: 'easeInOut' }} style={{ overflow: 'hidden', flexShrink: 0, borderRight: `1px solid ${C.border}` }}>
+                <div style={{ width: 280, padding: '32px 28px' }}>
+                  <FiltersPanel filters={filters} onChange={handleFilterChange} onClear={() => setFilters({ ...EMPTY_FILTERS })} />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div style={{ flex: 1, padding: '32px 40px', minWidth: 0 }}>
+            {fetchError && <div style={{ marginBottom: 16, color: '#C97B7B', fontFamily: SANS, fontSize: 12 }}>{fetchError}</div>}
+
+            <ActiveFilters filters={filters} onRemove={handleFilterRemove} />
+
+            <AnimatePresence mode="wait">
+              <motion.div key={`${activeTab}-${page}-${JSON.stringify(filters)}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
+                {activeTab === 'all' && (
                   <>
-                    {sortedResults.length > 0 && (
-                      <div style={{ display: 'grid', gap: 10 }}>
-                        {sortedResults.map((item) => (
-                          <ResultCard key={`all-${item.media_type || 'movie'}-${item.id}`} item={item} />
+                    {personResults.length > 0 && (
+                      <div style={{ marginBottom: 8 }}>
+                        <div style={{ fontSize: 10, letterSpacing: '0.24em', textTransform: 'uppercase', color: C.accentDim, marginBottom: 4, fontFamily: SANS }}>Personas</div>
+                        {personResults.map((person, i) => (
+                          <PersonResultItem key={person.id} item={person} delay={i * 0.06} />
                         ))}
                       </div>
                     )}
 
-                    <PeoplePanel people={allPeopleResults.slice(0, 3)} />
+                    {userResults.length > 0 && (
+                      <div style={{ marginBottom: 8 }}>
+                        <div style={{ fontSize: 10, letterSpacing: '0.24em', textTransform: 'uppercase', color: C.accentDim, marginBottom: 4, fontFamily: SANS, marginTop: 16 }}>Usuarios</div>
+                        {userResults.map((user, i) => (
+                          <UserResultItem key={user.id} item={user} delay={i * 0.06} />
+                        ))}
+                      </div>
+                    )}
+
+                    <div style={{ fontSize: 10, letterSpacing: '0.24em', textTransform: 'uppercase', color: C.accentDim, marginBottom: 4, fontFamily: SANS, marginTop: 16 }}>Películas</div>
+                    {pageFilms.map((film, i) => {
+                      const details = enrichedFilms[film.id]
+                      const mergedFilm: FilmResult = {
+                        ...film,
+                        ...details,
+                        director: details?.director ?? film.director,
+                        runtime: details?.runtime ?? film.runtime,
+                        genres: details?.genres ?? film.genres,
+                        country: details?.country ?? film.country,
+                      }
+
+                      return <FilmResultItem key={`${film.mediaType}-${film.id}`} item={mergedFilm} delay={i * 0.08} isDetailsLoading={Boolean(loadingFilmDetails[film.id])} />
+                    })}
                   </>
-                ) : (
-                  <div style={{ border: `1px solid ${C.border}`, background: C.surface, padding: 18, color: C.textSoft }}>
-                    No encontramos resultados para esa búsqueda.
+                )}
+
+                {activeTab === 'film' &&
+                  pageFilms.map((film, i) => {
+                    const details = enrichedFilms[film.id]
+                    const mergedFilm: FilmResult = {
+                      ...film,
+                      ...details,
+                      director: details?.director ?? film.director,
+                      runtime: details?.runtime ?? film.runtime,
+                      genres: details?.genres ?? film.genres,
+                      country: details?.country ?? film.country,
+                    }
+
+                    return <FilmResultItem key={`${film.mediaType}-${film.id}`} item={mergedFilm} delay={i * 0.08} isDetailsLoading={Boolean(loadingFilmDetails[film.id])} />
+                  })}
+                {activeTab === 'person' && personResults.map((person, i) => <PersonResultItem key={person.id} item={person} delay={i * 0.06} />)}
+                {activeTab === 'user' && userResults.map((user, i) => <UserResultItem key={user.id} item={user} delay={i * 0.06} />)}
+
+                {displayedByTab.length === 0 && (
+                  <div style={{ padding: '80px 0', textAlign: 'center' }}>
+                    <div style={{ fontFamily: SERIF, fontSize: 36, color: C.textMuted, marginBottom: 12 }}>Sin resultados</div>
+                    <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 18, color: C.textMuted }}>Intenta con otros filtros o una búsqueda diferente.</div>
                   </div>
                 )}
-              </section>
-            )}
+              </motion.div>
+            </AnimatePresence>
 
-            {tab !== 'all' && !loading && (
-              <section style={{ display: 'grid', gap: 10 }}>
-                <h3 style={{ margin: '0 0 8px', fontFamily: SERIF, fontSize: 30, fontWeight: 400 }}>
-                  {tab === 'movie' ? 'Películas' : tab === 'person' ? 'Personas' : 'Series'}
-                </h3>
-                {sortedResults.map((item) => (
-                  <ResultCard key={`${tab}-${item.id}`} item={item} />
-                ))}
-              </section>
+            {(activeTab === 'all' || activeTab === 'film') && filteredFilms.length > PER_PAGE && (
+              <Pagination current={page} total={totalPages} onPage={(nextPage) => { setPage(nextPage); window.scrollTo({ top: 130, behavior: 'smooth' }) }} />
             )}
-          </motion.div>
-        </AnimatePresence>
-
-        {totalPages > 1 && (
-          <div style={{ marginTop: 26, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
-            {pageButtons.map((page) => (
-              <button key={page} onClick={() => setCurrentPage(page)} style={{ padding: '8px 12px', background: currentPage === page ? C.accentGlow : 'transparent', border: `1px solid ${currentPage === page ? C.accentDim : C.border}`, color: currentPage === page ? C.accent : C.textSoft, cursor: 'pointer', fontFamily: SANS, fontSize: 11, letterSpacing: '0.1em' }}>
-                {page}
-              </button>
-            ))}
           </div>
-        )}
-      </main>
+        </div>
+      </div>
     </div>
   )
 }

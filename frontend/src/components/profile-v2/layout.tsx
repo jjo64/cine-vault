@@ -9,7 +9,7 @@ import { Img } from './primitives'
 import type { ProfileConnection, ProfileHeaderData, ProfileStatsData } from './models'
 import { searchMovies, type SearchSuggestionItem } from '../../services/searchServices'
 
-export const TAB_LIST = ['Resumen', 'Historial', 'Vault', 'Watchlist', 'Reseñas', 'Listas'] as const
+export const TAB_LIST = ['Resumen', 'Vault', 'Diario', 'Watchlist', 'Reseñas', 'Listas'] as const
 
 export function Navbar({
   onNavigateHome,
@@ -126,12 +126,15 @@ export function Navbar({
       </button>
 
       <ul className="profile-nav-links" style={{ gap: 36, listStyle: 'none', margin: 0, padding: 0 }}>
-        {['Explorar', 'Feed', 'Esta noche', 'Perfil'].map((link) => {
+        {['Explorar', 'Feed', 'Esta noche', 'Diario', 'Perfil'].map((link) => {
           const isActive = link === 'Perfil'
           return (
             <li key={link}>
               <button
-                onClick={link === 'Explorar' ? onNavigateHome : undefined}
+                onClick={() => {
+                  if (link === 'Explorar') onNavigateHome()
+                  if (link === 'Diario') navigate('/diary')
+                }}
                 style={{
                   border: 'none',
                   background: 'none',
@@ -323,11 +326,12 @@ export function Navbar({
                 gap: 6,
               }}
             >
-              {['Explorar', 'Feed', 'Esta noche', 'Perfil'].map((label) => (
+              {['Explorar', 'Feed', 'Esta noche', 'Diario', 'Perfil'].map((label) => (
                 <button
                   key={label}
                   onClick={() => {
                     if (label === 'Explorar') onNavigateHome()
+                    if (label === 'Diario') navigate('/diary')
                     setIsMobileMenuOpen(false)
                   }}
                   style={{

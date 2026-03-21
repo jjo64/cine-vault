@@ -13,6 +13,7 @@ import {
   Lock,
   Play,
   Plus,
+  Pencil,
   SortDesc,
   Trophy,
   Upload,
@@ -20,7 +21,7 @@ import {
 import { C, SANS, SERIF, textClampOneLine } from './theme'
 import { Badge, Img, SectionHeader, Stars } from './primitives'
 import { vaultMockItems, IMG } from './assets'
-import type { RecentlyWatchedItem, ReviewItem, UserListSummaryItem, WatchlistItem } from './models'
+import type { DiaryTimelineItem, EnrichedMovie, ProfileStatsData, RecentlyWatchedItem, ReviewItem, UserListSummaryItem, WatchlistItem } from './models'
 import { createSlug } from '../../utils/stringUtils'
 
 const movieHref = (movieId: number, title: string, tmdbId: number | null) => `/movie/${tmdbId ?? movieId}-${createSlug(title)}`
@@ -35,6 +36,10 @@ import './Profile.css'
 
 function NightRec({ recommendation }: { recommendation: WatchlistItem | null }) {
   const [watched, setWatched] = useState(false)
+  const runtimeLabel = typeof recommendation?.runtimeMinutes === 'number' && recommendation.runtimeMinutes > 0
+    ? `${Math.floor(recommendation.runtimeMinutes / 60)}h ${recommendation.runtimeMinutes % 60}m`
+    : 'Duración N/D'
+  const genreLabel = recommendation?.primaryGenre || 'Drama histórico'
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -45,8 +50,11 @@ function NightRec({ recommendation }: { recommendation: WatchlistItem | null }) 
         background: C.surface,
         border: `1px solid ${C.border}`,
         borderLeft: `3px solid ${C.accent}`,
+        padding: '24px 28px',
         marginBottom: 48,
         display: 'flex',
+        alignItems: 'center',
+        gap: 24,
         position: 'relative',
         overflow: 'hidden',
       }}
@@ -80,7 +88,7 @@ function NightRec({ recommendation }: { recommendation: WatchlistItem | null }) 
         </div>
         <div style={{ fontSize: 12, color: C.textSoft, marginTop: 4, fontFamily: SANS }}>
           {recommendation
-            ? `${recommendation.director} · ${recommendation.year || 'Año desconocido'} · Drama`
+            ? `${recommendation.director} · ${recommendation.year || 'Año desconocido'} · ${runtimeLabel} · ${genreLabel}`
             : 'Agrega películas a tu watchlist para tener recomendación automática.'}
         </div>
       </div>
@@ -495,23 +503,193 @@ function WatchlistStrip({ watchlistFilms }: { watchlistFilms: WatchlistItem[] })
   )
 }
 
+function buildCuratedGallery(
+  recentlyWatched: RecentlyWatchedItem[],
+  watchlistFilms: WatchlistItem[],
+  curatedMovieIds: number[]
+) {
+  if (curatedMovieIds.length > 0) {
+    const byId = new Map<number, EnrichedMovie>()
+    for (const film of [...recentlyWatched, ...watchlistFilms]) {
+      byId.set(film.movieId, film)
+    }
+
+    return curatedMovieIds
+      .map((movieId) => byId.get(movieId))
+      .filter((film): film is EnrichedMovie => Boolean(film))
+      .slice(0, 6)
+  }
+
+  const seen = new Set<number>()
+  const curated: EnrichedMovie[] = []
+
+  for (const film of [...recentlyWatched, ...watchlistFilms]) {
+    if (seen.has(film.movieId)) continue
+    seen.add(film.movieId)
+    curated.push(film)
+    if (curated.length === 6) break
+  }
+
+  return curated
+}
+
+function CuratedGallery({
+  films,
+  curatedNotesByMovieId,
+  canEdit,
+  onCurate,
+}: {
+  films: EnrichedMovie[]
+  curatedNotesByMovieId: Record<number, string>
+  canEdit: boolean
+  onCurate: () => void
+}) {
+  const navigate = useNavigate()
+  const [hoveredId, setHoveredId] = useState<number | null>(null)
+  if (films.length === 0 && !canEdit) return null
+
+  return (
+    <div style={{ marginBottom: 52 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20, gap: 12 }}>
+        <div>
+          <div style={{ fontFamily: SERIF, fontSize: 26, fontWeight: 400, color: C.text, lineHeight: 1.2 }}>
+            Galería curada <em style={{ color: C.textSoft, fontStyle: 'italic', fontSize: 20 }}>— {films.length} películas que me definen</em>
+          </div>
+          <div style={{ fontSize: 12, color: C.textMuted, fontFamily: SERIF, fontStyle: 'italic', marginTop: 6 }}>
+            No las últimas que vi. Las que elegiría si tuviera que mostrarme.
+          </div>
+        </div>
+        {canEdit ? (
+          <button
+            type="button"
+            onClick={onCurate}
+            style={{
+              padding: '8px 16px',
+              background: 'transparent',
+              color: C.textSoft,
+              border: `1px solid ${C.border}`,
+              fontFamily: SANS,
+              fontSize: 10,
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              transition: 'all 0.2s',
+              flexShrink: 0,
+            }}
+          >
+            Curar galería
+          </button>
+        ) : null}
+      </div>
+
+      {films.length === 0 ? (
+        <div style={{ border: `1px solid ${C.border}`, background: C.surface, color: C.textSoft, padding: '12px 14px' }}>
+          Aún no hay películas curadas.
+        </div>
+      ) : null}
+
+      <div className="profile-grid-6" style={{ gap: 10, overflow: 'visible' }}>
+        {films.map((film, i) => (
+          <motion.div
+            key={film.movieId}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.07, duration: 0.5 }}
+            onMouseEnter={() => setHoveredId(film.movieId)}
+            onMouseLeave={() => setHoveredId(null)}
+            onClick={() => navigate(movieHref(film.movieId, film.title, film.tmdbId))}
+            style={{ cursor: 'pointer', position: 'relative', zIndex: hoveredId === film.movieId ? 20 : 1 }}
+          >
+            <div style={{
+              aspectRatio: '2/3',
+              borderRadius: 1,
+              overflow: 'hidden',
+              marginBottom: 10,
+              border: `1px solid ${hoveredId === film.movieId ? C.accentDim : C.border}`,
+              boxShadow: hoveredId === film.movieId ? `0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px ${C.accentDim}` : '0 4px 20px rgba(0,0,0,0.4)',
+              transform: hoveredId === film.movieId ? 'translateY(-6px) scale(1.01)' : 'none',
+              transition: 'all 0.35s cubic-bezier(0.4,0,0.2,1)',
+              position: 'relative',
+            }}>
+              <Img src={film.posterUrl} alt={film.title} style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                filter: hoveredId === film.movieId ? 'saturate(0.9) brightness(0.85)' : 'saturate(0.65) brightness(0.75)',
+                transform: hoveredId === film.movieId ? 'scale(1.06)' : 'scale(1)',
+                transition: 'filter 0.4s, transform 0.4s',
+              }} />
+              <div style={{
+                position: 'absolute',
+                inset: 0,
+                background: 'linear-gradient(to top, rgba(8,8,8,0.92) 0%, rgba(8,8,8,0.2) 50%, transparent 100%)',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'flex-end',
+                padding: 10,
+                opacity: hoveredId === film.movieId ? 1 : 0,
+                transition: 'opacity 0.3s',
+              }}>
+                <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 12, color: C.text, lineHeight: 1.4, textAlign: 'center' }}>
+                  &quot;{curatedNotesByMovieId[film.movieId] || film.title}&quot;
+                </div>
+              </div>
+              <div style={{
+                position: 'absolute',
+                top: 8,
+                left: 8,
+                fontSize: 9,
+                letterSpacing: '0.2em',
+                color: C.accentDim,
+                fontFamily: SANS,
+                opacity: hoveredId === film.movieId ? 0 : 0.6,
+                transition: 'opacity 0.2s',
+              }}>0{i + 1}</div>
+            </div>
+            <div style={{ textAlign: 'left', paddingLeft: 2 }}>
+              <div style={{ fontSize: 11, color: C.text, fontFamily: SANS, ...textClampOneLine }}>{film.title}</div>
+              <div style={{ fontSize: 10, color: C.textMuted, fontFamily: SERIF, fontStyle: 'italic' }}>{film.director}, {film.year || '—'}</div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export function OverviewPanel({
+  stats: _stats,
   recentlyWatched,
   watchlistFilms,
   reviewItems,
+  curatedMovieIds,
+  curatedNotesByMovieId,
+  canEditCurated,
+  onCurateGallery,
   onJumpToTab,
 }: {
+  stats: ProfileStatsData
   recentlyWatched: RecentlyWatchedItem[]
   watchlistFilms: WatchlistItem[]
   reviewItems: ReviewItem[]
-  onJumpToTab: (tab: 'Historial' | 'Vault' | 'Watchlist' | 'Reseñas') => void
+  curatedMovieIds: number[]
+  curatedNotesByMovieId: Record<number, string>
+  canEditCurated: boolean
+  onCurateGallery: () => void
+  onJumpToTab: (tab: 'Vault' | 'Watchlist' | 'Reseñas' | 'Diario') => void
 }) {
+  void _stats
   const recommendation = watchlistFilms[0] || null
+  const curatedGallery = buildCuratedGallery(recentlyWatched, watchlistFilms, curatedMovieIds)
   return (
     <div>
+      <CuratedGallery films={curatedGallery} curatedNotesByMovieId={curatedNotesByMovieId} canEdit={canEditCurated} onCurate={onCurateGallery} />
       <NightRec recommendation={recommendation} />
 
-      <SectionHeader title="Vistas recientemente" link="Ver historial" onLinkClick={() => onJumpToTab('Historial')} />
+      <SectionHeader title="Vistas recientemente" link="Ver historial" onLinkClick={() => onJumpToTab('Diario')} />
       <div className="profile-mobile-only profile-mobile-only-flex" style={{ flexDirection: 'column', gap: 10, marginBottom: 48 }}>
         {recentlyWatched.slice(0, 4).map((film, index) => (
           <FilmCardMobile key={film.movieId} film={film} delay={index * 0.05} />
@@ -823,6 +1001,138 @@ export function HistoryPanel({ recentlyWatched }: { recentlyWatched: RecentlyWat
   )
 }
 
+export function DiaryPanel({ diaryTimeline }: { diaryTimeline: DiaryTimelineItem[] }) {
+
+  return (
+    <div>
+      <div style={{ marginBottom: 40 }}>
+        <div className="profile-panel-header" style={{ fontFamily: SERIF, color: C.text }}>
+          Diario cinematográfico <em className="profile-panel-header-em" style={{ fontStyle: 'italic', color: C.textSoft }}>— autobiografía en películas</em>
+        </div>
+        <div style={{ fontSize: 14, color: C.textMuted, fontFamily: SERIF, fontStyle: 'italic', lineHeight: 1.6, marginTop: 8 }}>
+          No es un historial. Es una autobiografía en películas, con el momento y el estado de ánimo que tenías cuando las viste.
+        </div>
+      </div>
+
+      <div style={{ position: 'relative' }}>
+        <div style={{
+          position: 'absolute',
+          left: 148,
+          top: 12,
+          bottom: 40,
+          width: 1,
+          background: `linear-gradient(to bottom, ${C.accent}66, ${C.accentDim}33 70%, transparent)`,
+        }} />
+
+        {diaryTimeline.map((entry, i) => (
+          <motion.div
+            key={entry.movieId}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: i * 0.1, duration: 0.5, ease: 'easeOut' }}
+            style={{ display: 'grid', gridTemplateColumns: '148px 1fr', gap: 0, marginBottom: 36, position: 'relative' }}
+          >
+            <div style={{ paddingRight: 28, textAlign: 'right', paddingTop: 20 }}>
+              <div style={{ fontSize: 11, color: C.textSoft, fontFamily: SANS, lineHeight: 1.5 }}>{entry.watchedDateLabel}</div>
+            </div>
+
+            <div style={{
+              position: 'absolute',
+              left: 141,
+              top: 22,
+              width: 16,
+              height: 16,
+              borderRadius: '50%',
+              background: C.bg,
+              border: `2px solid ${C.accent}`,
+              zIndex: 2,
+              boxShadow: `0 0 8px ${C.accentGlow}`,
+            }} />
+
+            <div style={{ paddingLeft: 36 }}>
+              <div
+                style={{
+                  background: C.surface,
+                  border: `1px solid ${C.border}`,
+                  padding: '20px 24px',
+                  transition: 'border-color 0.2s',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.borderColor = C.accentDim)}
+                onMouseLeave={(e) => (e.currentTarget.style.borderColor = C.border)}
+              >
+                <div style={{ display: 'flex', gap: 18, alignItems: 'flex-start' }}>
+                  <div style={{ width: 54, flexShrink: 0, aspectRatio: '2/3', borderRadius: 1, overflow: 'hidden' }}>
+                    <Img src={entry.posterUrl} alt={entry.title} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(0.5)' }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 6, flexWrap: 'wrap' }}>
+                      <span style={{ fontFamily: SERIF, fontSize: 20, color: C.text, lineHeight: 1.2 }}>{entry.title}</span>
+                      <Stars rating={entry.rating} size={10} />
+                    </div>
+                    <div style={{ fontSize: 11, color: C.textSoft, fontFamily: SANS, marginBottom: 12 }}>
+                      {entry.director} · {entry.year || '—'}
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
+                      <span style={{
+                        fontSize: 10,
+                        padding: '3px 10px',
+                        border: `1px solid rgba(212,175,122,0.35)`,
+                        color: C.accent,
+                        fontFamily: SANS,
+                        letterSpacing: '0.1em',
+                        textTransform: 'uppercase',
+                      }}>
+                        {entry.moodLabel}
+                      </span>
+                      <span style={{
+                        fontSize: 10,
+                        padding: '3px 10px',
+                        border: `1px solid ${C.border}`,
+                        color: C.textSoft,
+                        fontFamily: SANS,
+                        letterSpacing: '0.08em',
+                      }}>
+                        {entry.stageLabel}
+                      </span>
+                    </div>
+                    <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 15, color: C.textSoft, lineHeight: 1.7 }}>
+                      {entry.note ? `"${entry.note}"` : 'Sin nota escrita todavía.'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        ))}
+
+        <div style={{ display: 'grid', gridTemplateColumns: '148px 1fr', gap: 0, marginTop: 8 }}>
+          <div />
+          <div style={{ paddingLeft: 36 }}>
+            <button
+              style={{
+                padding: '11px 24px',
+                background: 'transparent',
+                color: C.accent,
+                border: `1px solid ${C.accentDim}`,
+                fontFamily: SANS,
+                fontSize: 10,
+                letterSpacing: '0.16em',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
+              <Pencil size={10} /> Agregar entrada al diario
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function ReviewsPanel({ reviewItems }: { reviewItems: ReviewItem[] }) {
   const [sort, setSort] = useState('Reciente')
   const sortedReviews = useMemo(() => {
@@ -997,23 +1307,112 @@ function ActivityStats() {
   )
 }
 
-function GenreSidebar() {
+function GenreSidebar({ recentlyWatched, reviewItems }: { recentlyWatched: RecentlyWatchedItem[]; reviewItems: ReviewItem[] }) {
+  const radar = useMemo(() => {
+    const total = Math.max(1, recentlyWatched.length)
+    const highRated = recentlyWatched.filter((film) => film.rating >= 4).length
+    const classics = recentlyWatched.filter((film) => film.year !== null && film.year < 2000).length
+    const oldCinema = recentlyWatched.filter((film) => film.year !== null && film.year < 1985).length
+    const reviewWeight = Math.min(1, reviewItems.length / 10)
+
+    const clamp = (value: number) => Math.max(0.2, Math.min(0.95, value))
+
+    return [
+      { label: 'Autor', short: 'Autor', value: clamp(0.35 + classics / total * 0.5) },
+      { label: 'Drama', short: 'Drama', value: clamp(0.4 + reviewWeight * 0.45) },
+      { label: 'Contemplativo', short: 'Cont.', value: clamp(0.3 + highRated / total * 0.55) },
+      { label: 'Noir', short: 'Noir', value: clamp(0.2 + oldCinema / total * 0.45) },
+      { label: 'Sci-fi', short: 'Sci-fi', value: clamp(0.25 + ((total % 5) / 5) * 0.35) },
+      { label: 'Riesgo', short: 'Riesgo', value: clamp(0.28 + Math.min(1, total / 12) * 0.42) },
+    ]
+  }, [recentlyWatched, reviewItems])
+
+  const svgSize = 200
+  const cx = svgSize / 2
+  const cy = svgSize / 2
+  const maxR = 68
+  const n = radar.length
+
+  const getCoords = (i: number, val: number) => {
+    const angle = (i / n) * 2 * Math.PI - Math.PI / 2
+    return { x: cx + Math.cos(angle) * maxR * val, y: cy + Math.sin(angle) * maxR * val }
+  }
+
+  const getLabelCoords = (i: number) => {
+    const angle = (i / n) * 2 * Math.PI - Math.PI / 2
+    return { x: cx + Math.cos(angle) * (maxR + 20), y: cy + Math.sin(angle) * (maxR + 20) }
+  }
+
+  const textAnchor = (i: number): 'middle' | 'start' | 'end' => {
+    const cos = Math.cos((i / n) * 2 * Math.PI - Math.PI / 2)
+    if (Math.abs(cos) < 0.15) return 'middle'
+    return cos > 0 ? 'start' : 'end'
+  }
+
+  const polygonPoints = radar.map((g, i) => {
+    const p = getCoords(i, g.value)
+    return `${p.x},${p.y}`
+  }).join(' ')
+
+  const gridLevels = [0.25, 0.5, 0.75, 1.0]
+
   return (
     <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: '20px 24px', marginBottom: 24 }}>
-      <div style={{ fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.textSoft, fontFamily: SANS, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-        <Film size={12} color={C.accent} /> Géneros favoritos
+      <div style={{ fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.textSoft, fontFamily: SANS, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <Film size={11} color={C.accent} /> Radar competitivo
       </div>
-      {[['Slow cinema', 82], ['Drama', 71], ['Documental', 55], ['Sci-fi', 34], ['Noir', 28]].map(([genre, percent]) => (
-        <div key={String(genre)} style={{ marginBottom: 12 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-            <span style={{ fontSize: 12, color: C.text, fontFamily: SANS }}>{genre}</span>
-            <span style={{ fontSize: 11, color: C.textSoft, fontFamily: SANS }}>{percent}%</span>
-          </div>
-          <div style={{ height: 2, background: C.border, borderRadius: 1 }}>
-            <div style={{ height: '100%', width: `${percent}%`, background: C.accent, borderRadius: 1 }} />
-          </div>
-        </div>
-      ))}
+      <div style={{ fontSize: 11, color: C.textMuted, fontFamily: SERIF, fontStyle: 'italic', marginBottom: 12 }}>Tu huella cinematográfica en esta temporada</div>
+      <svg width="100%" viewBox={`0 0 ${svgSize} ${svgSize}`} style={{ overflow: 'visible' }}>
+        {gridLevels.map((level) => {
+          const pts = Array.from({ length: n }, (_, i) => {
+            const p = getCoords(i, level)
+            return `${p.x},${p.y}`
+          }).join(' ')
+          return (
+            <polygon
+              key={level}
+              points={pts}
+              fill="none"
+              stroke={level === 1.0 ? C.border : C.textMuted}
+              strokeWidth={level === 1.0 ? 0.8 : 0.5}
+              strokeDasharray={level < 1 ? '2,3' : undefined}
+              opacity={level === 1.0 ? 0.6 : 0.3}
+            />
+          )
+        })}
+
+        {radar.map((_, i) => {
+          const end = getCoords(i, 1.0)
+          return <line key={i} x1={cx} y1={cy} x2={end.x} y2={end.y} stroke={C.border} strokeWidth="0.7" opacity="0.5" />
+        })}
+
+        <polygon points={polygonPoints} fill="rgba(212,175,122,0.12)" stroke={C.accent} strokeWidth="1.5" strokeLinejoin="round" />
+
+        {radar.map((g, i) => {
+          const p = getCoords(i, g.value)
+          return (
+            <circle key={g.label} cx={p.x} cy={p.y} r="3.5" fill={C.accent}>
+              <title>{g.label}: {Math.round(g.value * 100)}%</title>
+            </circle>
+          )
+        })}
+
+        {radar.map((g, i) => {
+          const lp = getLabelCoords(i)
+          return (
+            <text
+              key={g.label}
+              x={lp.x}
+              y={lp.y}
+              textAnchor={textAnchor(i)}
+              dominantBaseline="middle"
+              style={{ fontSize: '8.5px', fill: C.textSoft, fontFamily: SANS }}
+            >
+              {g.short}
+            </text>
+          )
+        })}
+      </svg>
     </div>
   )
 }
@@ -1041,12 +1440,12 @@ function AchievementsSidebar() {
   )
 }
 
-export function ProfileSidebar() {
+export function ProfileSidebar({ recentlyWatched, reviewItems }: { recentlyWatched: RecentlyWatchedItem[]; reviewItems: ReviewItem[] }) {
   return (
     <aside className="profile-desktop-only">
       <div style={{ position: 'sticky', top: 60 }}>
         <ActivityStats />
-        <GenreSidebar />
+        <GenreSidebar recentlyWatched={recentlyWatched} reviewItems={reviewItems} />
         <AchievementsSidebar />
       </div>
     </aside>

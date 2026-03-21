@@ -38,6 +38,27 @@ export const obtenerSeguidores = async (req: Request, res: Response) => {
 export const obtenerSiguiendo = async (req: Request, res: Response) => {
   res.json(await userService.obtenerSiguiendoService(Number(req.params.id)))
 }
+
+export const obtenerFirmaCinematograficaPublica = async (
+  req: Request,
+  res: Response
+) => {
+  res.json(
+    await userService.obtenerFirmaCinematograficaPublicaService(
+      Number(req.params.id)
+    )
+  )
+}
+
+export const obtenerGaleriaCuradaPublica = async (
+  req: Request,
+  res: Response
+) => {
+  res.json(
+    await userService.obtenerGaleriaCuradaPublicaService(Number(req.params.id))
+  )
+}
+
 export const actualizarPerfil = async (
   req: SolicitudAutenticada,
   res: Response

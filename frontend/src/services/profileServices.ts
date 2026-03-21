@@ -69,6 +69,31 @@ export type SessionEntry = {
   expires_at: string
 }
 
+export type CinematicSignatureData = {
+  user_id: number
+  pivotal_film: string | null
+  pivotal_film_detail: string | null
+  formative_director: string | null
+  formative_director_detail: string | null
+  unforgettable_scene: string | null
+  unforgettable_scene_detail: string | null
+  cinema_turning_year: string | null
+  cinema_turning_year_detail: string | null
+}
+
+export type CuratedGalleryItemData = {
+  movie_id: number
+  order_index: number
+  note: string | null
+  tmdb_id: number | null
+}
+
+type SettingsWrappedResponse<T> = {
+  ok: boolean
+  message?: string
+  data: T
+}
+
 type FetchOptions<T> = {
   token?: string | null
   method?: string
@@ -241,4 +266,84 @@ export const revokeAllAuthSessions = (token: string | null | undefined) =>
     token,
     method: 'POST',
     defaultValue: { message: '' },
+  })
+
+export const fetchOwnerCinematicSignature = (token: string | null | undefined) =>
+  apiFetch<SettingsWrappedResponse<CinematicSignatureData>>('/api/settings/profile/signature', {
+    token,
+    defaultValue: {
+      ok: true,
+      data: {
+        user_id: 0,
+        pivotal_film: null,
+        pivotal_film_detail: null,
+        formative_director: null,
+        formative_director_detail: null,
+        unforgettable_scene: null,
+        unforgettable_scene_detail: null,
+        cinema_turning_year: null,
+        cinema_turning_year_detail: null,
+      },
+    },
+  })
+
+export const fetchPublicCinematicSignature = (userId: number) =>
+  apiFetch<CinematicSignatureData>(`/api/users/${userId}/profile/signature`, {
+    defaultValue: {
+      user_id: userId,
+      pivotal_film: null,
+      pivotal_film_detail: null,
+      formative_director: null,
+      formative_director_detail: null,
+      unforgettable_scene: null,
+      unforgettable_scene_detail: null,
+      cinema_turning_year: null,
+      cinema_turning_year_detail: null,
+    },
+  })
+
+export const updateOwnerCinematicSignature = (
+  token: string | null | undefined,
+  body: Partial<Omit<CinematicSignatureData, 'user_id'>>,
+) =>
+  apiFetch<SettingsWrappedResponse<CinematicSignatureData>>('/api/settings/profile/signature', {
+    token,
+    method: 'PATCH',
+    body,
+    defaultValue: {
+      ok: true,
+      data: {
+        user_id: 0,
+        pivotal_film: null,
+        pivotal_film_detail: null,
+        formative_director: null,
+        formative_director_detail: null,
+        unforgettable_scene: null,
+        unforgettable_scene_detail: null,
+        cinema_turning_year: null,
+        cinema_turning_year_detail: null,
+      },
+    },
+  })
+
+export const fetchOwnerCuratedGallery = (token: string | null | undefined) =>
+  apiFetch<SettingsWrappedResponse<{ items: CuratedGalleryItemData[] }>>('/api/settings/profile/curated-gallery', {
+    token,
+    defaultValue: { ok: true, data: { items: [] } },
+  })
+
+export const fetchPublicCuratedGallery = (userId: number) =>
+  apiFetch<{ items: CuratedGalleryItemData[] }>(`/api/users/${userId}/profile/curated-gallery`, {
+    defaultValue: { items: [] },
+  })
+
+export const updateOwnerCuratedGallery = (
+  token: string | null | undefined,
+  items: Array<{ movie_id: number; order_index: number; note?: string | null }>,
+) =>
+  apiFetch<SettingsWrappedResponse<{ items: CuratedGalleryItemData[] }>>('/api/settings/profile/curated-gallery', {
+    token,
+    method: 'PUT',
+    body: { items },
+    defaultValue: { ok: true, data: { items: [] } },
   })

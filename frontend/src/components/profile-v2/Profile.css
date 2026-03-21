@@ -73,6 +73,10 @@
     overflow-x: clip;
 }
 
+.profile-grid-main {
+    overflow: visible !important;
+}
+
 @media (max-width: 1024px) {
     .profile-grid-layout {
         grid-template-columns: 1fr;
@@ -372,6 +376,24 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
     gap: 16px;
+}
+
+.profile-grid-6 {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 10px;
+}
+
+@media (max-width: 1280px) {
+    .profile-grid-6 {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .profile-grid-6 {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
 @media (max-width: 768px) {}

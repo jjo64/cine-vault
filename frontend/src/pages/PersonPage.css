@@ -79,6 +79,29 @@
     font-family: 'Cormorant Garamond', serif;
 }
 
+.person-autopsy-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 0 16px;
+    padding: 9px 14px;
+    border: 1px solid #9a7a48;
+    color: #d4af7a;
+    background: rgba(212, 175, 122, 0.08);
+    text-decoration: none;
+    font-family: 'Syne', sans-serif;
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    transition: transform 0.22s ease, border-color 0.22s ease, background-color 0.22s ease;
+}
+
+.person-autopsy-button:hover {
+    transform: translateY(-1px);
+    border-color: #d4af7a;
+    background: rgba(212, 175, 122, 0.16);
+}
+
 .person-info-grid {
     display: grid;
     grid-template-columns: auto 1fr;
@@ -247,7 +270,8 @@
 .tab-button:focus-visible,
 .filter-button:focus-visible,
 .pagination-button:focus-visible,
-.credit-card:focus-visible {
+.credit-card:focus-visible,
+.person-autopsy-button:focus-visible {
     outline: 1px solid #d4af7a;
     outline-offset: 2px;
 }
