@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 import { createSlug } from '../utils/stringUtils'
 import { fetchMovieDetail } from '../services/movieDetailServices'
-import { searchMovies, type SearchMovieResult, type SearchPersonPanel } from '../services/searchServices'
+import { searchMovies, searchUsers, type SearchMovieResult, type SearchPersonPanel, type SearchUserResult } from '../services/searchServices'
 
 const C = {
   bg: '#080808',
@@ -88,12 +88,24 @@ type PersonResult = {
 }
 
 type UserResult = {
-  id: string
+  id: number
   username: string
   handle: string
   films: number
   bio: string
   avatar: string
+}
+
+function toUserResult(item: SearchUserResult): UserResult {
+  const username = item.username || 'usuario'
+  return {
+    id: item.id,
+    username,
+    handle: `@${username}`,
+    films: Number(item._count?.reviews || 0),
+    bio: item.bio?.trim() || 'Cinéfilo de CineVault',
+    avatar: username.slice(0, 1).toUpperCase(),
+  }
 }
 
 type FiltersState = {
@@ -523,10 +535,12 @@ function UserResultItem({ item, delay }: { item: UserResult; delay: number }) {
   const [hov, setHov] = useState(false)
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay }} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: 16, padding: '16px 0', borderBottom: `1px solid ${C.border}`, background: hov ? 'rgba(212,175,122,0.02)' : 'transparent' }}>
-      <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(212,175,122,0.15)', border: `1px solid ${C.accentDim}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: SERIF, fontSize: 20, color: C.accent }}>{item.avatar}</div>
+      <Link to={`/${encodeURIComponent(item.username)}`} style={{ textDecoration: 'none' }}>
+        <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(212,175,122,0.15)', border: `1px solid ${C.accentDim}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: SERIF, fontSize: 20, color: C.accent }}>{item.avatar}</div>
+      </Link>
       <div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-          <span style={{ fontFamily: SANS, fontSize: 14, color: C.text }}>{item.username}</span>
+          <Link to={`/${encodeURIComponent(item.username)}`} style={{ fontFamily: SANS, fontSize: 14, color: C.text, textDecoration: 'none' }}>{item.username}</Link>
           <span style={{ fontFamily: SANS, fontSize: 11, color: C.textSoft }}>{item.handle}</span>
           <span style={{ fontFamily: SANS, fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase', color: C.textSoft, border: `1px solid ${C.border}`, padding: '2px 7px' }}>Usuario</span>
         </div>
@@ -634,8 +648,8 @@ export function Search() {
 
     let active = true
 
-    searchMovies(q, page)
-      .then((data) => {
+    Promise.all([searchMovies(q, page), searchUsers(q, 16)])
+      .then(([data, users]) => {
         if (!active) return
 
         const rawResults = Array.isArray(data.results) ? data.results : []
@@ -660,7 +674,7 @@ export function Search() {
 
         setFilmResults(moviesAndTv)
         setPersonResults(Array.from(uniquePeople.values()))
-        setUserResults([])
+        setUserResults(users.map(toUserResult))
       })
       .catch(() => {
         if (!active) return

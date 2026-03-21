@@ -25,6 +25,12 @@ import type { DiaryTimelineItem, EnrichedMovie, ProfileStatsData, RecentlyWatche
 import { createSlug } from '../../utils/stringUtils'
 
 const movieHref = (movieId: number, title: string, tmdbId: number | null) => `/movie/${tmdbId ?? movieId}-${createSlug(title)}`
+const reviewHref = (review: ReviewItem) => {
+  const username = encodeURIComponent((review.username || 'perfil').trim())
+  const slugId = `${review.tmdbId ?? review.movieId}-${createSlug(review.title)}`
+  const suffix = review.reviewSequence > 1 ? `/${review.reviewSequence - 1}` : ''
+  return `/${username}/movie/${slugId}${suffix}`
+}
 
 const PROFILE_STAR_SIZES = {
   cardMobile: 10,
@@ -339,6 +345,7 @@ function VaultCard({ item, delay = 0 }: { item: (typeof vaultMockItems)[number];
 
 function ReviewCard({ review, delay = 0, compact = false }: { review: ReviewItem; delay?: number; compact?: boolean }) {
   const navigate = useNavigate()
+  const openReviewThread = () => navigate(reviewHref(review))
   const richText = review.text
     .replace(/<b>/g, `<strong style="color:${C.text};font-style:normal;font-weight:500">`)
     .replace(/<\/b>/g, '</strong>')
@@ -364,7 +371,7 @@ function ReviewCard({ review, delay = 0, compact = false }: { review: ReviewItem
           <div style={{ flex: 1, minWidth: 0 }}>
             <button
               type="button"
-              onClick={() => navigate(movieHref(review.movieId, review.title, review.tmdbId))}
+              onClick={openReviewThread}
               style={{
                 border: 'none',
                 background: 'none',
@@ -448,7 +455,7 @@ function ReviewCard({ review, delay = 0, compact = false }: { review: ReviewItem
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
           <button
             type="button"
-            onClick={() => navigate(movieHref(review.movieId, review.title, review.tmdbId))}
+            onClick={openReviewThread}
             style={{ border: 'none', background: 'none', padding: 0, margin: 0, fontFamily: SERIF, fontSize: 20, fontWeight: 400, color: C.text, cursor: 'pointer' }}
           >
             {review.title}

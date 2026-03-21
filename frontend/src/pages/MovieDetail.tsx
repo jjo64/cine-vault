@@ -18,6 +18,7 @@ import {
   updateReviewContent,
   fetchMovieDetail,
   fetchMovieReviews,
+  fetchReviewComments,
   fetchMyDiary,
   fetchMyFavorites,
   fetchMyReviews,
@@ -29,7 +30,9 @@ import {
   removeFromFavorites,
   removeFromWatchlist,
   type MovieDetailApi,
+  type ReviewCommentApi,
   type ReviewApi,
+  type ReviewMode,
   unlikeReview,
   updateReview,
 } from '../services/movieDetailServices'
@@ -66,12 +69,37 @@ type AppReview = {
   userId: number
   movieId: number
   tmdbId: number | null
+  mode: ReviewMode
   username: string
   avatarUrl?: string | null
   content: string
   rating: number
+  veredicto?: string | null
+  dimensions: {
+    direccion: number | null
+    guion: number | null
+    fotografia: number | null
+    actuaciones: number | null
+    bandaSonora: number | null
+  }
+  quote?: {
+    dialogo: string
+    personaje?: string | null
+  } | null
+  timestamps: Array<{ minuto: string; descripcion: string }>
+  contieneSpoilers: boolean
+  esCriticaLarga: boolean
+  tiempoLecturaMin: number | null
   likes: number
   createdAt: string
+  comments: Array<{
+    id: number
+    userId: number
+    username: string
+    avatarUrl: string | null
+    content: string
+    createdAt: string
+  }>
 }
 
 type SimilarFilm = {
@@ -91,6 +119,8 @@ type Viewer = {
   id: number
   username: string
   avatar_url?: string | null
+  membership?: string | null
+  role?: string | null
 }
 
 type SearchSuggestion = {
@@ -284,11 +314,60 @@ function InlineComposer({
   )
 }
 
+const REVIEW_DIMENSIONS = [
+  { key: 'direccion', label: 'Direccion' },
+  { key: 'guion', label: 'Guion' },
+  { key: 'fotografia', label: 'Foto' },
+  { key: 'actuaciones', label: 'Actuacion' },
+  { key: 'bandaSonora', label: 'Banda' },
+] as const
+
+function ReviewRadar({ values }: { values: AppReview['dimensions'] }) {
+  const ordered = [
+    values.direccion,
+    values.guion,
+    values.fotografia,
+    values.actuaciones,
+    values.bandaSonora,
+  ]
+  const hasData = ordered.some((value) => typeof value === 'number' && value > 0)
+  if (!hasData) return null
+
+  const center = 44
+  const radius = 32
+  const points = ordered.map((raw, index) => {
+    const value = Math.max(0, Math.min(5, Number(raw || 0)))
+    const ratio = value / 5
+    const angle = (Math.PI * 2 * index) / ordered.length - Math.PI / 2
+    const r = radius * ratio
+    const x = center + Math.cos(angle) * r
+    const y = center + Math.sin(angle) * r
+    return `${x.toFixed(1)},${y.toFixed(1)}`
+  })
+
+  return (
+    <svg width="88" height="88" viewBox="0 0 88 88" aria-label="Radar de dimensiones" style={{ flexShrink: 0 }}>
+      <circle cx="44" cy="44" r="32" fill="none" stroke={C.border} strokeWidth="1" />
+      <circle cx="44" cy="44" r="20" fill="none" stroke={C.border} strokeWidth="1" />
+      <polygon points={points.join(' ')} fill="rgba(212,175,122,0.22)" stroke={C.accent} strokeWidth="1.2" />
+    </svg>
+  )
+}
+
 function ReviewLogModal({
   open,
   movie,
+  membership,
+  role,
   text,
   rating,
+  mode,
+  veredicto,
+  contieneSpoilers,
+  citaDialogo,
+  citaPersonaje,
+  timestamps,
+  dimensions,
   liked,
   seenDate,
   seenBefore,
@@ -296,6 +375,15 @@ function ReviewLogModal({
   onClose,
   onTextChange,
   onRatingChange,
+  onModeChange,
+  onVeredictoChange,
+  onContieneSpoilersChange,
+  onCitaDialogoChange,
+  onCitaPersonajeChange,
+  onDimensionsChange,
+  onAddTimestamp,
+  onTimestampChange,
+  onRemoveTimestamp,
   onToggleLike,
   onSeenDateChange,
   onSeenBeforeChange,
@@ -303,8 +391,17 @@ function ReviewLogModal({
 }: {
   open: boolean
   movie: MovieDetailApi | null
+  membership?: string | null
+  role?: string | null
   text: string
   rating: number
+  mode: ReviewMode
+  veredicto: string
+  contieneSpoilers: boolean
+  citaDialogo: string
+  citaPersonaje: string
+  timestamps: Array<{ minuto: string; descripcion: string }>
+  dimensions: AppReview['dimensions']
   liked: boolean
   seenDate: string
   seenBefore: boolean
@@ -312,6 +409,15 @@ function ReviewLogModal({
   onClose: () => void
   onTextChange: (value: string) => void
   onRatingChange: (value: number) => void
+  onModeChange: (value: ReviewMode) => void
+  onVeredictoChange: (value: string) => void
+  onContieneSpoilersChange: (value: boolean) => void
+  onCitaDialogoChange: (value: string) => void
+  onCitaPersonajeChange: (value: string) => void
+  onDimensionsChange: (key: keyof AppReview['dimensions'], value: number) => void
+  onAddTimestamp: () => void
+  onTimestampChange: (index: number, field: 'minuto' | 'descripcion', value: string) => void
+  onRemoveTimestamp: (index: number) => void
   onToggleLike: () => void
   onSeenDateChange: (value: string) => void
   onSeenBeforeChange: (value: boolean) => void
@@ -320,6 +426,8 @@ function ReviewLogModal({
   if (!open || !movie) return null
 
   const posterUrl = movie.poster_path ? `${TMDB_POSTER}${movie.poster_path}` : '/no-poster.svg'
+  const canUseCriticalMode = (String(membership || '').toLowerCase() === 'pro') || (String(role || '').toLowerCase() === 'admin')
+  const criticalLocked = mode === 'CRITICO' && !canUseCriticalMode
 
   return (
     <div
@@ -328,11 +436,13 @@ function ReviewLogModal({
         position: 'fixed',
         inset: 0,
         zIndex: 450,
-        background: 'rgba(5,6,9,0.68)',
-        backdropFilter: 'blur(2px)',
-        display: 'grid',
-        placeItems: 'center',
-        padding: '18px',
+        background: 'radial-gradient(circle at 12% 8%, rgba(212,175,122,0.16), rgba(4,6,10,0.82) 42%, rgba(2,3,5,0.9) 100%)',
+        backdropFilter: 'blur(5px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflowY: 'auto',
+        padding: '16px',
       }}
     >
       <motion.div
@@ -343,20 +453,27 @@ function ReviewLogModal({
         style={{
           width: '100%',
           maxWidth: 760,
+          maxHeight: '92vh',
           border: `1px solid ${C.border}`,
-          background: 'linear-gradient(160deg, rgba(12,15,22,0.98) 0%, rgba(9,10,14,0.98) 100%)',
+          borderRadius: 8,
+          background: 'linear-gradient(165deg, rgba(11,14,21,0.98) 0%, rgba(7,9,13,0.99) 62%, rgba(6,7,11,0.99) 100%)',
           boxShadow: '0 28px 80px rgba(0,0,0,0.6)',
           overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: `1px solid ${C.border}` }}>
-          <div style={{ fontFamily: SANS, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.accent }}>Review / Log</div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: `1px solid ${C.border}`, background: 'linear-gradient(to right, rgba(212,175,122,0.12), rgba(12,15,22,0.04))', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: SANS, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.accent }}>
+            <Heart size={12} strokeWidth={1.6} fill={C.accentGlowStrong} />
+            Review / Log · {mode}
+          </div>
           <button onClick={onClose} style={{ width: 30, height: 30, border: `1px solid ${C.border}`, background: 'transparent', color: C.textSoft, cursor: 'pointer', display: 'grid', placeItems: 'center' }}>
             <X size={14} />
           </button>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '130px minmax(0, 1fr)', gap: 16, padding: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '130px minmax(0, 1fr)', gap: 16, padding: 16, overflowY: 'auto' }}>
           <div>
             <div style={{ aspectRatio: '2/3', overflow: 'hidden', border: `1px solid ${C.border}`, background: C.elevated }}>
               <Img
@@ -372,13 +489,114 @@ function ReviewLogModal({
           </div>
 
           <div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+              {(['RAPIDO', 'ESTANDAR', 'CRITICO'] as const).map((candidate) => {
+                const blocked = candidate === 'CRITICO' && !canUseCriticalMode
+                const active = mode === candidate
+                return (
+                  <button
+                    key={candidate}
+                    onClick={() => !blocked && onModeChange(candidate)}
+                    style={{
+                      border: `1px solid ${active ? C.accentDim : C.border}`,
+                      background: active ? C.accentGlow : 'transparent',
+                      color: blocked ? C.textMuted : active ? C.accent : C.textSoft,
+                      cursor: blocked ? 'not-allowed' : 'pointer',
+                      padding: '7px 10px',
+                      fontFamily: SANS,
+                      fontSize: 11,
+                      letterSpacing: '0.08em',
+                    }}
+                    title={blocked ? 'Modo CRITICO disponible para plan Pro (o Admin)' : ''}
+                  >
+                    {candidate}
+                  </button>
+                )
+              })}
+            </div>
+
+            {!canUseCriticalMode && (
+              <div style={{ marginBottom: 12, color: C.textSoft, fontFamily: SANS, fontSize: 11 }}>
+                El modo CRITICO esta bloqueado en tu plan. Si te interesa desbloquearlo, actualiza a Pro desde Settings suscripcion.
+              </div>
+            )}
+
             <textarea
               value={text}
               onChange={(event) => onTextChange(event.target.value)}
-              rows={5}
+              rows={mode === 'CRITICO' ? 10 : 5}
               placeholder="Escribe tu review o log..."
               style={{ width: '100%', resize: 'vertical', background: C.elevated, border: `1px solid ${C.border}`, color: C.text, fontFamily: SERIF, fontSize: 16, lineHeight: 1.5, padding: 12, outline: 'none', marginBottom: 12 }}
             />
+
+            {mode !== 'RAPIDO' && (
+              <input
+                value={veredicto}
+                onChange={(event) => onVeredictoChange(event.target.value)}
+                placeholder="Veredicto final (obligatorio en ESTANDAR)"
+                style={{ width: '100%', background: C.elevated, border: `1px solid ${C.border}`, color: C.text, padding: '10px 12px', marginBottom: 12, fontFamily: SERIF, fontSize: 15 }}
+              />
+            )}
+
+            {(mode === 'ESTANDAR' || mode === 'CRITICO') && (
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: C.textSoft, fontFamily: SANS, marginBottom: 8 }}>Dimensiones</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 8 }}>
+                  {REVIEW_DIMENSIONS.map((entry) => (
+                    <div key={entry.key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ minWidth: 78, color: C.textSoft, fontFamily: SANS, fontSize: 11 }}>{entry.label}</span>
+                      <div style={{ flex: 1 }}>
+                        <StarRating
+                          value={dimensions[entry.key] || 0}
+                          onChange={(next) => onDimensionsChange(entry.key, next)}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {mode === 'CRITICO' && (
+              <>
+                <textarea
+                  value={citaDialogo}
+                  onChange={(event) => onCitaDialogoChange(event.target.value)}
+                  rows={2}
+                  placeholder="Cita destacada"
+                  style={{ width: '100%', resize: 'vertical', background: C.elevated, border: `1px solid ${C.border}`, color: C.text, fontFamily: SERIF, fontSize: 15, lineHeight: 1.5, padding: 12, outline: 'none', marginBottom: 8 }}
+                />
+                <input
+                  value={citaPersonaje}
+                  onChange={(event) => onCitaPersonajeChange(event.target.value)}
+                  placeholder="Personaje de la cita"
+                  style={{ width: '100%', background: C.elevated, border: `1px solid ${C.border}`, color: C.text, padding: '10px 12px', marginBottom: 8, fontFamily: SERIF, fontSize: 15 }}
+                />
+                <div style={{ marginBottom: 8 }}>
+                  <div style={{ fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: C.textSoft, fontFamily: SANS, marginBottom: 6 }}>Timestamps</div>
+                  {timestamps.map((stamp, index) => (
+                    <div key={`${stamp.minuto}-${index}`} style={{ display: 'grid', gridTemplateColumns: '86px 1fr auto', gap: 6, marginBottom: 6 }}>
+                      <input
+                        value={stamp.minuto}
+                        onChange={(event) => onTimestampChange(index, 'minuto', event.target.value)}
+                        placeholder="00:00"
+                        style={{ background: C.elevated, border: `1px solid ${C.border}`, color: C.text, padding: '8px 10px', fontFamily: SANS, fontSize: 12 }}
+                      />
+                      <input
+                        value={stamp.descripcion}
+                        onChange={(event) => onTimestampChange(index, 'descripcion', event.target.value)}
+                        placeholder="Momento y por que importa"
+                        style={{ background: C.elevated, border: `1px solid ${C.border}`, color: C.text, padding: '8px 10px', fontFamily: SERIF, fontSize: 14 }}
+                      />
+                      <button onClick={() => onRemoveTimestamp(index)} style={{ border: `1px solid ${C.border}`, background: 'transparent', color: C.textSoft, cursor: 'pointer', padding: '0 8px' }}>x</button>
+                    </div>
+                  ))}
+                  <button onClick={onAddTimestamp} style={{ border: `1px solid ${C.border}`, background: 'transparent', color: C.textSoft, cursor: 'pointer', padding: '8px 10px', fontFamily: SANS, fontSize: 11 }}>
+                    Agregar timestamp
+                  </button>
+                </div>
+              </>
+            )}
 
             <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12, marginBottom: 12 }}>
               <div style={{ fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: C.textSoft, fontFamily: SANS }}>Rating</div>
@@ -414,6 +632,16 @@ function ReviewLogModal({
                 Ya la había visto antes
               </label>
 
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.textSoft, fontFamily: SANS, fontSize: 12 }}>
+                <input
+                  type="checkbox"
+                  checked={contieneSpoilers}
+                  onChange={(event) => onContieneSpoilersChange(event.target.checked)}
+                  style={{ accentColor: C.accent }}
+                />
+                Contiene spoilers
+              </label>
+
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontFamily: SANS, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: C.textSoft }}>Vista</span>
                 <input
@@ -425,15 +653,22 @@ function ReviewLogModal({
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button onClick={onClose} style={{ border: `1px solid ${C.border}`, background: 'transparent', color: C.textSoft, padding: '10px 12px', cursor: 'pointer', fontFamily: SANS, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-                Cancelar
-              </button>
-              <button onClick={onSave} disabled={saving} style={{ border: `1px solid ${C.accentDim}`, background: C.accentGlow, color: C.accent, padding: '10px 14px', cursor: saving ? 'default' : 'pointer', fontFamily: SANS, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', opacity: saving ? 0.7 : 1 }}>
-                {saving ? 'Guardando...' : 'Guardar cambios'}
-              </button>
-            </div>
+            {criticalLocked && (
+              <div style={{ marginTop: 8, color: '#ffb5b5', fontFamily: SANS, fontSize: 11 }}>
+                El modo CRITICO requiere plan Pro o permisos Admin.
+              </div>
+            )}
           </div>
+        </div>
+
+        <div style={{ flexShrink: 0, borderTop: `1px solid ${C.border}`, padding: '12px 16px', background: 'linear-gradient(to top, rgba(8,10,14,0.98), rgba(8,10,14,0.88))', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <button onClick={onClose} style={{ border: `1px solid ${C.border}`, background: 'transparent', color: C.textSoft, padding: '10px 12px', cursor: 'pointer', fontFamily: SANS, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+            Cancelar
+          </button>
+          <button onClick={onSave} disabled={saving} style={{ border: `1px solid ${C.accentDim}`, background: 'linear-gradient(135deg, rgba(212,175,122,0.2), rgba(212,175,122,0.08))', color: C.accent, padding: '10px 14px', cursor: saving ? 'default' : 'pointer', fontFamily: SANS, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', opacity: saving ? 0.7 : 1, display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+            <Heart size={12} strokeWidth={1.5} fill={saving ? 'none' : C.accentGlowStrong} />
+            {saving ? 'Guardando...' : 'Guardar cambios'}
+          </button>
         </div>
       </motion.div>
     </div>
@@ -678,19 +913,47 @@ function mapPlatforms(movie: MovieDetailApi | null): PlatformEntry[] {
 
 function mapMovieReviews(
   reviews: ReviewApi[],
-  userMeta: Record<number, { username: string; avatarUrl: string | null }>
+  userMeta: Record<number, { username: string; avatarUrl: string | null }>,
+  commentsByReviewId: Record<number, ReviewCommentApi[]>
 ): AppReview[] {
   return reviews.map((review) => ({
     id: review.id,
     userId: review.user_id,
     movieId: review.movie_id,
     tmdbId: review.tmdb_id ?? null,
+    mode: review.mode || 'RAPIDO',
     username: userMeta[review.user_id]?.username || `Usuario ${review.user_id}`,
     avatarUrl: userMeta[review.user_id]?.avatarUrl || null,
     content: review.content || 'Sin comentario',
     rating: review.rating || 0,
+    veredicto: review.veredicto ?? null,
+    dimensions: {
+      direccion: review.rating_direccion ?? null,
+      guion: review.rating_guion ?? null,
+      fotografia: review.rating_fotografia ?? null,
+      actuaciones: review.rating_actuaciones ?? null,
+      bandaSonora: review.rating_banda_sonora ?? null,
+    },
+    quote: review.cita_dialogo
+      ? {
+        dialogo: review.cita_dialogo,
+        personaje: review.cita_personaje ?? null,
+      }
+      : null,
+    timestamps: Array.isArray(review.timestamps) ? review.timestamps : [],
+    contieneSpoilers: Boolean(review.contiene_spoilers),
+    esCriticaLarga: Boolean(review.es_critica_larga),
+    tiempoLecturaMin: review.tiempo_lectura_min ?? null,
     likes: review.likes || 0,
     createdAt: review.created_at,
+    comments: (commentsByReviewId[review.id] || []).map((comment) => ({
+      id: comment.id,
+      userId: comment.user_id,
+      username: comment.users?.username || `Usuario ${comment.user_id}`,
+      avatarUrl: comment.users?.avatar_url || null,
+      content: comment.content,
+      createdAt: comment.created_at,
+    })),
   }))
 }
 
@@ -1530,7 +1793,11 @@ function Reviews({
               )}
               <div>
                 <div style={{ fontSize: 13, fontFamily: SANS, color: C.text }}>{review.username}</div>
-                <div style={{ fontSize: 11, color: C.textSoft, fontFamily: SANS, marginTop: 1 }}>{formatDateLabel(review.createdAt)}</div>
+                <div style={{ fontSize: 11, color: C.textSoft, fontFamily: SANS, marginTop: 1, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span>{formatDateLabel(review.createdAt)}</span>
+                  <span style={{ border: `1px solid ${C.border}`, padding: '2px 6px', letterSpacing: '0.08em' }}>{review.mode}</span>
+                  {review.tiempoLecturaMin ? <span>{review.tiempoLecturaMin} min lectura</span> : null}
+                </div>
               </div>
               <div style={{ marginLeft: 'auto', display: 'flex', gap: 2 }}>
                 {[1, 2, 3, 4, 5].map((value) => (
@@ -1541,7 +1808,49 @@ function Reviews({
               </div>
             </div>
 
+            {review.veredicto ? (
+              <div style={{ marginBottom: 10, fontFamily: SANS, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: C.accent }}>
+                Veredicto: {review.veredicto}
+              </div>
+            ) : null}
+
             <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 18, lineHeight: 1.75, color: C.textSoft, margin: '0 0 14px' }}>{review.content}</p>
+
+            {review.quote?.dialogo ? (
+              <blockquote style={{ margin: '0 0 12px', padding: '10px 12px', borderLeft: `2px solid ${C.accentDim}`, background: C.elevated, fontFamily: SERIF, fontSize: 15, color: C.text }}>
+                "{review.quote.dialogo}"
+                {review.quote.personaje ? <span style={{ display: 'block', marginTop: 4, color: C.textSoft }}>- {review.quote.personaje}</span> : null}
+              </blockquote>
+            ) : null}
+
+            {(review.timestamps.length > 0 || review.contieneSpoilers) && (
+              <div style={{ marginBottom: 12, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {review.contieneSpoilers ? (
+                  <span style={{ border: '1px solid #7f3f3f', color: '#ffb6b6', fontFamily: SANS, fontSize: 10, padding: '3px 8px', letterSpacing: '0.08em' }}>
+                    SPOILERS
+                  </span>
+                ) : null}
+                {review.timestamps.map((stamp, stampIndex) => (
+                  <span key={`${review.id}-stamp-${stampIndex}`} style={{ border: `1px solid ${C.border}`, color: C.textSoft, fontFamily: SANS, fontSize: 10, padding: '3px 8px' }}>
+                    {stamp.minuto} {stamp.descripcion}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div style={{ marginBottom: 12, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+              <ReviewRadar values={review.dimensions} />
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(110px,1fr))', gap: 4, flex: 1 }}>
+                {REVIEW_DIMENSIONS.map((entry) => {
+                  const value = review.dimensions[entry.key]
+                  return (
+                    <div key={`${review.id}-${entry.key}`} style={{ fontFamily: SANS, fontSize: 11, color: C.textSoft }}>
+                      {entry.label}: {value ? value.toFixed(1) : '-'}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
 
             <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
               <button onClick={() => onToggleLike(review.id, liked)} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: liked ? C.accent : C.textMuted, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: SANS, letterSpacing: '0.1em' }}>
@@ -1562,6 +1871,17 @@ function Reviews({
                 </>
               )}
             </div>
+
+            {review.comments.length > 0 ? (
+              <div style={{ marginTop: 14, paddingLeft: 12, borderLeft: `1px solid ${C.border}`, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {review.comments.map((comment) => (
+                  <div key={comment.id} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                    <span style={{ fontFamily: SANS, fontSize: 11, color: C.accent }}>@{comment.username}</span>
+                    <span style={{ fontFamily: SERIF, fontSize: 15, color: C.textSoft, fontStyle: 'italic' }}>{comment.content}</span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </motion.div>
         )
       })}
@@ -1704,6 +2024,19 @@ export default function MovieDetailPage() {
   const [reviewLogOpen, setReviewLogOpen] = useState(false)
   const [reviewLogText, setReviewLogText] = useState('')
   const [reviewLogRating, setReviewLogRating] = useState(0)
+  const [reviewLogMode, setReviewLogMode] = useState<ReviewMode>('RAPIDO')
+  const [reviewLogVeredicto, setReviewLogVeredicto] = useState('')
+  const [reviewLogContieneSpoilers, setReviewLogContieneSpoilers] = useState(false)
+  const [reviewLogCitaDialogo, setReviewLogCitaDialogo] = useState('')
+  const [reviewLogCitaPersonaje, setReviewLogCitaPersonaje] = useState('')
+  const [reviewLogTimestamps, setReviewLogTimestamps] = useState<Array<{ minuto: string; descripcion: string }>>([])
+  const [reviewLogDimensions, setReviewLogDimensions] = useState<AppReview['dimensions']>({
+    direccion: null,
+    guion: null,
+    fotografia: null,
+    actuaciones: null,
+    bandaSonora: null,
+  })
   const [reviewLogLiked, setReviewLogLiked] = useState(false)
   const [reviewLogSeenDate, setReviewLogSeenDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [reviewLogSeenBefore, setReviewLogSeenBefore] = useState(false)
@@ -1744,7 +2077,7 @@ export default function MovieDetailPage() {
     }
     getCurrentUser()
       .then((user) => {
-        setViewer({ id: user.id, username: user.username, avatar_url: user.avatar_url })
+        setViewer({ id: user.id, username: user.username, avatar_url: user.avatar_url, membership: user.membership || null, role: user.role || null })
       })
       .catch(() => {
         setViewer(null)
@@ -1801,8 +2134,19 @@ export default function MovieDetailPage() {
           })
         )
         const userMeta = Object.fromEntries(userPairs)
+        const commentsPairs = await Promise.all(
+          movieReviews.map(async (review) => {
+            try {
+              const comments = await fetchReviewComments(review.id)
+              return [review.id, Array.isArray(comments) ? comments : []] as const
+            } catch {
+              return [review.id, [] as ReviewCommentApi[]] as const
+            }
+          })
+        )
+        const commentsByReviewId = Object.fromEntries(commentsPairs)
 
-        setReviews(mapMovieReviews(movieReviews, userMeta))
+        setReviews(mapMovieReviews(movieReviews, userMeta, commentsByReviewId))
 
         const topRatedList = Array.isArray(topRated.results) ? topRated.results.slice(0, 6) : []
         setSimilar(
@@ -1911,7 +2255,12 @@ export default function MovieDetailPage() {
       if (myReviewId) {
         await updateReview(token, myReviewId, value)
       } else {
-        const created = await createReview(token, movie.id, value, '')
+        const created = await createReview(token, {
+          movie_id: movie.id,
+          mode: 'RAPIDO',
+          rating: value,
+          content: 'Rating rapido desde Movie Detail',
+        })
         setMyReviewId(created.id)
       }
       setUserRating(value)
@@ -2179,6 +2528,21 @@ export default function MovieDetailPage() {
     setEditingReviewId(existingOwnReview?.id ?? null)
     setReviewLogText(existingOwnReview?.content || '')
     setReviewLogRating(existingOwnReview?.rating || userRating || 0)
+    setReviewLogMode(existingOwnReview?.mode || 'RAPIDO')
+    setReviewLogVeredicto(existingOwnReview?.veredicto || '')
+    setReviewLogContieneSpoilers(Boolean(existingOwnReview?.contieneSpoilers))
+    setReviewLogCitaDialogo(existingOwnReview?.quote?.dialogo || '')
+    setReviewLogCitaPersonaje(existingOwnReview?.quote?.personaje || '')
+    setReviewLogTimestamps(existingOwnReview?.timestamps || [])
+    setReviewLogDimensions(
+      existingOwnReview?.dimensions || {
+        direccion: null,
+        guion: null,
+        fotografia: null,
+        actuaciones: null,
+        bandaSonora: null,
+      }
+    )
     setReviewLogLiked(liked)
     setReviewLogSeenDate(new Date().toISOString().slice(0, 10))
     setReviewLogSeenBefore(false)
@@ -2196,22 +2560,50 @@ export default function MovieDetailPage() {
     try {
       const text = reviewLogText.trim()
       const ratingToUse = reviewLogRating > 0 ? reviewLogRating : 0
+      const payload = {
+        mode: reviewLogMode,
+        content: text || undefined,
+        rating: ratingToUse > 0 ? ratingToUse : undefined,
+        veredicto: reviewLogVeredicto.trim() || undefined,
+        rating_direccion: reviewLogDimensions.direccion || undefined,
+        rating_guion: reviewLogDimensions.guion || undefined,
+        rating_fotografia: reviewLogDimensions.fotografia || undefined,
+        rating_actuaciones: reviewLogDimensions.actuaciones || undefined,
+        rating_banda_sonora: reviewLogDimensions.bandaSonora || undefined,
+        cita_dialogo: reviewLogCitaDialogo.trim() || undefined,
+        cita_personaje: reviewLogCitaPersonaje.trim() || undefined,
+        timestamps: reviewLogTimestamps
+          .map((item) => ({ minuto: item.minuto.trim(), descripcion: item.descripcion.trim() }))
+          .filter((item) => item.minuto && item.descripcion),
+        contiene_spoilers: reviewLogContieneSpoilers,
+      }
+
+      if (reviewLogMode === 'ESTANDAR' && !payload.veredicto) {
+        throw new Error('En modo ESTANDAR debes escribir un veredicto')
+      }
+
+      if (reviewLogMode === 'CRITICO') {
+        const canUseCriticalMode = (String(viewer?.membership || '').toLowerCase() === 'pro') || (String(viewer?.role || '').toLowerCase() === 'admin')
+        if (!canUseCriticalMode) {
+          throw new Error('El modo CRITICO requiere plan Pro (o rol Admin)')
+        }
+        if ((payload.content || '').length < 500) {
+          throw new Error('El modo CRITICO requiere al menos 500 caracteres')
+        }
+      }
 
       if (myReviewId || editingReviewId) {
         const reviewId = editingReviewId || myReviewId
-        if (reviewId && (text || ratingToUse > 0)) {
-          await updateReviewContent(token, reviewId, {
-            rating: ratingToUse || undefined,
-            content: text || 'Log rápido desde Movie Detail',
-          })
+        if (reviewId && (text || ratingToUse > 0 || reviewLogMode !== 'RAPIDO')) {
+          await updateReviewContent(token, reviewId, payload)
         }
-      } else if (text || ratingToUse > 0) {
-        const created = await createReview(
-          token,
-          movie.id,
-          ratingToUse > 0 ? ratingToUse : 4,
-          text || 'Log rápido desde Movie Detail'
-        )
+      } else if (text || ratingToUse > 0 || reviewLogMode !== 'RAPIDO') {
+        const created = await createReview(token, {
+          movie_id: movie.id,
+          ...payload,
+          rating: payload.rating || 4,
+          content: payload.content || 'Log rapido desde Movie Detail',
+        })
         setMyReviewId(created.id)
       }
 
@@ -2261,7 +2653,18 @@ export default function MovieDetailPage() {
         })
       )
       const userMeta = Object.fromEntries(userPairs)
-      setReviews(mapMovieReviews(freshReviews, userMeta))
+      const commentsPairs = await Promise.all(
+        freshReviews.map(async (review) => {
+          try {
+            const comments = await fetchReviewComments(review.id)
+            return [review.id, Array.isArray(comments) ? comments : []] as const
+          } catch {
+            return [review.id, [] as ReviewCommentApi[]] as const
+          }
+        })
+      )
+      const commentsByReviewId = Object.fromEntries(commentsPairs)
+      setReviews(mapMovieReviews(freshReviews, userMeta, commentsByReviewId))
 
       const ownReview = freshReviews.find((review) => isCurrentMovieMatch(review, movie.id, movieId))
       setMyReviewId(ownReview?.id ?? null)
@@ -2324,6 +2727,45 @@ export default function MovieDetailPage() {
       if (!replyTargetId) return
       try {
         await commentOnReview(token, replyTargetId, text)
+        if (movie) {
+          const freshReviews = await fetchMovieReviews(movie.id)
+          const uniqueUserIds = [...new Set(freshReviews.map((review) => review.user_id))]
+          const userPairs = await Promise.all(
+            uniqueUserIds.map(async (userId) => {
+              try {
+                const user = await fetchUserById(userId)
+                return [
+                  userId,
+                  {
+                    username: user.username || `Usuario ${userId}`,
+                    avatarUrl: user.avatar_url || null,
+                  },
+                ] as const
+              } catch {
+                return [
+                  userId,
+                  {
+                    username: `Usuario ${userId}`,
+                    avatarUrl: null,
+                  },
+                ] as const
+              }
+            })
+          )
+          const userMeta = Object.fromEntries(userPairs)
+          const commentsPairs = await Promise.all(
+            freshReviews.map(async (review) => {
+              try {
+                const comments = await fetchReviewComments(review.id)
+                return [review.id, Array.isArray(comments) ? comments : []] as const
+              } catch {
+                return [review.id, [] as ReviewCommentApi[]] as const
+              }
+            })
+          )
+          const commentsByReviewId = Object.fromEntries(commentsPairs)
+          setReviews(mapMovieReviews(freshReviews, userMeta, commentsByReviewId))
+        }
         showSuccess('Comentario enviado')
         setComposerMode(null)
         setComposerText('')
@@ -2342,12 +2784,19 @@ export default function MovieDetailPage() {
         const reviewId = editingReviewId || myReviewId
         if (!reviewId) return
         await updateReviewContent(token, reviewId, {
+          mode: 'ESTANDAR',
           rating: ratingToUse,
           content: text,
         })
         showSuccess('Reseña actualizada')
       } else {
-        const created = await createReview(token, movie.id, ratingToUse, text)
+        const created = await createReview(token, {
+          movie_id: movie.id,
+          mode: 'ESTANDAR',
+          rating: ratingToUse,
+          content: text,
+          veredicto: text.slice(0, 120),
+        })
         setMyReviewId(created.id)
         showSuccess('Reseña publicada')
       }
@@ -2376,7 +2825,18 @@ export default function MovieDetailPage() {
         })
       )
       const userMeta = Object.fromEntries(userPairs)
-      setReviews(mapMovieReviews(freshReviews, userMeta))
+      const commentsPairs = await Promise.all(
+        freshReviews.map(async (review) => {
+          try {
+            const comments = await fetchReviewComments(review.id)
+            return [review.id, Array.isArray(comments) ? comments : []] as const
+          } catch {
+            return [review.id, [] as ReviewCommentApi[]] as const
+          }
+        })
+      )
+      const commentsByReviewId = Object.fromEntries(commentsPairs)
+      setReviews(mapMovieReviews(freshReviews, userMeta, commentsByReviewId))
       const ownReview = freshReviews.find((review) => isCurrentMovieMatch(review, movie.id, movieId))
       setMyReviewId(ownReview?.id ?? null)
       setUserRating(Number(ownReview?.rating ?? userRating))
@@ -2502,8 +2962,17 @@ export default function MovieDetailPage() {
       <ReviewLogModal
         open={reviewLogOpen}
         movie={movie}
+        membership={viewer?.membership}
+        role={viewer?.role}
         text={reviewLogText}
         rating={reviewLogRating}
+        mode={reviewLogMode}
+        veredicto={reviewLogVeredicto}
+        contieneSpoilers={reviewLogContieneSpoilers}
+        citaDialogo={reviewLogCitaDialogo}
+        citaPersonaje={reviewLogCitaPersonaje}
+        timestamps={reviewLogTimestamps}
+        dimensions={reviewLogDimensions}
         liked={reviewLogLiked}
         seenDate={reviewLogSeenDate}
         seenBefore={reviewLogSeenBefore}
@@ -2511,6 +2980,25 @@ export default function MovieDetailPage() {
         onClose={() => setReviewLogOpen(false)}
         onTextChange={setReviewLogText}
         onRatingChange={setReviewLogRating}
+        onModeChange={setReviewLogMode}
+        onVeredictoChange={setReviewLogVeredicto}
+        onContieneSpoilersChange={setReviewLogContieneSpoilers}
+        onCitaDialogoChange={setReviewLogCitaDialogo}
+        onCitaPersonajeChange={setReviewLogCitaPersonaje}
+        onDimensionsChange={(key, value) => {
+          setReviewLogDimensions((prev) => ({ ...prev, [key]: value }))
+        }}
+        onAddTimestamp={() => {
+          setReviewLogTimestamps((prev) => [...prev, { minuto: '', descripcion: '' }])
+        }}
+        onTimestampChange={(index, field, value) => {
+          setReviewLogTimestamps((prev) =>
+            prev.map((item, idx) => (idx === index ? { ...item, [field]: value } : item))
+          )
+        }}
+        onRemoveTimestamp={(index) => {
+          setReviewLogTimestamps((prev) => prev.filter((_, idx) => idx !== index))
+        }}
         onToggleLike={() => setReviewLogLiked((prev) => !prev)}
         onSeenDateChange={setReviewLogSeenDate}
         onSeenBeforeChange={setReviewLogSeenBefore}

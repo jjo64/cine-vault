@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useLocation } from 'react-router-dom'
 import { getCurrentUser, getStoredAccessToken } from '../services/authServices'
 import NotFoundPage from './NotFound'
 
 export default function ProfileIndexPage() {
+  const location = useLocation()
   const [status, setStatus] = useState<'loading' | 'authorized' | 'unauthorized'>('loading')
   const [username, setUsername] = useState('')
 
@@ -43,5 +44,5 @@ export default function ProfileIndexPage() {
     return <NotFoundPage />
   }
 
-  return <Navigate to={`/${encodeURIComponent(username)}`} replace />
+  return <Navigate to={`/${encodeURIComponent(username)}${location.search}`} replace />
 }

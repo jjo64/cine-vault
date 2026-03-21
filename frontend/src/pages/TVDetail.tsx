@@ -338,7 +338,12 @@ export default function TVDetailPage() {
         setActionMessage('Reseña actualizada')
         setMyReviewId(updated.id)
       } else {
-        const created = await createReview(token, detail.id, rating, reviewText.trim())
+        const created = await createReview(token, {
+          movie_id: detail.id,
+          mode: 'RAPIDO',
+          rating,
+          content: reviewText.trim() || 'Reseña rápida desde TV Detail',
+        })
         setActionMessage('Reseña publicada')
         setMyReviewId(created.id)
       }

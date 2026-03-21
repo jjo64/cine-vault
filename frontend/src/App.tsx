@@ -19,13 +19,14 @@ const VerifyEmailPage = lazy(() => import('./pages/VerifyEmail'))
 const NotFoundPage = lazy(() => import('./pages/NotFound'))
 const ComingSoonPage = lazy(() => import('./pages/ComingSoon'))
 const AuthCallbackPage = lazy(() => import('./pages/AuthCallback'))
-const ListsPage = lazy(() => import('./pages/Lists'))
 const VaultPage = lazy(() => import('./pages/Vault').then((module) => ({ default: module.Vault })))
+const CommunityDiscoverPage = lazy(() => import('./pages/CommunityDiscover'))
 const ArcosPage = lazy(() => import('./pages/Arcos').then((module) => ({ default: module.Arcos })))
 const ArcoDetailPage = lazy(() => import('./pages/ArcoDetail').then((module) => ({ default: module.ArcoDetail })))
 const DiaryPage = lazy(() => import('./pages/Diary').then((module) => ({ default: module.Diary })))
 const DirectorAutopsyPage = lazy(() => import('./pages/DirectorAutopsy').then((module) => ({ default: module.DirectorAutopsy })))
 const MentirasPage = lazy(() => import('./pages/Mentiras').then((module) => ({ default: module.Mentiras })))
+const ReviewThreadPage = lazy(() => import('./pages/ReviewThread'))
 
 function App() {
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
@@ -96,7 +97,10 @@ function App() {
                     <Route path="/settings" element={<SettingsPage />} />
                     <Route path="/search" element={<SearchResults />} />
                     <Route path="/profile" element={<ProfileIndexPage />} />
+                    <Route path="/:username/vault" element={<VaultPage />} />
                     <Route path="/vault/:username" element={<VaultPage />} />
+                    <Route path="/vault" element={<CommunityDiscoverPage />} />
+                    <Route path="/for-you" element={<ComingSoonPage />} />
                     <Route path="/arcos" element={<ArcosPage />} />
                     <Route path="/arcos/:id" element={<ArcoDetailPage />} />
                     <Route path="/diary" element={<DiaryPage />} />
@@ -108,10 +112,12 @@ function App() {
                     <Route path="/films" element={<ComingSoonPage />} />
                     <Route path="/news" element={<ComingSoonPage />} />
                     <Route path="/news/:id" element={<ComingSoonPage />} />
-                    <Route path="/lists" element={<ListsPage />} />
+                    <Route path="/lists" element={<CommunityDiscoverPage />} />
                     <Route path="/members" element={<ComingSoonPage />} />
                     <Route path="/journal" element={<ComingSoonPage />} />
                     <Route path="/search-results" element={<SearchResults />} />
+                    <Route path="/:username/movie/:slugId" element={<ReviewThreadPage />} />
+                    <Route path="/:username/movie/:slugId/:index" element={<ReviewThreadPage />} />
                     <Route path="/:username" element={<Profile />} />
                     <Route path="*" element={<NotFoundPage />} />
                 </Routes>

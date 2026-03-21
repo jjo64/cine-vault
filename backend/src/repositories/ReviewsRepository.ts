@@ -1,10 +1,4 @@
-import {
-  reviews,
-  review_likes,
-  reports,
-  review_comments,
-  Prisma,
-} from "@prisma/client"
+import { reviews, review_likes, reports, review_comments } from "@prisma/client"
 import { prisma } from "../lib/prisma.js"
 import type { CrearResenaDTO, ActualizarResenaDTO } from "../schemas/reviews.js"
 
@@ -21,8 +15,21 @@ const REVIEW_SELECT = {
   id: true,
   user_id: true,
   movie_id: true,
+  mode: true,
   content: true,
   rating: true,
+  veredicto: true,
+  rating_direccion: true,
+  rating_guion: true,
+  rating_fotografia: true,
+  rating_actuaciones: true,
+  rating_banda_sonora: true,
+  cita_dialogo: true,
+  cita_personaje: true,
+  timestamps: true,
+  contiene_spoilers: true,
+  es_critica_larga: true,
+  tiempo_lectura_min: true,
   likes: true,
   created_at: true,
   movies_ref: {
@@ -45,8 +52,8 @@ export interface IReviewsRepository {
   findByUserAndMovie(userId: number, movieId: number): Promise<reviews | null>
   findById(id: number): Promise<reviews | null>
   aggregateByMovie(movieId: number): Promise<MovieReviewsAggregate>
-  create(userId: number, data: CrearResenaDTO): Promise<reviews>
-  update(id: number, data: ActualizarResenaDTO): Promise<reviews>
+  create(userId: number, data: ReviewCreateData): Promise<reviews>
+  update(id: number, data: ReviewUpdateData): Promise<reviews>
   delete(id: number): Promise<void>
   // Likes
   findLike(userId: number, reviewId: number): Promise<review_likes | null>
@@ -74,6 +81,16 @@ export interface IReviewsRepository {
   ): Promise<review_comments>
   updateComment(id: number, content: string): Promise<review_comments>
   deleteComment(id: number): Promise<void>
+}
+
+type ReviewCreateData = CrearResenaDTO & {
+  es_critica_larga?: boolean
+  tiempo_lectura_min?: number | null
+}
+
+type ReviewUpdateData = ActualizarResenaDTO & {
+  es_critica_larga?: boolean
+  tiempo_lectura_min?: number | null
 }
 
 export class ReviewsRepository implements IReviewsRepository {
@@ -119,23 +136,69 @@ export class ReviewsRepository implements IReviewsRepository {
     }
   }
 
-  async create(userId: number, data: CrearResenaDTO) {
+  async create(userId: number, data: ReviewCreateData) {
     return prisma.reviews.create({
       data: {
         user_id: userId,
         movie_id: data.movie_id,
         content: data.content,
         rating: data.rating,
+        mode: data.mode,
+        veredicto: data.veredicto,
+        rating_direccion: data.rating_direccion,
+        rating_guion: data.rating_guion,
+        rating_fotografia: data.rating_fotografia,
+        rating_actuaciones: data.rating_actuaciones,
+        rating_banda_sonora: data.rating_banda_sonora,
+        cita_dialogo: data.cita_dialogo,
+        cita_personaje: data.cita_personaje,
+        timestamps: data.timestamps,
+        contiene_spoilers: data.contiene_spoilers,
+        es_critica_larga: data.es_critica_larga,
+        tiempo_lectura_min: data.tiempo_lectura_min,
       },
     })
   }
 
-  async update(id: number, data: ActualizarResenaDTO) {
+  async update(id: number, data: ReviewUpdateData) {
     return prisma.reviews.update({
       where: { id },
       data: {
         ...(data.content !== undefined && { content: data.content }),
         ...(data.rating !== undefined && { rating: data.rating }),
+        ...(data.mode !== undefined && { mode: data.mode }),
+        ...(data.veredicto !== undefined && { veredicto: data.veredicto }),
+        ...(data.rating_direccion !== undefined && {
+          rating_direccion: data.rating_direccion,
+        }),
+        ...(data.rating_guion !== undefined && {
+          rating_guion: data.rating_guion,
+        }),
+        ...(data.rating_fotografia !== undefined && {
+          rating_fotografia: data.rating_fotografia,
+        }),
+        ...(data.rating_actuaciones !== undefined && {
+          rating_actuaciones: data.rating_actuaciones,
+        }),
+        ...(data.rating_banda_sonora !== undefined && {
+          rating_banda_sonora: data.rating_banda_sonora,
+        }),
+        ...(data.cita_dialogo !== undefined && {
+          cita_dialogo: data.cita_dialogo,
+        }),
+        ...(data.cita_personaje !== undefined && {
+          cita_personaje: data.cita_personaje,
+        }),
+        ...(data.timestamps !== undefined && { timestamps: data.timestamps }),
+        ...(data.contiene_spoilers !== undefined && {
+          contiene_spoilers: data.contiene_spoilers,
+        }),
+        ...(data.es_critica_larga !== undefined && {
+          es_critica_larga: data.es_critica_larga,
+        }),
+        ...(data.tiempo_lectura_min !== undefined && {
+          tiempo_lectura_min: data.tiempo_lectura_min,
+        }),
       },
     })
   }

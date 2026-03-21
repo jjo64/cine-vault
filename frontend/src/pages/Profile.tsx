@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { GrainOverlay } from '../components/profile-v2/primitives'
 import { Footer, Navbar, ProfileHero, TabsBar } from '../components/profile-v2/layout'
 import {
@@ -36,6 +36,8 @@ type CinematicSignaturePayload = {
   cinema_turning_year: string | null
   cinema_turning_year_detail: string | null
 }
+
+const PROFILE_TABS = ['Resumen', 'Vault', 'Diario', 'Watchlist', 'Reseñas', 'Listas'] as const
 
 function CinematicSignature({
   value,
@@ -209,7 +211,15 @@ function CompatibilityBanner({ reviewsCount, followersCount }: { reviewsCount: n
 export function Profile() {
   const navigate = useNavigate()
   const { username } = useParams()
-  const [activeTab, setActiveTab] = useState('Resumen')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tabFromQuery = searchParams.get('tab')
+  const isValidTab = (value: string | null): value is (typeof PROFILE_TABS)[number] =>
+    Boolean(value) && PROFILE_TABS.includes(value as (typeof PROFILE_TABS)[number])
+  const normalizeTab = (value: string | null): (typeof PROFILE_TABS)[number] =>
+    isValidTab(value) ? value : 'Resumen'
+  const [activeTab, setActiveTab] = useState<(typeof PROFILE_TABS)[number]>(() =>
+    normalizeTab(tabFromQuery)
+  )
 
   const {
     loading,
@@ -242,6 +252,24 @@ export function Profile() {
   const searchFromNavbar = (query: string) => {
     navigate(`/search?q=${encodeURIComponent(query.trim())}`)
   }
+
+  useEffect(() => {
+    if (isValidTab(tabFromQuery) && tabFromQuery !== activeTab) {
+      setActiveTab(tabFromQuery)
+      return
+    }
+
+    if (!isValidTab(tabFromQuery) && activeTab !== 'Resumen') {
+      setActiveTab('Resumen')
+    }
+  }, [tabFromQuery, activeTab])
+
+  useEffect(() => {
+    const next = new URLSearchParams(searchParams)
+    if (next.get('tab') === activeTab) return
+    next.set('tab', activeTab)
+    setSearchParams(next, { replace: true })
+  }, [activeTab, searchParams, setSearchParams])
 
   const canEditProfile = isAuthenticated && isOwnProfile
   useEffect(() => {
@@ -287,6 +315,8 @@ export function Profile() {
 
   const handleToggleFollow = async () => {
     if (!targetUserId || followBusy) return
+    const token = getStoredAccessToken()
+    if (!token) return
 
     const previousFollowing = isFollowing
     const previousFollowers = displayStats.followers
@@ -299,9 +329,9 @@ export function Profile() {
 
     try {
       if (previousFollowing) {
-        await unfollowUser(targetUserId)
+        await unfollowUser(targetUserId, token)
       } else {
-        await followUser(targetUserId)
+        await followUser(targetUserId, token)
       }
     } catch {
       setIsFollowing(previousFollowing)
@@ -403,7 +433,7 @@ export function Profile() {
         onSave={handleSaveSignature}
       />
 
-      <TabsBar active={activeTab} onSelect={setActiveTab} />
+      <TabsBar active={activeTab} onSelect={(tab) => setActiveTab(normalizeTab(tab))} />
 
       <div className="profile-main-wrapper">
         {loading && <div style={{ color: C.textSoft, marginBottom: 16 }}>Cargando perfil...</div>}

@@ -4,6 +4,7 @@ import {
   obtenerUsuarios,
   obtenerUsuarioPorId,
   obtenerUsuarioPorUsername,
+  buscarUsuarios,
   obtenerSeguidores,
   obtenerSiguiendo,
   obtenerFirmaCinematograficaPublica,
@@ -62,6 +63,7 @@ router.get(
   "/username/:username",
   manejadorAsincrono(obtenerUsuarioPorUsername)
 )
+router.get("/search", manejadorAsincrono(buscarUsuarios))
 
 /**
  * @swagger
