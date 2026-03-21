@@ -1,0 +1,37 @@
+{
+  "name": "CineVault",
+  "short_name": "CineVault",
+  "description": "El diario cinematográfico que te define. Guardá películas en tu vault, escribí reseñas y recibí una recomendación irrechazable cada noche.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0a0a0f",
+  "theme_color": "#0a0a0f",
+  "lang": "es",
+  "dir": "ltr",
+  "categories": ["entertainment", "lifestyle", "social"],
+  "shortcuts": [
+    {
+      "name": "Mi Vault",
+      "short_name": "Vault",
+      "description": "Accedé directo a tu vault de películas",
+      "url": "/vault",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Mi Diario",
+      "short_name": "Diario",
+      "description": "Tu diario cinematográfico personal",
+      "url": "/diary",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Watchlist",
+      "short_name": "Watchlist",
+      "description": "Películas que tenés pendientes",
+      "url": "/watchlist",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    }
+  ]
+}
