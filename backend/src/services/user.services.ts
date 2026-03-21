@@ -211,6 +211,35 @@ export const obtenerUsuarioPorUsernameService = async (username: string) => {
   return usuario
 }
 
+export const buscarUsuariosService = async (query: string, limit = 12) => {
+  const normalized = query.trim()
+  if (!normalized) return []
+
+  const take = Math.max(1, Math.min(30, Number.isFinite(limit) ? limit : 12))
+
+  return prisma.users.findMany({
+    where: {
+      OR: [
+        { username: { contains: normalized } },
+        { bio: { contains: normalized } },
+      ],
+    },
+    select: {
+      id: true,
+      username: true,
+      avatar_url: true,
+      bio: true,
+      _count: {
+        select: {
+          reviews: true,
+        },
+      },
+    },
+    orderBy: [{ username: "asc" }],
+    take,
+  })
+}
+
 /**
  * Obtiene los seguidores de un usuario.
  * Resuelto con include anidado en UNA SOLA QUERY (fix N+1).

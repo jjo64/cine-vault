@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   ArrowRight,
@@ -123,6 +123,7 @@ type MovieMeta = {
 type FeedItem = {
   id: number
   user: string
+  username: string
   avatar: string
   film: string
   movieId: number
@@ -136,6 +137,7 @@ type FeedItem = {
 
 type FollowingActivityItem = {
   user: string
+  username: string
   avatar: string
   film: string
   movieId: number
@@ -148,6 +150,7 @@ type FollowingActivityItem = {
 type FollowingReviewItem = {
   id: number
   user: string
+  username: string
   avatar: string
   movieId: number
   tmdbId: number | null
@@ -199,13 +202,6 @@ function toBackdrop(path?: string | null) {
   if (!path) return '/no-poster.svg'
   if (path.startsWith('http')) return path
   return `https://image.tmdb.org/t/p/original${path}`
-}
-
-function getGreeting() {
-  const h = new Date().getHours()
-  if (h < 12) return 'Buenos dias'
-  if (h < 19) return 'Buenas tardes'
-  return 'Buenas noches'
 }
 
 function normalizeRating(value: unknown) {
@@ -287,7 +283,12 @@ function SectionLabel({ children, link, linkHref }: { children: React.ReactNode;
 
 export default function HomeLogged({ username }: HomeLoggedProps) {
   const navigate = useNavigate()
-  const [activeZone, setActiveZone] = useState<ZoneId>('entrada')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const resolveZone = (value: string | null): ZoneId => {
+    if (value === 'sala' || value === 'vitrina') return value
+    return 'entrada'
+  }
+  const [activeZone, setActiveZone] = useState<ZoneId>(() => resolveZone(searchParams.get('zona')))
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -304,6 +305,20 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
   const [metaByTmdb, setMetaByTmdb] = useState<Record<number, MovieMeta>>({})
   const [searchValue, setSearchValue] = useState('')
   const [watchedTonight, setWatchedTonight] = useState(false)
+  const [likedFeedIds, setLikedFeedIds] = useState<Set<number>>(new Set())
+  const [likeBusyIds, setLikeBusyIds] = useState<Set<number>>(new Set())
+
+  useEffect(() => {
+    const nextZone = resolveZone(searchParams.get('zona'))
+    setActiveZone((prev) => (prev === nextZone ? prev : nextZone))
+  }, [searchParams])
+
+  useEffect(() => {
+    const next = new URLSearchParams(searchParams)
+    if (next.get('zona') === activeZone) return
+    next.set('zona', activeZone)
+    setSearchParams(next, { replace: true })
+  }, [activeZone, searchParams, setSearchParams])
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -368,6 +383,7 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
 
               return {
                 user: `@${user.username}`,
+                username: user.username,
                 avatar: initials(user.username),
                 film: first.movie_info?.title || `Pelicula ${first.movie_id}`,
                 movieId: first.movie_id,
@@ -396,6 +412,7 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
               return payload.slice(0, 2).map((review) => ({
                 id: review.id,
                 user: user.username,
+                username: user.username,
                 avatar: initials(user.username),
                 movieId: review.movie_id,
                 tmdbId: review.tmdb_id ?? null,
@@ -536,6 +553,7 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
       return {
         id: review.id,
         user: review.user,
+        username: review.username,
         avatar: review.avatar,
         film: meta?.title || `Pelicula ${review.movieId}`,
         movieId: review.movieId,
@@ -584,13 +602,18 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
   }, [diary, metaByTmdb])
 
   const weekStats = useMemo(() => {
+    const normalizedProfile = encodeURIComponent((username || greetingName).trim().toLowerCase())
+    const reviewHref = normalizedProfile
+      ? `/${normalizedProfile}?tab=Reseñas`
+      : '/profile?tab=Reseñas'
+
     return [
       { num: String(diary.length), label: 'Peliculas', icon: <Film size={16} /> },
-      { num: String(reviews.length), label: 'Resenas', icon: <BookOpen size={16} /> },
+      { num: String(reviews.length), label: 'Reseñas', icon: <BookOpen size={16} />, href: reviewHref },
       { num: String(Math.min(7, Math.max(1, Math.floor((diary.length + watchlist.length) / 2))),), label: 'Dias de racha', icon: <Flame size={16} /> },
       { num: String(reviews.length * 40 + diary.length * 15), label: 'Puntos', icon: <Trophy size={16} /> },
     ]
-  }, [diary.length, reviews.length, watchlist.length])
+  }, [diary.length, reviews.length, watchlist.length, username, greetingName])
 
   const directorCards = useMemo(() => {
     return directors
@@ -637,6 +660,54 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
   }, [lists, mentiras, greetingName])
 
   const hasData = tonightFilm || becauseYouWatched.length > 0 || feedRapido.length > 0
+  const profileHref = `/${encodeURIComponent((username || greetingName).trim().toLowerCase())}`
+  const myVaultHref = `${profileHref}/vault`
+
+  const handleToggleFeedLike = async (reviewId: number) => {
+    if (likeBusyIds.has(reviewId)) return
+    const wasLiked = likedFeedIds.has(reviewId)
+
+    setLikeBusyIds((prev) => new Set(prev).add(reviewId))
+    setLikedFeedIds((prev) => {
+      const next = new Set(prev)
+      if (wasLiked) next.delete(reviewId)
+      else next.add(reviewId)
+      return next
+    })
+    setFollowingReviews((prev) =>
+      prev.map((item) =>
+        item.id === reviewId
+          ? { ...item, likes: Math.max(0, item.likes + (wasLiked ? -1 : 1)) }
+          : item
+      )
+    )
+
+    try {
+      await authorizedJson(`/api/reviews/${reviewId}/like`, {
+        method: wasLiked ? 'DELETE' : 'POST',
+      })
+    } catch {
+      setLikedFeedIds((prev) => {
+        const next = new Set(prev)
+        if (wasLiked) next.add(reviewId)
+        else next.delete(reviewId)
+        return next
+      })
+      setFollowingReviews((prev) =>
+        prev.map((item) =>
+          item.id === reviewId
+            ? { ...item, likes: Math.max(0, item.likes + (wasLiked ? 1 : -1)) }
+            : item
+        )
+      )
+    } finally {
+      setLikeBusyIds((prev) => {
+        const next = new Set(prev)
+        next.delete(reviewId)
+        return next
+      })
+    }
+  }
 
   const submitSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -695,7 +766,7 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
       </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }} style={{ marginBottom: 56 }}>
-        <SectionLabel link="Ver todo" linkHref="/watchlist">Porque viste <em style={{ fontStyle: 'italic', color: C.accent, marginLeft: 4 }}>{diary[0]?.movie_info?.title || 'tu ultima pelicula'}</em></SectionLabel>
+        <SectionLabel link="Ver todo" linkHref="/for-you">Porque viste <em style={{ fontStyle: 'italic', color: C.accent, marginLeft: 4 }}>{diary[0]?.movie_info?.title || 'tu ultima pelicula'}</em></SectionLabel>
         <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8, scrollbarWidth: 'none' }}>
           {becauseYouWatched.map((film) => (
             <Link key={film.movieId} to={movieHref(film.movieId, film.tmdbId, film.title)} style={{ textDecoration: 'none', flexShrink: 0, width: 130 }}>
@@ -726,14 +797,16 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
               transition={{ delay: i * 0.07, duration: 0.5 }}
               style={{ display: 'grid', gridTemplateColumns: '36px 48px 1fr auto', gap: 14, alignItems: 'center', padding: '14px 0', borderBottom: `1px solid ${C.border}` }}
             >
-              <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(212,175,122,0.12)', border: `1px solid ${C.accentDim}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: SERIF, fontSize: 15, color: C.accent }}>{item.avatar}</div>
+              <Link to={`/${encodeURIComponent(item.username)}`} style={{ textDecoration: 'none' }}>
+                <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(212,175,122,0.12)', border: `1px solid ${C.accentDim}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: SERIF, fontSize: 15, color: C.accent }}>{item.avatar}</div>
+              </Link>
               <Link to={movieHref(item.movieId, item.tmdbId, item.film)} style={{ textDecoration: 'none' }}>
                 <div style={{ aspectRatio: '2/3', borderRadius: 1, overflow: 'hidden', border: `1px solid ${C.border}` }}>
                   <Img src={item.posterUrl} alt={item.film} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(0.4)' }} />
                 </div>
               </Link>
               <div>
-                <span style={{ fontFamily: SANS, fontSize: 13, color: C.text }}>{item.user}</span>
+                <Link to={`/${encodeURIComponent(item.username)}`} style={{ fontFamily: SANS, fontSize: 13, color: C.text, textDecoration: 'none' }}>{item.user}</Link>
                 <span style={{ fontFamily: SANS, fontSize: 12, color: C.textSoft }}> vio </span>
                 <Link to={movieHref(item.movieId, item.tmdbId, item.film)} style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 15, color: C.accent, textDecoration: 'none' }}>{item.film}</Link>
                 <div style={{ display: 'flex', gap: 2, marginTop: 4 }}>
@@ -754,13 +827,17 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           {feedRapido.map((post, i) => (
             <motion.div key={post.id} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1, duration: 0.5 }} style={{ display: 'grid', gridTemplateColumns: '52px 1fr auto', gap: 16, padding: '20px 0', borderBottom: `1px solid ${C.border}`, alignItems: 'start' }}>
-              <div style={{ width: 52, height: 78, borderRadius: 1, overflow: 'hidden', border: `1px solid ${C.border}` }}>
-                <Img src={post.posterUrl} alt={post.film} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(0.4)' }} />
-              </div>
+              <Link to={movieHref(post.movieId, post.tmdbId, post.film)} style={{ textDecoration: 'none' }}>
+                <div style={{ width: 52, height: 78, borderRadius: 1, overflow: 'hidden', border: `1px solid ${C.border}` }}>
+                  <Img src={post.posterUrl} alt={post.film} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(0.4)' }} />
+                </div>
+              </Link>
               <div>
                 <div style={{ display: 'flex', gap: 7, alignItems: 'center', marginBottom: 6 }}>
-                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(212,175,122,0.1)', border: `1px solid ${C.accentDim}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: SERIF, fontSize: 12, color: C.accent, flexShrink: 0 }}>{post.avatar}</div>
-                  <span style={{ fontFamily: SANS, fontSize: 12, color: C.text }}>{post.user}</span>
+                  <Link to={`/${encodeURIComponent(post.username)}`} style={{ textDecoration: 'none' }}>
+                    <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(212,175,122,0.1)', border: `1px solid ${C.accentDim}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: SERIF, fontSize: 12, color: C.accent, flexShrink: 0 }}>{post.avatar}</div>
+                  </Link>
+                  <Link to={`/${encodeURIComponent(post.username)}`} style={{ fontFamily: SANS, fontSize: 12, color: C.text, textDecoration: 'none' }}>{post.user}</Link>
                   <span style={{ fontFamily: SANS, fontSize: 11, color: C.textMuted }}>reseño</span>
                   <Link to={movieHref(post.movieId, post.tmdbId, post.film)} style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 13, color: C.accent, textDecoration: 'none' }}>{post.film}</Link>
                   <div style={{ display: 'flex', gap: 2, marginLeft: 4 }}>{[1, 2, 3, 4, 5].map((s) => <span key={s} style={{ fontSize: 9, color: s <= post.rating ? C.gold : C.textMuted }}>★</span>)}</div>
@@ -768,7 +845,7 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
                 <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 16, lineHeight: 1.6, color: C.textSoft, margin: 0 }}>{post.text}</p>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 12, paddingTop: 4 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: C.textSoft, fontFamily: SANS, fontSize: 11 }}><Heart size={13} strokeWidth={1.5} /> {post.likes}</div>
+                <button onClick={() => handleToggleFeedLike(post.id)} disabled={likeBusyIds.has(post.id)} style={{ display: 'flex', alignItems: 'center', gap: 5, color: likedFeedIds.has(post.id) ? C.accent : C.textSoft, fontFamily: SANS, fontSize: 11, border: 'none', background: 'none', padding: 0, cursor: likeBusyIds.has(post.id) ? 'default' : 'pointer' }}><Heart size={13} strokeWidth={1.5} fill={likedFeedIds.has(post.id) ? C.accent : 'none'} /> {post.likes}</button>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: C.textMuted, fontFamily: SANS, fontSize: 11 }}><MessageCircle size={12} strokeWidth={1.5} /> {post.comments}</div>
               </div>
             </motion.div>
@@ -784,7 +861,7 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
   const renderSala = () => (
     <motion.div key="sala" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.4 }}>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }} style={{ marginBottom: 48 }}>
-        <SectionLabel link="Ver todo mi Vault" linkHref="/profile">Mi Vault</SectionLabel>
+        <SectionLabel link="Ver todo mi Vault" linkHref={myVaultHref}>Mi Vault</SectionLabel>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
           {vaultCards.map((item) => (
             <Link key={item.id} to={movieHref(item.id, item.tmdbId, item.title)} style={{ textDecoration: 'none' }}>
@@ -840,13 +917,25 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }}>
             <SectionLabel>Esta semana</SectionLabel>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
-              {weekStats.map((s) => (
-                <div key={s.label} style={{ background: C.surface, border: `1px solid ${C.border}`, padding: '20px 16px', textAlign: 'center' }}>
-                  <div style={{ color: C.accentDim, marginBottom: 8, display: 'flex', justifyContent: 'center' }}>{s.icon}</div>
-                  <div style={{ fontFamily: SERIF, fontSize: 32, fontWeight: 300, color: C.text, lineHeight: 1 }}>{s.num}</div>
-                  <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase', color: C.textMuted, marginTop: 5 }}>{s.label}</div>
-                </div>
-              ))}
+              {weekStats.map((s) => {
+                const content = (
+                  <>
+                    <div style={{ color: C.accentDim, marginBottom: 8, display: 'flex', justifyContent: 'center' }}>{s.icon}</div>
+                    <div style={{ fontFamily: SERIF, fontSize: 32, fontWeight: 300, color: C.text, lineHeight: 1 }}>{s.num}</div>
+                    <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase', color: C.textMuted, marginTop: 5 }}>{s.label}</div>
+                  </>
+                )
+
+                if (!s.href) {
+                  return <div key={s.label} style={{ background: C.surface, border: `1px solid ${C.border}`, padding: '20px 16px', textAlign: 'center' }}>{content}</div>
+                }
+
+                return (
+                  <Link key={s.label} to={s.href} style={{ background: C.surface, border: `1px solid ${C.border}`, padding: '20px 16px', textAlign: 'center', textDecoration: 'none', cursor: 'pointer' }}>
+                    {content}
+                  </Link>
+                )
+              })}
             </div>
           </motion.div>
 
@@ -997,7 +1086,7 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
       <div style={{ paddingTop: 60 }}>
         <div style={{ padding: '14px 40px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(8,8,8,0.9)', backdropFilter: 'blur(16px)' }}>
           <div>
-            <span style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 17, color: C.textSoft }}>{getGreeting()}, </span>
+            <span style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 17, color: C.textSoft }}>Bienvenido de vuelta, </span>
             <span style={{ fontFamily: SERIF, fontSize: 17, color: C.text }}>{greetingName}.</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>

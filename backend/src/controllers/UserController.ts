@@ -32,6 +32,11 @@ export const obtenerUsuarioPorUsername = async (req: Request, res: Response) => 
     await userService.obtenerUsuarioPorUsernameService(String(req.params.username))
   )
 }
+export const buscarUsuarios = async (req: Request, res: Response) => {
+  const q = String(req.query.q || "")
+  const limit = Number(req.query.limit || 12)
+  res.json(await userService.buscarUsuariosService(q, limit))
+}
 export const obtenerSeguidores = async (req: Request, res: Response) => {
   res.json(await userService.obtenerSeguidoresService(Number(req.params.id)))
 }

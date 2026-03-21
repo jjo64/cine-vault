@@ -309,3 +309,54 @@
         max-width: 100%;
     }
 }
+
+.person-page-hero-content {
+    max-width: 700px;
+}
+
+.person-page-content-wrap {
+    max-width: 1100px;
+}
+
+.person-page-desktop-portrait {
+    display: block;
+}
+
+.person-page-two-cols {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 72px;
+}
+
+.person-page-sticky-aside {
+    position: sticky;
+    top: 80px;
+}
+
+@media (max-width: 1024px) {
+    .person-page-two-cols {
+        grid-template-columns: 1fr !important;
+        gap: 38px !important;
+    }
+
+    .person-page-desktop-portrait {
+        display: none;
+    }
+
+    .person-page-sticky-aside {
+        position: static !important;
+        top: auto !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .person-page-hero-content {
+        max-width: 100% !important;
+        min-height: 460px !important;
+        padding: 0 16px 38px !important;
+    }
+
+    .person-page-content-wrap {
+        padding: 34px 16px 0 !important;
+    }
+}

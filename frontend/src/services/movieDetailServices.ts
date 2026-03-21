@@ -43,6 +43,19 @@ export type ReviewApi = {
   created_at: string
 }
 
+export type ReviewCommentApi = {
+  id: number
+  review_id: number
+  user_id: number
+  content: string
+  created_at: string
+  users?: {
+    id: number
+    username?: string
+    avatar_url?: string | null
+  }
+}
+
 type RequestOptions = {
   token?: string | null
   method?: 'GET' | 'POST' | 'PATCH' | 'DELETE'
@@ -205,3 +218,6 @@ export const commentOnReview = (token: string | null, reviewId: number, content:
     method: 'POST',
     body: { content },
   })
+
+export const fetchReviewComments = (reviewId: number) =>
+  apiRequest<ReviewCommentApi[]>(`/api/reviews/${reviewId}/comments`)

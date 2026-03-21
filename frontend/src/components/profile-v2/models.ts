@@ -21,6 +21,9 @@ export type WatchlistItem = EnrichedMovie & {
 export type ReviewItem = EnrichedMovie & {
   id: number
   rating: number
+  username: string
+  createdAtIso: string
+  reviewSequence: number
   createdAtLabel: string
   text: string
   tags: string[]

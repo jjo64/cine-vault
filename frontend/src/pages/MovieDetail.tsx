@@ -18,6 +18,7 @@ import {
   updateReviewContent,
   fetchMovieDetail,
   fetchMovieReviews,
+  fetchReviewComments,
   fetchMyDiary,
   fetchMyFavorites,
   fetchMyReviews,
@@ -29,6 +30,7 @@ import {
   removeFromFavorites,
   removeFromWatchlist,
   type MovieDetailApi,
+  type ReviewCommentApi,
   type ReviewApi,
   unlikeReview,
   updateReview,
@@ -72,6 +74,14 @@ type AppReview = {
   rating: number
   likes: number
   createdAt: string
+  comments: Array<{
+    id: number
+    userId: number
+    username: string
+    avatarUrl: string | null
+    content: string
+    createdAt: string
+  }>
 }
 
 type SimilarFilm = {
@@ -678,7 +688,8 @@ function mapPlatforms(movie: MovieDetailApi | null): PlatformEntry[] {
 
 function mapMovieReviews(
   reviews: ReviewApi[],
-  userMeta: Record<number, { username: string; avatarUrl: string | null }>
+  userMeta: Record<number, { username: string; avatarUrl: string | null }>,
+  commentsByReviewId: Record<number, ReviewCommentApi[]>
 ): AppReview[] {
   return reviews.map((review) => ({
     id: review.id,
@@ -691,6 +702,14 @@ function mapMovieReviews(
     rating: review.rating || 0,
     likes: review.likes || 0,
     createdAt: review.created_at,
+    comments: (commentsByReviewId[review.id] || []).map((comment) => ({
+      id: comment.id,
+      userId: comment.user_id,
+      username: comment.users?.username || `Usuario ${comment.user_id}`,
+      avatarUrl: comment.users?.avatar_url || null,
+      content: comment.content,
+      createdAt: comment.created_at,
+    })),
   }))
 }
 
@@ -1562,6 +1581,17 @@ function Reviews({
                 </>
               )}
             </div>
+
+            {review.comments.length > 0 ? (
+              <div style={{ marginTop: 14, paddingLeft: 12, borderLeft: `1px solid ${C.border}`, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {review.comments.map((comment) => (
+                  <div key={comment.id} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                    <span style={{ fontFamily: SANS, fontSize: 11, color: C.accent }}>@{comment.username}</span>
+                    <span style={{ fontFamily: SERIF, fontSize: 15, color: C.textSoft, fontStyle: 'italic' }}>{comment.content}</span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </motion.div>
         )
       })}
@@ -1801,8 +1831,19 @@ export default function MovieDetailPage() {
           })
         )
         const userMeta = Object.fromEntries(userPairs)
+        const commentsPairs = await Promise.all(
+          movieReviews.map(async (review) => {
+            try {
+              const comments = await fetchReviewComments(review.id)
+              return [review.id, Array.isArray(comments) ? comments : []] as const
+            } catch {
+              return [review.id, [] as ReviewCommentApi[]] as const
+            }
+          })
+        )
+        const commentsByReviewId = Object.fromEntries(commentsPairs)
 
-        setReviews(mapMovieReviews(movieReviews, userMeta))
+        setReviews(mapMovieReviews(movieReviews, userMeta, commentsByReviewId))
 
         const topRatedList = Array.isArray(topRated.results) ? topRated.results.slice(0, 6) : []
         setSimilar(
@@ -2261,7 +2302,18 @@ export default function MovieDetailPage() {
         })
       )
       const userMeta = Object.fromEntries(userPairs)
-      setReviews(mapMovieReviews(freshReviews, userMeta))
+      const commentsPairs = await Promise.all(
+        freshReviews.map(async (review) => {
+          try {
+            const comments = await fetchReviewComments(review.id)
+            return [review.id, Array.isArray(comments) ? comments : []] as const
+          } catch {
+            return [review.id, [] as ReviewCommentApi[]] as const
+          }
+        })
+      )
+      const commentsByReviewId = Object.fromEntries(commentsPairs)
+      setReviews(mapMovieReviews(freshReviews, userMeta, commentsByReviewId))
 
       const ownReview = freshReviews.find((review) => isCurrentMovieMatch(review, movie.id, movieId))
       setMyReviewId(ownReview?.id ?? null)
@@ -2324,6 +2376,45 @@ export default function MovieDetailPage() {
       if (!replyTargetId) return
       try {
         await commentOnReview(token, replyTargetId, text)
+        if (movie) {
+          const freshReviews = await fetchMovieReviews(movie.id)
+          const uniqueUserIds = [...new Set(freshReviews.map((review) => review.user_id))]
+          const userPairs = await Promise.all(
+            uniqueUserIds.map(async (userId) => {
+              try {
+                const user = await fetchUserById(userId)
+                return [
+                  userId,
+                  {
+                    username: user.username || `Usuario ${userId}`,
+                    avatarUrl: user.avatar_url || null,
+                  },
+                ] as const
+              } catch {
+                return [
+                  userId,
+                  {
+                    username: `Usuario ${userId}`,
+                    avatarUrl: null,
+                  },
+                ] as const
+              }
+            })
+          )
+          const userMeta = Object.fromEntries(userPairs)
+          const commentsPairs = await Promise.all(
+            freshReviews.map(async (review) => {
+              try {
+                const comments = await fetchReviewComments(review.id)
+                return [review.id, Array.isArray(comments) ? comments : []] as const
+              } catch {
+                return [review.id, [] as ReviewCommentApi[]] as const
+              }
+            })
+          )
+          const commentsByReviewId = Object.fromEntries(commentsPairs)
+          setReviews(mapMovieReviews(freshReviews, userMeta, commentsByReviewId))
+        }
         showSuccess('Comentario enviado')
         setComposerMode(null)
         setComposerText('')
@@ -2376,7 +2467,18 @@ export default function MovieDetailPage() {
         })
       )
       const userMeta = Object.fromEntries(userPairs)
-      setReviews(mapMovieReviews(freshReviews, userMeta))
+      const commentsPairs = await Promise.all(
+        freshReviews.map(async (review) => {
+          try {
+            const comments = await fetchReviewComments(review.id)
+            return [review.id, Array.isArray(comments) ? comments : []] as const
+          } catch {
+            return [review.id, [] as ReviewCommentApi[]] as const
+          }
+        })
+      )
+      const commentsByReviewId = Object.fromEntries(commentsPairs)
+      setReviews(mapMovieReviews(freshReviews, userMeta, commentsByReviewId))
       const ownReview = freshReviews.find((review) => isCurrentMovieMatch(review, movie.id, movieId))
       setMyReviewId(ownReview?.id ?? null)
       setUserRating(Number(ownReview?.rating ?? userRating))

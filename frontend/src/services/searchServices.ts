@@ -59,6 +59,16 @@ export type SearchPersonPanel = {
   }>
 }
 
+export type SearchUserResult = {
+  id: number
+  username: string
+  avatar_url?: string | null
+  bio?: string | null
+  _count?: {
+    reviews?: number
+  }
+}
+
 export type SearchResponse = {
   page?: number
   total_pages?: number
@@ -140,4 +150,14 @@ export async function fetchMovieGenres(): Promise<GenreItem[]> {
   if (!response.ok) return []
   const data = (await response.json()) as { genres?: GenreItem[] }
   return Array.isArray(data.genres) ? data.genres : []
+}
+
+export async function searchUsers(query: string, limit = 12): Promise<SearchUserResult[]> {
+  const q = query.trim()
+  if (!q) return []
+
+  const response = await fetch(`${API_URL}/api/users/search?q=${encodeURIComponent(q)}&limit=${limit}`)
+  if (!response.ok) return []
+  const data = (await response.json()) as SearchUserResult[]
+  return Array.isArray(data) ? data : []
 }

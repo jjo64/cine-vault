@@ -358,6 +358,29 @@ export function useProfilePageData(userParam?: string) {
     [reviews]
   )
 
+  const reviewSequenceById = useMemo(() => {
+    const grouped = new Map<number, typeof writtenReviews>()
+
+    for (const review of writtenReviews) {
+      const current = grouped.get(review.movie_id) || []
+      current.push(review)
+      grouped.set(review.movie_id, current)
+    }
+
+    const sequenceMap = new Map<number, number>()
+
+    for (const [, movieReviews] of grouped.entries()) {
+      movieReviews
+        .slice()
+        .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+        .forEach((review, index) => {
+          sequenceMap.set(review.id, index + 1)
+        })
+    }
+
+    return sequenceMap
+  }, [writtenReviews])
+
   const stats: ProfileStatsData = useMemo(() => ({
     views: profile?._count?.diary_entries ?? diary.length,
     reviews: writtenReviews.length,
@@ -419,6 +442,9 @@ export function useProfilePageData(userParam?: string) {
         id: entry.id,
         movieId: entry.movie_id,
         tmdbId: entry.tmdb_id ?? entry.movies_ref?.tmdb_id ?? fromMovieMap?.tmdbId ?? fromDiary?.tmdb_id ?? fromWatchlist?.tmdb_id ?? null,
+        username: profile?.username || 'perfil',
+        createdAtIso: entry.created_at,
+        reviewSequence: reviewSequenceById.get(entry.id) || 1,
         title: fromMovieMap?.title || fromDiary?.movie_info?.title || fromWatchlist?.movie_info?.title || `Pelicula ${entry.movie_id}`,
         year: fromMovieMap?.year ?? null,
         director: fromMovieMap?.director || 'Desconocido',
@@ -429,7 +455,7 @@ export function useProfilePageData(userParam?: string) {
         tags: pickTags(entry.content),
       }
     })
-  ), [writtenReviews, movieMap, diary, watchlist])
+  ), [writtenReviews, movieMap, diary, watchlist, reviewSequenceById, profile?.username])
 
   const diaryTimeline: DiaryTimelineItem[] = useMemo(() => (
     diary.slice(0, 12).map((entry, index) => {

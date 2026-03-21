@@ -16,6 +16,8 @@ const SANS = "'Syne', sans-serif"
 const titleBySection: Record<string, string> = {
   films: 'Films',
   lists: 'Lists',
+  'for-you': 'Recomendaciones',
+  vault: 'Vault de la comunidad',
   members: 'Members',
   journal: 'Journal',
 }
