@@ -291,7 +291,7 @@ export function Navbar({
           />
         </button>
 
-        <div className="profile-mobile-only" style={{ position: 'relative', display: 'none' }}>
+        <div className="profile-mobile-only" style={{ position: 'relative' }}>
           <button
             onClick={() => setIsMobileMenuOpen((value) => !value)}
             style={{

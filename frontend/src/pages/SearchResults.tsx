@@ -915,7 +915,7 @@ export function Search() {
           </div>
         </div>
 
-        <div className="search-results-tabs-scroll" style={{ borderBottom: `1px solid ${C.border}`, padding: '0 40px', display: 'flex', gap: 0 }}>
+        <div className="search-tabs-bar" style={{ borderBottom: `1px solid ${C.border}`, padding: '0 40px', display: 'flex', gap: 0 }}>
           {TABS.map((tab) => (
             <button key={tab.key} onClick={() => { setActiveTab(tab.key); setPage(1) }} style={{ padding: '14px 20px', background: 'none', border: 'none', borderBottom: `2px solid ${activeTab === tab.key ? C.accent : 'transparent'}`, fontFamily: SANS, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: activeTab === tab.key ? C.text : C.textSoft, cursor: 'pointer', marginBottom: -1, display: 'flex', alignItems: 'center', gap: 7 }}>
               <span style={{ color: activeTab === tab.key ? C.accent : C.textMuted }}>{tab.icon}</span>

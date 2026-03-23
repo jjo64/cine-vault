@@ -89,11 +89,13 @@
 }
 
 .person-biography {
-    margin: 0 0 18px;
-    color: #e2e2e2;
-    line-height: 1.75;
-    font-size: 18px;
-    font-family: var(--font-serif, 'Cormorant Garamond'), Georgia, 'Times New Roman', serif;
+    font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+    font-size: clamp(16px, 4vw, 20px);
+    font-weight: 300;
+    line-height: 1.8;
+    color: var(--color-text, #E2E2E2);
+    text-align: left;   /* no centrado */
+    margin-bottom: 18px;
 }
 
 .person-autopsy-button {
@@ -304,27 +306,6 @@
 }
 
 @media (max-width: 768px) {
-    .person-page-main {
-        /* Ya manejado por el clamp en la clase base */
-    }
-
-    .person-hero {
-        flex-direction: column;
-        align-items: center;
-        padding: 24px 14px;
-        gap: 20px;
-        text-align: center;
-    }
-
-    .person-photo {
-        width: 140px;
-    }
-
-    .person-filmography-grid {
-        grid-template-columns: repeat(auto-fill, minmax(min(110px, 100%), 1fr));
-        gap: 10px;
-    }
-
     .person-hero {
         flex-direction: column;
         align-items: center;
@@ -360,16 +341,40 @@
         max-width: 100%;
     }
 
+    /* NUEVO GRID MOBILE: poster | info | score */
     .person-film-row {
-        grid-template-columns: 70px 1fr !important;
+        grid-template-columns: 50px 1fr 36px !important;
         gap: 12px !important;
         align-items: flex-start !important;
+        padding: 12px 16px !important;
     }
 
-    .person-film-row > div:nth-child(1),
-    .person-film-row > div:nth-child(2),
-    .person-film-row > div:nth-child(4) {
+    /* Año (hijo 1): ocultar solo el año para ganar espacio — el año va en el info */
+    .person-film-row > div:nth-child(1) {
         display: none !important;
+    }
+
+    /* Poster (hijo 2): SIEMPRE visible — ancho reducido */
+    .person-film-row > div:nth-child(2) {
+        display: block !important;
+        width: 50px !important;
+        aspect-ratio: 2/3;
+    }
+
+    /* Score (hijo 4): visible */
+    .person-film-row > div:nth-child(4) {
+        display: block !important;
+        font-size: 15px !important;
+    }
+
+    /* Título: 2 líneas máximo */
+    .person-film-row > div:nth-child(3) > div:first-child {
+        font-size: 16px !important;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
 }
 

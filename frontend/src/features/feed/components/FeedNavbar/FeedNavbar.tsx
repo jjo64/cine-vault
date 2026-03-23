@@ -8,18 +8,26 @@ export function FeedNavbar({ activeTab, onTab }: { activeTab: string; onTab: (t:
         <nav style={{
             position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200, height: 64,
             display: 'flex', alignItems: 'center',
-            padding: '0 24px',
+            padding: '0 14px',
             background: 'rgba(8,8,8,0.75)',
             backdropFilter: 'blur(24px)',
             borderBottom: '1px solid rgba(255,255,255,0.06)',
         }}>
             <Link to="/" style={{
-                fontFamily: 'var(--font-serif)', fontSize: 19, fontWeight: 500,
+                fontFamily: 'var(--font-serif)', fontSize: 16, fontWeight: 500,
                 letterSpacing: '0.13em', textTransform: 'uppercase',
-                color: 'var(--color-text)', textDecoration: 'none', flexShrink: 0, marginRight: 32,
+                color: 'var(--color-text)', textDecoration: 'none', flexShrink: 0, marginRight: 0,
             }}>
                 Cine<span style={{ color: 'var(--color-accent)' }}>Vault</span>
             </Link>
+
+            <div style={{
+                width: 1,
+                height: 18,
+                background: 'var(--color-border)',
+                flexShrink: 0,
+                margin: '0 10px',
+            }} />
 
             <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 4 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', maxWidth: '100%' }}>
@@ -28,7 +36,7 @@ export function FeedNavbar({ activeTab, onTab }: { activeTab: string; onTab: (t:
                         key={tab}
                         onClick={() => onTab(tab)}
                         style={{
-                            padding: '6px 18px',
+                            padding: '6px 12px',
                             background: 'none', border: 'none', cursor: 'pointer',
                             fontFamily: 'var(--font-sans)', fontSize: 12, letterSpacing: '0.14em', textTransform: 'uppercase',
                             color: activeTab === tab ? 'var(--color-text)' : 'var(--color-text-soft)',
