@@ -588,7 +588,6 @@ export function Profile() {
           {showDesktopSidebar && (
             <ProfileSidebar recentlyWatched={recentlyWatched} reviewItems={reviewItems} />
           )}
-          <ProfileSidebar recentlyWatched={recentlyWatched} reviewItems={reviewItems} />
         </div>
       </div>
 

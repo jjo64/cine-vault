@@ -58,6 +58,7 @@ export default function ReviewThreadPage() {
       const response = await fetchReviewThread(username, mappedSlug)
       setThread(response)
       setLikes(Number(response.likes || 0))
+      setLiked(Boolean((response as any).is_liked))
 
       const loadedComments = await fetchReviewComments(response.id)
       setComments(Array.isArray(loadedComments) ? loadedComments : [])
@@ -219,8 +220,9 @@ export default function ReviewThreadPage() {
           maxWidth: 760,
           border: `1px solid ${C.border}`,
           background: 'rgba(17,17,17,0.9)',
-          padding: '30px 26px',
+          padding: 'clamp(20px, 5vw, 40px) clamp(16px, 4vw, 30px)',
           textAlign: 'center',
+          boxSizing: 'border-box',
         }}
       >
         <div style={{ fontFamily: SANS, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.accentDim, marginBottom: 10 }}>

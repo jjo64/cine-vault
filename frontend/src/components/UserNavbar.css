@@ -1,7 +1,6 @@
-/* UserNavbar.css */
 .user-navbar {
-  background: #14181c;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
   padding: 0 var(--page-padding-x);
   height: var(--nav-height);
   display: flex;

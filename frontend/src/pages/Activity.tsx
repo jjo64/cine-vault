@@ -4,6 +4,7 @@ import { Bell, Film, Heart, MessageCircle, UserPlus } from 'lucide-react'
 import { SeoHead } from '../components/SeoHead'
 import { getStoredAccessToken } from '../services/authServices'
 import { fetchActivityFeed, type ActivityItem } from '../services/socialServices'
+import './Activity.css'
 
 const C = {
   bg: '#0a0a0f',
@@ -13,9 +14,6 @@ const C = {
   text: '#e8e0d4',
   textSoft: '#888',
 } as const
-
-const SANS = "'Syne', sans-serif"
-const SERIF = "'Cormorant Garamond', serif"
 
 type TabType = 'friends' | 'own'
 
@@ -35,30 +33,22 @@ function ActivityCard({ item }: { item: ActivityItem }) {
     `empezó a seguir a ${item.target_user?.username || 'alguien'}`
 
   return (
-    <article
-      style={{
-        border: `1px solid ${C.border}`,
-        background: C.surface,
-        padding: 16,
-        display: 'grid',
-        gap: 8,
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: C.textSoft, fontFamily: SANS, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+    <article className="activity-card">
+      <div className="activity-card-meta">
         <span style={{ color: C.accent }}>{icon}</span>
         <span>{new Date(item.created_at).toLocaleString('es-AR')}</span>
       </div>
 
-      <div style={{ color: C.text, fontFamily: SERIF, fontSize: 24 }}>
+      <div className="activity-card-user">
         {item.user.username}
       </div>
 
-      <p style={{ margin: 0, color: C.textSoft, fontFamily: SERIF, fontSize: 18 }}>
+      <p className="activity-card-desc">
         {description}
       </p>
 
       {item.review?.content ? (
-        <p style={{ margin: 0, color: C.text, fontFamily: SERIF, fontStyle: 'italic', fontSize: 16 }}>
+        <p className="activity-card-content">
           "{item.review.content.slice(0, 180)}{item.review.content.length > 180 ? '…' : ''}"
         </p>
       ) : null}
@@ -66,7 +56,7 @@ function ActivityCard({ item }: { item: ActivityItem }) {
       {item.movie?.tmdb_id ? (
         <Link
           to={`/movie/${item.movie.tmdb_id}`}
-          style={{ color: C.accent, fontFamily: SANS, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', textDecoration: 'none' }}
+          className="activity-card-link"
         >
           Ver película
         </Link>
@@ -136,23 +126,39 @@ export default function ActivityPage() {
   )
 
   return (
-    <main style={{ minHeight: '100vh', background: C.bg, color: C.text }}>
+    <main className="activity-main">
       <SeoHead.Page
         title="Actividad | CineVault"
         description="Seguí lo que pasa en tu red y en tu propio recorrido cinematográfico dentro de CineVault."
         canonical="https://cinevault.art/activity"
       />
 
-      <header style={{ position: 'sticky', top: 0, zIndex: 20, borderBottom: `1px solid ${C.border}`, background: 'rgba(10,10,15,0.9)', backdropFilter: 'blur(12px)', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-        <Link to="/" style={{ color: C.text, textDecoration: 'none', fontFamily: SERIF, fontSize: 26 }}>
+      <header className="activity-header">
+        <Link to="/" className="activity-brand">
           Cine<span style={{ color: C.accent }}>Vault</span>
         </Link>
 
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={() => setActiveTab('friends')} style={{ border: `1px solid ${activeTab === 'friends' ? C.accent : C.border}`, background: activeTab === 'friends' ? 'rgba(201,168,76,0.12)' : 'transparent', color: activeTab === 'friends' ? C.accent : C.textSoft, fontFamily: SANS, fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', padding: '8px 12px', cursor: 'pointer' }}>
+        <div className="activity-tabs">
+          <button
+            onClick={() => setActiveTab('friends')}
+            className="activity-tab-btn"
+            style={{
+              borderColor: activeTab === 'friends' ? C.accent : '#25252f',
+              background: activeTab === 'friends' ? 'rgba(201,168,76,0.12)' : 'transparent',
+              color: activeTab === 'friends' ? C.accent : '#888'
+            }}
+          >
             Amigos
           </button>
-          <button onClick={() => setActiveTab('own')} style={{ border: `1px solid ${activeTab === 'own' ? C.accent : C.border}`, background: activeTab === 'own' ? 'rgba(201,168,76,0.12)' : 'transparent', color: activeTab === 'own' ? C.accent : C.textSoft, fontFamily: SANS, fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', padding: '8px 12px', cursor: 'pointer' }}>
+          <button
+            onClick={() => setActiveTab('own')}
+            className="activity-tab-btn"
+            style={{
+              borderColor: activeTab === 'own' ? C.accent : '#25252f',
+              background: activeTab === 'own' ? 'rgba(201,168,76,0.12)' : 'transparent',
+              color: activeTab === 'own' ? C.accent : '#888'
+            }}
+          >
             Tú
           </button>
         </div>
@@ -160,28 +166,28 @@ export default function ActivityPage() {
         <Bell size={16} color={C.accent} />
       </header>
 
-      <section style={{ width: 'min(960px, 100%)', margin: '0 auto', padding: '20px 16px 80px', display: 'grid', gap: 12 }}>
+      <section className="activity-container">
         {items.map((item) => (
           <ActivityCard key={item.id} item={item} />
         ))}
 
         {!loading && items.length === 0 && !error ? (
-          <div style={{ border: `1px solid ${C.border}`, background: C.surface, padding: 20, color: C.textSoft, fontFamily: SERIF, fontSize: 22 }}>
+          <div className="activity-card" style={{ fontSize: 22, color: '#888', fontFamily: "'Cormorant Garamond', serif" }}>
             {emptyMessage}
           </div>
         ) : null}
 
         {loading ? (
-          <div style={{ border: `1px solid ${C.border}`, background: C.surface, padding: 20, color: C.textSoft, fontFamily: SANS, fontSize: 12, letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+          <div className="activity-card" style={{ fontSize: 12, color: '#888', letterSpacing: '0.14em', textTransform: 'uppercase', fontFamily: "'Syne', sans-serif" }}>
             Cargando actividad…
           </div>
         ) : null}
 
         {error ? (
-          <div style={{ border: '1px solid #6b2f2f', background: 'rgba(107,47,47,0.12)', padding: 20, color: '#f2b8b8', fontFamily: SERIF, fontSize: 18 }}>
+          <div style={{ border: '1px solid #6b2f2f', background: 'rgba(107,47,47,0.12)', padding: 20, color: '#f2b8b8', fontFamily: "'Cormorant Garamond', serif", fontSize: 18 }}>
             {error}
             <div>
-              <button onClick={() => void loadPage(1, true)} style={{ marginTop: 10, border: `1px solid ${C.border}`, background: 'transparent', color: C.text, fontFamily: SANS, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', padding: '8px 12px', cursor: 'pointer' }}>
+              <button onClick={() => void loadPage(1, true)} style={{ marginTop: 10, border: '1px solid #25252f', background: 'transparent', color: '#e8e0d4', fontFamily: "'Syne', sans-serif", fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', padding: '8px 12px', cursor: 'pointer' }}>
                 Reintentar
               </button>
             </div>
