@@ -4,6 +4,7 @@ import AuthModal from './components/AuthModal'
 import SeoManager from './components/SeoManager'
 import { SocketProvider } from "./context/SocketContext"
 import { getStoredAccessToken, refreshAccessToken } from './services/authServices'
+import { BottomNav } from './components/BottomNav'
 import './App.css'
 
 const Home = lazy(() => import('./pages/Home'))
@@ -125,6 +126,8 @@ function App() {
                     <Route path="*" element={<NotFoundPage />} />
                 </Routes>
             </Suspense>
+            <BottomNav />
+            <div className="bottom-nav-spacer" />
             <AuthModal
                 isOpen={isAuthModalOpen}
                 onClose={() => setIsAuthModalOpen(false)}

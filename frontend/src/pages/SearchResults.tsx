@@ -648,7 +648,9 @@ export function Search() {
   const [activeTab, setActiveTab] = useState('all')
   const [filters, setFilters] = useState<FiltersState>({ ...EMPTY_FILTERS })
   const [page, setPage] = useState(1)
+  const [isSearching, setIsSearching] = useState(false)
   const [showFilters, setShowFilters] = useState(true)
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false)
   const [fetchError, setFetchError] = useState<string | null>(null)
   const [filmResults, setFilmResults] = useState<FilmResult[]>([])
   const [personResults, setPersonResults] = useState<PersonResult[]>([])
@@ -666,6 +668,7 @@ export function Search() {
     }
 
     let active = true
+    setIsSearching(true)
 
     Promise.all([searchMovies(q, page), searchUsers(q, 16)])
       .then(([data, users]) => {
@@ -701,6 +704,9 @@ export function Search() {
         setFilmResults([])
         setPersonResults([])
         setUserResults([])
+      })
+      .finally(() => {
+        if (active) setIsSearching(false)
       })
 
     return () => {
@@ -903,7 +909,7 @@ export function Search() {
             <span style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 22, color: C.textSoft }}> para "{query || '...'}"</span>
           </div>
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <button onClick={() => setShowFilters((v) => !v)} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 16px', background: 'transparent', color: showFilters ? C.accent : C.textSoft, border: `1px solid ${showFilters ? C.accentDim : C.border}`, cursor: 'pointer', fontFamily: SANS, fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase' }}>
+            <button className="search-results-desktop-only" onClick={() => setShowFilters((v) => !v)} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 16px', background: 'transparent', color: showFilters ? C.accent : C.textSoft, border: `1px solid ${showFilters ? C.accentDim : C.border}`, cursor: 'pointer', fontFamily: SANS, fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase' }}>
               <SlidersHorizontal size={12} /> {showFilters ? 'Ocultar filtros' : 'Mostrar filtros'}
             </button>
           </div>
@@ -920,8 +926,38 @@ export function Search() {
 
         <div className="search-results-main" style={{ display: 'flex', gap: 0 }}>
           <AnimatePresence>
+            <div className={`search-filters-drawer ${isFiltersOpen ? 'search-filters-drawer--open' : ''}`}>
+              <div className="search-filters-drawer-header">
+                <div style={{ fontFamily: SANS, fontSize: 12, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.accent }}>Filtros</div>
+                <button onClick={() => setIsFiltersOpen(false)} style={{ background: 'none', border: 'none', color: C.textSoft, cursor: 'pointer' }}>
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="search-filters-drawer-content">
+                <FiltersPanel filters={filters} onChange={handleFilterChange} onClear={() => setFilters({ ...EMPTY_FILTERS })} />
+                <button
+                  onClick={() => setIsFiltersOpen(false)}
+                  style={{
+                    width: '100%',
+                    marginTop: 32,
+                    padding: '14px',
+                    background: C.accent,
+                    color: C.bg,
+                    border: 'none',
+                    fontFamily: SANS,
+                    fontSize: 11,
+                    letterSpacing: '0.16em',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Aplicar filtros
+                </button>
+              </div>
+            </div>
+
             {showFilters && (
-              <motion.div initial={{ width: 0, opacity: 0 }} animate={{ width: 280, opacity: 1 }} exit={{ width: 0, opacity: 0 }} transition={{ duration: 0.35, ease: 'easeInOut' }} style={{ overflow: 'hidden', flexShrink: 0, borderRight: `1px solid ${C.border}` }}>
+              <motion.div className="search-results-desktop-only" initial={{ width: 0, opacity: 0 }} animate={{ width: 280, opacity: 1 }} exit={{ width: 0, opacity: 0 }} transition={{ duration: 0.35, ease: 'easeInOut' }} style={{ overflow: 'hidden', flexShrink: 0, borderRight: `1px solid ${C.border}` }}>
                 <div style={{ width: 280, padding: '32px 28px' }}>
                   <FiltersPanel filters={filters} onChange={handleFilterChange} onClear={() => setFilters({ ...EMPTY_FILTERS })} />
                 </div>
@@ -930,6 +966,9 @@ export function Search() {
           </AnimatePresence>
 
           <div style={{ flex: 1, padding: '32px 40px', minWidth: 0 }}>
+            <button className="search-results-mobile-only-btn" onClick={() => setIsFiltersOpen(true)}>
+              <SlidersHorizontal size={14} /> Filtros
+            </button>
             {fetchError && <div style={{ marginBottom: 16, color: '#C97B7B', fontFamily: SANS, fontSize: 12 }}>{fetchError}</div>}
 
             <ActiveFilters filters={filters} onRemove={handleFilterRemove} />
@@ -1004,12 +1043,21 @@ export function Search() {
                 {activeTab === 'person' && personResults.map((person, i) => <PersonResultItem key={person.id} item={person} delay={i * 0.06} />)}
                 {activeTab === 'user' && userResults.map((user, i) => <UserResultItem key={user.id} item={user} delay={i * 0.06} />)}
 
-                {displayedByTab.length === 0 && (
+                {isSearching ? (
+                  <div style={{ padding: '100px 0', textAlign: 'center' }}>
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+                      style={{ width: 40, height: 40, border: `2px solid ${C.border}`, borderTopColor: C.accent, borderRadius: '50%', margin: '0 auto 20px' }}
+                    />
+                    <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 20, color: C.textSoft }}>Buscando en la bóveda...</div>
+                  </div>
+                ) : displayedByTab.length === 0 ? (
                   <div style={{ padding: '80px 0', textAlign: 'center' }}>
                     <div style={{ fontFamily: SERIF, fontSize: 36, color: C.textMuted, marginBottom: 12 }}>Sin resultados</div>
                     <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 18, color: C.textMuted }}>Intenta con otros filtros o una búsqueda diferente.</div>
                   </div>
-                )}
+                ) : null}
               </motion.div>
             </AnimatePresence>
 

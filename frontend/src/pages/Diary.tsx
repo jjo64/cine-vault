@@ -188,22 +188,17 @@ function PosterFan({ films, type }: { films: FilmEntry[]; type: SessionType }) {
   const containerW = posterW + 80;
 
   return (
-    <div style={{ position: 'relative', width: containerW + 40, height: posterH + 24, flexShrink: 0 }}>
+    <div className="diary-poster-fan-container" style={{ width: containerW + 40, height: posterH + 24 }}>
       {films.slice(0, 4).map((film, i) => {
         const cfg = configs[i] ?? configs[configs.length - 1];
         return (
-          <div key={film.id} style={{
-            position: 'absolute',
+          <div key={film.id} className="diary-poster-fan-item" style={{
             top: cfg.ty,
             left: '50%',
             width: posterW, height: posterH,
             marginLeft: -(posterW / 2) + cfg.tx,
             zIndex: cfg.z,
             transform: `rotate(${cfg.rotate}deg)`,
-            border: '2px solid #0A0A0A',
-            overflow: 'hidden',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.7)',
-            transition: 'transform 0.3s',
           }}>
             <Img src={film.poster} alt={film.title} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(0.65)' }} />
           </div>
@@ -222,14 +217,11 @@ function SessionCard({ session, delay }: { session: DiarySession; delay: number 
     <motion.div
       initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay, duration: 0.55 }}
       onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      className="diary-session-card"
       style={{
-        background: C.surface,
-        border: `1px solid ${hov ? C.accentDim : C.border}`,
-        padding: '24px 28px',
-        transition: 'border-color 0.3s, transform 0.3s, box-shadow 0.3s',
+        borderColor: hov ? C.accentDim : C.border,
         transform: hov ? 'translateY(-3px)' : 'none',
         boxShadow: hov ? '0 8px 32px rgba(0,0,0,0.4)' : 'none',
-        position: 'relative', overflow: 'hidden',
       }}>
       {/* Badge */}
       {label && (

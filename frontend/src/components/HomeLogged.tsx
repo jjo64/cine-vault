@@ -20,6 +20,7 @@ import {
 import { authorizedJson, getCurrentUser, logoutCurrentUser } from '../services/authServices'
 import { getMyLists } from '../services/listsServices'
 import { createSlug } from '../utils/stringUtils'
+import './HomeLogged.css'
 
 type ZoneId = 'entrada' | 'sala' | 'vitrina'
 
@@ -727,9 +728,9 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
               <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 0% 42%, rgba(212,175,122,0.18) 0%, rgba(212,175,122,0.05) 20%, transparent 44%)' }} />
             </div>
             <div style={{ position: 'absolute', top: 0, left: 0, width: 340, height: '100%', background: `linear-gradient(90deg, rgba(212,175,122,0.16), rgba(212,175,122,0.02), transparent)`, pointerEvents: 'none' }} />
-            <div style={{ position: 'relative', zIndex: 1, padding: '36px 40px', display: 'grid', gridTemplateColumns: '80px 1fr auto', gap: 28, alignItems: 'start' }}>
-              <Link to={movieHref(tonightFilm.movieId, tonightFilm.tmdbId, tonightFilm.title)} style={{ textDecoration: 'none', display: 'block', alignSelf: 'center' }}>
-                <div style={{ aspectRatio: '2/3', borderRadius: 1, overflow: 'hidden', border: `1.5px solid ${C.accentDim}`, boxShadow: '0 12px 40px rgba(0,0,0,0.6)' }}>
+            <div className="hl-tonight-inner">
+              <Link to={movieHref(tonightFilm.movieId, tonightFilm.tmdbId, tonightFilm.title)} className="hl-tonight-poster" style={{ textDecoration: 'none' }}>
+                <div style={{ width: '100%', height: '100%' }}>
                   <Img src={tonightFilm.posterUrl} alt={tonightFilm.title} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(0.7)' }} />
                 </div>
               </Link>
@@ -746,18 +747,18 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
                     <span key={g} style={{ fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.textSoft, border: `1px solid ${C.border}`, padding: '3px 9px', fontFamily: SANS }}>{g}</span>
                   ))}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div className="hl-tonight-meta-row">
                   <button onClick={() => setWatchedTonight((v) => !v)} style={{ padding: '10px 24px', background: watchedTonight ? C.accentDim : C.accent, color: C.bg, border: 'none', fontFamily: SANS, fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7 }}>
                     {watchedTonight ? <><Check size={11} /> Vista</> : 'Marcar como vista'}
                   </button>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: C.gold, fontFamily: SANS, fontSize: 11 }}><Trophy size={12} fill={C.gold} color={C.gold} /> +{tonightFilm.points} pts esta noche</div>
                 </div>
               </div>
-              <Link to={movieHref(tonightFilm.movieId, tonightFilm.tmdbId, tonightFilm.title)} style={{ textDecoration: 'none', flexShrink: 0, alignSelf: 'center' }}>
-                <div style={{ width: 28, height: 28, border: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.textSoft }}>
-                  <ArrowRight size={12} />
-                </div>
-              </Link>
+                <Link to={movieHref(tonightFilm.movieId, tonightFilm.tmdbId, tonightFilm.title)} className="hl-tonight-actions" style={{ textDecoration: 'none', flexShrink: 0, alignSelf: 'center' }}>
+                  <div style={{ width: 28, height: 28, border: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.textSoft }}>
+                    <ArrowRight size={12} />
+                  </div>
+                </Link>
             </div>
           </div>
         ) : (
@@ -795,12 +796,12 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.07, duration: 0.5 }}
-              style={{ display: 'grid', gridTemplateColumns: '36px 48px 1fr auto', gap: 14, alignItems: 'center', padding: '14px 0', borderBottom: `1px solid ${C.border}` }}
+              className="hl-activity-row"
             >
-              <Link to={`/${encodeURIComponent(item.username)}`} style={{ textDecoration: 'none' }}>
-                <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(212,175,122,0.12)', border: `1px solid ${C.accentDim}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: SERIF, fontSize: 15, color: C.accent }}>{item.avatar}</div>
+              <Link to={`/${encodeURIComponent(item.username)}`} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+                <div className="hl-activity-avatar">{item.avatar}</div>
               </Link>
-              <Link to={movieHref(item.movieId, item.tmdbId, item.film)} style={{ textDecoration: 'none' }}>
+              <Link to={movieHref(item.movieId, item.tmdbId, item.film)} className="hl-activity-poster-link" style={{ textDecoration: 'none' }}>
                 <div style={{ aspectRatio: '2/3', borderRadius: 1, overflow: 'hidden', border: `1px solid ${C.border}` }}>
                   <Img src={item.posterUrl} alt={item.film} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(0.4)' }} />
                 </div>
@@ -826,23 +827,46 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
         <SectionLabel link="Abrir feed" linkHref="/feed">Feed rapido</SectionLabel>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           {feedRapido.map((post, i) => (
-            <motion.div key={post.id} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1, duration: 0.5 }} style={{ display: 'grid', gridTemplateColumns: '52px 1fr auto', gap: 16, padding: '20px 0', borderBottom: `1px solid ${C.border}`, alignItems: 'start' }}>
+            <motion.div key={post.id} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1, duration: 0.5 }} className="hl-feed-post">
               <Link to={movieHref(post.movieId, post.tmdbId, post.film)} style={{ textDecoration: 'none' }}>
-                <div style={{ width: 52, height: 78, borderRadius: 1, overflow: 'hidden', border: `1px solid ${C.border}` }}>
+                <div className="hl-feed-poster" style={{ borderRadius: 1, overflow: 'hidden', border: `1px solid ${C.border}` }}>
                   <Img src={post.posterUrl} alt={post.film} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(0.4)' }} />
                 </div>
               </Link>
               <div>
-                <div style={{ display: 'flex', gap: 7, alignItems: 'center', marginBottom: 6 }}>
-                  <Link to={`/${encodeURIComponent(post.username)}`} style={{ textDecoration: 'none' }}>
-                    <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(212,175,122,0.1)', border: `1px solid ${C.accentDim}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: SERIF, fontSize: 12, color: C.accent, flexShrink: 0 }}>{post.avatar}</div>
-                  </Link>
-                  <Link to={`/${encodeURIComponent(post.username)}`} style={{ fontFamily: SANS, fontSize: 12, color: C.text, textDecoration: 'none' }}>{post.user}</Link>
-                  <span style={{ fontFamily: SANS, fontSize: 11, color: C.textMuted }}>reseño</span>
-                  <Link to={movieHref(post.movieId, post.tmdbId, post.film)} style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 13, color: C.accent, textDecoration: 'none' }}>{post.film}</Link>
-                  <div style={{ display: 'flex', gap: 2, marginLeft: 4 }}>{[1, 2, 3, 4, 5].map((s) => <span key={s} style={{ fontSize: 9, color: s <= post.rating ? C.gold : C.textMuted }}>★</span>)}</div>
+                <div className="hl-feed-header">
+                  <div style={{ display: 'flex', gap: 7, alignItems: 'center' }}>
+                    <Link to={`/${encodeURIComponent(post.username)}`} style={{ textDecoration: 'none' }}>
+                      <div className="hl-activity-avatar" style={{ width: 26, height: 26, fontSize: 12 }}>{post.avatar}</div>
+                    </Link>
+                    <Link to={`/${encodeURIComponent(post.username)}`} style={{ fontFamily: SANS, fontSize: 12, color: C.text, textDecoration: 'none' }}>{post.user}</Link>
+                  </div>
+                  <div style={{ display: 'flex', gap: 5, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <span className="hl-feed-action-label" style={{ fontFamily: SANS, fontSize: 11, color: C.textMuted }}>reseño</span>
+                    <Link to={movieHref(post.movieId, post.tmdbId, post.film)} style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 13, color: C.accent, textDecoration: 'none' }}>{post.film}</Link>
+                    <div style={{ display: 'flex', gap: 1 }}>{[1, 2, 3, 4, 5].map((s) => <span key={s} style={{ fontSize: 9, color: s <= post.rating ? C.gold : C.textMuted }}>★</span>)}</div>
+                  </div>
                 </div>
-                <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 16, lineHeight: 1.6, color: C.textSoft, margin: 0 }}>{post.text}</p>
+                <Link
+                  to={`/${encodeURIComponent(post.username)}/movie/${post.id}`}
+                  style={{ textDecoration: 'none' }}
+                >
+                  <p style={{
+                    fontFamily: SERIF,
+                    fontStyle: 'italic',
+                    fontSize: 16,
+                    lineHeight: 1.6,
+                    color: C.textSoft,
+                    margin: 0,
+                    cursor: 'pointer',
+                    transition: 'color 0.18s',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = C.text)}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = C.textSoft)}
+                  >
+                    {post.text}
+                  </p>
+                </Link>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 12, paddingTop: 4 }}>
                 <button onClick={() => handleToggleFeedLike(post.id)} disabled={likeBusyIds.has(post.id)} style={{ display: 'flex', alignItems: 'center', gap: 5, color: likedFeedIds.has(post.id) ? C.accent : C.textSoft, fontFamily: SANS, fontSize: 11, border: 'none', background: 'none', padding: 0, cursor: likeBusyIds.has(post.id) ? 'default' : 'pointer' }}><Heart size={13} strokeWidth={1.5} fill={likedFeedIds.has(post.id) ? C.accent : 'none'} /> {post.likes}</button>
@@ -862,7 +886,7 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
     <motion.div key="sala" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.4 }}>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }} style={{ marginBottom: 48 }}>
         <SectionLabel link="Ver todo mi Vault" linkHref={myVaultHref}>Mi Vault</SectionLabel>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
+        <div className="hl-vault-grid">
           {vaultCards.map((item) => (
             <Link key={item.id} to={movieHref(item.id, item.tmdbId, item.title)} style={{ textDecoration: 'none' }}>
               <motion.div whileHover={{ y: -3 }} transition={{ duration: 0.2 }} style={{ cursor: 'pointer', background: C.surface, border: `1px solid ${C.border}`, overflow: 'hidden' }}>
@@ -888,7 +912,7 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
         </div>
       </motion.div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40 }}>
+      <div className="hl-two-col">
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }} style={{ marginBottom: 48 }}>
           <SectionLabel link="Abrir diario" linkHref="/diary">Mi Diario</SectionLabel>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -916,7 +940,7 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
         <div>
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }}>
             <SectionLabel>Esta semana</SectionLabel>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
+            <div className="hl-stats-grid">
               {weekStats.map((s) => {
                 const content = (
                   <>
@@ -999,7 +1023,7 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
 
       <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }} style={{ marginBottom: 56 }}>
         <SectionLabel link="Ver todos" linkHref="/search?tab=person">Directores que quizas no conoces</SectionLabel>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 12 }}>
+        <div className="hl-achievements-grid">
           {directorCards.map((d) => (
             <Link key={d.id} to={`/person/${d.id}`} style={{ textDecoration: 'none' }}>
               <motion.div whileHover={{ y: -4 }} transition={{ duration: 0.2 }}>
@@ -1024,7 +1048,7 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
 
       <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }}>
         <SectionLabel link="Ver todas" linkHref="/lists">Listas de la comunidad</SectionLabel>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
+        <div className="hl-vault-grid">
           {communityLists.map((list) => (
             <Link key={list.id} to={list.href} style={{ textDecoration: 'none', display: 'block' }}>
               <motion.div whileHover={{ y: -3 }} transition={{ duration: 0.2 }} style={{ cursor: 'pointer', background: C.surface, border: `1px solid ${C.border}`, overflow: 'hidden' }}>
@@ -1066,8 +1090,8 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
     <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: SANS, textAlign: 'left' }}>
       <Grain />
 
-      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200, height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 40px', background: 'rgba(8,8,8,0.97)', backdropFilter: 'blur(24px)', borderBottom: `1px solid ${C.border}` }}>
-        <Link to="/" style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 500, letterSpacing: '0.13em', textTransform: 'uppercase', color: C.text, textDecoration: 'none' }}>
+      <nav className="hl-navbar">
+        <Link to="/" className="hl-nav-brand">
           Cine<span style={{ color: C.accent }}>Vault</span>
         </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -1083,41 +1107,47 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
         </div>
       </nav>
 
-      <div style={{ paddingTop: 60 }}>
-        <div style={{ padding: '14px 40px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(8,8,8,0.9)', backdropFilter: 'blur(16px)' }}>
+      <div className="hl-nav-offset">
+        <div className="hl-greeting-bar">
           <div>
             <span style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 17, color: C.textSoft }}>Bienvenido de vuelta, </span>
             <span style={{ fontFamily: SERIF, fontSize: 17, color: C.text }}>{greetingName}.</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: SANS, fontSize: 11, color: C.textSoft }}>
-              <Flame size={12} color={C.accent} /> <span style={{ color: C.text }}>{Math.min(9, Math.max(1, diary.length))}</span> dias de racha
+          <div className="hl-greeting-stats">
+            <div className="hl-stat-item">
+              <Flame size={12} color={C.accent} /> <span style={{ color: C.text }}>{Math.min(9, Math.max(1, diary.length))}</span> <span className="hl-stat-label">dias de racha</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: SANS, fontSize: 11, color: C.textSoft }}>
-              <Trophy size={12} color={C.gold} /> <span style={{ color: C.text }}>{reviews.length * 40 + diary.length * 15}</span> puntos
+            <div className="hl-stat-item">
+              <Trophy size={12} color={C.gold} /> <span style={{ color: C.text }}>{reviews.length * 40 + diary.length * 15}</span> <span className="hl-stat-label">puntos</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: SANS, fontSize: 11, color: C.textSoft }}>
-              <Star size={12} color={C.gold} /> <span style={{ color: C.text }}>{Math.min(7, Math.max(1, Math.floor((reviews.length + watchlist.length) / 3)))}</span> insignias
+            <div className="hl-stat-item">
+              <Star size={12} color={C.gold} /> <span style={{ color: C.text }}>{Math.min(7, Math.max(1, Math.floor((reviews.length + watchlist.length) / 3)))}</span> <span className="hl-stat-label">insignias</span>
             </div>
           </div>
         </div>
+      </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', height: 170, borderBottom: `1px solid ${C.border}` }}>
-          {ZONES.map((zone, i) => {
+        <div className="hl-zones">
+          { ZONES.map((zone, i) => {
             const isActive = activeZone === zone.id
             return (
-              <motion.button key={zone.id} onClick={() => setActiveZone(zone.id)} style={{ position: 'relative', overflow: 'hidden', border: 'none', borderRight: i < 2 ? `1px solid ${C.border}` : 'none', cursor: 'pointer', background: C.bg, padding: 0, textAlign: 'left' }} whileHover={{ scale: 1.01 }} transition={{ duration: 0.2 }}>
-                <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg, ${isActive ? 'rgba(212,175,122,0.08)' : 'rgba(8,8,8,0.88)'}, rgba(8,8,8,0.82))` }} />
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: isActive ? `linear-gradient(to right, ${C.accent}, ${C.accentDim}, transparent)` : C.border }} />
-                {isActive ? <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 80, background: `linear-gradient(to top, ${C.accentGlow}, transparent)` }} /> : null}
-                <div style={{ position: 'relative', zIndex: 1, padding: '24px 28px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                    <span style={{ fontFamily: SERIF, fontSize: 28, color: isActive ? C.accent : C.textMuted }}>{zone.symbol}</span>
-                    {isActive ? <div style={{ width: 6, height: 6, borderRadius: '50%', background: C.accent, marginTop: 6 }} /> : null}
+              <motion.button key={zone.id} onClick={() => setActiveZone(zone.id)} className={`hl-zone-btn ${isActive ? 'active' : ''} ${i < 2 ? 'with-border' : ''}`} whileHover={{ scale: 1.01 }} transition={{ duration: 0.2 }}>
+                <div className="hl-zone-bg" />
+                <div className="hl-zone-line" />
+                {isActive ? <div className="hl-zone-glow" /> : null}
+                <div className="hl-zone-inner">
+                  <div className="hl-zone-symbol-wrap">
+                    <span className="hl-zone-symbol">{zone.symbol}</span>
+                    <div className="hl-zone-dot" />
                   </div>
-                  <div>
-                    <div style={{ fontFamily: SERIF, fontSize: 22, fontWeight: 400, color: isActive ? C.text : 'rgba(226,226,226,0.55)', marginBottom: 4 }}>{zone.name}</div>
-                    <div style={{ fontFamily: SANS, fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: isActive ? C.textSoft : C.textMuted, lineHeight: 1.6 }}>{zone.subtitle}</div>
+                  <div className="hl-zone-info">
+                    <div className="hl-zone-name">{zone.name}</div>
+                    <div className="hl-zone-subtitle">{zone.subtitle}</div>
+                  </div>
+                  <div className="hl-zone-dots-mobile">
+                    {ZONES.map(z => (
+                      <div key={z.id} onClick={(e) => { e.stopPropagation(); setActiveZone(z.id)}} className={`hl-zone-dot-btn ${activeZone === z.id ? 'active' : ''}`} />
+                    ))}
                   </div>
                 </div>
               </motion.button>
@@ -1125,7 +1155,7 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
           })}
         </div>
 
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 40px 80px' }}>
+        <div className="hl-main-content">
           {loading ? <div style={{ color: C.textSoft, marginBottom: 16 }}>Cargando Home Logged...</div> : null}
           {error ? <div style={{ color: '#FF8A8A', marginBottom: 16 }}>{error}</div> : null}
           {!loading && !hasData ? <div style={{ color: C.textSoft, marginBottom: 16 }}>No hay actividad suficiente todavia.</div> : null}
@@ -1148,7 +1178,6 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
             </button>
           </div>
         </div>
-      </div>
 
       <footer style={{ borderTop: `1px solid ${C.border}`, padding: '20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Link to="/" style={{ fontFamily: SERIF, fontSize: 15, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.textMuted, textDecoration: 'none' }}>Cine<span style={{ color: C.accent }}>Vault</span></Link>

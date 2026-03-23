@@ -3,7 +3,7 @@
   min-height: 100vh;
   background: var(--color-bg);
   color: var(--color-text);
-  padding: 90px 18px 40px;
+  padding: clamp(72px, 10vw, 90px) clamp(14px, 4vw, 18px) 40px;
 }
 
 .lists-container {

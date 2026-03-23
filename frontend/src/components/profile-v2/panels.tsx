@@ -1012,7 +1012,7 @@ export function DiaryPanel({ diaryTimeline }: { diaryTimeline: DiaryTimelineItem
       </div>
 
       <div style={{ position: 'relative' }}>
-        <div style={{
+        <div className="profile-diary-timeline-line" style={{
           position: 'absolute',
           left: 148,
           top: 12,
@@ -1027,13 +1027,14 @@ export function DiaryPanel({ diaryTimeline }: { diaryTimeline: DiaryTimelineItem
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.1, duration: 0.5, ease: 'easeOut' }}
+            className="profile-diary-row"
             style={{ display: 'grid', gridTemplateColumns: '148px 1fr', gap: 0, marginBottom: 36, position: 'relative' }}
           >
             <div style={{ paddingRight: 28, textAlign: 'right', paddingTop: 20 }}>
               <div style={{ fontSize: 11, color: C.textSoft, fontFamily: SANS, lineHeight: 1.5 }}>{entry.watchedDateLabel}</div>
             </div>
 
-            <div style={{
+            <div className="profile-diary-dot" style={{
               position: 'absolute',
               left: 141,
               top: 22,

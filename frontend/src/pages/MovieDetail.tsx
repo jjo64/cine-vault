@@ -1780,19 +1780,23 @@ function Reviews({
         return (
           <motion.div key={review.id} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: index * 0.1 }} style={{ borderBottom: `1px solid ${C.border}`, padding: '28px 0' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
-              {review.avatarUrl ? (
-                <Img
-                  src={review.avatarUrl}
-                  alt={review.username}
-                  style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: `1px solid ${C.border}`, flexShrink: 0 }}
-                />
-              ) : (
-                <div style={{ width: 36, height: 36, borderRadius: '50%', background: C.elevated, border: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: SERIF, fontSize: 16, color: C.textSoft, flexShrink: 0 }}>
-                  {initials(review.username)}
-                </div>
-              )}
+              <Link to={`/${encodeURIComponent(review.username)}`} style={{ textDecoration: 'none' }}>
+                {review.avatarUrl ? (
+                  <Img
+                    src={review.avatarUrl}
+                    alt={review.username}
+                    style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: `1px solid ${C.border}`, flexShrink: 0, cursor: 'pointer' }}
+                  />
+                ) : (
+                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: C.elevated, border: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: SERIF, fontSize: 16, color: C.textSoft, flexShrink: 0, cursor: 'pointer' }}>
+                    {initials(review.username)}
+                  </div>
+                )}
+              </Link>
               <div>
-                <div style={{ fontSize: 13, fontFamily: SANS, color: C.text }}>{review.username}</div>
+                <Link to={`/${encodeURIComponent(review.username)}`} style={{ textDecoration: 'none' }}>
+                  <div style={{ fontSize: 13, fontFamily: SANS, color: C.text, cursor: 'pointer' }}>{review.username}</div>
+                </Link>
                 <div style={{ fontSize: 11, color: C.textSoft, fontFamily: SANS, marginTop: 1, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                   <span>{formatDateLabel(review.createdAt)}</span>
                   <span style={{ border: `1px solid ${C.border}`, padding: '2px 6px', letterSpacing: '0.08em' }}>{review.mode}</span>
@@ -1814,7 +1818,26 @@ function Reviews({
               </div>
             ) : null}
 
-            <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 18, lineHeight: 1.75, color: C.textSoft, margin: '0 0 14px' }}>{review.content}</p>
+            <Link
+              to={`/${encodeURIComponent(review.username)}/movie/${review.id}`}
+              style={{ textDecoration: 'none' }}
+            >
+              <p style={{
+                fontFamily: SERIF,
+                fontStyle: 'italic',
+                fontSize: 18,
+                lineHeight: 1.75,
+                color: C.textSoft,
+                margin: '0 0 14px',
+                cursor: 'pointer',
+                transition: 'color 0.18s',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = C.text)}
+              onMouseLeave={(e) => (e.currentTarget.style.color = C.textSoft)}
+              >
+                {review.content}
+              </p>
+            </Link>
 
             {review.quote?.dialogo ? (
               <blockquote style={{ margin: '0 0 12px', padding: '10px 12px', borderLeft: `2px solid ${C.accentDim}`, background: C.elevated, fontFamily: SERIF, fontSize: 15, color: C.text }}>

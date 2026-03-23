@@ -29,15 +29,20 @@
 
 @media (max-width: 768px) {
     .landing-section {
-        padding: 56px 14px;
+        padding: 36px 14px;
     }
 
     .landing-section-sm {
-        padding: 52px 14px;
+        padding: 28px 14px;
     }
 
     .landing-section-lg {
-        padding: 72px 14px;
+        padding: 44px 14px;
+    }
+
+    /* InfiniteSlider wrapper — prevenir overflow */
+    .landing-section-sm > div {
+        overflow: hidden;
     }
 }
 
@@ -75,6 +80,11 @@
         grid-template-columns: 1fr;
         gap: 28px;
     }
+
+    .landing-grid-night .night-stat-pill {
+        bottom: 8px;
+        right: 8px;
+    }
 }
 
 /* Footer Grid */
@@ -105,8 +115,12 @@
     }
 
     .landing-footer-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr 1fr;
         gap: 28px;
+    }
+
+    .landing-footer-grid > div:first-child {
+        grid-column: 1 / -1;
     }
 }
 
@@ -242,6 +256,18 @@
 
 .landing-final-cta-btn {
     padding: 16px 40px;
+}
+
+@media (max-width: 768px) {
+    .landing-final-cta-wrap {
+        width: 100%;
+    }
+
+    .landing-final-cta-btn {
+        width: 100%;
+        max-width: 100%;
+        justify-content: center;
+    }
 }
 
 .landing-footer-bottom {

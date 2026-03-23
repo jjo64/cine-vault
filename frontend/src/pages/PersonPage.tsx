@@ -349,8 +349,10 @@ export default function PersonPage() {
 
   const bioParagraphs = useMemo(() => {
     const text = (person?.biography || '').trim()
-    if (!text) return ['Sin biografía disponible.']
-    return text.split('\n\n').filter(Boolean)
+    if (!text) return ['Biografía no disponible para esta persona.']
+    // Soportar \n\n, \r\n\r\n, y párrafos de una sola línea
+    const parts = text.split(/\r?\n\r?\n/).filter(Boolean)
+    return parts.length > 0 ? parts : [text]
   }, [person?.biography])
 
   const visibleBio = bioExpanded ? bioParagraphs : bioParagraphs.slice(0, 1)
@@ -380,7 +382,7 @@ export default function PersonPage() {
       <GrainOverlay />
       <Navbar onNavigateHome={() => navigate('/')} onSearch={searchFromNavbar} />
 
-      <div style={{ paddingTop: 60 }}>
+      <div style={{ paddingTop: 'var(--nav-height, 64px)' }}>
         <section className="person-hero" style={{ position: 'relative', minHeight: 560, overflow: 'hidden' }}>
           <Img src={heroBackdrop} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(0.35) brightness(0.4)', transform: 'scale(1.04)' }} />
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(8,8,8,0.98) 0%, rgba(8,8,8,0.82) 45%, rgba(8,8,8,0.3) 70%, transparent 100%)' }} />
@@ -410,7 +412,23 @@ export default function PersonPage() {
             </button>
 
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 12px', border: `1px solid ${C.accentDim}`, marginBottom: 18, fontFamily: SANS, fontSize: 10, letterSpacing: '0.22em', textTransform: 'uppercase', color: C.accent, width: 'fit-content' }}>
-              <Film size={10} /> {person.known_for_department || 'Persona'}
+              <Film size={10} /> {(() => {
+                const dept = person.known_for_department || ''
+                const labels: Record<string, string> = {
+                  Acting: 'Actor',
+                  Directing: 'Director',
+                  Writing: 'Guionista',
+                  Production: 'Productor',
+                  'Visual Effects': 'VFX',
+                  Sound: 'Sonido',
+                  Camera: 'Fotografía',
+                  Editing: 'Montaje',
+                  Costume: 'Vestuario',
+                  Art: 'Arte',
+                  Crew: 'Equipo',
+                }
+                return labels[dept] || dept || 'Persona'
+              })()}
             </div>
 
             <h1 style={{ margin: '0 0 8px', fontFamily: SERIF, fontSize: 'clamp(46px,6vw,72px)', fontWeight: 300, lineHeight: 0.95, letterSpacing: '-0.02em' }}>
@@ -445,7 +463,7 @@ export default function PersonPage() {
                   Biografía <div style={{ flex: 1, height: 1, background: `linear-gradient(to right, ${C.border}, transparent)` }} />
                 </div>
                 {visibleBio.map((paragraph, index) => (
-                  <p key={index} style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 300, lineHeight: 1.8, color: C.textSoft, margin: '0 0 18px' }}>{paragraph}</p>
+                  <p key={index} style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 300, lineHeight: 1.8, color: C.text, margin: '0 0 18px' }}>{paragraph}</p>
                 ))}
                 {bioParagraphs.length > 1 ? (
                   <button onClick={() => setBioExpanded((value) => !value)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', fontFamily: SANS, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.accent, padding: 0 }}>

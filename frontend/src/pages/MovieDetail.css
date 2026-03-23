@@ -27,7 +27,7 @@
 
 .md-search-title {
     display: -webkit-box;
-    -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -167,7 +167,13 @@
     }
 
     .md-hero-poster {
-        display: none !important;
+        /* Reactivar en mobile con tamaño pequeño */
+        display: block !important;
+        right: 12px;
+        width: 80px;
+        top: auto;
+        bottom: 20px;
+        transform: none;
     }
 
     .md-hero-title {
@@ -316,11 +322,12 @@
     }
 }
 
-@media (max-width: 1320px) {
+@media (max-width: 1024px) {
     .md-main-layout {
-        padding: 56px 20px;
-        grid-template-columns: minmax(0, 1fr);
-        gap: 28px;
+        display: flex;
+        flex-direction: column;
+        padding: 40px 14px;
+        gap: 32px;
     }
 }
 
@@ -328,6 +335,13 @@
 .md-sidebar-sticky {
     position: sticky;
     top: 80px;
+}
+
+@media (max-width: 1024px) {
+    .md-sidebar-sticky {
+        position: static;
+        top: auto;
+    }
 }
 
 .md-sidebar-panel {
@@ -397,13 +411,83 @@
 }
 
 @media (max-width: 768px) {
+    .md-sidebar-panel {
+        padding: 16px;
+        margin-bottom: 8px;
+    }
+
+    .md-sidebar-row {
+        gap: 8px;
+    }
+
     .md-sidebar-grid {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 8px !important;
     }
 }
 
+/* ── MovieDetail Mobile ── */
+@media (max-width: 768px) {
+  .md-navbar {
+    padding: 0 14px;
+    height: var(--nav-height-mobile, 56px);
+  }
+
+  .md-mobile-menu-btn {
+    display: flex !important;
+  }
+
+  .md-desktop-links {
+    display: none !important;
+  }
+
+  /* Hero poster layout: columna en mobile */
+  .md-main-layout {
+    flex-direction: column !important;
+    padding: 20px 14px 0 !important;
+    gap: 20px !important;
+  }
+
+  .md-poster-col {
+    width: 130px !important;
+    align-self: center;
+  }
+
+  /* Actions row: wrap en mobile */
+  .md-actions-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Cast scroll horizontal */
+  .md-cast-list {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-wrap: nowrap !important;
+    padding-bottom: 8px;
+  }
+
+  .md-cast-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Similar films */
+  .md-similar-list {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-wrap: nowrap !important;
+    padding-bottom: 8px;
+  }
+
+  .md-similar-list::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @media (max-width: 480px) {
-    .md-sidebar-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
+  .md-poster-col {
+    width: 110px !important;
+  }
 }

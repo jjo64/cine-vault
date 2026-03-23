@@ -1,0 +1,120 @@
+/* Activity.css */
+.activity-main {
+    min-height: 100vh;
+    background: #0a0a0f;
+    color: #e8e0d4;
+}
+
+.activity-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    border-bottom: 1px solid #25252f;
+    background: rgba(10, 10, 15, 0.9);
+    backdrop-filter: blur(12px);
+    padding: 14px clamp(16px, 4vw, 20px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.activity-brand {
+    color: #e8e0d4;
+    text-decoration: none;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 26px;
+}
+
+.activity-tabs {
+    display: flex;
+    gap: 8px;
+}
+
+.activity-tab-btn {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 8px 12px;
+    cursor: pointer;
+    background: transparent;
+    transition: all 0.22s ease;
+}
+
+.activity-container {
+    width: min(960px, 100%);
+    margin: 0 auto;
+    padding: 20px clamp(14px, 4vw, 16px) 80px;
+    display: grid;
+    gap: 12px;
+}
+
+.activity-card {
+    border: 1px solid #25252f;
+    background: #101015;
+    padding: 16px;
+    display: grid;
+    gap: 8px;
+}
+
+.activity-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #888;
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.activity-card-user {
+    color: #e8e0d4;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 24px;
+}
+
+.activity-card-desc {
+    margin: 0;
+    color: #888;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px;
+}
+
+.activity-card-content {
+    margin: 0;
+    color: #e8e0d4;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 16px;
+}
+
+.activity-card-link {
+    color: #c9a84c;
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-decoration: none;
+}
+
+@media (max-width: 480px) {
+    .activity-header {
+        flex-direction: column;
+        padding: 16px;
+        align-items: flex-start;
+    }
+
+    .activity-tabs {
+        width: 100%;
+    }
+
+    .activity-tab-btn {
+        flex: 1;
+    }
+
+    .activity-container {
+        padding-top: 12px;
+    }
+}
