@@ -8,6 +8,8 @@ import './App.css'
 
 const Home = lazy(() => import('./pages/Home'))
 const FeedPage = lazy(() => import('./pages/Feed'))
+const ActivityPage = lazy(() => import('./pages/Activity'))
+const ForYouPage = lazy(() => import('./pages/ForYou'))
 const MovieDetail = lazy(() => import('./pages/MovieDetail'))
 const TVDetail = lazy(() => import('./pages/TVDetail'))
 const SearchResults = lazy(() => import('./pages/SearchResults').then((module) => ({ default: module.Search })))
@@ -100,7 +102,8 @@ function App() {
                     <Route path="/:username/vault" element={<VaultPage />} />
                     <Route path="/vault/:username" element={<VaultPage />} />
                     <Route path="/vault" element={<CommunityDiscoverPage />} />
-                    <Route path="/for-you" element={<ComingSoonPage />} />
+                    <Route path="/for-you" element={<ForYouPage />} />
+                    <Route path="/activity" element={<ActivityPage />} />
                     <Route path="/arcos" element={<ArcosPage />} />
                     <Route path="/arcos/:id" element={<ArcoDetailPage />} />
                     <Route path="/diary" element={<DiaryPage />} />

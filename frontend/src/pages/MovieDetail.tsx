@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { Bookmark, ChevronLeft, ChevronRight, ExternalLink, Heart, List, Menu, MessageSquare, Pencil, Share2, Trash2, X } from 'lucide-react'
 import './MovieDetail.css'
@@ -2004,6 +2004,7 @@ function Footer() {
 }
 
 export default function MovieDetailPage() {
+  const location = useLocation()
   const navigate = useNavigate()
   const { slugOrId } = useParams()
 
@@ -2059,6 +2060,10 @@ export default function MovieDetailPage() {
 
   const [token, setToken] = useState<string | null>(() => getStoredAccessToken())
   const movieId = useMemo(() => parseMovieId(slugOrId), [slugOrId])
+  const shouldAutoOpenEntry = useMemo(() => {
+    const params = new URLSearchParams(location.search)
+    return params.get('entry') === '1'
+  }, [location.search])
 
   useEffect(() => {
     const syncToken = () => setToken(getStoredAccessToken())
@@ -2549,6 +2554,18 @@ export default function MovieDetailPage() {
     setReviewLogOpen(true)
   }
 
+  useEffect(() => {
+    if (!shouldAutoOpenEntry || !movie || reviewLogOpen) return
+
+    if (!token) {
+      requireAuth()
+      return
+    }
+
+    handleWriteReview()
+    navigate({ pathname: location.pathname, search: '' }, { replace: true })
+  }, [location.pathname, movie, navigate, reviewLogOpen, shouldAutoOpenEntry, token])
+
   const handleSaveReviewLog = async () => {
     if (!token || !movie) {
       requireAuth()
@@ -2725,51 +2742,58 @@ export default function MovieDetailPage() {
 
     if (composerMode === 'reply') {
       if (!replyTargetId) return
+
+      const previousReviews = reviews
+      const optimisticCommentId = -Date.now()
+      const optimisticComment = {
+        id: optimisticCommentId,
+        userId: viewer?.id || 0,
+        username: viewer?.username || 'Tú',
+        avatarUrl: viewer?.avatar_url || null,
+        content: text,
+        createdAt: new Date().toISOString(),
+      }
+
+      setReviews((prev) =>
+        prev.map((review) => {
+          if (review.id !== replyTargetId) return review
+          return {
+            ...review,
+            comments: [...review.comments, optimisticComment],
+          }
+        })
+      )
+      setComposerMode(null)
+      setComposerText('')
+
       try {
         await commentOnReview(token, replyTargetId, text)
-        if (movie) {
-          const freshReviews = await fetchMovieReviews(movie.id)
-          const uniqueUserIds = [...new Set(freshReviews.map((review) => review.user_id))]
-          const userPairs = await Promise.all(
-            uniqueUserIds.map(async (userId) => {
-              try {
-                const user = await fetchUserById(userId)
-                return [
-                  userId,
-                  {
-                    username: user.username || `Usuario ${userId}`,
-                    avatarUrl: user.avatar_url || null,
-                  },
-                ] as const
-              } catch {
-                return [
-                  userId,
-                  {
-                    username: `Usuario ${userId}`,
-                    avatarUrl: null,
-                  },
-                ] as const
-              }
-            })
-          )
-          const userMeta = Object.fromEntries(userPairs)
-          const commentsPairs = await Promise.all(
-            freshReviews.map(async (review) => {
-              try {
-                const comments = await fetchReviewComments(review.id)
-                return [review.id, Array.isArray(comments) ? comments : []] as const
-              } catch {
-                return [review.id, [] as ReviewCommentApi[]] as const
-              }
-            })
-          )
-          const commentsByReviewId = Object.fromEntries(commentsPairs)
-          setReviews(mapMovieReviews(freshReviews, userMeta, commentsByReviewId))
-        }
+        const latestComments = await fetchReviewComments(replyTargetId)
+        const mappedComments = (Array.isArray(latestComments) ? latestComments : []).map((comment) => ({
+          id: comment.id,
+          userId: comment.user_id,
+          username: comment.users?.username || `Usuario ${comment.user_id}`,
+          avatarUrl: comment.users?.avatar_url || null,
+          content: comment.content,
+          createdAt: comment.created_at,
+        }))
+
+        setReviews((prev) =>
+          prev.map((review) => {
+            if (review.id !== replyTargetId) return review
+            return {
+              ...review,
+              comments: mappedComments,
+            }
+          })
+        )
+
         showSuccess('Comentario enviado')
-        setComposerMode(null)
-        setComposerText('')
       } catch (err) {
+        setReviews(previousReviews)
+        setComposerMode('reply')
+        setReplyTargetId(replyTargetId)
+        setComposerText(text)
         showError((err as Error).message || 'No se pudo enviar el comentario')
       }
       return

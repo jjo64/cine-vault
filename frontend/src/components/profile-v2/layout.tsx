@@ -126,14 +126,18 @@ export function Navbar({
       </button>
 
       <ul className="profile-nav-links" style={{ gap: 36, listStyle: 'none', margin: 0, padding: 0 }}>
-        {['Explorar', 'Feed', 'Esta noche', 'Diario', 'Perfil'].map((link) => {
+        {['Diario', 'Esta noche', 'Feed', 'Members', 'Lists', 'Films', 'Perfil'].map((link) => {
           const isActive = link === 'Perfil'
           return (
             <li key={link}>
               <button
                 onClick={() => {
-                  if (link === 'Explorar') onNavigateHome()
+                  if (link === 'Films') onNavigateHome()
                   if (link === 'Diario') navigate('/diary')
+                  if (link === 'Feed') navigate('/feed')
+                  if (link === 'Lists') navigate('/lists')
+                  if (link === 'Members') navigate('/members')
+                  if (link === 'Esta noche') navigate('/for-you')
                 }}
                 style={{
                   border: 'none',
@@ -283,7 +287,7 @@ export function Navbar({
           )}
         </div>
 
-        <button style={{ ...inputButtonReset, color: C.textSoft, padding: 4, position: 'relative' }}>
+        <button onClick={() => navigate('/activity')} style={{ ...inputButtonReset, color: C.textSoft, padding: 4, position: 'relative' }}>
           <Bell size={16} />
           <span
             style={{

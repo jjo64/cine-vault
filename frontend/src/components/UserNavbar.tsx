@@ -106,7 +106,7 @@ const UserNavbar: React.FC = () => {
                         <span style={{ fontSize: '28px' }}>🎬</span> Cinevault
                     </Link>
                     <div className="nav-menu" style={{ display: 'flex', gap: '20px' }}>
-                        {['FILMS', 'LISTS', 'MEMBERS', 'JOURNAL'].map(item => (
+                        {['DIARY', 'ESTA NOCHE', 'FEED', 'MEMBERS', 'LISTS', 'FILMS'].map(item => (
                             <Link key={item} to={resolveNavPathWithFallback(item)} style={{ color: '#9ab', textDecoration: 'none', fontSize: '13px', fontWeight: 'bold', letterSpacing: '1px' }}>
                                 {item}
                             </Link>
@@ -182,6 +182,10 @@ const UserNavbar: React.FC = () => {
                                     </span>
                                 )}
                             </button>
+
+                            <Link to="/activity" style={{ color: '#9ab', textDecoration: 'none', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                                Activity
+                            </Link>
 
                             {showNotifications && (
                                 <div style={{ position: 'absolute', top: '130%', right: 0 }}>

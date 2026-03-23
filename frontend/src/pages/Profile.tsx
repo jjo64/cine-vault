@@ -50,39 +50,65 @@ function CinematicSignature({
 }) {
   const [busy, setBusy] = useState(false)
   const [hoveredField, setHoveredField] = useState<number | null>(null)
+  const [isEditing, setIsEditing] = useState(false)
+  const [draft, setDraft] = useState<CinematicSignaturePayload>({
+    pivotal_film: value?.pivotal_film || null,
+    pivotal_film_detail: value?.pivotal_film_detail || null,
+    formative_director: value?.formative_director || null,
+    formative_director_detail: value?.formative_director_detail || null,
+    unforgettable_scene: value?.unforgettable_scene || null,
+    unforgettable_scene_detail: value?.unforgettable_scene_detail || null,
+    cinema_turning_year: value?.cinema_turning_year || null,
+    cinema_turning_year_detail: value?.cinema_turning_year_detail || null,
+  })
 
-  const handleEdit = async () => {
+  useEffect(() => {
+    setDraft({
+      pivotal_film: value?.pivotal_film || null,
+      pivotal_film_detail: value?.pivotal_film_detail || null,
+      formative_director: value?.formative_director || null,
+      formative_director_detail: value?.formative_director_detail || null,
+      unforgettable_scene: value?.unforgettable_scene || null,
+      unforgettable_scene_detail: value?.unforgettable_scene_detail || null,
+      cinema_turning_year: value?.cinema_turning_year || null,
+      cinema_turning_year_detail: value?.cinema_turning_year_detail || null,
+    })
+  }, [value])
+
+  const handleEdit = () => {
     if (!canEdit || busy) return
+    setIsEditing(true)
+  }
 
-    const nextPivotalFilm = window.prompt('Película que te cambió la vida', value?.pivotal_film ?? '')
-    if (nextPivotalFilm === null) return
-    const nextPivotalDetail = window.prompt('Detalle de esa película', value?.pivotal_film_detail ?? '')
-    if (nextPivotalDetail === null) return
-    const nextDirector = window.prompt('Director que más te formó', value?.formative_director ?? '')
-    if (nextDirector === null) return
-    const nextDirectorDetail = window.prompt('Detalle de ese director', value?.formative_director_detail ?? '')
-    if (nextDirectorDetail === null) return
-    const nextScene = window.prompt('Escena que nunca olvidás', value?.unforgettable_scene ?? '')
-    if (nextScene === null) return
-    const nextSceneDetail = window.prompt('Detalle de esa escena', value?.unforgettable_scene_detail ?? '')
-    if (nextSceneDetail === null) return
-    const nextYear = window.prompt('Año en que el cine se volvió algo serio', value?.cinema_turning_year ?? '')
-    if (nextYear === null) return
-    const nextYearDetail = window.prompt('Detalle de ese año', value?.cinema_turning_year_detail ?? '')
-    if (nextYearDetail === null) return
+  const handleCancel = () => {
+    if (busy) return
+    setDraft({
+      pivotal_film: value?.pivotal_film || null,
+      pivotal_film_detail: value?.pivotal_film_detail || null,
+      formative_director: value?.formative_director || null,
+      formative_director_detail: value?.formative_director_detail || null,
+      unforgettable_scene: value?.unforgettable_scene || null,
+      unforgettable_scene_detail: value?.unforgettable_scene_detail || null,
+      cinema_turning_year: value?.cinema_turning_year || null,
+      cinema_turning_year_detail: value?.cinema_turning_year_detail || null,
+    })
+    setIsEditing(false)
+  }
 
+  const handleSave = async () => {
     setBusy(true)
     try {
       await onSave({
-        pivotal_film: nextPivotalFilm.trim() || null,
-        pivotal_film_detail: nextPivotalDetail.trim() || null,
-        formative_director: nextDirector.trim() || null,
-        formative_director_detail: nextDirectorDetail.trim() || null,
-        unforgettable_scene: nextScene.trim() || null,
-        unforgettable_scene_detail: nextSceneDetail.trim() || null,
-        cinema_turning_year: nextYear.trim() || null,
-        cinema_turning_year_detail: nextYearDetail.trim() || null,
+        pivotal_film: (draft.pivotal_film || '').trim() || null,
+        pivotal_film_detail: (draft.pivotal_film_detail || '').trim() || null,
+        formative_director: (draft.formative_director || '').trim() || null,
+        formative_director_detail: (draft.formative_director_detail || '').trim() || null,
+        unforgettable_scene: (draft.unforgettable_scene || '').trim() || null,
+        unforgettable_scene_detail: (draft.unforgettable_scene_detail || '').trim() || null,
+        cinema_turning_year: (draft.cinema_turning_year || '').trim() || null,
+        cinema_turning_year_detail: (draft.cinema_turning_year_detail || '').trim() || null,
       })
+      setIsEditing(false)
     } finally {
       setBusy(false)
     }
@@ -113,24 +139,32 @@ function CinematicSignature({
 
         {[
           {
+            key: 'pivotal_film',
+            detailKey: 'pivotal_film_detail',
             label: 'La película que te cambió la vida',
             icon: <svg width="10" height="10" viewBox="0 0 16 16" fill={C.accentDim}><path d="M2 2h12v12H2zM4 4h2v2H4zM10 4h2v2h-2zM4 10h2v2H4zM10 10h2v2h-2z"/></svg>,
             value: value?.pivotal_film || 'Sin definir',
             detail: value?.pivotal_film_detail || 'Sin detalle',
           },
           {
+            key: 'formative_director',
+            detailKey: 'formative_director_detail',
             label: 'El director que más te formó',
             icon: <svg width="10" height="10" viewBox="0 0 16 16" fill={C.accentDim}><path d="M8 1a4 4 0 1 0 0 8A4 4 0 0 0 8 1zM2 11c0-1.1 2.7-2 6-2s6 .9 6 2v1H2v-1z"/></svg>,
             value: value?.formative_director || 'Sin definir',
             detail: value?.formative_director_detail || 'Sin detalle',
           },
           {
+            key: 'unforgettable_scene',
+            detailKey: 'unforgettable_scene_detail',
             label: 'La escena que nunca olvidás',
             icon: <svg width="10" height="10" viewBox="0 0 16 16" fill={C.accentDim}><path d="M4 3l9 5-9 5z"/></svg>,
             value: value?.unforgettable_scene || 'Sin definir',
             detail: value?.unforgettable_scene_detail || 'Sin detalle',
           },
           {
+            key: 'cinema_turning_year',
+            detailKey: 'cinema_turning_year_detail',
             label: 'El año en que el cine se volvió algo serio',
             icon: <svg width="10" height="10" viewBox="0 0 16 16" fill={C.accentDim}><path d="M3 2h10v12H3zM5 1h1v2H5zM10 1h1v2h-1zM5 6h6v1H5z"/></svg>,
             value: value?.cinema_turning_year || 'Sin definir',
@@ -154,38 +188,117 @@ function CinematicSignature({
               {field.icon}
               <span style={{ fontSize: 8, letterSpacing: '0.18em', textTransform: 'uppercase', color: C.textMuted, fontFamily: SANS }}>{field.label}</span>
             </div>
-            <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 19, fontWeight: 400, color: C.text, lineHeight: 1.2, marginBottom: 4 }}>
-              {field.value}
-            </div>
-            <div style={{ fontSize: 11, color: C.textSoft, fontFamily: SANS, fontStyle: 'italic' }}>{field.detail}</div>
+            {isEditing ? (
+              <>
+                <textarea
+                  value={(draft[field.key as keyof CinematicSignaturePayload] as string | null) || ''}
+                  onChange={(event) => {
+                    const nextValue = event.target.value.slice(0, 280)
+                    setDraft((prev) => ({
+                      ...prev,
+                      [field.key]: nextValue,
+                    }))
+                  }}
+                  rows={2}
+                  style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical', background: C.bg, border: `1px solid ${C.border}`, color: C.text, fontFamily: 'Cormorant Garamond, serif', fontSize: 18, lineHeight: 1.2, marginBottom: 6, padding: '6px 8px' }}
+                />
+                <textarea
+                  value={(draft[field.detailKey as keyof CinematicSignaturePayload] as string | null) || ''}
+                  onChange={(event) => {
+                    const nextValue = event.target.value.slice(0, 280)
+                    setDraft((prev) => ({
+                      ...prev,
+                      [field.detailKey]: nextValue,
+                    }))
+                  }}
+                  rows={2}
+                  style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical', background: C.bg, border: `1px solid ${C.border}`, color: C.textSoft, fontFamily: SANS, fontSize: 11, fontStyle: 'italic', marginBottom: 4, padding: '6px 8px' }}
+                />
+                <div style={{ fontSize: 10, color: C.textMuted, fontFamily: SANS, textAlign: 'right' }}>
+                  {((draft[field.key as keyof CinematicSignaturePayload] as string | null) || '').length}/280
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 19, fontWeight: 400, color: C.text, lineHeight: 1.2, marginBottom: 4 }}>
+                  {field.value}
+                </div>
+                <div style={{ fontSize: 11, color: C.textSoft, fontFamily: SANS, fontStyle: 'italic' }}>{field.detail}</div>
+              </>
+            )}
           </div>
         ))}
 
         {canEdit ? (
           <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', padding: '0 0 0 20px', borderLeft: `1px solid ${C.border}` }}>
-            <button
-              type="button"
-              onClick={handleEdit}
-              disabled={busy}
-              style={{
-                padding: '7px 14px',
-                background: busy ? C.accent : 'transparent',
-                color: busy ? C.bg : C.textSoft,
-                border: `1px solid ${busy ? C.accent : C.border}`,
-                fontFamily: SANS,
-                fontSize: 9,
-                letterSpacing: '0.16em',
-                textTransform: 'uppercase',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 5,
-                transition: 'all 0.2s',
-              }}
-            >
-              <svg width="9" height="9" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M11.3 1.3l3.4 3.4-8.6 8.6H2.7v-3.4l8.6-8.6zm-8 10.7h2l7.9-7.9-2-2-7.9 7.9v2z"/></svg>
-              {busy ? 'Guardando' : 'Editar'}
-            </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {isEditing ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={busy}
+                    style={{
+                      padding: '7px 14px',
+                      background: busy ? C.accentDim : C.accent,
+                      color: C.bg,
+                      border: `1px solid ${C.accent}`,
+                      fontFamily: SANS,
+                      fontSize: 9,
+                      letterSpacing: '0.16em',
+                      textTransform: 'uppercase',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    {busy ? 'Guardando' : 'Guardar'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancel}
+                    disabled={busy}
+                    style={{
+                      padding: '7px 14px',
+                      background: 'transparent',
+                      color: C.textSoft,
+                      border: `1px solid ${C.border}`,
+                      fontFamily: SANS,
+                      fontSize: 9,
+                      letterSpacing: '0.16em',
+                      textTransform: 'uppercase',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    Cancelar
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleEdit}
+                  disabled={busy}
+                  style={{
+                    padding: '7px 14px',
+                    background: 'transparent',
+                    color: C.textSoft,
+                    border: `1px solid ${C.border}`,
+                    fontFamily: SANS,
+                    fontSize: 9,
+                    letterSpacing: '0.16em',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  <svg width="9" height="9" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M11.3 1.3l3.4 3.4-8.6 8.6H2.7v-3.4l8.6-8.6zm-8 10.7h2l7.9-7.9-2-2-7.9 7.9v2z"/></svg>
+                  Editar firma
+                </button>
+              )}
+            </div>
           </div>
         ) : null}
       </div>

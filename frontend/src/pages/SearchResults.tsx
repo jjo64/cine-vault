@@ -138,6 +138,7 @@ const SPECIAL_FILTERS = [
 const TABS = [
   { key: 'all', label: 'Todo', icon: <Film size={12} /> },
   { key: 'film', label: 'Películas', icon: <Film size={12} /> },
+  { key: 'tv', label: 'Series', icon: <Film size={12} /> },
   { key: 'person', label: 'Personas', icon: <User size={12} /> },
   { key: 'user', label: 'Usuarios', icon: <User size={12} /> },
 ]
@@ -741,17 +742,43 @@ export function Search() {
     })
   }, [mergedFilms, filters])
 
+  const filteredMovies = useMemo(
+    () => filteredFilms.filter((film) => film.mediaType === 'movie'),
+    [filteredFilms]
+  )
+
+  const filteredSeries = useMemo(
+    () => filteredFilms.filter((film) => film.mediaType === 'tv'),
+    [filteredFilms]
+  )
+
   const displayedByTab =
     activeTab === 'all'
       ? [...filteredFilms, ...personResults, ...userResults]
       : activeTab === 'film'
-      ? filteredFilms
+      ? filteredMovies
+      : activeTab === 'tv'
+      ? filteredSeries
       : activeTab === 'person'
       ? personResults
       : userResults
 
-  const totalPages = Math.max(1, Math.ceil(filteredFilms.length / PER_PAGE))
-  const pageFilms = filteredFilms.slice((page - 1) * PER_PAGE, page * PER_PAGE)
+  const totalPages = Math.max(
+    1,
+    Math.ceil(
+      (activeTab === 'film'
+        ? filteredMovies.length
+        : activeTab === 'tv'
+          ? filteredSeries.length
+          : filteredFilms.length) / PER_PAGE
+    )
+  )
+
+  const pageFilms = (activeTab === 'film'
+    ? filteredMovies
+    : activeTab === 'tv'
+      ? filteredSeries
+      : filteredFilms).slice((page - 1) * PER_PAGE, page * PER_PAGE)
 
   useEffect(() => {
     const movieIdsToEnrich = filmResults.filter((film) => film.mediaType === 'movie').map((film) => film.id)
@@ -834,7 +861,8 @@ export function Search() {
 
   const counts = {
     all: filteredFilms.length + personResults.length + userResults.length,
-    film: filteredFilms.length,
+    film: filteredMovies.length,
+    tv: filteredSeries.length,
     person: personResults.length,
     user: userResults.length,
   }
@@ -941,6 +969,20 @@ export function Search() {
 
                     return <FilmResultItem key={`${film.mediaType}-${film.id}`} item={mergedFilm} delay={i * 0.08} isDetailsLoading={Boolean(loadingFilmDetails[film.id])} />
                   })}
+                {activeTab === 'tv' &&
+                  pageFilms.map((film, i) => {
+                    const details = enrichedFilms[film.id]
+                    const mergedFilm: FilmResult = {
+                      ...film,
+                      ...details,
+                      director: details?.director ?? film.director,
+                      runtime: details?.runtime ?? film.runtime,
+                      genres: details?.genres ?? film.genres,
+                      country: details?.country ?? film.country,
+                    }
+
+                    return <FilmResultItem key={`${film.mediaType}-${film.id}`} item={mergedFilm} delay={i * 0.08} isDetailsLoading={Boolean(loadingFilmDetails[film.id])} />
+                  })}
                 {activeTab === 'person' && personResults.map((person, i) => <PersonResultItem key={person.id} item={person} delay={i * 0.06} />)}
                 {activeTab === 'user' && userResults.map((user, i) => <UserResultItem key={user.id} item={user} delay={i * 0.06} />)}
 
@@ -953,7 +995,12 @@ export function Search() {
               </motion.div>
             </AnimatePresence>
 
-            {(activeTab === 'all' || activeTab === 'film') && filteredFilms.length > PER_PAGE && (
+            {(activeTab === 'all' || activeTab === 'film' || activeTab === 'tv') &&
+              (activeTab === 'film'
+                ? filteredMovies.length
+                : activeTab === 'tv'
+                  ? filteredSeries.length
+                  : filteredFilms.length) > PER_PAGE && (
               <Pagination current={page} total={totalPages} onPage={(nextPage) => { setPage(nextPage); window.scrollTo({ top: 130, behavior: 'smooth' }) }} />
             )}
           </div>

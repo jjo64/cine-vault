@@ -20,7 +20,10 @@ type RecoveryCodesStatusResponse = {
   remaining: number
 }
 
-const API_URL = import.meta.env.VITE_API_URL
+const API_URL = String(import.meta.env.VITE_API_URL || 'https://api.cinevault.art').trim().replace(/\/+$/, '')
+const GOOGLE_REDIRECT_URI_ENV = String(import.meta.env.VITE_GOOGLE_REDIRECT_URI || '').trim()
+const GOOGLE_REDIRECT_URI_PROD = 'https://api.cinevault.art/api/auth/google/callback'
+const GOOGLE_REDIRECT_URI_DEV = 'http://localhost:4000/api/auth/google/callback'
 const ACCESS_TOKEN_KEY = 'token'
 const AUTH_STORAGE_MODE_RAW = String(import.meta.env.VITE_AUTH_STORAGE_MODE || 'hybrid').toLowerCase()
 const COOKIE_ONLY_MODES = new Set(['cookie', 'cookie-only'])
@@ -68,6 +71,23 @@ export const setStoredAccessToken = (token: string) => {
 export const clearStoredAccessToken = () => {
   volatileAccessToken = null
   localStorage.removeItem(ACCESS_TOKEN_KEY)
+}
+
+export const getGoogleRedirectUri = () => {
+  if (GOOGLE_REDIRECT_URI_ENV) return GOOGLE_REDIRECT_URI_ENV
+
+  if (typeof window !== 'undefined') {
+    const isLocalHost = ['localhost', '127.0.0.1'].includes(window.location.hostname)
+    if (isLocalHost) return GOOGLE_REDIRECT_URI_DEV
+  }
+
+  return GOOGLE_REDIRECT_URI_PROD
+}
+
+export const buildGoogleOAuthUrl = () => {
+  const oauthUrl = new URL(`${API_URL}/api/auth/google`)
+  oauthUrl.searchParams.set('redirect_uri', getGoogleRedirectUri())
+  return oauthUrl.toString()
 }
 
 export async function refreshAccessToken(): Promise<string | null> {

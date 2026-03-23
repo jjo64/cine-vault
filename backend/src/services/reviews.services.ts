@@ -16,6 +16,7 @@ import type {
   ActualizarComentarioDTO,
 } from "../schemas/reviews.js"
 import { ensureMovieRefId, findMovieRefIdByCandidate } from "./movieRef.services.js"
+import { prisma } from "../lib/prisma.js"
 
 /* ==========================================================================
    REVIEWS SERVICE
@@ -221,6 +222,82 @@ export const eliminarComentarioService = async (
   if (comentario.user_id !== userId)
     throw new ForbiddenError("No tienes permiso para eliminar este comentario")
   await reviewsRepository.deleteComment(commentId)
+}
+
+export const obtenerResenaPorUsernameYMovieSlugService = async (
+  username: string,
+  movieSlug: string
+) => {
+  const usuario = await userRepository.findByUsername(username)
+  if (!usuario) throw new NotFoundError("Usuario no encontrado")
+
+  const slug = movieSlug.trim().toLowerCase()
+  const tmdbCandidateRaw = slug.split("-")[0]
+  const tmdbCandidate = Number(tmdbCandidateRaw)
+
+  let movieRefId: number | null = null
+
+  if (Number.isFinite(tmdbCandidate)) {
+    const byTmdb = await prisma.movies_ref.findUnique({
+      where: { tmdb_id: tmdbCandidate },
+      select: { id: true },
+    })
+    movieRefId = byTmdb?.id ?? null
+  }
+
+  if (!movieRefId) {
+    const bySlug = await prisma.movies_ref.findUnique({
+      where: { slug },
+      select: { id: true },
+    })
+    movieRefId = bySlug?.id ?? null
+  }
+
+  if (!movieRefId && Number.isFinite(tmdbCandidate)) {
+    movieRefId = await findMovieRefIdByCandidate(tmdbCandidate)
+  }
+
+  if (!movieRefId) throw new NotFoundError("Película no encontrada")
+
+  const review = await prisma.reviews.findFirst({
+    where: {
+      user_id: usuario.id,
+      movie_id: movieRefId,
+    },
+    orderBy: { created_at: "desc" },
+    include: {
+      users: {
+        select: {
+          id: true,
+          username: true,
+          avatar_url: true,
+        },
+      },
+      movies_ref: {
+        select: {
+          id: true,
+          tmdb_id: true,
+          slug: true,
+        },
+      },
+      review_comments: {
+        orderBy: { created_at: "asc" },
+        include: {
+          users: {
+            select: {
+              id: true,
+              username: true,
+              avatar_url: true,
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (!review) throw new NotFoundError("Reseña no encontrada")
+
+  return review
 }
 
 const asegurarId = (id: number) => {

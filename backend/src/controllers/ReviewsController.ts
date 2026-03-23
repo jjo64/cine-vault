@@ -51,6 +51,17 @@ export const getReviewsByMovieId = async (req: Request, res: Response) => {
   res.json(resenas)
 }
 
+export const getReviewByUsernameAndMovieSlug = async (
+  req: Request,
+  res: Response
+) => {
+  const review = await reviewsService.obtenerResenaPorUsernameYMovieSlugService(
+    String(req.params.username),
+    String(req.params.movieSlug)
+  )
+  res.json(review)
+}
+
 export const likeReview = async (req: Request, res: Response) => {
   await assertNotRateLimited(req.ip!)
   const userId = req.user!.user_id
