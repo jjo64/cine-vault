@@ -109,18 +109,7 @@ export function Navbar({
     >
       <button
         onClick={onNavigateHome}
-        style={{
-          border: 'none',
-          background: 'none',
-          cursor: 'pointer',
-          fontFamily: SERIF,
-          fontSize: 22,
-          fontWeight: 500,
-          letterSpacing: '0.12em',
-          color: C.text,
-          textTransform: 'uppercase',
-          textDecoration: 'none',
-        }}
+        className="profile-nav-logo"
       >
         Cine<span style={{ color: C.accent }}>Vault</span>
       </button>

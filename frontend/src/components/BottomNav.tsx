@@ -7,6 +7,8 @@ const ITEMS = [
   { to: '/search', icon: Search, label: 'Buscar' },
   { to: '/feed', icon: Film, label: 'Feed' },
   { to: '/profile', icon: User, label: 'Perfil' },
+  // /profile → ProfileIndexPage → redirige a /:username si logueado
+  // → dispara modal de login si no logueado
 ]
 
 export function BottomNav() {

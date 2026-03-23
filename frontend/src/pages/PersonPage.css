@@ -93,7 +93,7 @@
     color: #e2e2e2;
     line-height: 1.75;
     font-size: 18px;
-    font-family: 'Cormorant Garamond', serif;
+    font-family: var(--font-serif, 'Cormorant Garamond'), Georgia, 'Times New Roman', serif;
 }
 
 .person-autopsy-button {
@@ -359,6 +359,18 @@
     .credit-card {
         max-width: 100%;
     }
+
+    .person-film-row {
+        grid-template-columns: 70px 1fr !important;
+        gap: 12px !important;
+        align-items: flex-start !important;
+    }
+
+    .person-film-row > div:nth-child(1),
+    .person-film-row > div:nth-child(2),
+    .person-film-row > div:nth-child(4) {
+        display: none !important;
+    }
 }
 
 .person-page-hero-content {
@@ -391,7 +403,12 @@
     }
 
     .person-page-desktop-portrait {
-        display: none;
+        display: block !important;
+        position: relative !important;
+        right: auto !important;
+        width: 140px !important;
+        height: 200px !important;
+        margin-top: 20px;
     }
 
     .person-page-sticky-aside {

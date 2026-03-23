@@ -154,6 +154,7 @@ function FilmRow({ item, badge }: { item: CreditItem; badge?: string }) {
     <Link to={movieHref(item)} style={{ textDecoration: 'none' }}>
       <motion.div
         whileHover={{ y: -2 }}
+        className="person-film-row"
         transition={{ duration: 0.2 }}
         style={{
           display: 'grid',
@@ -463,7 +464,7 @@ export default function PersonPage() {
                   Biografía <div style={{ flex: 1, height: 1, background: `linear-gradient(to right, ${C.border}, transparent)` }} />
                 </div>
                 {visibleBio.map((paragraph, index) => (
-                  <p key={index} style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 300, lineHeight: 1.8, color: C.text, margin: '0 0 18px' }}>{paragraph}</p>
+                  <p key={index} className="person-biography" style={{ fontSize: 20, fontWeight: 300, lineHeight: 1.8, color: C.text, margin: '0 0 18px' }}>{paragraph}</p>
                 ))}
                 {bioParagraphs.length > 1 ? (
                   <button onClick={() => setBioExpanded((value) => !value)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', fontFamily: SANS, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.accent, padding: 0 }}>

@@ -162,18 +162,22 @@
     }
 
     .md-hero-content {
-        padding: 0 16px 28px;
-        max-width: 100%;
+        padding: 80px 16px 20px;
+        max-width: calc(100% - 110px);
     }
 
     .md-hero-poster {
         /* Reactivar en mobile con tamaño pequeño */
         display: block !important;
         right: 12px;
+        bottom: 16px;
         width: 80px;
         top: auto;
-        bottom: 20px;
         transform: none;
+    }
+    
+    .md-hero-poster div {
+        box-shadow: 0 10px 30px rgba(0,0,0,0.8) !important;
     }
 
     .md-hero-title {
@@ -205,6 +209,9 @@
 
     .md-actions-row {
         width: 100%;
+        flex-direction: column;
+        gap: 8px;
+        padding: 14px 16px;
     }
 
     .md-action-btn {
@@ -483,6 +490,18 @@
 
   .md-similar-list::-webkit-scrollbar {
     display: none;
+  }
+
+  .md-action-icons-row {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .md-action-icon-btn {
+    flex: 1 !important;
+    width: auto !important;
+    height: 44px !important;
   }
 }
 
