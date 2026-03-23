@@ -3,6 +3,7 @@ import {
   addReview,
   removeReview,
   getReviewsByMovieId,
+  getReviewByUsernameAndMovieSlug,
   removeLikeReview,
   likeReview,
   getReviewsByUserId,
@@ -567,10 +568,28 @@ router.patch(
   validarBody(actualizarComentarioSchema),
   manejadorAsincrono(updateComment)
 )
+
+// Alias de compatibilidad para clientes que actualizan/eliminan comentarios
+// sin incluir reviewId en la URL.
+router.put(
+  "/comments/:commentId",
+  middlewareAutenticacion,
+  validarBody(actualizarComentarioSchema),
+  manejadorAsincrono(updateComment)
+)
+
 router.delete(
   "/:reviewId/comments/:commentId",
   middlewareAutenticacion,
   manejadorAsincrono(removeComment)
 )
+
+router.delete(
+  "/comments/:commentId",
+  middlewareAutenticacion,
+  manejadorAsincrono(removeComment)
+)
+
+router.get("/:username/:movieSlug", manejadorAsincrono(getReviewByUsernameAndMovieSlug))
 
 export default router

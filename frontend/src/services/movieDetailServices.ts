@@ -88,9 +88,23 @@ export type ReviewCommentApi = {
   }
 }
 
+export type ReviewThreadApi = ReviewApi & {
+  users?: {
+    id: number
+    username?: string
+    avatar_url?: string | null
+  }
+  movies_ref?: {
+    id: number
+    tmdb_id: number
+    slug?: string | null
+  }
+  review_comments?: ReviewCommentApi[]
+}
+
 type RequestOptions = {
   token?: string | null
-  method?: 'GET' | 'POST' | 'PATCH' | 'DELETE'
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   body?: unknown
 }
 
@@ -248,8 +262,24 @@ export const commentOnReview = (token: string | null, reviewId: number, content:
   apiRequest(`/api/reviews/${reviewId}/comments`, {
     token,
     method: 'POST',
-    body: { content },
+    body: { content, review_id: reviewId },
   })
 
 export const fetchReviewComments = (reviewId: number) =>
   apiRequest<ReviewCommentApi[]>(`/api/reviews/${reviewId}/comments`)
+
+export const updateReviewComment = (token: string | null, commentId: number, content: string) =>
+  apiRequest<ReviewCommentApi>(`/api/reviews/comments/${commentId}`, {
+    token,
+    method: 'PUT',
+    body: { content },
+  })
+
+export const deleteReviewComment = (token: string | null, commentId: number) =>
+  apiRequest<{ message: string }>(`/api/reviews/comments/${commentId}`, {
+    token,
+    method: 'DELETE',
+  })
+
+export const fetchReviewThread = (username: string, movieSlug: string) =>
+  apiRequest<ReviewThreadApi>(`/api/reviews/${encodeURIComponent(username)}/${encodeURIComponent(movieSlug)}`)

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import './AuthModal.css';
-import { notifyAuthStateChanged, setStoredAccessToken, verifyTwoFactorLogin } from '../services/authServices'
+import { buildGoogleOAuthUrl, notifyAuthStateChanged, setStoredAccessToken, verifyTwoFactorLogin } from '../services/authServices'
 import { notify } from '../lib/notify'
 import { conectarSocket } from '../context/SocketContext'
 
@@ -131,7 +131,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
     }
 
     const handleGoogleLogin = () => {
-        window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/google`
+        window.location.href = buildGoogleOAuthUrl()
     }
 
     const isTwoFactorStep = step === 'two-factor'

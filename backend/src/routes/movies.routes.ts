@@ -88,6 +88,26 @@ router.get(
   })
 )
 
+router.get(
+  "/search",
+  manejadorAsincrono(async (req: Request, res: Response) => {
+    const query = String(req.query.q || "").trim()
+    const page = String(req.query.page || "1").trim()
+
+    if (!query) {
+      return res.status(400).json({ message: "Debe proporcionar un término de búsqueda." })
+    }
+
+    const data = await getOSet(
+      `tmdb:movies:search:${query.toLowerCase()}:p${page}`,
+      () => consultarTMDB("search/movie", { query, page }),
+      TTL.listas
+    )
+
+    res.status(200).json(data)
+  })
+)
+
 /**
  * @swagger
  * /movies/{idOrSlug}:

@@ -3,10 +3,13 @@
  * Con componente de Doble Función / Sesión Triple / Maratón.
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { motion } from 'motion/react';
 import { ArrowLeft, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { createSlug } from '../utils/stringUtils';
+import { fetchSearchMovies } from '../services/movieDetailServices';
 
 // ─── PALETTE ─────────────────────────────────────────────────
 const C = {
@@ -49,6 +52,13 @@ interface DiarySession {
   stage?:    string;
   hasOrder:  boolean;
 }
+
+type SearchEntryResult = {
+  id: number;
+  title?: string;
+  name?: string;
+  media_type?: 'movie' | 'tv' | 'person';
+};
 
 // ─── IMAGE HELPER ─────────────────────────────────────────────
 function Img({ src, alt, style, ...rest }: React.ImgHTMLAttributes<HTMLImageElement>) {
@@ -279,11 +289,65 @@ function SessionCard({ session, delay }: { session: DiarySession; delay: number 
 
 // ─── PAGE ────────────────────────────────────────────────────
 export function Diary() {
+  const navigate = useNavigate();
   const [filter, setFilter] = useState<SessionType | 'TODO'>('TODO');
+  const [isEntrySearchOpen, setIsEntrySearchOpen] = useState(false);
+  const [entryQuery, setEntryQuery] = useState('');
+  const [debouncedEntryQuery, setDebouncedEntryQuery] = useState('');
+  const [entryResults, setEntryResults] = useState<SearchEntryResult[]>([]);
+  const [entrySearching, setEntrySearching] = useState(false);
   const filters: Array<SessionType | 'TODO'> = ['TODO', 'single', 'double', 'triple', 'marathon'];
   const filterLabels: Record<string, string> = { 'TODO': 'Todo', 'single': 'Individual', 'double': 'Doble función', 'triple': 'Sesión triple', 'marathon': 'Maratón' };
 
   const filtered = filter === 'TODO' ? SESSIONS : SESSIONS.filter(s => s.type === filter);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedEntryQuery(entryQuery.trim());
+    }, 280);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [entryQuery]);
+
+  useEffect(() => {
+    if (!isEntrySearchOpen || !debouncedEntryQuery) {
+      setEntryResults([]);
+      setEntrySearching(false);
+      return;
+    }
+
+    let cancelled = false;
+    setEntrySearching(true);
+
+    fetchSearchMovies(debouncedEntryQuery)
+      .then((response) => {
+        if (cancelled) return;
+        const nextResults = (response.results || [])
+          .filter((item) => item.media_type !== 'person')
+          .slice(0, 6);
+        setEntryResults(nextResults);
+      })
+      .catch(() => {
+        if (!cancelled) setEntryResults([]);
+      })
+      .finally(() => {
+        if (!cancelled) setEntrySearching(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedEntryQuery, isEntrySearchOpen]);
+
+  const handleSelectEntry = (item: SearchEntryResult) => {
+    const label = item.title || item.name || 'sin-titulo';
+    if (item.media_type === 'tv') {
+      navigate(`/tv/${item.id}`);
+      return;
+    }
+
+    navigate(`/movie/${item.id}-${createSlug(label)}?entry=1`);
+  };
 
   return (
     <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: SANS }}>
@@ -297,9 +361,52 @@ export function Diary() {
         <div style={{ flex: 1, textAlign: 'center', fontFamily: SERIF, fontSize: 18, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text }}>
           Cine<span style={{ color: C.accent }}>Vault</span>
         </div>
-        <button style={{ background: C.accent, border: 'none', color: C.bg, padding: '7px 14px', fontFamily: SANS, fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
-          <Plus size={11} /> Nueva entrada
-        </button>
+        <div style={{ position: 'relative' }}>
+          <button onClick={() => setIsEntrySearchOpen((prev) => !prev)} style={{ background: C.accent, border: 'none', color: C.bg, padding: '7px 14px', fontFamily: SANS, fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
+            <Plus size={11} /> Nueva entrada
+          </button>
+
+          {isEntrySearchOpen && (
+            <div style={{ position: 'absolute', right: 0, top: 'calc(100% + 8px)', width: 320, border: `1px solid ${C.border}`, background: C.surface, boxShadow: '0 18px 36px rgba(0,0,0,0.45)', padding: 10 }}>
+              <input
+                value={entryQuery}
+                onChange={(event) => setEntryQuery(event.target.value)}
+                autoFocus
+                placeholder="Buscar película o serie..."
+                style={{ width: '100%', border: `1px solid ${C.border}`, background: C.bg, color: C.text, padding: '10px 12px', fontFamily: SANS, fontSize: 12, outline: 'none' }}
+              />
+              <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {entrySearching && <div style={{ color: C.textSoft, fontSize: 11, fontFamily: SANS }}>Buscando...</div>}
+                {!entrySearching && debouncedEntryQuery && entryResults.length === 0 && (
+                  <div style={{ color: C.textSoft, fontSize: 11, fontFamily: SANS }}>No hay resultados.</div>
+                )}
+                {entryResults.map((item) => {
+                  const title = item.title || item.name || 'Sin título';
+                  return (
+                    <button
+                      key={`${item.media_type || 'movie'}-${item.id}`}
+                      onClick={() => handleSelectEntry(item)}
+                      style={{
+                        border: `1px solid ${C.border}`,
+                        background: C.elevated,
+                        color: C.text,
+                        padding: '10px 12px',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        fontFamily: SANS,
+                      }}
+                    >
+                      <div style={{ fontSize: 12 }}>{title}</div>
+                      <div style={{ fontSize: 10, color: C.textSoft, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                        {item.media_type === 'tv' ? 'Serie' : 'Película'}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
       </nav>
 
       {/* Header */}

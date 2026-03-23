@@ -12,7 +12,15 @@ import {
   dejarDeSeguirUsuario,
   seguirUsuario,
 } from "../controllers/UserController.js"
+import {
+  obtenerFirmaCinematograficaController,
+  actualizarFirmaCinematograficaController,
+  actualizarAvatar,
+} from "../controllers/SettingsController.js"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
+import { validarBody } from "../middlewares/validation.middleware.js"
+import { actualizarFirmaSchema } from "../schemas/profile.js"
+import { actualizarAvatarSchema } from "../schemas/settings.js"
 
 /**
  * @swagger
@@ -104,6 +112,26 @@ router.get(
 router.get(
   "/:id/profile/curated-gallery",
   manejadorAsincrono(obtenerGaleriaCuradaPublica)
+)
+
+router.get(
+  "/me/signature",
+  middlewareAutenticacion,
+  manejadorAsincrono(obtenerFirmaCinematograficaController)
+)
+
+router.patch(
+  "/me/signature",
+  middlewareAutenticacion,
+  validarBody(actualizarFirmaSchema),
+  manejadorAsincrono(actualizarFirmaCinematograficaController)
+)
+
+router.post(
+  "/me/banner",
+  middlewareAutenticacion,
+  validarBody(actualizarAvatarSchema),
+  manejadorAsincrono(actualizarAvatar)
 )
 
 // Rutas privadas
