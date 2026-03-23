@@ -169,3 +169,15 @@
     color: gold !important;
     text-shadow: 0 0 10px gold;
 }
+
+@media (max-width: 480px) {
+    .feed-actions-panel {
+        right: 8px;
+        gap: 16px;
+    }
+
+    .feed-action-btn {
+        width: 40px;
+        height: 40px;
+    }
+}

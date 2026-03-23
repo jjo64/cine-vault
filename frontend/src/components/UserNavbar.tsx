@@ -1,17 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Bell } from 'lucide-react';
+import { Bell, Menu, X } from 'lucide-react';
 import { authorizedFetch } from '../services/authServices';
 import { logoutCurrentUser } from '../services/authServices';
 import { socket } from '../context/SocketContext';
 import { Notificaciones } from './Notificaciones';
 import { resolveNavPathWithFallback } from '../lib/navigation'
+import './UserNavbar.css'
 
 const UserNavbar: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [showUserMenu, setShowUserMenu] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const navigate = useNavigate();
     const menuRef = useRef<HTMLDivElement>(null);
     const notificationsRef = useRef<HTMLDivElement>(null);
@@ -68,6 +70,7 @@ const UserNavbar: React.FC = () => {
         e.preventDefault();
         if (searchQuery.trim()) {
             navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+            setIsMobileMenuOpen(false);
         }
     };
 
@@ -87,137 +90,83 @@ const UserNavbar: React.FC = () => {
     }
 
     const badgeText = unreadCount > 9 ? '9+' : String(unreadCount);
+    const primaryLinks = ['DIARY', 'ESTA NOCHE', 'FEED', 'ACTIVITY', 'LISTS', 'FILMS'];
+    const profileLinks = ['Home', 'Profile', 'Films', 'Diary', 'Lists', 'Settings'];
 
     return (
-        <nav className="user-navbar" style={{
-            background: '#14181c',
-            borderBottom: '1px solid rgba(255,255,255,0.1)',
-            padding: '0 20px',
-            height: '70px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            position: 'relative',
-            zIndex: 100
-        }}>
-            <div className="nav-container" style={{ width: '100%', maxWidth: '1100px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div className="nav-left" style={{ display: 'flex', alignItems: 'center', gap: '30px' }}>
-                    <Link to="/" className="nav-logo" style={{ fontSize: '24px', fontWeight: 'bold', color: '#fff', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={{ fontSize: '28px' }}>🎬</span> Cinevault
+        <nav className="user-navbar">
+            <div className="user-navbar__container">
+                <div className="user-navbar__left">
+                    <Link to="/" className="user-navbar__logo">
+                        <span className="user-navbar__logo-icon">🎬</span> Cinevault
                     </Link>
-                    <div className="nav-menu" style={{ display: 'flex', gap: '20px' }}>
-                        {['DIARY', 'ESTA NOCHE', 'FEED', 'MEMBERS', 'LISTS', 'FILMS'].map(item => (
-                            <Link key={item} to={resolveNavPathWithFallback(item)} style={{ color: '#9ab', textDecoration: 'none', fontSize: '13px', fontWeight: 'bold', letterSpacing: '1px' }}>
+                    <div className="user-navbar__menu">
+                        {primaryLinks.map(item => (
+                            <Link key={item} to={resolveNavPathWithFallback(item)} className="user-navbar__menu-link">
                                 {item}
                             </Link>
                         ))}
                     </div>
                 </div>
 
-                <div className="nav-right" style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                    <form className="nav-search" onSubmit={handleSearch} style={{ position: 'relative' }}>
+                <div className="user-navbar__right">
+                    <form className="user-navbar__search" onSubmit={handleSearch}>
                         <input
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            style={{
-                                background: '#2c3440',
-                                border: 'none',
-                                borderRadius: '20px',
-                                padding: '6px 15px 6px 35px',
-                                color: '#fff',
-                                fontSize: '13px',
-                                width: '200px'
-                            }}
+                            className="user-navbar__search-input"
                             placeholder="Buscar..."
                         />
                         <svg
                             width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ab" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
-                            style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }}
+                            className="user-navbar__search-icon"
                         >
                             <circle cx="11" cy="11" r="8"></circle>
                             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                         </svg>
                     </form>
 
-                    <div className="user-area" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                        <div ref={notificationsRef} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    <div className="user-navbar__actions">
+                        <div ref={notificationsRef} className="user-navbar__notification-wrap">
                             <button
                                 onClick={handleToggleNotifications}
-                                style={{
-                                    background: 'transparent',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    color: '#9ab',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    padding: 0,
-                                    width: 24,
-                                    height: 24,
-                                    position: 'relative'
-                                }}
+                                className="user-navbar__notification-btn"
                                 aria-label="Abrir notificaciones"
                             >
                                 <Bell size={18} strokeWidth={2} />
                                 {unreadCount > 0 && (
-                                    <span style={{
-                                        position: 'absolute',
-                                        top: 0,
-                                        right: 0,
-                                        width: 16,
-                                        height: 16,
-                                        borderRadius: '50%',
-                                        background: '#D4AF7A',
-                                        color: '#080808',
-                                        fontFamily: "'Syne', sans-serif",
-                                        fontSize: 9,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        lineHeight: 1,
-                                        transform: 'translate(35%, -35%)'
-                                    }}>
+                                    <span className="user-navbar__badge">
                                         {badgeText}
                                     </span>
                                 )}
                             </button>
 
-                            <Link to="/activity" style={{ color: '#9ab', textDecoration: 'none', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                            <Link to="/activity" className="user-navbar__activity-link">
                                 Activity
                             </Link>
 
                             {showNotifications && (
-                                <div style={{ position: 'absolute', top: '130%', right: 0 }}>
+                                <div className="user-navbar__notifications-popover">
                                     <Notificaciones open={showNotifications} showTrigger={false} />
                                 </div>
                             )}
                         </div>
 
-                        <div className="user-profile" onClick={() => setShowUserMenu(!showUserMenu)} ref={menuRef} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', position: 'relative' }}>
-                            <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="User" style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1px solid #456' }} />
-                            <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#fff' }}>JJO64</span>
-                            <span style={{ fontSize: '10px', color: '#678' }}>▼</span>
+                        <div className="user-navbar__user-profile" onClick={() => setShowUserMenu(!showUserMenu)} ref={menuRef}>
+                            <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="User" className="user-navbar__avatar" />
+                            <span className="user-navbar__username">JJO64</span>
+                            <span className="user-navbar__chevron">▼</span>
 
                             {showUserMenu && (
-                                <div className="user-dropdown" style={{
-                                    position: 'absolute',
-                                    top: '120%',
-                                    right: 0,
-                                    background: '#2c3440',
-                                    borderRadius: '4px',
-                                    padding: '10px 0',
-                                    width: '150px',
-                                    boxShadow: '0 5px 15px rgba(0,0,0,0.5)',
-                                    zIndex: 1000
-                                }}>
-                                    {['Home', 'Profile', 'Films', 'Diary', 'Reviews', 'Watchlist', 'Lists', 'Settings', 'Sign Out'].map(link => (
+                                <div className="user-navbar__dropdown">
+                                    {[...profileLinks, 'Sign Out'].map(link => (
                                         link === 'Sign Out' ? (
-                                            <button key={link} onClick={handleSignOut} style={{ display: 'block', width: '100%', textAlign: 'left', border: 'none', background: 'transparent', padding: '8px 15px', color: '#9ab', fontSize: '13px', cursor: 'pointer' }}>
+                                            <button key={link} onClick={handleSignOut} className="user-navbar__dropdown-button">
                                                 {link}
                                             </button>
                                         ) : (
-                                            <Link key={link} to={resolveNavPathWithFallback(link)} style={{ display: 'block', padding: '8px 15px', color: '#9ab', textDecoration: 'none', fontSize: '13px' }}>
+                                            <Link key={link} to={resolveNavPathWithFallback(link)} className="user-navbar__dropdown-link">
                                                 {link}
                                             </Link>
                                         )
@@ -225,23 +174,43 @@ const UserNavbar: React.FC = () => {
                                 </div>
                             )}
                         </div>
-                        <button style={{
-                            background: '#00b020',
-                            color: '#fff',
-                            border: 'none',
-                            borderRadius: '3px',
-                            padding: '6px 15px',
-                            fontSize: '12px',
-                            fontWeight: 'bold',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '5px'
-                        }}>
+
+                        <button
+                            className="user-navbar__hamburger"
+                            onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+                            aria-label="Abrir menu"
+                        >
+                            {isMobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
+                        </button>
+
+                        <button className="user-navbar__log-btn">
                             <span>+ LOG</span>
                         </button>
                     </div>
                 </div>
+            </div>
+
+            <div className={`user-navbar__mobile-menu ${isMobileMenuOpen ? 'user-navbar__mobile-menu--open' : ''}`}>
+                <form className="user-navbar__mobile-search" onSubmit={handleSearch}>
+                    <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="user-navbar__mobile-search-input"
+                        placeholder="Buscar..."
+                    />
+                </form>
+
+                {primaryLinks.map((item) => (
+                    <Link
+                        key={`mobile-${item}`}
+                        to={resolveNavPathWithFallback(item)}
+                        className="user-navbar__mobile-link"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                        {item}
+                    </Link>
+                ))}
             </div>
         </nav>
     );

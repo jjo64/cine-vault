@@ -468,11 +468,12 @@ export default function SettingsPage() {
 
         <h1 style={{ margin: '0 0 12px', fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(36px, 6vw, 52px)' }}>Editar perfil</h1>
 
-        <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
+        <div className="settings-tabs" style={{ gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
           {sectionTabs.map((section) => (
             <button
               key={section.key}
               onClick={() => setActiveSection(section.key)}
+              className="settings-tab-btn"
               style={{
                 border: `1px solid ${activeSection === section.key ? C.accentDim : C.border}`,
                 background: activeSection === section.key ? C.accentGlow : 'transparent',
@@ -494,7 +495,7 @@ export default function SettingsPage() {
         {successMessage && <div style={{ color: C.accent, marginBottom: 10, fontSize: 12 }}>{successMessage}</div>}
 
         {activeSection === 'perfil' && (
-          <section style={{ border: `1px solid ${C.border}`, background: C.surface, padding: 14, display: 'grid', gap: 14 }}>
+          <section className="settings-section" style={{ border: `1px solid ${C.border}`, background: C.surface, padding: 14, display: 'grid', gap: 14 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
               <div style={{ width: 88, height: 88, borderRadius: '50%', overflow: 'hidden', border: `1px solid ${C.border}`, background: C.elevated }}>
                 {avatarPreview ? <img src={avatarPreview} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : null}
@@ -549,7 +550,7 @@ export default function SettingsPage() {
         )}
 
         {activeSection === 'seguridad' && (
-          <section style={{ border: `1px solid ${C.border}`, background: C.surface, padding: 14, display: 'grid', gap: 14 }}>
+          <section className="settings-section" style={{ border: `1px solid ${C.border}`, background: C.surface, padding: 14, display: 'grid', gap: 14 }}>
             <h2 style={{ margin: 0, fontFamily: SERIF, fontWeight: 400, fontSize: 28 }}>Autenticación en 2 pasos</h2>
 
             <div style={{ border: `1px solid ${isTwoFactorEnabled ? C.accentDim : C.border}`, background: isTwoFactorEnabled ? C.accentGlow : C.elevated, padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
@@ -729,7 +730,7 @@ export default function SettingsPage() {
         )}
 
         {activeSection === 'cuenta' && (
-          <section style={{ border: `1px solid ${C.border}`, background: C.surface, padding: 14, display: 'grid', gap: 14 }}>
+          <section className="settings-section" style={{ border: `1px solid ${C.border}`, background: C.surface, padding: 14, display: 'grid', gap: 14 }}>
             <h2 style={{ margin: 0, fontFamily: SERIF, fontWeight: 400, fontSize: 28, color: '#ffb1b1' }}>Eliminar cuenta</h2>
             <p style={{ margin: 0, color: C.textSoft, fontFamily: SERIF, fontStyle: 'italic' }}>
               Esta acción es irreversible. Se eliminarán tus datos de CineVault.

@@ -425,7 +425,7 @@ function Navbar() {
         )}
       </ul>
 
-      <div className="landing-nav-right" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div className="landing-nav-right">
         <div ref={containerRef} className={`landing-search ${menuOpen ? 'landing-search-compressed' : ''}`} style={{ position: 'relative' }}>
           <div
             className="landing-search-shell"
@@ -553,35 +553,13 @@ function Navbar() {
                 return next
               })
             }}
-            style={{
-              width: 36,
-              height: 36,
-              border: `1px solid ${C.border}`,
-              background: 'rgba(255,255,255,0.08)',
-              color: C.text,
-              display: 'grid',
-              placeItems: 'center',
-              cursor: 'pointer',
-            }}
+            className="landing-mobile-menu-btn"
             aria-label="Abrir menu"
           >
             {menuOpen ? <X size={16} /> : <Menu size={16} />}
           </button>
           {menuOpen && (
-            <div
-              className="landing-mobile-menu-panel"
-              style={{
-                position: 'absolute',
-                right: 0,
-                top: 44,
-                minWidth: 190,
-                border: `1px solid ${C.border}`,
-                background: 'rgba(8,8,8,0.98)',
-                padding: 8,
-                display: 'grid',
-                gap: 6,
-              }}
-            >
+            <div className="landing-mobile-menu-panel">
               {navLinks.map((link) => (
                 <button
                   key={link}
@@ -597,18 +575,7 @@ function Navbar() {
                     }
                     setMenuOpen(false)
                   }}
-                  style={{
-                    border: 'none',
-                    background: 'transparent',
-                    color: C.text,
-                    textAlign: 'left',
-                    padding: '8px 10px',
-                    fontFamily: SANS,
-                    fontSize: 11,
-                    letterSpacing: '0.12em',
-                    textTransform: 'uppercase',
-                    cursor: 'pointer',
-                  }}
+                  className="landing-mobile-menu-link"
                 >
                   {link}
                 </button>
@@ -727,24 +694,11 @@ function Hero() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 1.1 }}
-          style={{ display: 'flex', gap: 14, alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}
+          className="landing-hero-cta-wrap"
         >
           <button
             onClick={() => window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: { mode: 'register' } }))}
-            style={{
-              padding: '14px 32px',
-              background: C.accent,
-              color: C.bg,
-              border: 'none',
-              cursor: 'pointer',
-              fontFamily: SANS,
-              fontSize: 11,
-              letterSpacing: '0.22em',
-              textTransform: 'uppercase',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-            }}
+            className="landing-hero-cta-btn"
           >
             Empezar ahora <ArrowRight size={13} />
           </button>
@@ -1037,23 +991,10 @@ function FinalCTA() {
           Empeza con una pelicula. La que mas te marco. La que cambio como ves el mundo.
         </p>
 
-        <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 32 }}>
+        <div className="landing-final-cta-wrap">
           <button
             onClick={() => window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: { mode: 'register' } }))}
-            style={{
-              padding: '16px 40px',
-              background: C.accent,
-              color: C.bg,
-              border: 'none',
-              cursor: 'pointer',
-              fontFamily: SANS,
-              fontSize: 12,
-              letterSpacing: '0.22em',
-              textTransform: 'uppercase',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-            }}
+            className="landing-final-cta-btn"
           >
             Crear cuenta gratis <ArrowRight size={14} />
           </button>
@@ -1112,9 +1053,9 @@ function Footer() {
         ))}
       </div>
 
-      <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+      <div style={{ borderTop: `1px solid ${C.border}` }} className="landing-footer-bottom">
         <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 13, color: C.textMuted }}>'Toda gran coleccion empieza con una.'</div>
-        <div style={{ display: 'flex', gap: 20 }}>
+        <div className="landing-footer-bottom-links">
           {['Terminos', 'Privacidad', 'Cookies'].map((item) => (
             <a key={item} href="#" style={{ fontFamily: SANS, fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.textMuted, textDecoration: 'none' }}>
               {item}

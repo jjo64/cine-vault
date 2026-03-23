@@ -22,6 +22,7 @@ export function FeedNavbar({ activeTab, onTab }: { activeTab: string; onTab: (t:
             </Link>
 
             <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 4 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', maxWidth: '100%' }}>
                 {TABS.map(tab => (
                     <button
                         key={tab}
@@ -41,6 +42,7 @@ export function FeedNavbar({ activeTab, onTab }: { activeTab: string; onTab: (t:
                         {tab}
                     </button>
                 ))}
+                </div>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>

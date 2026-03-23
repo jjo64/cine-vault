@@ -20,6 +20,7 @@ import {
   type ReviewEntry,
   type RichDiaryEntry,
 } from '../services/profileServices';
+import './Vault.css';
 
 // ─── PALETTE ─────────────────────────────────────────────────
 const C = {
@@ -626,7 +627,7 @@ export function Vault() {
       <GrainOverlay />
 
       {/* Top nav */}
-      <nav style={{ position: 'sticky', top: 0, zIndex: 100, background: 'rgba(8,8,8,0.97)', backdropFilter: 'blur(20px)', borderBottom: `1px solid ${C.border}`, padding: '0 48px', display: 'flex', alignItems: 'center', gap: 20, height: 60 }}>
+      <nav className="vault-navbar" style={{ borderBottom: `1px solid ${C.border}` }}>
         <Link to={profileLink} style={{ color: C.textSoft, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: SANS }}>
           <ArrowLeft size={13} /> Perfil
         </Link>
@@ -638,7 +639,8 @@ export function Vault() {
 
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}
-        style={{ padding: '48px 48px 32px', maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'flex-end', gap: 28 }}>
+        className="vault-header"
+        style={{ display: 'flex', alignItems: 'flex-end', gap: 28 }}>
         {/* Avatar */}
         <div style={{ width: 88, height: 88, flexShrink: 0, position: 'relative' }}>
           <div style={{ width: '100%', height: '100%', borderRadius: 0, border: `1.5px solid ${C.accent}`, overflow: 'hidden' }}>
@@ -673,8 +675,8 @@ export function Vault() {
       </motion.div>
 
       {/* Filters */}
-      <div style={{ padding: '0 48px', maxWidth: 1200, margin: '0 auto', marginBottom: 36, borderBottom: `1px solid ${C.border}`, paddingBottom: 0 }}>
-        <div style={{ display: 'flex', gap: 0, overflowX: 'auto', scrollbarWidth: 'none' }}>
+      <div className="vault-filters-wrap" style={{ borderBottom: `1px solid ${C.border}`, paddingBottom: 0 }}>
+        <div className="vault-type-tabs" style={{ gap: 0 }}>
           {filters.map(f => (
             <button key={f} onClick={() => setActiveFilter(f)} style={{
               padding: '14px 20px', background: 'none', border: 'none',
@@ -688,7 +690,7 @@ export function Vault() {
       </div>
 
       {/* Grid */}
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 48px 80px' }}>
+      <div className="vault-content">
         {loading && (
           <div style={{ color: C.textSoft, fontFamily: SANS, fontSize: 12, marginBottom: 16 }}>Cargando vault...</div>
         )}

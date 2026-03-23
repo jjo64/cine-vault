@@ -413,7 +413,7 @@ export default function TVDetailPage() {
       </header>
 
       <main className="tv-main">
-        <section className="tv-top-grid">
+        <section className="tv-top-grid tv-main-layout">
           <aside className="tv-poster-wrap">
             {detail.poster_path ? (
               <img src={image(detail.poster_path, TMDB_POSTER)} alt={detail.name} className="tv-poster" />
@@ -509,7 +509,7 @@ export default function TVDetailPage() {
                   </button>
 
                   {isOpen && Array.isArray(season.episodes) && season.episodes.length > 0 && (
-                    <div className="tv-episodes-grid">
+                    <div className="tv-episodes-grid tv-episode-grid">
                       {season.episodes.slice(0, 18).map((episode: EpisodeUI) => (
                         <div key={episode.id} className="tv-episode-item">
                           <div className="tv-episode-thumb-wrap">

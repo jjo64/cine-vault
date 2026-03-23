@@ -1437,10 +1437,10 @@ function Hero({
           <div style={{ fontSize: 11, color: C.textMuted, fontFamily: SANS, display: 'flex', alignItems: 'center' }}>{votes} ratings</div>
         </div>
 
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className="md-actions-row" style={{ gap: 10 }}>
           <button
             onClick={onToggleVault}
-            className="md-hero-action-btn"
+            className="md-hero-action-btn md-action-btn"
             style={{
               padding: '12px 20px',
               background: inVault ? C.accentDim : C.accent,
@@ -1459,7 +1459,7 @@ function Hero({
 
           <button
             onClick={onWriteReview}
-            className="md-hero-action-btn"
+            className="md-hero-action-btn md-action-btn"
             style={{
               padding: '12px 20px',
               background: 'transparent',
@@ -1478,10 +1478,10 @@ function Hero({
             <MessageSquare size={13} strokeWidth={1.5} /> Review o log
           </button>
 
-          <button title="Watchlist" onClick={onToggleWatchlist} style={{ width: 46, height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', color: inWatchlist ? C.accent : C.textSoft, border: `1px solid ${inWatchlist ? C.accentDim : C.border}`, cursor: 'pointer' }}>
+          <button title="Watchlist" onClick={onToggleWatchlist} className="md-action-btn" style={{ width: 46, height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', color: inWatchlist ? C.accent : C.textSoft, border: `1px solid ${inWatchlist ? C.accentDim : C.border}`, cursor: 'pointer' }}>
             <Bookmark size={15} strokeWidth={1.5} fill={inWatchlist ? C.accent : 'none'} />
           </button>
-          <button title="Me gusta" onClick={onToggleFavorite} style={{ width: 46, height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', color: liked ? C.accent : C.textSoft, border: `1px solid ${liked ? C.accentDim : C.border}`, cursor: 'pointer' }}>
+          <button title="Me gusta" onClick={onToggleFavorite} className="md-action-btn" style={{ width: 46, height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', color: liked ? C.accent : C.textSoft, border: `1px solid ${liked ? C.accentDim : C.border}`, cursor: 'pointer' }}>
             <Heart size={15} strokeWidth={1.5} fill={liked ? C.gold : 'none'} />
           </button>
           <div ref={actionMenuRef} style={{ position: 'relative' }}>
@@ -1698,9 +1698,9 @@ function CastCrew({
         }} style={{ border: `1px solid ${tab === 'crew' ? C.accentDim : C.border}`, background: tab === 'crew' ? C.accentGlow : 'transparent', color: tab === 'crew' ? C.accent : C.textSoft, padding: '6px 12px', cursor: 'pointer', fontFamily: SANS, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.12em' }}>Crew</button>
       </div>
       <SectionLabel>{tab === 'cast' ? 'Reparto' : 'Crew técnico'}</SectionLabel>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))', gap: 16, paddingBottom: 8 }}>
+      <div className="md-cast-list">
         {visiblePeople.map((person, index) => (
-          <motion.div key={`${tab}-${person.id}-${index}`} style={{ flexShrink: 0, width: 96, cursor: 'pointer', textAlign: 'center' }} whileHover={{ y: -4 }} transition={{ duration: 0.25 }}>
+          <motion.div key={`${tab}-${person.id}-${index}`} className="md-cast-item" style={{ cursor: 'pointer', textAlign: 'center' }} whileHover={{ y: -4 }} transition={{ duration: 0.25 }}>
             <Link to={`/person/${person.id}`} style={{ textDecoration: 'none' }}>
               <motion.div
                 whileHover={{ opacity: 0.8 }}

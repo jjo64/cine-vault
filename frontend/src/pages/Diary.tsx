@@ -10,6 +10,7 @@ import { ArrowLeft, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { createSlug } from '../utils/stringUtils';
 import { fetchSearchMovies } from '../services/movieDetailServices';
+import './Diary.css';
 
 // ─── PALETTE ─────────────────────────────────────────────────
 const C = {
@@ -237,14 +238,14 @@ function SessionCard({ session, delay }: { session: DiarySession; delay: number 
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 28, alignItems: 'flex-start', paddingTop: label ? 28 : 0 }}>
+      <div className="diary-session-layout" style={{ paddingTop: label ? 28 : 0 }}>
         {/* Abanico */}
         <PosterFan films={session.films} type={session.type} />
 
         {/* Info */}
         <div style={{ flex: 1, minWidth: 0 }}>
           {/* Date */}
-          <div style={{ fontSize: 11, color: C.textSoft, fontFamily: SANS, marginBottom: 12, letterSpacing: '0.1em' }}>{session.date}</div>
+          <div className="diary-session-date-col" style={{ fontSize: 11, color: C.textSoft, fontFamily: SANS, marginBottom: 12, letterSpacing: '0.1em' }}>{session.date}</div>
 
           {/* Film titles */}
           <div style={{ fontFamily: SERIF, fontSize: 18, color: C.text, lineHeight: 1.4, marginBottom: 8 }}>
@@ -257,7 +258,7 @@ function SessionCard({ session, delay }: { session: DiarySession; delay: number 
           </div>
 
           {/* Per-film ratings */}
-          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 12 }}>
+          <div className="diary-session-films" style={{ marginBottom: 12 }}>
             {session.films.map(f => (
               <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ fontSize: 11, color: C.textSoft, fontFamily: SANS, whiteSpace: 'nowrap' }}>{f.title.length > 14 ? f.title.slice(0, 14) + '…' : f.title}</span>
@@ -354,7 +355,7 @@ export function Diary() {
       <GrainOverlay />
 
       {/* Navbar */}
-      <nav style={{ position: 'sticky', top: 0, zIndex: 100, background: 'rgba(8,8,8,0.97)', backdropFilter: 'blur(20px)', borderBottom: `1px solid ${C.border}`, padding: '0 48px', display: 'flex', alignItems: 'center', gap: 20, height: 60 }}>
+      <nav className="diary-navbar" style={{ borderBottom: `1px solid ${C.border}`, gap: 20 }}>
         <Link to="/profile" style={{ color: C.textSoft, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: SANS }}>
           <ArrowLeft size={13} /> Perfil
         </Link>
@@ -410,7 +411,7 @@ export function Diary() {
       </nav>
 
       {/* Header */}
-      <div style={{ padding: '56px 48px 0', maxWidth: 900, margin: '0 auto' }}>
+      <div className="diary-main" style={{ paddingTop: 56 }}>
         <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
           <div style={{ fontFamily: SERIF, fontSize: 52, fontWeight: 400, color: C.text, lineHeight: 1, marginBottom: 14, letterSpacing: '-0.02em' }}>Diario</div>
           <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 18, color: C.textSoft, marginBottom: 8 }}>Autobiografía en películas.</div>
@@ -421,7 +422,7 @@ export function Diary() {
       </div>
 
       {/* Filters */}
-      <div style={{ padding: '32px 48px 0', maxWidth: 900, margin: '0 auto', borderBottom: `1px solid ${C.border}`, marginBottom: 40 }}>
+      <div className="diary-main" style={{ paddingTop: 0, borderBottom: `1px solid ${C.border}`, marginBottom: 40 }}>
         <div style={{ display: 'flex', gap: 0 }}>
           {filters.map(f => (
             <button key={f} onClick={() => setFilter(f)} style={{
@@ -436,7 +437,7 @@ export function Diary() {
       </div>
 
       {/* Sessions */}
-      <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 48px 80px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div className="diary-main" style={{ paddingTop: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
 
         {/* Demo label */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>

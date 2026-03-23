@@ -31,4 +31,12 @@
     --space-md: clamp(1rem, 0.8rem + 1vw, 1.5rem);
     --space-lg: clamp(1.5rem, 1.2rem + 1.5vw, 2.5rem);
     --space-xl: clamp(2rem, 1.5rem + 2.5vw, 4rem);
+
+    /* Mobile-specific layout tokens */
+    --nav-height: 64px;
+    --nav-height-mobile: 56px;
+    --page-padding-x: clamp(14px, 4vw, 52px);
+    --page-padding-x-sm: clamp(14px, 3vw, 24px);
+    --content-max-width: 1280px;
+    --touch-target: 44px;
 }
