@@ -10,6 +10,23 @@
     padding: 96px 24px 54px;
 }
 
+.person-hero {
+    display: flex;
+    gap: 32px;
+    padding: 32px var(--page-padding-x);
+    align-items: flex-start;
+}
+
+.person-photo {
+    width: 200px;
+    flex-shrink: 0;
+}
+
+.person-filmography-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(140px, 100%), 1fr));
+    gap: 16px;
+}
 .person-page-loading,
 .person-page-error {
     min-height: 100vh;
@@ -289,6 +306,23 @@
 @media (max-width: 768px) {
     .person-page-main {
         padding: 90px 14px 34px;
+    }
+
+    .person-hero {
+        flex-direction: column;
+        align-items: center;
+        padding: 24px 14px;
+        gap: 20px;
+        text-align: center;
+    }
+
+    .person-photo {
+        width: 140px;
+    }
+
+    .person-filmography-grid {
+        grid-template-columns: repeat(auto-fill, minmax(min(110px, 100%), 1fr));
+        gap: 10px;
     }
 
     .person-detail-layout {

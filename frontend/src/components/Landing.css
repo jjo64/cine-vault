@@ -162,6 +162,100 @@
 
 .landing-mobile-menu-panel {
     animation: landing-menu-in 0.2s ease-out;
+    position: absolute;
+    right: 0;
+    top: 44px;
+    min-width: 190px;
+    border: 1px solid var(--color-border);
+    background: rgba(8, 8, 8, 0.98);
+    padding: 8px;
+    display: grid;
+    gap: 6px;
+}
+
+.landing-mobile-menu-btn {
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--color-border);
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--color-text);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+}
+
+.landing-mobile-menu-link {
+    border: none;
+    background: transparent;
+    color: var(--color-text);
+    text-align: left;
+    padding: 8px 10px;
+    font-family: var(--font-sans);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.landing-nav-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.landing-hero-cta-wrap {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.landing-hero-cta-btn,
+.landing-final-cta-btn {
+    background: var(--color-accent);
+    color: var(--color-bg);
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-sans);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: var(--touch-target);
+}
+
+.landing-hero-cta-btn {
+    padding: 14px 32px;
+}
+
+.landing-final-cta-wrap {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 32px;
+}
+
+.landing-final-cta-btn {
+    padding: 16px 40px;
+}
+
+.landing-footer-bottom {
+    padding-top: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.landing-footer-bottom-links {
+    display: flex;
+    gap: 20px;
 }
 
 @keyframes landing-menu-in {
@@ -294,5 +388,31 @@
         letter-spacing: 0.07em !important;
         margin-bottom: 14px !important;
         padding-left: 0;
+    }
+
+    .landing-hero-cta-btn,
+    .landing-final-cta-btn {
+        width: 100%;
+        max-width: 360px;
+    }
+
+    .landing-footer-bottom {
+        align-items: flex-start;
+    }
+
+    .landing-footer-bottom-links {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .landing-footer-grid {
+        grid-template-columns: 1fr;
+        gap: 28px;
+    }
+
+    .landing-footer {
+        padding: 40px 14px 28px;
     }
 }

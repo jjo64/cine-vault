@@ -38,6 +38,7 @@ type CinematicSignaturePayload = {
 }
 
 const PROFILE_TABS = ['Resumen', 'Vault', 'Diario', 'Watchlist', 'Reseñas', 'Listas'] as const
+const SIDEBAR_MIN_WIDTH = 1300
 
 function CinematicSignature({
   value,
@@ -333,6 +334,19 @@ export function Profile() {
   const [activeTab, setActiveTab] = useState<(typeof PROFILE_TABS)[number]>(() =>
     normalizeTab(tabFromQuery)
   )
+  const [showDesktopSidebar, setShowDesktopSidebar] = useState(
+    () => (typeof window === 'undefined' ? true : window.innerWidth >= SIDEBAR_MIN_WIDTH),
+  )
+
+  useEffect(() => {
+    const syncSidebarVisibility = () => {
+      setShowDesktopSidebar(window.innerWidth >= SIDEBAR_MIN_WIDTH)
+    }
+
+    syncSidebarVisibility()
+    window.addEventListener('resize', syncSidebarVisibility)
+    return () => window.removeEventListener('resize', syncSidebarVisibility)
+  }, [])
 
   const {
     loading,
@@ -571,7 +585,9 @@ export function Profile() {
               </motion.div>
             </AnimatePresence>
           </div>
-
+          {showDesktopSidebar && (
+            <ProfileSidebar recentlyWatched={recentlyWatched} reviewItems={reviewItems} />
+          )}
           <ProfileSidebar recentlyWatched={recentlyWatched} reviewItems={reviewItems} />
         </div>
       </div>

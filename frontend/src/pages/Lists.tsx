@@ -11,6 +11,7 @@ import {
   type UserListDetail,
   type UserListSummary,
 } from '../services/listsServices'
+import './Lists.css'
 
 const C = {
   bg: '#080808',
@@ -189,9 +190,9 @@ export default function ListsPage() {
   }
 
   return (
-    <main style={{ minHeight: '100vh', background: C.bg, color: C.text, padding: '90px 18px 40px' }}>
-      <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gap: 16 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+    <main className="lists-main" style={{ color: C.text }}>
+      <div className="lists-container">
+        <div className="lists-header">
           <h1 style={{ margin: 0, fontFamily: SERIF, fontSize: 'clamp(30px, 5vw, 48px)', fontWeight: 400 }}>Mis Listas</h1>
           <button onClick={() => navigate('/profile')} style={{ border: `1px solid ${C.border}`, background: 'transparent', color: C.textSoft, padding: '8px 12px', cursor: 'pointer', fontFamily: SANS, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
             Volver al perfil
@@ -220,7 +221,7 @@ export default function ListsPage() {
           </button>
         </section>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(260px, 1fr) minmax(340px, 2fr)', gap: 14 }}>
+        <div className="lists-content-grid">
           <section style={{ border: `1px solid ${C.border}`, background: C.surface, padding: 10, display: 'grid', gap: 8, alignContent: 'start' }}>
             <div style={{ fontFamily: SANS, fontSize: 11, color: C.textSoft, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Tus listas ({sortedLists.length})</div>
             {sortedLists.map((list) => (

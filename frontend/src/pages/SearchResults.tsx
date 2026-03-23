@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react'
 import {
   Search as SearchIcon,
   X,
+  Menu,
   SlidersHorizontal,
   ChevronLeft,
   ChevronRight,
@@ -14,8 +15,10 @@ import {
   Bookmark,
 } from 'lucide-react'
 import { createSlug } from '../utils/stringUtils'
+import { resolveNavPathWithFallback } from '../lib/navigation'
 import { fetchMovieDetail } from '../services/movieDetailServices'
 import { searchMovies, searchUsers, type SearchMovieResult, type SearchPersonPanel, type SearchUserResult } from '../services/searchServices'
+import './SearchResults.css'
 
 const C = {
   bg: '#080808',
@@ -183,6 +186,7 @@ function toPersonResult(item: SearchPersonPanel): PersonResult {
 
 function Navbar({ query, onSearch }: { query: string; onSearch: (q: string) => void }) {
   const [val, setVal] = useState(query)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const navigate = useNavigate()
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -192,32 +196,19 @@ function Navbar({ query, onSearch }: { query: string; onSearch: (q: string) => v
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault()
-    if (val.trim()) onSearch(val.trim())
+    if (val.trim()) {
+      onSearch(val.trim())
+      setIsMobileMenuOpen(false)
+    }
   }
 
   return (
-    <nav
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 200,
-        height: 72,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 24,
-        padding: '0 40px',
-        background: 'rgba(8,8,8,0.97)',
-        backdropFilter: 'blur(24px)',
-        borderBottom: `1px solid ${C.border}`,
-      }}
-    >
+    <nav className="search-nav" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200, display: 'flex', alignItems: 'center', gap: 24, background: 'rgba(8,8,8,0.97)', backdropFilter: 'blur(24px)', borderBottom: `1px solid ${C.border}` }}>
       <Link to="/" style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 500, letterSpacing: '0.13em', textTransform: 'uppercase', color: C.text, textDecoration: 'none', flexShrink: 0 }}>
         Cine<span style={{ color: C.accent }}>Vault</span>
       </Link>
 
-      <form onSubmit={submit} style={{ flex: 1, maxWidth: 640, position: 'relative' }}>
+      <form onSubmit={submit} className="search-input-wrapper" style={{ flex: 1, maxWidth: 640, position: 'relative' }}>
         <SearchIcon size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: C.textSoft, pointerEvents: 'none' }} />
         <input
           ref={inputRef}
@@ -254,6 +245,33 @@ function Navbar({ query, onSearch }: { query: string; onSearch: (q: string) => v
       <button onClick={() => navigate(-1)} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.textSoft, background: 'none', border: 'none', cursor: 'pointer', fontFamily: SANS, flexShrink: 0, transition: 'color 0.2s' }}>
         <ChevronLeft size={13} /> Volver
       </button>
+
+      <button className="search-nav-hamburger" onClick={() => setIsMobileMenuOpen((prev) => !prev)} aria-label="Abrir menu">
+        {isMobileMenuOpen ? <X size={16} /> : <Menu size={16} />}
+      </button>
+
+      <div className={`search-nav-mobile-menu ${isMobileMenuOpen ? 'search-nav-mobile-menu--open' : ''}`}>
+        <form onSubmit={submit} className="search-nav-mobile-search">
+          <input
+            value={val}
+            onChange={(event) => setVal(event.target.value)}
+            placeholder="Buscar..."
+            className="search-nav-mobile-input"
+          />
+        </form>
+        {['films', 'diary', 'esta noche', 'feed', 'activity', 'lists', 'profile'].map((link) => (
+          <button
+            key={`mobile-${link}`}
+            className="search-nav-mobile-link"
+            onClick={() => {
+              navigate(resolveNavPathWithFallback(link))
+              setIsMobileMenuOpen(false)
+            }}
+          >
+            {link}
+          </button>
+        ))}
+      </div>
     </nav>
   )
 }
@@ -431,11 +449,11 @@ function FilmResultItem({ item, delay, isDetailsLoading }: { item: FilmResult; d
   const runtimeLabel = typeof item.runtime === 'number' && item.runtime > 0 ? `${item.runtime} min` : null
 
   return (
-    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay }} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={{ display: 'grid', gridTemplateColumns: '98px minmax(0, 1fr)', gap: 28, padding: '32px 0', borderBottom: `1px solid ${C.border}`, background: hov ? 'rgba(212,175,122,0.02)' : 'transparent', transition: 'background 0.2s', position: 'relative' }}>
+    <motion.div className="search-result-card-layout" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay }} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={{ gap: 28, padding: '32px 0', borderBottom: `1px solid ${C.border}`, background: hov ? 'rgba(212,175,122,0.02)' : 'transparent', transition: 'background 0.2s', position: 'relative' }}>
       <div style={{ position: 'absolute', left: -20, top: 0, bottom: 0, width: 2, background: `linear-gradient(to bottom, transparent, ${C.accent}, transparent)`, opacity: hov ? 0.6 : 0, transition: 'opacity 0.3s' }} />
 
       <Link to={href} style={{ textDecoration: 'none', flexShrink: 0 }}>
-        <div style={{ aspectRatio: '2/3', borderRadius: 1, overflow: 'hidden', border: `1px solid ${hov ? C.accentDim : C.border}`, transition: 'border-color 0.3s' }}>
+        <div className="search-result-poster" style={{ aspectRatio: '2/3', borderRadius: 1, overflow: 'hidden', border: `1px solid ${hov ? C.accentDim : C.border}`, transition: 'border-color 0.3s' }}>
           <Img src={item.img} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: `saturate(${hov ? 0.8 : 0.5})`, transition: 'filter 0.4s' }} />
         </div>
       </Link>
@@ -900,7 +918,7 @@ export function Search() {
           ))}
         </div>
 
-        <div style={{ display: 'flex', gap: 0 }}>
+        <div className="search-results-main" style={{ display: 'flex', gap: 0 }}>
           <AnimatePresence>
             {showFilters && (
               <motion.div initial={{ width: 0, opacity: 0 }} animate={{ width: 280, opacity: 1 }} exit={{ width: 0, opacity: 0 }} transition={{ duration: 0.35, ease: 'easeInOut' }} style={{ overflow: 'hidden', flexShrink: 0, borderRight: `1px solid ${C.border}` }}>

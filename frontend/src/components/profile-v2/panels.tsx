@@ -778,17 +778,7 @@ export function VaultPanel() {
         </button>
       </div>
 
-      <div
-        style={{
-          display: 'flex',
-          gap: 8,
-          marginBottom: 28,
-          overflowX: 'auto',
-          scrollbarWidth: 'none',
-          flexWrap: 'nowrap',
-          paddingBottom: 4,
-        }}
-      >
+      <div className="profile-scroll-filters">
         {VAULT_FILTERS.map((filterName) => (
           <button
             key={filterName}
@@ -812,7 +802,7 @@ export function VaultPanel() {
         ))}
       </div>
 
-      <div className="profile-grid-3" style={{ display: 'grid', gap: 16 }}>
+      <div className="profile-grid-3">
         {filtered.map((item, index) => (
           <VaultCard key={item.id} item={item} delay={index * 0.06} />
         ))}
@@ -841,7 +831,7 @@ export function WatchlistPanel({ watchlistFilms }: { watchlistFilms: WatchlistIt
         <div className="profile-panel-header" style={{ fontFamily: SERIF, color: C.text }}>
           Watchlist <em className="profile-panel-header-em" style={{ fontStyle: 'italic', color: C.textSoft }}>— {watchlistFilms.length} películas</em>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="profile-panel-actions-inline">
           <button
             style={{
               padding: '7px 14px',
@@ -988,7 +978,7 @@ export function WatchlistPanel({ watchlistFilms }: { watchlistFilms: WatchlistIt
 export function HistoryPanel({ recentlyWatched }: { recentlyWatched: RecentlyWatchedItem[] }) {
   return (
     <div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
+      <div className="profile-panel-actions-row">
         <div className="profile-panel-header" style={{ fontFamily: SERIF, color: C.text }}>
           Historial <em className="profile-panel-header-em" style={{ fontStyle: 'italic', color: C.textSoft }}>— {recentlyWatched.length} vistas recientes</em>
         </div>
@@ -1150,7 +1140,7 @@ export function ReviewsPanel({ reviewItems }: { reviewItems: ReviewItem[] }) {
 
   return (
     <div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
+      <div className="profile-panel-actions-row">
         <div className="profile-panel-header" style={{ fontFamily: SERIF, color: C.text }}>
           Reseñas <em className="profile-panel-header-em" style={{ fontStyle: 'italic', color: C.textSoft }}>— {reviewItems.length} escritas</em>
         </div>
@@ -1249,7 +1239,7 @@ export function ListsPanel({ userLists }: { userLists: UserListSummaryItem[] }) 
         </div>
       )}
 
-      <div className="profile-grid-3 profile-grid-auto" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
+      <div className="profile-grid-2 profile-grid-3 profile-grid-auto">
         {userLists.map((list, index) => (
           <motion.div
             key={list.id}

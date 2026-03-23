@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Menu, X } from 'lucide-react'
 import { resolveNavPathWithFallback } from '../lib/navigation'
 import { logoutCurrentUser } from '../services/authServices'
+import './Navbar.css'
 
 interface NavbarProps {
     className?: string;
@@ -10,6 +12,7 @@ interface NavbarProps {
 const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [showUserMenu, setShowUserMenu] = useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
     const navigate = useNavigate();
     const menuRef = useRef<HTMLDivElement>(null);
 
@@ -36,6 +39,7 @@ const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
         e.preventDefault();
         if (searchQuery.trim()) {
             navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+            setIsMobileMenuOpen(false)
         }
     };
 
@@ -56,9 +60,10 @@ const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
                     <div className="nav-menu">
                         <Link to={resolveNavPathWithFallback('films')}>FILMS</Link>
                         <Link to={resolveNavPathWithFallback('diary')}>DIARY</Link>
+                        <Link to={resolveNavPathWithFallback('esta noche')}>ESTA NOCHE</Link>
+                        <Link to={resolveNavPathWithFallback('feed')}>FEED</Link>
+                        <Link to={resolveNavPathWithFallback('activity')}>ACTIVITY</Link>
                         <Link to={resolveNavPathWithFallback('lists')}>LISTS</Link>
-                        <Link to={resolveNavPathWithFallback('members')}>MEMBERS</Link>
-                        <Link to={resolveNavPathWithFallback('journal')}>JOURNAL</Link>
                     </div>
                 </div>
 
@@ -91,8 +96,9 @@ const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
                                     <Link to="/profile">Profile</Link>
                                     <Link to={resolveNavPathWithFallback('films')}>Films</Link>
                                     <Link to={resolveNavPathWithFallback('diary')}>Diary</Link>
-                                    <Link to={resolveNavPathWithFallback('reviews')}>Reviews</Link>
-                                    <Link to={resolveNavPathWithFallback('watchlist')}>Watchlist</Link>
+                                    <Link to={resolveNavPathWithFallback('esta noche')}>Esta noche</Link>
+                                    <Link to={resolveNavPathWithFallback('feed')}>Feed</Link>
+                                    <Link to={resolveNavPathWithFallback('activity')}>Activity</Link>
                                     <Link to={resolveNavPathWithFallback('lists')}>Lists</Link>
                                     <div className="dropdown-divider"></div>
                                     <Link to="/settings">Settings</Link>
@@ -100,11 +106,40 @@ const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
                                 </div>
                             )}
                         </div>
+                        <button
+                            className="nav-hamburger"
+                            onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+                            aria-label="Abrir menu"
+                        >
+                            {isMobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
+                        </button>
                         <button className="btn-log-green">
                             <span>+ LOG</span>
                         </button>
                     </div>
                 </div>
+            </div>
+            <div className={`nav-mobile-overlay ${isMobileMenuOpen ? 'nav-mobile-overlay--open' : ''}`}>
+                <form className="nav-mobile-search" onSubmit={handleSearch}>
+                    <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="nav-search-input"
+                        placeholder="Buscar..."
+                    />
+                </form>
+
+                {['FILMS', 'DIARY', 'ESTA NOCHE', 'FEED', 'ACTIVITY', 'LISTS', 'PROFILE'].map((link) => (
+                    <Link
+                        key={`mobile-${link}`}
+                        to={resolveNavPathWithFallback(link)}
+                        className="nav-mobile-link"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                        {link}
+                    </Link>
+                ))}
             </div>
         </nav>
     );

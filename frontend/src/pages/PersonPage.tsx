@@ -381,7 +381,7 @@ export default function PersonPage() {
       <Navbar onNavigateHome={() => navigate('/')} onSearch={searchFromNavbar} />
 
       <div style={{ paddingTop: 60 }}>
-        <section style={{ position: 'relative', minHeight: 560, overflow: 'hidden' }}>
+        <section className="person-hero" style={{ position: 'relative', minHeight: 560, overflow: 'hidden' }}>
           <Img src={heroBackdrop} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(0.35) brightness(0.4)', transform: 'scale(1.04)' }} />
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(8,8,8,0.98) 0%, rgba(8,8,8,0.82) 45%, rgba(8,8,8,0.3) 70%, transparent 100%)' }} />
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(8,8,8,0.98) 0%, transparent 55%)' }} />
@@ -392,7 +392,7 @@ export default function PersonPage() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
             style={{ position: 'absolute', right: '8%', top: 0, bottom: 0, width: '34%', overflow: 'hidden' }}
-            className="person-page-desktop-portrait"
+            className="person-page-desktop-portrait person-photo"
           >
             <Img src={portrait} alt={person.name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', filter: 'saturate(0.6) brightness(0.85)' }} />
             <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to left, transparent 40%, rgba(8,8,8,0.9) 100%)' }} />
@@ -458,7 +458,7 @@ export default function PersonPage() {
                 <div style={{ fontSize: 10, letterSpacing: '0.28em', textTransform: 'uppercase', color: C.accent, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 14, fontFamily: SANS }}>
                   Conocido por <div style={{ flex: 1, height: 1, background: `linear-gradient(to right, ${C.border}, transparent)` }} />
                 </div>
-                <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8, scrollbarWidth: 'none' }}>
+                <div className="person-filmography-grid" style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8, scrollbarWidth: 'none' }}>
                   {knownFor.slice(0, 6).map((item) => {
                     const title = getCreditTitle(item)
                     return (
