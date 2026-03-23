@@ -1,6 +1,6 @@
 /* BottomNav.css */
 .bottom-nav {
-  display: none;
+  display: none; /* oculto en desktop */
 }
 
 @media (max-width: 768px) {
@@ -38,23 +38,16 @@
   border: none;
   cursor: pointer;
   transition: color 0.2s;
-  min-height: var(--touch-target);
+  min-height: 44px;
 }
 
 .bottom-nav__item.active {
   color: var(--color-accent);
 }
 
-.bottom-nav__item:hover {
-  color: var(--color-text-soft);
-}
-
 .bottom-nav__icon {
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  font-size: 18px;
+  line-height: 1;
 }
 
 .bottom-nav__dot {
@@ -62,10 +55,9 @@
   height: 3px;
   border-radius: 50%;
   background: var(--color-accent);
-  margin-top: 1px;
 }
 
-/* Spacer para que el contenido no quede detrás del bottom nav */
+/* Spacer para que el contenido no quede tapado por el nav */
 .bottom-nav-spacer {
   display: none;
 }

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { getCurrentUser, getStoredAccessToken } from '../services/authServices'
-import NotFoundPage from './NotFound'
 
 export default function ProfileIndexPage() {
   const location = useLocation()
@@ -41,7 +40,11 @@ export default function ProfileIndexPage() {
   }
 
   if (status === 'unauthorized') {
-    return <NotFoundPage />
+    // Disparar el modal de login (mismo evento que usa el resto de la app)
+    window.dispatchEvent(
+      new CustomEvent('open-auth-modal', { detail: { mode: 'login' } })
+    )
+    return <Navigate to="/" replace />
   }
 
   return <Navigate to={`/${encodeURIComponent(username)}${location.search}`} replace />

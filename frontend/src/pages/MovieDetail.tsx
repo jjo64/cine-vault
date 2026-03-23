@@ -1478,12 +1478,44 @@ function Hero({
             <MessageSquare size={13} strokeWidth={1.5} /> Review o log
           </button>
 
-          <button title="Watchlist" onClick={onToggleWatchlist} className="md-action-btn" style={{ width: 46, height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', color: inWatchlist ? C.accent : C.textSoft, border: `1px solid ${inWatchlist ? C.accentDim : C.border}`, cursor: 'pointer' }}>
-            <Bookmark size={15} strokeWidth={1.5} fill={inWatchlist ? C.accent : 'none'} />
-          </button>
-          <button title="Me gusta" onClick={onToggleFavorite} className="md-action-btn" style={{ width: 46, height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', color: liked ? C.accent : C.textSoft, border: `1px solid ${liked ? C.accentDim : C.border}`, cursor: 'pointer' }}>
-            <Heart size={15} strokeWidth={1.5} fill={liked ? C.gold : 'none'} />
-          </button>
+          <div className="md-action-icons-row">
+            <button
+              title="Watchlist"
+              onClick={onToggleWatchlist}
+              className="md-action-icon-btn md-action-btn"
+              style={{
+                width: 46,
+                height: 46,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'transparent',
+                color: inWatchlist ? C.accent : C.textSoft,
+                border: `1px solid ${inWatchlist ? C.accentDim : C.border}`,
+                cursor: 'pointer',
+              }}
+            >
+              <Bookmark size={15} strokeWidth={1.5} fill={inWatchlist ? C.accent : 'none'} />
+            </button>
+            <button
+              title="Me gusta"
+              onClick={onToggleFavorite}
+              className="md-action-icon-btn md-action-btn"
+              style={{
+                width: 46,
+                height: 46,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'transparent',
+                color: liked ? C.accent : C.textSoft,
+                border: `1px solid ${liked ? C.accentDim : C.border}`,
+                cursor: 'pointer',
+              }}
+            >
+              <Heart size={15} strokeWidth={1.5} fill={liked ? C.gold : 'none'} />
+            </button>
+          </div>
           <div ref={actionMenuRef} style={{ position: 'relative' }}>
             <button
               ref={actionMenuButtonRef}

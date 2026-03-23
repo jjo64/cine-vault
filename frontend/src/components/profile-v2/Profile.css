@@ -251,6 +251,25 @@
     display: flex;
 }
 
+.profile-nav-logo {
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-family: var(--font-serif, 'Cormorant Garamond'), serif;
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    color: var(--color-text);
+    text-transform: uppercase;
+    text-decoration: none;
+}
+
+@media (max-width: 768px) {
+    .profile-nav-logo {
+        font-size: 18px !important;
+    }
+}
+
 .profile-nav-search-wrapper {
     width: 270px;
 }
@@ -507,4 +526,61 @@
     }
 }
 
-@media (max-width: 768px) {}
+
+/* ── Firma cinematográfica mobile ── */
+@media (max-width: 768px) {
+  .profile-signature-bar {
+    padding: 0 !important;
+    background: rgba(212,175,122,0.03);
+  }
+
+  .profile-signature-bar > .profile-signature-fields {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 0 16px 16px !important;
+    gap: 10px !important;
+    flex-wrap: nowrap !important;
+    display: flex !important;
+    width: 100% !important;
+  }
+
+  .profile-signature-bar > .profile-signature-fields::-webkit-scrollbar {
+    display: none;
+  }
+
+  .profile-signature-label-col {
+    display: none !important;
+  }
+
+  .profile-signature-field {
+    flex-shrink: 0 !important;
+    flex: 0 0 180px !important;
+    width: 180px !important;
+    border-right: none !important;
+    border: 1px solid var(--color-border) !important;
+    padding: 14px 16px !important;
+    background: rgba(8, 8, 8, 0.5) !important;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+  }
+}
+
+.profile-signature-mobile-header {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .profile-signature-mobile-header {
+    display: block;
+    font-size: 8px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+    font-family: var(--font-sans);
+    padding: 16px 16px 8px;
+    background: rgba(212,175,122,0.03);
+  }
+}

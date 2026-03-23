@@ -208,7 +208,7 @@ function Navbar({ query, onSearch }: { query: string; onSearch: (q: string) => v
         Cine<span style={{ color: C.accent }}>Vault</span>
       </Link>
 
-      <form onSubmit={submit} className="search-input-wrapper" style={{ flex: 1, maxWidth: 640, position: 'relative' }}>
+      <form onSubmit={submit} className="search-input-wrapper search-results-input-wrapper" style={{ flex: 1, maxWidth: 640, position: 'relative' }}>
         <SearchIcon size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: C.textSoft, pointerEvents: 'none' }} />
         <input
           ref={inputRef}
@@ -915,7 +915,7 @@ export function Search() {
           </div>
         </div>
 
-        <div style={{ borderBottom: `1px solid ${C.border}`, padding: '0 40px', display: 'flex', gap: 0 }}>
+        <div className="search-results-tabs-scroll" style={{ borderBottom: `1px solid ${C.border}`, padding: '0 40px', display: 'flex', gap: 0 }}>
           {TABS.map((tab) => (
             <button key={tab.key} onClick={() => { setActiveTab(tab.key); setPage(1) }} style={{ padding: '14px 20px', background: 'none', border: 'none', borderBottom: `2px solid ${activeTab === tab.key ? C.accent : 'transparent'}`, fontFamily: SANS, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: activeTab === tab.key ? C.text : C.textSoft, cursor: 'pointer', marginBottom: -1, display: 'flex', alignItems: 'center', gap: 7 }}>
               <span style={{ color: activeTab === tab.key ? C.accent : C.textMuted }}>{tab.icon}</span>

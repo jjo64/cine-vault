@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
@@ -122,8 +122,18 @@ function CinematicSignature({
       borderBottom: `1px solid rgba(212,175,122,0.12)`,
       padding: '0 48px',
     }}>
-      <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', alignItems: 'stretch', gap: 0 }}>
-        <div style={{
+      {/* Header visible solo en mobile */}
+      <div className="profile-signature-mobile-header">
+        Firma cinematográfica
+      </div>
+      <div className="profile-signature-bar" style={{
+        maxWidth: 1280,
+        margin: '0 auto',
+        display: 'flex',
+        alignItems: 'stretch',
+        gap: 0,
+      }}>
+        <div className="profile-signature-label-col" style={{
           flexShrink: 0,
           padding: '20px 28px 20px 0',
           display: 'flex',
@@ -138,7 +148,13 @@ function CinematicSignature({
           </div>
         </div>
 
-        {[
+        <div className="profile-signature-fields" style={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'stretch',
+          gap: 0,
+        }}>
+          {[
           {
             key: 'pivotal_film',
             detailKey: 'pivotal_film_detail',
@@ -174,6 +190,7 @@ function CinematicSignature({
         ].map((field, i) => (
           <div
             key={field.label}
+            className="profile-signature-field"
             onMouseEnter={() => setHoveredField(i)}
             onMouseLeave={() => setHoveredField(null)}
             style={{
@@ -229,6 +246,7 @@ function CinematicSignature({
             )}
           </div>
         ))}
+        </div>
 
         {canEdit ? (
           <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', padding: '0 0 0 20px', borderLeft: `1px solid ${C.border}` }}>
@@ -380,23 +398,23 @@ export function Profile() {
     navigate(`/search?q=${encodeURIComponent(query.trim())}`)
   }
 
-  useEffect(() => {
-    if (isValidTab(tabFromQuery) && tabFromQuery !== activeTab) {
-      setActiveTab(tabFromQuery)
-      return
-    }
+  const handleTabChange = useCallback(
+    (tab: (typeof PROFILE_TABS)[number]) => {
+      setActiveTab(tab)
+      const next = new URLSearchParams(searchParams)
+      next.set('tab', tab)
+      setSearchParams(next, { replace: true })
+    },
+    [searchParams, setSearchParams]
+  )
 
-    if (!isValidTab(tabFromQuery) && activeTab !== 'Resumen') {
-      setActiveTab('Resumen')
-    }
-  }, [tabFromQuery, activeTab])
-
   useEffect(() => {
-    const next = new URLSearchParams(searchParams)
-    if (next.get('tab') === activeTab) return
-    next.set('tab', activeTab)
-    setSearchParams(next, { replace: true })
-  }, [activeTab, searchParams, setSearchParams])
+    const tabInUrl = searchParams.get('tab')
+    if (isValidTab(tabInUrl) && tabInUrl !== activeTab) {
+      setActiveTab(tabInUrl)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const canEditProfile = isAuthenticated && isOwnProfile
   useEffect(() => {
@@ -514,7 +532,7 @@ export function Profile() {
         curatedNotesByMovieId={curatedNotesByMovieId}
         canEditCurated={canEditProfile}
         onCurateGallery={handleCurateGallery}
-        onJumpToTab={(tab) => setActiveTab(tab)}
+        onJumpToTab={(tab) => handleTabChange(tab)}
       />
     ),
     Diario: <DiaryPanel diaryTimeline={diaryTimeline} />,
@@ -560,7 +578,7 @@ export function Profile() {
         onSave={handleSaveSignature}
       />
 
-      <TabsBar active={activeTab} onSelect={(tab) => setActiveTab(normalizeTab(tab))} />
+      <TabsBar active={activeTab} onSelect={(tab) => handleTabChange(normalizeTab(tab))} />
 
       <div className="profile-main-wrapper">
         {loading && <div style={{ color: C.textSoft, marginBottom: 16 }}>Cargando perfil...</div>}
