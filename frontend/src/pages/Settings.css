@@ -40,6 +40,40 @@
     flex-shrink: 0;
 }
 
+.settings-section {
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.settings-form-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.settings-input {
+    width: 100%;
+    min-height: var(--touch-target);
+}
+
+.settings-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--color-border);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin-bottom: 32px;
+}
+
+.settings-tab-btn {
+    min-height: var(--touch-target);
+    white-space: nowrap;
+    padding: 0 20px;
+    flex-shrink: 0;
+}
+
 @media (max-width: 768px) {
     .settings-main {
         padding: 90px 14px 120px;
