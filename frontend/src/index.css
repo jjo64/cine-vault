@@ -46,12 +46,11 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-button, 
-a, 
-input, 
-select, 
-textarea {
-  min-height: var(--touch-target, 44px);
+/* Touch targets: solo para navegación principal en mobile */
+@media (max-width: 768px) {
+  .bottom-nav__item {
+    min-height: var(--touch-target, 44px);
+  }
 }
 
 h1,

@@ -194,7 +194,6 @@ function CinematicSignature({
             onMouseEnter={() => setHoveredField(i)}
             onMouseLeave={() => setHoveredField(null)}
             style={{
-              flex: 1,
               padding: '20px 22px',
               borderRight: i < 3 ? `1px solid ${C.border}` : 'none',
               transition: 'background 0.2s',

@@ -173,25 +173,33 @@
     }
 
     .search-nav {
-        padding: 0 14px;
+        padding: 0 12px;
         height: 56px;
+        gap: 10px;
     }
 
-    .search-nav-gap {
-        gap: 12px;
+    /* Logo más pequeño para dar espacio al input */
+    .search-nav > a {
+        font-size: 15px !important;
+        flex-shrink: 0;
     }
 
     .search-nav-actions-gap {
         gap: 8px;
     }
 
-    .search-input-wrapper,
-    .search-nav>button {
-        display: none !important;
+    .search-input-wrapper {
+        display: flex !important;  /* input SIEMPRE visible */
+        flex: 1;
+        max-width: none !important;
+    }
+
+    .search-nav > button:not(.search-nav-hamburger) {
+        display: none !important;  /* ocultar botón "Volver" en mobile */
     }
 
     .search-nav-hamburger {
-        display: inline-flex;
+        display: none !important;  /* ya no se necesita hamburger */
     }
 
     .search-nav-dropdown {
@@ -313,4 +321,27 @@
     text-transform: uppercase;
     letter-spacing: 0.12em;
     font-size: 11px;
+}
+.search-tabs-bar {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-shrink: 0;
+}
+
+.search-tabs-bar::-webkit-scrollbar {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .search-tabs-bar {
+        padding: 0 !important;
+    }
+
+    /* Cada tab: no se encoge */
+    .search-tabs-bar > button {
+        flex-shrink: 0;
+        padding: 12px 14px;
+        white-space: nowrap;
+    }
 }
