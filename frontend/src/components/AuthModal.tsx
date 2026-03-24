@@ -45,6 +45,17 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
         return () => window.removeEventListener('keydown', onKeyDown)
     }, [isOpen, onClose])
 
+    useEffect(() => {
+        if (!isOpen) return
+        const timer = setTimeout(() => {
+            const firstInput = document.getElementById('auth-username')
+                || document.getElementById('auth-email')
+                || document.getElementById('auth-2fa-code')
+            if (firstInput instanceof HTMLElement) firstInput.focus()
+        }, 50)
+        return () => clearTimeout(timer)
+    }, [isOpen, step])
+
     if (!isOpen) return null;
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -143,50 +154,104 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
             : 'EL CINE EMPIEZA AQUÍ'
 
     return (
-        <div className="auth-modal-overlay" onClick={onClose}>
+        <div
+            className="auth-modal-overlay"
+            onClick={onClose}
+            role="presentation"
+            aria-hidden={false}
+        >
             <motion.div
                 className="auth-modal-content"
                 onClick={e => e.stopPropagation()}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="auth-modal-title"
+                aria-describedby="auth-modal-desc"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4 }}
             >
-                <button className="auth-modal-close" onClick={onClose}>&times;</button>
+                <button className="auth-modal-close" onClick={onClose} aria-label="Cerrar">&times;</button>
 
-                <h2 className="auth-modal-title">{title}</h2>
+                <h2 className="auth-modal-title" id="auth-modal-title">{title}</h2>
                 <p className="auth-modal-subtitle">{subtitle}</p>
+                <span
+                    id="auth-modal-desc"
+                    style={{
+                        position: 'absolute', width: 1, height: 1, padding: 0,
+                        margin: -1, overflow: 'hidden', clip: 'rect(0,0,0,0)',
+                        whiteSpace: 'nowrap', border: 0,
+                    }}
+                >
+                    {step === 'login' ? 'Formulario para iniciar sesión en CineVault'
+                        : step === 'register' ? 'Formulario para crear una cuenta en CineVault'
+                            : 'Formulario de verificación en dos pasos'}
+                </span>
 
                 {!isTwoFactorStep ? (
                     <form onSubmit={handlePrimarySubmit} className="auth-form">
                         {step === 'register' && (
+                            <>
+                                <label htmlFor="auth-email" style={{
+                                    position: 'absolute', width: 1, height: 1,
+                                    padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0,0,0,0)',
+                                    whiteSpace: 'nowrap', border: 0
+                                }}>
+                                    Email
+                                </label>
+                                <input
+                                    id="auth-email"
+                                    type="email"
+                                    name="email"
+                                    placeholder="Email"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    required
+                                    autoComplete="email"
+                                    className={`auth-input ${hasSubmitError ? 'auth-input-error' : ''}`}
+                                />
+                            </>
+                        )}
+                        <>
+                            <label htmlFor="auth-username" style={{
+                                position: 'absolute', width: 1, height: 1,
+                                padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0,0,0,0)',
+                                whiteSpace: 'nowrap', border: 0
+                             }}>
+                                Nombre de usuario
+                            </label>
                             <input
-                                type="email"
-                                name="email"
-                                placeholder="Email"
-                                value={formData.email}
+                                id="auth-username"
+                                type="text"
+                                name="username"
+                                placeholder="Nombre de usuario"
+                                value={formData.username}
                                 onChange={handleChange}
                                 required
+                                autoComplete={step === 'login' ? 'username' : 'username'}
                                 className={`auth-input ${hasSubmitError ? 'auth-input-error' : ''}`}
                             />
-                        )}
-                        <input
-                            type="text"
-                            name="username"
-                            placeholder="Nombre de usuario"
-                            value={formData.username}
-                            onChange={handleChange}
-                            required
-                            className={`auth-input ${hasSubmitError ? 'auth-input-error' : ''}`}
-                        />
-                        <input
-                            type="password"
-                            name="password"
-                            placeholder="Contraseña"
-                            value={formData.password}
-                            onChange={handleChange}
-                            required
-                            className={`auth-input ${hasSubmitError ? 'auth-input-error' : ''}`}
-                        />
+                        </>
+                        <>
+                            <label htmlFor="auth-password" style={{
+                                position: 'absolute', width: 1, height: 1,
+                                padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0,0,0,0)',
+                                whiteSpace: 'nowrap', border: 0
+                            }}>
+                                Contraseña
+                            </label>
+                            <input
+                                id="auth-password"
+                                type="password"
+                                name="password"
+                                placeholder="Contraseña"
+                                value={formData.password}
+                                onChange={handleChange}
+                                required
+                                autoComplete={step === 'login' ? 'current-password' : 'new-password'}
+                                className={`auth-input ${hasSubmitError ? 'auth-input-error' : ''}`}
+                            />
+                        </>
 
                         <button type="submit" className="auth-submit-btn" disabled={loading}>
                             {loading ? 'Procesando...' : (step === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta')}
@@ -195,6 +260,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
                 ) : (
                     <form onSubmit={handleTwoFactorSubmit} className="auth-form">
                         <input
+                            id="auth-2fa-code"
                             type="text"
                             inputMode="text"
                             maxLength={12}
@@ -206,6 +272,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
                                 if (hasSubmitError) setHasSubmitError(false)
                             }}
                             required
+                            aria-label="Código de verificación de dos factores"
+                            autoComplete="one-time-code"
                             className={`auth-input ${hasSubmitError ? 'auth-input-error' : ''}`}
                         />
                         <label style={{ color: '#9ab', fontSize: '12px', display: 'flex', alignItems: 'center', gap: 8 }}>

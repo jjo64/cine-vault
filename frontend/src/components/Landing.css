@@ -46,6 +46,24 @@
     }
 }
 
+.landing-movies-grid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 16px;
+}
+
+@media (max-width: 1024px) {
+    .landing-movies-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .landing-movies-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
 /* 3-Column Grid (HowItWorks, Reviews) */
 .landing-grid-3 {
     display: grid;

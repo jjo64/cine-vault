@@ -53,7 +53,7 @@ const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
     }
 
     return (
-        <nav className={`subpage-navbar ${className}`}>
+        <nav className={`subpage-navbar ${className}`} aria-label="Navegación principal">
             <div className="nav-container">
                 <div className="nav-left">
                     <Link to="/" className="nav-logo">🎬 Cinevault</Link>
@@ -68,48 +68,80 @@ const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
                 </div>
 
                 <div className="nav-right">
-                    <form className="nav-search" onSubmit={handleSearch}>
-                        <button type="submit" className="nav-search-btn">
+                    <form className="nav-search" onSubmit={handleSearch} role="search">
+                        <button type="submit" className="nav-search-btn" aria-label="Buscar">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                 <circle cx="11" cy="11" r="8"></circle>
                                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                             </svg>
                         </button>
+                        <label htmlFor="nav-search-desktop" style={{
+                            position: 'absolute', width: 1, height: 1, padding: 0,
+                            margin: -1, overflow: 'hidden', clip: 'rect(0,0,0,0)',
+                            whiteSpace: 'nowrap', border: 0,
+                        }}>Buscar películas</label>
                         <input
+                            id="nav-search-desktop"
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="nav-search-input"
                             placeholder=""
+                            aria-label="Buscar películas, directores o personas"
                         />
                     </form>
 
                     <div className="user-area">
-                        <div className="user-profile" onClick={() => setShowUserMenu(!showUserMenu)} ref={menuRef}>
-                            <img src="https://i.pravatar.cc/32?u=me" alt="User" className="nav-avatar" />
+                        <div
+                            className="user-profile"
+                            onClick={() => setShowUserMenu(!showUserMenu)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault()
+                                    setShowUserMenu((prev) => !prev)
+                                }
+                                if (e.key === 'Escape') setShowUserMenu(false)
+                            }}
+                            ref={menuRef}
+                            role="button"
+                            tabIndex={0}
+                            aria-haspopup="menu"
+                            aria-expanded={showUserMenu}
+                            aria-label="Menú de usuario"
+                        >
+                            <img src="https://i.pravatar.cc/32?u=me" alt="Tu foto de perfil" className="nav-avatar" />
                             <span className="nav-username">USUARIO</span>
                             <span className={`nav-chevron ${showUserMenu ? 'up' : ''}`}>▼</span>
 
                             {showUserMenu && (
-                                <div className="user-dropdown">
-                                    <Link to="/">Home</Link>
-                                    <Link to="/profile">Profile</Link>
-                                    <Link to={resolveNavPathWithFallback('films')}>Films</Link>
-                                    <Link to={resolveNavPathWithFallback('diary')}>Diary</Link>
-                                    <Link to={resolveNavPathWithFallback('esta noche')}>Esta noche</Link>
-                                    <Link to={resolveNavPathWithFallback('feed')}>Feed</Link>
-                                    <Link to={resolveNavPathWithFallback('activity')}>Activity</Link>
-                                    <Link to={resolveNavPathWithFallback('lists')}>Lists</Link>
+                                <div className="user-dropdown" role="menu" aria-label="Menú de navegación">
+                                    <Link to="/" role="menuitem">Home</Link>
+                                    <Link to="/profile" role="menuitem">Profile</Link>
+                                    <Link to={resolveNavPathWithFallback('films')} role="menuitem">Films</Link>
+                                    <Link to={resolveNavPathWithFallback('diary')} role="menuitem">Diary</Link>
+                                    <Link to={resolveNavPathWithFallback('esta noche')} role="menuitem">Esta noche</Link>
+                                    <Link to={resolveNavPathWithFallback('feed')} role="menuitem">Feed</Link>
+                                    <Link to={resolveNavPathWithFallback('activity')} role="menuitem">Activity</Link>
+                                    <Link to={resolveNavPathWithFallback('lists')} role="menuitem">Lists</Link>
                                     <div className="dropdown-divider"></div>
-                                    <Link to="/settings">Settings</Link>
-                                    <button type="button" onClick={handleSignOut} style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', cursor: 'pointer' }}>Sign Out</button>
+                                    <Link to="/settings" role="menuitem">Settings</Link>
+                                    <button
+                                        type="button"
+                                        role="menuitem"
+                                        onClick={handleSignOut}
+                                        style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', cursor: 'pointer' }}
+                                    >
+                                        Sign Out
+                                    </button>
                                 </div>
                             )}
                         </div>
                         <button
                             className="nav-hamburger"
                             onClick={() => setIsMobileMenuOpen((prev) => !prev)}
-                            aria-label="Abrir menu"
+                            aria-label={isMobileMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
+                            aria-expanded={isMobileMenuOpen}
+                            aria-controls="nav-mobile-overlay"
                         >
                             {isMobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
                         </button>
@@ -119,7 +151,13 @@ const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
                     </div>
                 </div>
             </div>
-            <div className={`nav-mobile-overlay ${isMobileMenuOpen ? 'nav-mobile-overlay--open' : ''}`}>
+            <div
+                id="nav-mobile-overlay"
+                className={`nav-mobile-overlay ${isMobileMenuOpen ? 'nav-mobile-overlay--open' : ''}`}
+                aria-hidden={!isMobileMenuOpen}
+                role="navigation"
+                aria-label="Menú móvil"
+            >
                 <form className="nav-mobile-search" onSubmit={handleSearch}>
                     <input
                         type="text"

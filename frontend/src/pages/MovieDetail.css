@@ -109,7 +109,7 @@
 
 /* Hero Section */
 .md-hero {
-    min-height: clamp(280px, 50vw, 480px);
+    min-height: 100vh;
 }
 
 .md-hero-content {

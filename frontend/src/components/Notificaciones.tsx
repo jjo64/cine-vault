@@ -188,47 +188,69 @@ export const Notificaciones = ({ open, showTrigger = true }: NotificacionesProps
   return (
     <div style={{ position: "relative" }}>
       {showTrigger && (
-        <button onClick={() => setAbiertoInterno((prev) => !prev)}>
-          🔔
+        <button
+          onClick={() => setAbiertoInterno((prev) => !prev)}
+          aria-label={noLeidas > 0
+            ? `Notificaciones, ${noLeidas} sin leer`
+            : 'Notificaciones'}
+          aria-expanded={abiertoInterno}
+          aria-haspopup="true"
+          aria-controls="notificaciones-panel"
+          style={{ position: 'relative', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+        >
+          <span aria-hidden="true">🔔</span>
           {noLeidas > 0 && (
-            <span style={{
-              position: "absolute",
-              top: -5,
-              right: -5,
-              background: "red",
-              color: "white",
-              borderRadius: "50%",
-              width: 18,
-              height: 18,
-              fontSize: 11,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}>
+            <span
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                top: -5,
+                right: -5,
+                background: "red",
+                color: "white",
+                borderRadius: "50%",
+                width: 18,
+                height: 18,
+                fontSize: 11,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
               {noLeidas}
             </span>
           )}
+          <span className="sr-only" aria-live="polite" aria-atomic="true">
+            {noLeidas > 0 ? `${noLeidas} notificaciones sin leer` : ''}
+          </span>
         </button>
       )}
 
       {/* Panel de notificaciones */}
       {abierto && (
-        <div style={{
-          position: "absolute",
-          right: 0,
-          top: 35,
-          width: 320,
-          background: "#111111",
-          border: "1px solid #252525",
-          borderRadius: 0,
-          boxShadow: "0 10px 40px rgba(0,0,0,0.35)",
-          zIndex: 1000,
-        }}>
+        <div
+          id="notificaciones-panel"
+          role="dialog"
+          aria-label="Panel de notificaciones"
+          aria-modal="false"
+          style={{
+            position: "absolute",
+            right: 0,
+            top: 35,
+            width: 320,
+            background: "#111111",
+            border: "1px solid #252525",
+            borderRadius: 0,
+            boxShadow: "0 10px 40px rgba(0,0,0,0.35)",
+            zIndex: 1000,
+          }}
+        >
           <div style={{ padding: "12px 16px", borderBottom: "1px solid #252525", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, color: "#E2E2E2" }}>Notificaciones</span>
             <button
               onClick={marcarTodasLeidas}
               disabled={noLeidas <= 0}
+              aria-label="Marcar todas las notificaciones como leídas"
               style={{
                 fontFamily: "'Syne', sans-serif",
                 fontSize: 10,
@@ -262,7 +284,13 @@ export const Notificaciones = ({ open, showTrigger = true }: NotificacionesProps
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.34, delay: index * 0.04 }}
-                  onClick={() => marcarLeida(n.id)}
+                  onClick={() => !n.read && marcarLeida(n.id)}
+                  onKeyDown={(e) => { if (!n.read && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); marcarLeida(n.id) } }}
+                  role={!n.read ? "button" : undefined}
+                  tabIndex={!n.read ? 0 : undefined}
+                  aria-label={!n.read
+                    ? `Notificación de ${n.sender?.username ?? 'alguien'}: ${mensajeNotificacion(n.type, n.sender?.username ?? 'alguien')}. Presionar para marcar como leída`
+                    : undefined}
                   style={{
                     padding: "12px 16px",
                     borderBottom: "1px solid #252525",
@@ -277,7 +305,7 @@ export const Notificaciones = ({ open, showTrigger = true }: NotificacionesProps
                   {n.sender?.avatar_url ? (
                     <img
                       src={n.sender.avatar_url}
-                      alt={n.sender.username}
+                      alt={`Avatar de ${n.sender.username}`}
                       style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover" }}
                     />
                   ) : (
