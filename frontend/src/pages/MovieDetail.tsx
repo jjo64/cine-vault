@@ -61,6 +61,7 @@ const C = {
 
 const SERIF = "'Cormorant Garamond', serif"
 const SANS = "'Syne', sans-serif"
+const TMDB_STILL = 'https://image.tmdb.org/t/p/w780'
 const TMDB_IMAGE = 'https://image.tmdb.org/t/p/original'
 const TMDB_POSTER = 'https://image.tmdb.org/t/p/w500'
 
@@ -1386,7 +1387,7 @@ function Hero({
           initial={{ opacity: 0, y: -24, scale: 0.94 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.3 }}
-          style={{ position: 'absolute', top: '50%', y: posterY, zIndex: 10, transform: 'translateY(-50%)' }}
+          style={{ position: 'absolute', top: '23%', y: posterY, zIndex: 10, transform: 'translateY(-50%)' }}
         >
           <div style={{ aspectRatio: '2/3', borderRadius: 2, overflow: 'hidden', boxShadow: '0 40px 100px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.04)', position: 'relative' }}>
             <Img
@@ -1611,7 +1612,7 @@ function Hero({
   </div>
 </motion.div>
 
-      <motion.div className="md-hero-scroll-prompt" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2 }} style={{ position: 'absolute', bottom: 28, left: 52, alignItems: 'center', gap: 12, zIndex: 10 }}>
+      <motion.div className="md-hero-scroll-prompt" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2 }} style={{ position: 'absolute', bottom: 290, left: 52, alignItems: 'center', gap: 12, zIndex: 50 }}>
         <div style={{ width: 32, height: 1, background: C.textMuted, position: 'relative', overflow: 'hidden' }}>
           <motion.div animate={{ x: ['-100%', '0%', '100%'] }} transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }} style={{ position: 'absolute', inset: 0, background: C.accent }} />
         </div>
@@ -2932,13 +2933,13 @@ export default function MovieDetailPage() {
   }
 
   const stills = useMemo(() => {
-    if (!movie?.images?.backdrops?.length) return [] as string[]
-    return movie.images.backdrops
-      .slice(0, 5)
-      .map((item) => item.file_path)
-      .filter((path): path is string => typeof path === 'string' && path.length > 0)
-      .map((path) => `${TMDB_IMAGE}${path}`)
-  }, [movie])
+  if (!movie?.images?.backdrops?.length) return [] as string[]
+  return movie.images.backdrops
+    .slice(0, 5)
+    .map((item) => item.file_path)
+    .filter((path): path is string => typeof path === 'string')
+    .map((path) => `${TMDB_STILL}${path}`) // ← Cambio aplicado aquí
+}, [movie])
 
   const themes = useMemo(() => {
     const fromGenres = (movie?.genres || []).map((genre) => genre.name)

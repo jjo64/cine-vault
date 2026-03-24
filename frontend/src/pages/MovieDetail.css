@@ -110,11 +110,12 @@
 /* --- ESTILOS BASE (DESKTOP) --- */
 
 .md-hero {
-    min-height: 100vh;
-    display: flex;
-    align-items: flex-end;
+    min-height: 100vh !important; /* El backdrop sigue entero */
+    padding-bottom: 350px;
     position: relative;
-    padding-bottom: 100px;
+    display: flex;
+    align-items: center; /* Centra el contenido verticalmente */
+    overflow: visible !important; /* CLAVE: Permite que la quote suba */
 }
 
 .md-hero-content {
@@ -242,19 +243,37 @@
     gap: 8px;
 }
 
-.md-action-icon-btn {
-    width: 46px;
-    height: 46px;
-    display: flex;
+.md-action-icon-btn, 
+.md-menu-wrapper {
+    width: 46px !important;
+    height: 46px !important;
+    display: flex !important;
     align-items: center;
     justify-content: center;
     background: transparent;
     transition: all 0.2s ease;
     cursor: pointer;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
-/* Hover effects */
-.md-action-btn:hover, .md-action-icon-btn:hover {
+/* Forzamos que el botón que está dentro del wrapper del menú sea 100% igual */
+.md-menu-wrapper button {
+    width: 100% !important;
+    height: 100% !important;
+    background: transparent !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    border: inherit; /* Hereda el borde del padre si lo tiene */
+    cursor: pointer;
+    color: inherit;
+}
+
+/* Hover effects para todos los iconos */
+.md-action-btn:hover,
+.md-action-icon-btn:hover, 
+.md-menu-wrapper:hover {
     filter: brightness(1.2);
     transform: translateY(-2px);
 }
@@ -408,9 +427,106 @@
     }
 }
 
+/*Moviles muy pequeños*/
+
+@media (max-width: 410px) {
+    /* 1. AJUSTE DEL CONTENEDOR PRINCIPAL */
+
+    .md-hero-content {
+        padding: 60px 12px 20px !important; /* Menos padding lateral para ganar espacio */
+    }
+
+    /* 2. REJILLA SUPERIOR (Título + Póster) */
+    .md-title-block {
+        display: grid !important;
+        grid-template-columns: 1fr 85px !important; /* Reducimos el póster de 100px a 85px */
+        gap: 12px !important;
+        margin-bottom: 20px !important;
+    }
+
+    .md-hero-title {
+        font-size: 32px !important; /* Tamaño más seguro para evitar saltos de línea bruscos */
+        line-height: 1.1 !important;
+    }
+
+    .md-hero-subtitle {
+        font-size: 20px !important; /* Subtítulo más compacto */
+        margin-top: 2px !important;
+    }
+
+    .md-hero-director {
+        font-size: 15px !important;
+        margin-top: 8px !important;
+    }
+
+    /* 3. PÓSTER */
+
+    .md-hero-poster {
+        display: none;
+        overflow: hidden;
+    }
+    
+    .md-hero-poster.md-only-mobile {
+        width: 100% !important;
+        margin-top: 5px !important;
+    }
+
+    /* 4. RATINGS Y SCORE (Más compactos) */
+    .md-hero-ratings {
+        gap: 12px !important;
+        margin-bottom: 24px !important;
+    }
+
+    .md-hero-score {
+        padding-left: 12px !important;
+    }
+
+    .md-score-number-group span:first-child {
+        font-size: 34px !important; /* Bajamos el número de 44 a 34 */
+    }
+
+    /* 5. BOTONES DE ACCIÓN (Vault y Review) */
+    .md-actions-row {
+        gap: 8px !important;
+    }
+
+    .md-action-btn {
+        height: 40px !important; /* Ligeramente más bajos */
+        font-size: 9px !important; /* Letra un punto más pequeña */
+        letter-spacing: 0.1em !important;
+    }
+
+    /* 6. ICONOS (Watchlist, Like, Menú) */
+    .md-action-icons-row {
+        gap: 8px !important; /* Menos espacio entre iconos para que no desborden */
+    }
+
+    .md-action-icon-btn,
+    .md-menu-wrapper {
+        height: 40px !important;
+    }
+
+    /* 7. LISTAS HORIZONTALES */
+    .md-cast-list, .md-similar-list {
+        gap: 10px !important;
+    }
+
+}
+
 /* Director Quote */
 .md-quote {
     padding: 48px 52px;
+    position: relative;
+    z-index: 20; /* Por encima del fondo del hero */
+    
+    /* Un margen superior negativo "tira" de la sección hacia arriba 
+       dentro del área del 100vh del Hero sin cortar la imagen. */
+    margin-top: -27vh; 
+    
+    /* Añadimos un degradado al inicio de esta sección para que 
+       se funda con el negro del final del backdrop */
+    background: linear-gradient(to bottom, transparent, #080808 20%);
+    padding-top: 100px;
 }
 
 @media (max-width: 768px) {
