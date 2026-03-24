@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import DOMPurify from 'dompurify'
 import { motion } from 'motion/react'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -102,6 +103,8 @@ function NightRec({ recommendation }: { recommendation: WatchlistItem | null }) 
       <div className="profile-night-rec-actions" style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 8, position: 'relative', zIndex: 1 }}>
         <button
           onClick={() => setWatched((value) => !value)}
+          aria-pressed={watched}
+          aria-label={watched ? 'Quitar de vista' : 'Marcar como vista esta noche'}
           style={{
             padding: '10px 18px',
             background: watched ? C.accentDim : C.accent,
@@ -137,6 +140,15 @@ function FilmCardMobile({ film, delay = 0 }: { film: RecentlyWatchedItem; delay?
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay }}
       onClick={() => navigate(movieHref(film.movieId, film.title, film.tmdbId))}
+      role="link"
+      tabIndex={0}
+      aria-label={`Ver película ${film.title}`}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          navigate(movieHref(film.movieId, film.title, film.tmdbId))
+        }
+      }}
       style={{
         cursor: 'pointer',
         display: 'flex',
@@ -179,6 +191,15 @@ function FilmCard({ film, delay = 0 }: { film: RecentlyWatchedItem; delay?: numb
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onClick={() => navigate(movieHref(film.movieId, film.title, film.tmdbId))}
+      role="link"
+      tabIndex={0}
+      aria-label={`Ver película ${film.title}`}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          navigate(movieHref(film.movieId, film.title, film.tmdbId))
+        }
+      }}
       style={{ cursor: 'pointer' }}
     >
       <div
@@ -350,6 +371,13 @@ function ReviewCard({ review, delay = 0, compact = false }: { review: ReviewItem
     .replace(/<b>/g, `<strong style="color:${C.text};font-style:normal;font-weight:500">`)
     .replace(/<\/b>/g, '</strong>')
 
+  const safeHtml = typeof window !== 'undefined'
+    ? DOMPurify.sanitize(richText ?? '', {
+        ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'br', 'p', 'span'],
+        ALLOWED_ATTR: [],
+      })
+    : (richText ?? '')
+
   if (compact) {
     return (
       <motion.div
@@ -463,7 +491,7 @@ function ReviewCard({ review, delay = 0, compact = false }: { review: ReviewItem
           <Stars rating={review.rating} size={PROFILE_STAR_SIZES.reviewDesktop} />
           <span style={{ fontSize: 11, color: C.textMuted, marginLeft: 'auto', fontFamily: SANS }}>{review.createdAtLabel}</span>
         </div>
-        <div style={{ fontFamily: SERIF, fontSize: 16, fontStyle: 'italic', color: C.textSoft, lineHeight: 1.7, maxWidth: 680 }} dangerouslySetInnerHTML={{ __html: richText }} />
+        <div style={{ fontFamily: SERIF, fontSize: 16, fontStyle: 'italic', color: C.textSoft, lineHeight: 1.7, maxWidth: 680 }} dangerouslySetInnerHTML={{ __html: safeHtml }} />
         <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
           {review.tags.map((tag) => (
             <span key={tag} style={{ fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: C.textSoft, border: `1px solid ${C.border}`, padding: '3px 10px', cursor: 'pointer', transition: 'all 0.2s', fontFamily: SANS }}>
@@ -783,6 +811,7 @@ export function VaultPanel() {
           <button
             key={filterName}
             onClick={() => setFilter(filterName)}
+            aria-pressed={filter === filterName}
             style={{
               padding: '6px 16px',
               background: filter === filterName ? C.accent : 'transparent',
@@ -1150,6 +1179,7 @@ export function ReviewsPanel({ reviewItems }: { reviewItems: ReviewItem[] }) {
             <button
               key={sortName}
               onClick={() => setSort(sortName)}
+              aria-pressed={sort === sortName}
               style={{
                 padding: '6px 14px',
                 background: sort === sortName ? C.elevated : 'transparent',
@@ -1449,3 +1479,4 @@ export function ProfileSidebar({ recentlyWatched, reviewItems }: { recentlyWatch
     </aside>
   )
 }
+// TODO: npm install dompurify @types/dompurify

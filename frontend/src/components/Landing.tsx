@@ -748,7 +748,7 @@ function MovieGridSection({ endpoint, eyebrow, title }: { endpoint: string; eyeb
           return
         }
         const data = await response.json()
-        setMovies(Array.isArray(data?.results) ? data.results.slice(0, 8) : [])
+        setMovies(Array.isArray(data?.results) ? data.results.slice(0, 10) : [])
       } catch {
         setMovies([])
       }
@@ -767,7 +767,7 @@ function MovieGridSection({ endpoint, eyebrow, title }: { endpoint: string; eyeb
       >
         <SectionHeader eyebrow={eyebrow} title={title} />
       </motion.div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 16 }}>
+      <div className="landing-movies-grid">
         {movies.map((movie, i) => (
           <motion.div
             key={movie.id}

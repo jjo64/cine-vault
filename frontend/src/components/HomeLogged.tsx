@@ -748,8 +748,13 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
                   ))}
                 </div>
                 <div className="hl-tonight-meta-row">
-                  <button onClick={() => setWatchedTonight((v) => !v)} style={{ padding: '10px 24px', background: watchedTonight ? C.accentDim : C.accent, color: C.bg, border: 'none', fontFamily: SANS, fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7 }}>
-                    {watchedTonight ? <><Check size={11} /> Vista</> : 'Marcar como vista'}
+                  <button
+                    onClick={() => setWatchedTonight((v) => !v)}
+                    aria-pressed={watchedTonight}
+                    aria-label={watchedTonight ? 'Quitar marca de vista' : 'Marcar película como vista'}
+                    style={{ padding: '10px 24px', background: watchedTonight ? C.accentDim : C.accent, color: C.bg, border: 'none', fontFamily: SANS, fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7 }}
+                  >
+                    {watchedTonight ? <><Check size={11} aria-hidden="true" /> Vista</> : 'Marcar como vista'}
                   </button>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: C.gold, fontFamily: SANS, fontSize: 11 }}><Trophy size={12} fill={C.gold} color={C.gold} /> +{tonightFilm.points} pts esta noche</div>
                 </div>
@@ -869,7 +874,16 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
                 </Link>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 12, paddingTop: 4 }}>
-                <button onClick={() => handleToggleFeedLike(post.id)} disabled={likeBusyIds.has(post.id)} style={{ display: 'flex', alignItems: 'center', gap: 5, color: likedFeedIds.has(post.id) ? C.accent : C.textSoft, fontFamily: SANS, fontSize: 11, border: 'none', background: 'none', padding: 0, cursor: likeBusyIds.has(post.id) ? 'default' : 'pointer' }}><Heart size={13} strokeWidth={1.5} fill={likedFeedIds.has(post.id) ? C.accent : 'none'} /> {post.likes}</button>
+                <button
+                  onClick={() => handleToggleFeedLike(post.id)}
+                  disabled={likeBusyIds.has(post.id)}
+                  aria-label={likedFeedIds.has(post.id) ? `Quitar like (${post.likes} likes)` : `Dar like (${post.likes} likes)`}
+                  aria-pressed={likedFeedIds.has(post.id)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 5, color: likedFeedIds.has(post.id) ? C.accent : C.textSoft, fontFamily: SANS, fontSize: 11, border: 'none', background: 'none', padding: 0, cursor: likeBusyIds.has(post.id) ? 'default' : 'pointer' }}
+                >
+                  <Heart size={13} strokeWidth={1.5} fill={likedFeedIds.has(post.id) ? C.accent : 'none'} aria-hidden="true" />
+                  <span aria-hidden="true">{post.likes}</span>
+                </button>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: C.textMuted, fontFamily: SANS, fontSize: 11 }}><MessageCircle size={12} strokeWidth={1.5} /> {post.comments}</div>
               </div>
             </motion.div>
@@ -988,17 +1002,24 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
     <motion.div key="vitrina" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.4 }}>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }} style={{ marginBottom: 56 }}>
         <SectionLabel>Buscar en CineVault</SectionLabel>
-        <form onSubmit={submitSearch} style={{ position: 'relative', maxWidth: 600 }}>
-          <SearchIcon size={16} style={{ position: 'absolute', left: 18, top: '50%', transform: 'translateY(-50%)', color: C.textSoft, pointerEvents: 'none' }} />
+        <form onSubmit={submitSearch} role="search" style={{ position: 'relative', maxWidth: 600 }}>
+          <SearchIcon size={16} style={{ position: 'absolute', left: 18, top: '50%', transform: 'translateY(-50%)', color: C.textSoft, pointerEvents: 'none' }} aria-hidden="true" />
+          <label htmlFor="hl-search-input" style={{
+            position: 'absolute', width: 1, height: 1, padding: 0,
+            margin: -1, overflow: 'hidden', clip: 'rect(0,0,0,0)',
+            whiteSpace: 'nowrap', border: 0,
+          }}>Buscar en CineVault</label>
           <input
+            id="hl-search-input"
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
             placeholder="Titulo, director, actor, lista..."
+            aria-label="Buscar títulos, directores, actores o listas"
             style={{ width: '100%', padding: '16px 18px 16px 48px', background: C.surface, border: `1px solid ${C.border}`, color: C.text, fontFamily: SANS, fontSize: 14, letterSpacing: '0.03em', outline: 'none', boxSizing: 'border-box' }}
           />
           {searchValue ? (
-            <button type="submit" style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: C.accent, fontFamily: SANS, fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase' }}>
-              Buscar →
+            <button type="submit" aria-label="Ejecutar búsqueda" style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: C.accent, fontFamily: SANS, fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase' }}>
+              <span aria-hidden="true">Buscar →</span>
             </button>
           ) : null}
         </form>
@@ -1090,12 +1111,16 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
     <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: SANS, textAlign: 'left' }}>
       <Grain />
 
-      <nav className="hl-navbar">
+      <nav className="hl-navbar" aria-label="Navegación de CineVault">
         <Link to="/" className="hl-nav-brand">
           Cine<span style={{ color: C.accent }}>Vault</span>
         </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <button onClick={() => navigate('/search')} style={{ background: 'none', border: `1px solid ${C.border}`, cursor: 'pointer', color: C.textSoft, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <button
+            onClick={() => navigate('/search')}
+            aria-label="Ir a búsqueda"
+            style={{ background: 'none', border: `1px solid ${C.border}`, cursor: 'pointer', color: C.textSoft, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
             <SearchIcon size={14} />
           </button>
           <Link to="/feed" style={{ fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: C.textSoft, textDecoration: 'none', fontFamily: SANS }}>Feed</Link>
@@ -1172,9 +1197,10 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
                 await logoutCurrentUser()
                 navigate('/')
               }}
+              aria-label="Cerrar sesión de CineVault"
               style={{ border: `1px solid ${C.border}`, background: C.elevated, color: '#FF8A8A', padding: '9px 12px', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}
             >
-              Cerrar sesion
+              Cerrar sesión
             </button>
           </div>
         </div>
