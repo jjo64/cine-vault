@@ -209,20 +209,25 @@ function StarRating({ value, onChange }: { value: number; onChange: (n: number) 
   const activeLabel = active > 0 ? labels[labelKey] || 'Tu rating' : 'Tu rating'
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
-      <div style={{ display: 'flex', gap: 5, alignItems: 'center' }} onMouseLeave={() => setHover(null)}>
+    <div style={{ 
+      display: 'flex', 
+      alignItems: 'center', 
+      gap: 12,           // Reducido de 20 a 12 para pegar el texto a las estrellas
+      flexWrap: 'wrap'
+      }}>
+      <div style={{ display: 'flex', gap: 2, alignItems: 'center' }} onMouseLeave={() => setHover(null)}>
         {[0, 1, 2, 3, 4].map((starIndex) => {
           const fill = getFill(starIndex)
           return (
-            <div key={starIndex} style={{ position: 'relative', width: 22, height: 26 }}>
+            <div key={starIndex} style={{ position: 'relative', width: 20, height: 24 }}>
               <span
                 aria-hidden
                 style={{
                   position: 'absolute',
                   inset: 0,
-                  fontSize: 26,
-                  lineHeight: '26px',
-                  color: C.textMuted,
+                  fontSize: 22,      // Ajustado para que la estrella no tenga aire extra
+                  lineHeight: '24px',
+                  color: 'rgba(255,255,255,0.1)', // Un gris más sutil como en Figma
                   fontFamily: 'system-ui, sans-serif',
                   fontWeight: 400,
                   userSelect: 'none',
@@ -236,9 +241,9 @@ function StarRating({ value, onChange }: { value: number; onChange: (n: number) 
                   aria-hidden
                   style={{
                     display: 'block',
-                    width: 22,
-                    fontSize: 26,
-                    lineHeight: '26px',
+                    width: 20,
+                    fontSize: 22,
+                    lineHeight: '24px',
                     color: C.gold,
                     fontFamily: 'system-ui, sans-serif',
                     fontWeight: 400,
@@ -267,7 +272,14 @@ function StarRating({ value, onChange }: { value: number; onChange: (n: number) 
           )
         })}
       </div>
-      <div style={{ fontFamily: SERIF, fontSize: 15, fontStyle: 'italic', color: C.textSoft, minWidth: 220 }}>
+      <div style={{ 
+        fontFamily: SERIF, 
+        fontSize: 14, 
+        fontStyle: 'italic', 
+        color: C.textSoft,
+        opacity: 0.8,
+        marginLeft: 4 // Pequeño empujón extra manual si hace falta 
+        }}>
         {activeLabel}
       </div>
     </div>
@@ -1392,220 +1404,212 @@ function Hero({
         </motion.div>
       )}
 
-      <motion.div className="md-hero-content" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, ease: 'easeOut', delay: 0.1 }} style={{ position: 'relative', zIndex: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 10, letterSpacing: '0.22em', textTransform: 'uppercase', color: C.accent, padding: '4px 10px', border: `1px solid ${C.accentDim}`, fontFamily: SANS }}>
-            {genresText}
-          </span>
-          <span style={{ color: C.textMuted, fontSize: 12 }}>·</span>
-          <span style={{ fontSize: 11, color: C.textSoft, letterSpacing: '0.08em', fontFamily: SANS }}>
-            {releaseYear} · {country} · {runtime}
-          </span>
-        </div>
+      <motion.div 
+  className="md-hero-content"
+  initial={{ opacity: 0, y: 24 }} 
+  animate={{ opacity: 1, y: 0 }} 
+  transition={{ duration: 1, ease: 'easeOut', delay: 0.1 }}
+>
+  {/* METADATA SUPERIOR */}
+  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
+    <span style={{ fontSize: 10, letterSpacing: '0.22em', textTransform: 'uppercase', color: C.accent, padding: '4px 10px', border: `1px solid ${C.accentDim}`, fontFamily: SANS }}>
+      {genresText}
+    </span>
+    <span style={{ color: C.textMuted, fontSize: 12 }}>·</span>
+    <span style={{ fontSize: 11, color: C.textSoft, letterSpacing: '0.08em', fontFamily: SANS }}>
+      {releaseYear} · {country} · {runtime}
+    </span>
+  </div>
 
-        <div style={{ marginBottom: 4 }}>
-          <h1 className="md-hero-title" style={{ fontFamily: SERIF, fontWeight: 300, lineHeight: 0.92, letterSpacing: '-0.02em', color: C.text, margin: 0 }}>
-            {movie.title}
-          </h1>
-          <div className="md-hero-subtitle" style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 300, lineHeight: 1, color: 'rgba(226,226,226,0.35)', letterSpacing: '-0.01em', marginTop: 2 }}>
-            {movie.original_title || movie.title}
-          </div>
-        </div>
+  {/* BLOQUE DE TÍTULO + PÓSTER */}
+  <div className="md-title-block">
+    {/* Agrupamos los textos para que en mobile queden en la columna izquierda */}
+    <div className="md-title-text-group">
+      <h1 className="md-hero-title" style={{ fontFamily: SERIF, color: C.text }}>
+        {movie.title}
+      </h1>
 
-        <div className="md-hero-director" style={{ fontFamily: SERIF, fontStyle: 'italic', color: C.textSoft, marginBottom: 20, letterSpacing: '0.02em', marginTop: 14 }}>
-          Una película de{' '}
-          {directorObj ? (
-            <Link
-              to={`/person/${directorObj.id}`}
-              style={{ color: C.accent, textDecoration: 'none', paddingBottom: 1, transition: 'color 0.2s' }}
-            >
-              {directorObj.name}
-            </Link>
-          ) : (
-            'Desconocido'
-          )}
-        </div>
+      <div className="md-hero-subtitle" style={{ fontFamily: SERIF }}>
+        {movie.original_title || movie.title}
+      </div>
 
-        <div className="md-hero-ratings" style={{ display: 'flex', marginBottom: 24 }}>
-          <StarRating value={userRating} onChange={onRate} />
+      <div className="md-hero-director" style={{ fontFamily: SERIF, color: C.textSoft }}>
+        <span>Una película de</span>{' '}
+        {directorObj ? (
+          <Link to={`/person/${directorObj.id}`} style={{ color: C.accent, textDecoration: 'none' }}>
+            {directorObj.name}
+          </Link>
+        ) : 'Desconocido'}
+      </div>
+    </div>
 
-          <div className="md-hero-score" style={{ display: 'flex', alignItems: 'baseline', gap: 5 }}>
-            <span style={{ fontFamily: SERIF, fontSize: 34, fontWeight: 300, color: C.gold, lineHeight: 1 }}>{score}</span>
-            <span style={{ fontSize: 14, color: C.textMuted, fontFamily: SANS }}>/5</span>
-            <span style={{ fontSize: 11, color: C.textSoft, fontFamily: SANS, marginLeft: 4 }}>en CineVault</span>
-          </div>
-          <div style={{ fontSize: 11, color: C.textMuted, fontFamily: SANS, display: 'flex', alignItems: 'center' }}>{votes} ratings</div>
-        </div>
+    {/* El póster en Desktop será absoluto. En Mobile será la columna derecha */}
+    <div className="md-hero-poster md-only-mobile">
+    {movie.poster_path && (
+      <div style={{ 
+        backgroundImage: `url(https://image.tmdb.org/t/p/w500${movie.poster_path})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        aspectRatio: '2/3',
+        borderRadius: '6px',
+        boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
+      }} />
+    )}
+  </div>
+  </div>
 
-        <div className="md-actions-row" style={{ gap: 10 }}>
-          <button
-            onClick={onToggleVault}
-            className="md-hero-action-btn md-action-btn"
-            style={{
-              padding: '12px 20px',
-              background: inVault ? C.accentDim : C.accent,
-              color: C.bg,
-              border: 'none',
-              fontFamily: SANS,
-              fontSize: 11,
-              letterSpacing: '0.18em',
-              textTransform: 'uppercase',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-            }}
-          >
-            {inVault ? '✓ En mi Vault' : '+ Vault'}
-          </button>
+  {/* RATINGS */}
+  <div className="md-hero-ratings">
+    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+      <StarRating value={userRating} onChange={onRate} />
+    </div>
 
-          <button
-            onClick={onWriteReview}
-            className="md-hero-action-btn md-action-btn"
-            style={{
-              padding: '12px 20px',
-              background: 'transparent',
-              color: C.textSoft,
-              border: `1px solid ${C.border}`,
-              fontFamily: SANS,
-              fontSize: 11,
-              letterSpacing: '0.18em',
-              textTransform: 'uppercase',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 7,
-            }}
-          >
-            <MessageSquare size={13} strokeWidth={1.5} /> Review o log
-          </button>
+    <div className="md-hero-score" style={{ borderLeftColor: C.border }}>
+      <div className="md-score-number-group">
+        <span style={{ fontFamily: SERIF, fontSize: 44, fontWeight: 300, color: C.gold, lineHeight: 1 }}>
+          {score}
+        </span>
+        <span style={{ fontSize: 16, color: C.textSoft, fontFamily: SANS }}>/5</span>
+      </div>
 
-          <div className="md-action-icons-row">
-            <button
-              title="Watchlist"
-              onClick={onToggleWatchlist}
-              className="md-action-icon-btn md-action-btn"
-              style={{
-                width: 46,
-                height: 46,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'transparent',
-                color: inWatchlist ? C.accent : C.textSoft,
-                border: `1px solid ${inWatchlist ? C.accentDim : C.border}`,
-                cursor: 'pointer',
-              }}
-            >
-              <Bookmark size={15} strokeWidth={1.5} fill={inWatchlist ? C.accent : 'none'} />
-            </button>
-            <button
-              title="Me gusta"
-              onClick={onToggleFavorite}
-              className="md-action-icon-btn md-action-btn"
-              style={{
-                width: 46,
-                height: 46,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'transparent',
-                color: liked ? C.accent : C.textSoft,
-                border: `1px solid ${liked ? C.accentDim : C.border}`,
-                cursor: 'pointer',
-              }}
-            >
-              <Heart size={15} strokeWidth={1.5} fill={liked ? C.gold : 'none'} />
-            </button>
-          </div>
-          <div ref={actionMenuRef} style={{ position: 'relative' }}>
-            <button
-              ref={actionMenuButtonRef}
-              title="Más opciones"
-              onClick={() => setActionMenuOpen((prev) => !prev)}
-              style={{
-                width: 46,
-                height: 46,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'transparent',
-                color: actionMenuOpen ? C.accent : C.textSoft,
-                border: `1px solid ${actionMenuOpen ? C.accentDim : C.border}`,
-                cursor: 'pointer',
-              }}
-            >
-              <Menu size={15} strokeWidth={1.8} />
-            </button>
+      <div className="md-score-info-stack">
+        <span style={{ fontSize: 10, color: C.textSoft, fontFamily: SANS, textTransform: 'uppercase', letterSpacing: '0.15em', lineHeight: 1.2, fontWeight: 600 }}>
+          CINEVAULT
+        </span>
+        <span style={{ fontSize: 11, color: C.textMuted, fontFamily: SANS, lineHeight: 1 }}>
+          {votes} ratings
+        </span>
+      </div>
+    </div>
+  </div>
 
-            {actionMenuOpen && (
-              <div
-                style={{
-                  position: 'fixed',
-                  left: actionMenuLeft,
-                  top: actionMenuTop,
-                  minWidth: 180,
-                  border: `1px solid ${C.border}`,
-                  background: 'rgba(8,8,8,0.98)',
-                  backdropFilter: 'blur(10px)',
-                  boxShadow: '0 18px 40px rgba(0,0,0,0.45)',
-                  padding: 6,
-                  display: 'grid',
-                  gap: 4,
-                  zIndex: 30,
-                }}
-              >
-                <button
-                  onClick={() => {
-                    setActionMenuOpen(false)
-                    onAddToList()
-                  }}
-                  style={{
-                    width: '100%',
-                    border: 'none',
-                    background: 'transparent',
-                    color: C.text,
-                    textAlign: 'left',
-                    padding: '9px 10px',
-                    cursor: 'pointer',
-                    fontFamily: SANS,
-                    fontSize: 11,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.1em',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 7,
-                  }}
-                >
-                  <List size={13} strokeWidth={1.5} /> Añadir a lista
-                </button>
-                <button
-                  onClick={() => {
-                    setActionMenuOpen(false)
-                    onShare()
-                  }}
-                  style={{
-                    width: '100%',
-                    border: 'none',
-                    background: 'transparent',
-                    color: C.text,
-                    textAlign: 'left',
-                    padding: '9px 10px',
-                    cursor: 'pointer',
-                    fontFamily: SANS,
-                    fontSize: 11,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.1em',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 7,
-                  }}
-                >
-                  <Share2 size={13} strokeWidth={1.5} /> Compartir
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </motion.div>
+  {/* ACCIONES */}
+  <div className="md-actions-row">
+    {/* BOTÓN VAULT */}
+    <button
+      onClick={onToggleVault}
+      className="md-action-btn"
+      style={{
+        padding: '0 24px',
+        background: inVault ? C.accentDim : C.accent,
+        color: C.bg,
+        fontFamily: SANS,
+        fontSize: 11,
+        letterSpacing: '0.18em',
+        textTransform: 'uppercase',
+      }}
+    >
+      {inVault ? '✓ En mi Vault' : '+ Vault'}
+    </button>
+
+    {/* BOTÓN REVIEW */}
+    <button
+      onClick={onWriteReview}
+      className="md-action-btn"
+      style={{
+        padding: '0 24px',
+        background: 'transparent',
+        color: C.textSoft,
+        border: `1px solid ${C.border}`,
+        fontFamily: SANS,
+        fontSize: 11,
+        letterSpacing: '0.18em',
+        textTransform: 'uppercase',
+        gap: 8,
+      }}
+    >
+      <MessageSquare size={13} strokeWidth={1.5} /> Review o log
+    </button>
+
+    {/* GRUPO DE ICONOS (Watchlist + Like + Menú) */}
+<div className="md-action-icons-row">
+  <button
+    title="Watchlist"
+    onClick={onToggleWatchlist}
+    className="md-action-icon-btn"
+    style={{
+      color: inWatchlist ? C.accent : C.textSoft,
+      border: `1px solid ${inWatchlist ? C.accentDim : C.border}`,
+    }}
+  >
+    <Bookmark size={15} strokeWidth={1.5} fill={inWatchlist ? C.accent : 'none'} />
+  </button>
+
+  <button
+    title="Me gusta"
+    onClick={onToggleFavorite}
+    className="md-action-icon-btn"
+    style={{
+      color: liked ? C.accent : C.textSoft,
+      border: `1px solid ${liked ? C.accentDim : C.border}`,
+    }}
+  >
+    <Heart size={15} strokeWidth={1.5} fill={liked ? C.gold : 'none'} />
+  </button>
+
+  {/* MENÚ MÁS OPCIONES - Ahora integrado en la misma fila */}
+  <div ref={actionMenuRef} className="md-menu-wrapper" style={{ position: 'relative' }}>
+    <button
+      ref={actionMenuButtonRef}
+      title="Más opciones"
+      onClick={() => setActionMenuOpen((prev) => !prev)}
+      className="md-action-icon-btn"
+      style={{
+        color: actionMenuOpen ? C.accent : C.textSoft,
+        border: `1px solid ${actionMenuOpen ? C.accentDim : C.border}`,
+        width: '100%', // Para que llene su espacio en el grid de mobile
+      }}
+    >
+      <Menu size={15} strokeWidth={1.8} />
+    </button>
+
+    {actionMenuOpen && (
+      <div
+        style={{
+          position: 'fixed',
+          left: actionMenuLeft,
+          top: actionMenuTop,
+          minWidth: 180,
+          border: `1px solid ${C.border}`,
+          background: 'rgba(8,8,8,0.98)',
+          backdropFilter: 'blur(10px)',
+          boxShadow: '0 18px 40px rgba(0,0,0,0.45)',
+          padding: 6,
+          display: 'grid',
+          gap: 4,
+          zIndex: 30,
+        }}
+      >
+        <button
+          onClick={() => { setActionMenuOpen(false); onAddToList(); }}
+          style={{
+            width: '100%', border: 'none', background: 'transparent',
+            color: C.text, textAlign: 'left', padding: '9px 10px',
+            cursor: 'pointer', fontFamily: SANS, fontSize: 11,
+            textTransform: 'uppercase', letterSpacing: '0.1em',
+            display: 'flex', alignItems: 'center', gap: 7,
+          }}
+        >
+          <List size={13} strokeWidth={1.5} /> Añadir a lista
+        </button>
+        <button
+          onClick={() => { setActionMenuOpen(false); onShare(); }}
+          style={{
+            width: '100%', border: 'none', background: 'transparent',
+            color: C.text, textAlign: 'left', padding: '9px 10px',
+            cursor: 'pointer', fontFamily: SANS, fontSize: 11,
+            textTransform: 'uppercase', letterSpacing: '0.1em',
+            display: 'flex', alignItems: 'center', gap: 7,
+          }}
+        >
+          <Share2 size={13} strokeWidth={1.5} /> Compartir
+        </button>
+      </div>
+    )}
+  </div>
+</div>
+  </div>
+</motion.div>
 
       <motion.div className="md-hero-scroll-prompt" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2 }} style={{ position: 'absolute', bottom: 28, left: 52, alignItems: 'center', gap: 12, zIndex: 10 }}>
         <div style={{ width: 32, height: 1, background: C.textMuted, position: 'relative', overflow: 'hidden' }}>
