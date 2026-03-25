@@ -15,6 +15,7 @@ import { Bookmark, ChevronLeft, ChevronRight, ExternalLink, Heart, List, Menu, M
 // import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
 // import X from 'lucide-react/dist/esm/icons/x';
 import './MovieDetail.css'
+import quotesData from '../../quotes.json'
 import { createSlug } from '../utils/stringUtils'
 import { resolveNavPathWithFallback } from '../lib/navigation'
 import { SeoHead } from '../components/SeoHead'
@@ -1344,22 +1345,27 @@ function Hero({
     updateMenuPosition()
 
     const onOutsideClick = (event: MouseEvent) => {
-      if (!actionMenuRef.current) return
-      if (!actionMenuRef.current.contains(event.target as Node)) {
-        setActionMenuOpen(false)
-      }
+      const target = event.target as Node
+      if (actionMenuRef.current?.contains(target)) return
+      if (actionMenuButtonRef.current?.contains(target)) return
+      setActionMenuOpen(false)
     }
 
     const onEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setActionMenuOpen(false)
     }
 
-    document.addEventListener('mousedown', onOutsideClick)
+    // Usamos un pequeño delay para evitar que el mismo click que abre el menú lo cierre
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', onOutsideClick)
+    }, 0)
+
     window.addEventListener('keydown', onEscape)
     window.addEventListener('resize', updateMenuPosition)
     window.addEventListener('scroll', updateMenuPosition, true)
 
     return () => {
+      clearTimeout(timeoutId)
       document.removeEventListener('mousedown', onOutsideClick)
       window.removeEventListener('keydown', onEscape)
       window.removeEventListener('resize', updateMenuPosition)
@@ -1579,7 +1585,10 @@ function Hero({
       ref={actionMenuButtonRef}
       title="Más opciones"
       aria-label="Más opciones"
-      onClick={() => setActionMenuOpen((prev) => !prev)}
+      onClick={(e) => {
+        e.stopPropagation()
+        setActionMenuOpen((prev) => !prev)
+      }}
       className="md-action-icon-btn"
       style={{
         color: actionMenuOpen ? C.accent : C.textSoft,
@@ -1590,7 +1599,7 @@ function Hero({
       <Menu size={15} strokeWidth={1.8} />
     </button>
 
-    {actionMenuOpen && (
+    {actionMenuOpen && actionMenuTop !== 0 && (
       <div
         style={{
           position: 'fixed',
@@ -1608,28 +1617,25 @@ function Hero({
         }}
       >
         <button
-          onClick={() => { setActionMenuOpen(false); onAddToList(); }}
-          style={{
-            width: '100%', border: 'none', background: 'transparent',
-            color: C.text, textAlign: 'left', padding: '9px 10px',
-            cursor: 'pointer', fontFamily: SANS, fontSize: 11,
-            textTransform: 'uppercase', letterSpacing: '0.1em',
-            display: 'flex', alignItems: 'center', gap: 7,
+          className="md-menu-item"
+          onClick={() => {
+            setActionMenuOpen(false);
+            onAddToList();
           }}
         >
-          <List size={13} strokeWidth={1.5} /> Añadir a lista
+          <List size={14} strokeWidth={1.8} />
+          <span>Añadir a lista</span>
         </button>
+
         <button
-          onClick={() => { setActionMenuOpen(false); onShare(); }}
-          style={{
-            width: '100%', border: 'none', background: 'transparent',
-            color: C.text, textAlign: 'left', padding: '9px 10px',
-            cursor: 'pointer', fontFamily: SANS, fontSize: 11,
-            textTransform: 'uppercase', letterSpacing: '0.1em',
-            display: 'flex', alignItems: 'center', gap: 7,
+          className="md-menu-item"
+          onClick={() => {
+            setActionMenuOpen(false);
+            onShare();
           }}
         >
-          <Share2 size={13} strokeWidth={1.5} /> Compartir
+          <Share2 size={14} strokeWidth={1.8} />
+          <span>Compartir</span>
         </button>
       </div>
     )}
@@ -1649,15 +1655,20 @@ function Hero({
 }
 
 function DirectorQuote({ director }: { director: string }) {
+  const quote = quotesData.find(q => q.director.toLowerCase() === director.toLowerCase()) || {
+    cita: "El tiempo es la más importante de todas las categorías del cine. Para mí, el cine es ante todo esculpir el tiempo.",
+    fuente: "Esculpir el tiempo"
+  };
+
   return (
     <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.9 }} className="md-quote" style={{ borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}`, background: C.surface, textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
       <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 400, height: 200, background: `radial-gradient(ellipse, ${C.accentGlow}, transparent 70%)`, pointerEvents: 'none' }} />
       <div style={{ fontFamily: SERIF, fontSize: 'clamp(20px, 2.5vw, 28px)', fontStyle: 'italic', fontWeight: 300, lineHeight: 1.65, color: C.textSoft, maxWidth: 760, margin: '0 auto 16px', position: 'relative' }}>
         <span style={{ color: C.accent, fontSize: '1.3em' }}>&quot;</span>
-        El tiempo es la más importante de todas las categorías del cine. Para mí, el cine es ante todo esculpir el tiempo.
+        {quote.cita}
         <span style={{ color: C.accent, fontSize: '1.3em' }}>&quot;</span>
       </div>
-      <div style={{ fontSize: 12, letterSpacing: '0.18em', textTransform: 'uppercase', color: C.textMuted, fontFamily: SANS }}>{director} — Esculpir en el tiempo</div>
+      <div style={{ fontSize: 12, letterSpacing: '0.18em', textTransform: 'uppercase', color: C.textMuted, fontFamily: SANS }}>{director} — {quote.fuente}</div>
     </motion.div>
   )
 }

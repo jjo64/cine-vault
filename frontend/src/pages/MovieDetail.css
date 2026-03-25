@@ -257,6 +257,40 @@
     padding: 0 !important;
 }
 
+/* Clase para los botones dentro del menú desplegable */
+.md-menu-item {
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: var(--color-text); /* O usa el valor de C.text */
+    text-align: left;
+    padding: 10px 12px;
+    cursor: pointer;
+    font-family: var(--font-sans); 
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Espacio uniforme entre icono y texto */
+    transition: all 0.2s ease;
+    border-radius: 4px; /* Un poco de redondeo queda mejor en el hover */
+}
+
+.md-menu-item:hover {
+    background: rgba(212, 175, 122, 0.15); /* Color de tu accent con transparencia */
+    color: #D4AF7A; /* Tu color C.accent */
+    padding-left: 14px; /* Pequeño efecto de desplazamiento hacia la derecha */
+}
+
+/* Para asegurar que los iconos tengan siempre el mismo ancho y no desalineen el texto */
+.md-menu-item svg {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 /* Forzamos que el botón que está dentro del wrapper del menú sea 100% igual */
 .md-menu-wrapper button {
     width: 100% !important;
@@ -265,15 +299,13 @@
     display: flex !important;
     align-items: center;
     justify-content: center;
-    border: inherit; /* Hereda el borde del padre si lo tiene */
     cursor: pointer;
     color: inherit;
 }
 
 /* Hover effects para todos los iconos */
 .md-action-btn:hover,
-.md-action-icon-btn:hover, 
-.md-menu-wrapper:hover {
+.md-action-icon-btn:hover {
     filter: brightness(1.2);
     transform: translateY(-2px);
 }
@@ -287,6 +319,10 @@
     .md-hero-content {
         padding: 0 28px 40px;
     }
+}
+
+@media (min-width: 1025px) and (max-width: 1280px) {
+   
 }
 
 @media (max-width: 768px) {
