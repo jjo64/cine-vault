@@ -194,7 +194,7 @@ export function Navbar({
                 color: C.text,
               }}
             />
-            <button type="submit" style={{ ...inputButtonReset, color: C.textSoft, padding: 2 }}>
+            <button type="submit" aria-label="Buscar" style={{ ...inputButtonReset, color: C.textSoft, padding: 2 }}>
               <Search size={17} />
             </button>
           </form>
@@ -276,7 +276,7 @@ export function Navbar({
           )}
         </div>
 
-        <button onClick={() => navigate('/activity')} style={{ ...inputButtonReset, color: C.textSoft, padding: 4, position: 'relative' }}>
+        <button onClick={() => navigate('/activity')} aria-label="Notificaciones" style={{ ...inputButtonReset, color: C.textSoft, padding: 4, position: 'relative' }}>
           <Bell size={16} />
           <span
             style={{

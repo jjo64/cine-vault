@@ -245,8 +245,8 @@
 
 .md-action-icon-btn, 
 .md-menu-wrapper {
-    width: 46px !important;
-    height: 46px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
     display: flex !important;
     align-items: center;
     justify-content: center;
@@ -802,4 +802,49 @@
   .md-poster-col {
     width: 110px !important;
   }
+}
+
+/* Botones de acción en reviews (Like, Reply, Edit) */
+.review-action-btn {
+ display: inline-flex;
+ min-height: 36px; 
+ min-width: 36px; 
+ align-items: center; 
+ justify-content: center;
+ gap: 6px; 
+ color: #6B6B6B; 
+ background: none; 
+ border: none; 
+ cursor: pointer; 
+ padding: 0 8px;
+ font-family: 'Syne', sans-serif; 
+ letter-spacing: 0.1em; 
+}
+
+/* Botón de cerrar (Modales y X de timestamps) */
+.md-close-btn {
+  min-width: 40px;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+/* Botones de navegación del reparto */
+.md-cast-nav-btn {
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--text-soft);
+  border: none;
+  cursor: pointer;
+}
+
+/* Ajuste para plataformas en Sidebar para mejor contraste */
+.md-sidebar-platforms {
+    color: var(--text-soft) !important; /* #7A7A7A en lugar de textMuted */
 }

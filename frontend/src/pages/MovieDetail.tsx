@@ -2,6 +2,18 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { Bookmark, ChevronLeft, ChevronRight, ExternalLink, Heart, List, Menu, MessageSquare, Pencil, Share2, Trash2, X } from 'lucide-react'
+// import Bookmark from 'lucide-react/dist/esm/icons/bookmark';
+// import Heart from 'lucide-react/dist/esm/icons/heart';
+// import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
+// import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
+// import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+// import List from 'lucide-react/dist/esm/icons/list';
+// import Menu from 'lucide-react/dist/esm/icons/menu';
+// import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
+// import Pencil from 'lucide-react/dist/esm/icons/pencil';
+// import Share2 from 'lucide-react/dist/esm/icons/share-2';
+// import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+// import X from 'lucide-react/dist/esm/icons/x';
 import './MovieDetail.css'
 import { createSlug } from '../utils/stringUtils'
 import { resolveNavPathWithFallback } from '../lib/navigation'
@@ -54,16 +66,20 @@ const C = {
   accentGlow: 'rgba(212,175,122,0.10)',
   accentGlowStrong: 'rgba(212,175,122,0.18)',
   text: '#E2E2E2',
-  textSoft: '#7A7A7A',
-  textMuted: '#3A3A3A',
+  textSoft: '#A1A1A1',
+  textMuted: '#B0B0B0',
   gold: '#C8A96E',
 } as const
 
 const SERIF = "'Cormorant Garamond', serif"
 const SANS = "'Syne', sans-serif"
-const TMDB_STILL = 'https://image.tmdb.org/t/p/w780'
-const TMDB_IMAGE = 'https://image.tmdb.org/t/p/original'
-const TMDB_POSTER = 'https://image.tmdb.org/t/p/w500'
+const TMDB_BASE = 'https://image.tmdb.org/t/p/';
+const SIZES = {
+  BACKDROP: 'w1280', // En lugar de 'original'
+  POSTER: 'w342',   // Tamaño óptimo para el poster lateral
+  STILL: 'w780',    // Para la galería de imágenes
+  PROFILE: 'w185'   // Para el reparto (Cast)
+};
 
 type AppReview = {
   id: number
@@ -438,7 +454,7 @@ function ReviewLogModal({
 }) {
   if (!open || !movie) return null
 
-  const posterUrl = movie.poster_path ? `${TMDB_POSTER}${movie.poster_path}` : '/no-poster.svg'
+  const posterUrl = movie.poster_path ? `${TMDB_BASE}${SIZES.POSTER}${movie.poster_path}` : '/no-poster.svg'
   const canUseCriticalMode = (String(membership || '').toLowerCase() === 'pro') || (String(role || '').toLowerCase() === 'admin')
   const criticalLocked = mode === 'CRITICO' && !canUseCriticalMode
 
@@ -1150,7 +1166,7 @@ function Navbar({
                     className="md-search-item"
                     style={{ width: '100%', border: 'none', borderBottom: `1px solid ${C.border}`, background: 'transparent', color: C.text, display: 'flex', alignItems: 'flex-start', gap: 10, padding: 8, cursor: 'pointer', textAlign: 'left' }}
                   >
-                    <Img src={movie.media_type === 'person' ? (movie.profile_path ? `${TMDB_POSTER}${movie.profile_path}` : '') : (movie.poster_path ? `${TMDB_POSTER}${movie.poster_path}` : '')} alt={movie.title || movie.name || 'Sin titulo'} style={{ width: 30, height: 45, objectFit: 'cover' }} />
+                    <Img src={movie.media_type === 'person' ? (movie.profile_path ? `${TMDB_BASE}${SIZES.PROFILE}${movie.profile_path}` : '') : (movie.poster_path ? `${TMDB_BASE}${SIZES.PROFILE}${movie.poster_path}` : '')} alt={movie.title || movie.name || 'Sin titulo'} style={{ width: 30, height: 45, objectFit: 'cover' }} />
                     <span className="md-search-title" style={{ fontFamily: SANS, fontSize: 12 }}>{movie.title || movie.name || 'Sin titulo'}</span>
                   </button>
                 ))
@@ -1358,22 +1374,29 @@ function Hero({
   const directorObj = getDirectorObj(movie)
   const score = ((movie.vote_average || 0) / 2).toFixed(1)
   const votes = (movie.vote_count || 0).toLocaleString('es-ES')
-  const posterUrl = movie.poster_path ? `${TMDB_POSTER}${movie.poster_path}` : ''
-  const backdropUrl = movie.backdrop_path ? `${TMDB_IMAGE}${movie.backdrop_path}` : ''
+  const posterUrl = movie.poster_path ? `${TMDB_BASE}${SIZES.POSTER}${movie.poster_path}` : ''
+  const backdropUrl = movie.backdrop_path ? `${TMDB_BASE}${SIZES.BACKDROP}${movie.backdrop_path}` : ''
 
   return (
     <div ref={heroRef} className="md-hero" style={{ position: 'relative', display: 'flex', alignItems: 'flex-end', overflow: 'hidden' }}>
       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #0d1118 0%, #08090d 40%, #0a0c08 100%)' }} />
 
       {backdropUrl && (
-        <div
+        <img
+          src={backdropUrl}
+          alt="backdrop-movie"
+          aria-hidden="true"
+          fetchPriority="high"
+          loading="eager"
+          decoding="async"
           style={{
             position: 'absolute',
             inset: 0,
-            backgroundImage: `url(${backdropUrl})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
             filter: 'brightness(0.24) saturate(0.65)',
+            zIndex: 0,
           }}
         />
       )}
@@ -1526,6 +1549,7 @@ function Hero({
 <div className="md-action-icons-row">
   <button
     title="Watchlist"
+    aria-label="Añadir a mi lista de seguimiento"
     onClick={onToggleWatchlist}
     className="md-action-icon-btn"
     style={{
@@ -1538,6 +1562,7 @@ function Hero({
 
   <button
     title="Me gusta"
+    aria-label="Marcar como película favorita"
     onClick={onToggleFavorite}
     className="md-action-icon-btn"
     style={{
@@ -1553,6 +1578,7 @@ function Hero({
     <button
       ref={actionMenuButtonRef}
       title="Más opciones"
+      aria-label="Más opciones"
       onClick={() => setActionMenuOpen((prev) => !prev)}
       className="md-action-icon-btn"
       style={{
@@ -1725,11 +1751,11 @@ function CastCrew({
   return (
     <motion.section initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }} style={{ marginBottom: 64 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-        <button onClick={() => {
+        <button aria-label="Reparto" onClick={() => {
           setTab('cast')
           setCastPage(0)
         }} style={{ border: `1px solid ${tab === 'cast' ? C.accentDim : C.border}`, background: tab === 'cast' ? C.accentGlow : 'transparent', color: tab === 'cast' ? C.accent : C.textSoft, padding: '6px 12px', cursor: 'pointer', fontFamily: SANS, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.12em' }}>Reparto</button>
-        <button onClick={() => {
+        <button aria-label="Equipo técnico" onClick={() => {
           setTab('crew')
           setCastPage(0)
         }} style={{ border: `1px solid ${tab === 'crew' ? C.accentDim : C.border}`, background: tab === 'crew' ? C.accentGlow : 'transparent', color: tab === 'crew' ? C.accent : C.textSoft, padding: '6px 12px', cursor: 'pointer', fontFamily: SANS, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.12em' }}>Crew</button>
@@ -1745,7 +1771,7 @@ function CastCrew({
                 style={{ width: 96, height: 96, borderRadius: '50%', background: C.elevated, border: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginBottom: 10, fontFamily: SERIF, fontSize: 28, color: C.textMuted, cursor: 'pointer', transition: 'opacity 0.2s' }}
               >
                 {person.profile_path ? (
-                  <Img src={`${TMDB_POSTER}${person.profile_path}`} alt={person.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <Img src={`${TMDB_BASE}${SIZES.PROFILE}${person.profile_path}`} alt={person.name} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
                   initials(person.name)
                 )}
@@ -1763,6 +1789,7 @@ function CastCrew({
       <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginTop: 12 }}>
         {hasPrev && (
           <motion.button
+            aria-label="Ver página anterior"
             onClick={() => setCastPage((prev) => Math.max(0, prev - 1))}
             whileHover={{ borderColor: C.accentDim, color: C.accent }}
             transition={{ duration: 0.2 }}
@@ -1773,6 +1800,7 @@ function CastCrew({
         )}
         {hasNext && (
           <motion.button
+            aria-label="Ver página siguiente"
             onClick={() => setCastPage((prev) => prev + 1)}
             whileHover={{ borderColor: C.accentDim, color: C.accent }}
             transition={{ duration: 0.2 }}
@@ -1913,19 +1941,19 @@ function Reviews({
             </div>
 
             <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-              <button onClick={() => onToggleLike(review.id, liked)} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: liked ? C.accent : C.textMuted, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: SANS, letterSpacing: '0.1em' }}>
+              <button onClick={() => onToggleLike(review.id, liked)} className="review-action-btn">
                 <Heart size={13} strokeWidth={1.5} fill={liked ? C.accent : 'none'} />
                 {likesCount}
               </button>
-              <button onClick={() => onReply(review.id)} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: C.textMuted, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: SANS, letterSpacing: '0.1em' }}>
+              <button onClick={() => onReply(review.id)} className="review-action-btn">
                 <MessageSquare size={13} strokeWidth={1.5} /> Responder
               </button>
               {viewerId === review.userId && (
                 <>
-                  <button onClick={() => onEditReview(review)} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: C.textMuted, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: SANS, letterSpacing: '0.1em' }}>
+                  <button onClick={() => onEditReview(review)} className="review-action-btn">
                     <Pencil size={13} strokeWidth={1.5} /> Editar
                   </button>
-                  <button onClick={() => onDeleteReview(review)} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#ff9b9b', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: SANS, letterSpacing: '0.1em' }}>
+                  <button onClick={() => onDeleteReview(review)} className="review-action-btn">
                     <Trash2 size={13} strokeWidth={1.5} /> Eliminar
                   </button>
                 </>
@@ -2039,7 +2067,7 @@ function Sidebar({
             {similar.map((film) => (
               <Link key={film.id} to={`/movie/${film.id}`} style={{ textDecoration: 'none' }}>
                 <div style={{ aspectRatio: '2/3', borderRadius: 1, overflow: 'hidden', background: C.elevated, marginBottom: 7, position: 'relative' }}>
-                  <Img src={film.img} alt={film.title} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(0.4)' }} />
+                  <Img src={film.img} alt={film.title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(0.4)' }} />
                 </div>
                 <div style={{ fontSize: 11, color: C.text, fontFamily: SANS, lineHeight: 1.3 }}>{film.title}</div>
                 <div style={{ fontSize: 10, color: C.textMuted, fontFamily: SANS }}>{film.year || '----'}</div>
@@ -2159,114 +2187,127 @@ export default function MovieDetailPage() {
     let alive = true
 
     const loadPage = async () => {
-      setLoading(true)
-      setError(null)
+  setLoading(true);
+  setError(null);
 
-      try {
-        const detail = await fetchMovieDetail(slugOrId)
-        if (!alive) return
+  try {
+    // --- PASO 1: CARGA CRÍTICA (LCP) ---
+    const detail = await fetchMovieDetail(slugOrId);
+    if (!alive) return;
 
-        setMovie(detail)
+    setMovie(detail);
+    // Liberamos el renderizado del Hero inmediatamente
+    setLoading(false);
 
-        const [movieReviews, topRated] = await Promise.all([
-          fetchMovieReviews(detail.id),
-          fetchTopRatedMovies(),
-        ])
+    // --- PASO 2: CARGA SECUNDARIA (No bloqueante) ---
+    const startSecondaryData = async () => {
+      const [movieReviews, topRated] = await Promise.all([
+        fetchMovieReviews(detail.id).catch(() => []),
+        fetchTopRatedMovies().catch(() => ({ results: [] })),
+      ]);
 
-        if (!alive) return
+      if (!alive) return;
 
-        const uniqueUserIds = [...new Set(movieReviews.map((review) => review.user_id))]
-        const userPairs = await Promise.all(
-          uniqueUserIds.map(async (userId) => {
-            try {
-              const user = await fetchUserById(userId)
-              return [
-                userId,
-                {
-                  username: user.username || `Usuario ${userId}`,
-                  avatarUrl: user.avatar_url || null,
-                },
-              ] as const
-            } catch {
-              return [
-                userId,
-                {
-                  username: `Usuario ${userId}`,
-                  avatarUrl: null,
-                },
-              ] as const
-            }
-          })
-        )
-        const userMeta = Object.fromEntries(userPairs)
-        const commentsPairs = await Promise.all(
-          movieReviews.map(async (review) => {
-            try {
-              const comments = await fetchReviewComments(review.id)
-              return [review.id, Array.isArray(comments) ? comments : []] as const
-            } catch {
-              return [review.id, [] as ReviewCommentApi[]] as const
-            }
-          })
-        )
-        const commentsByReviewId = Object.fromEntries(commentsPairs)
+      // Renderizar similares
+      const topRatedList = Array.isArray(topRated.results) ? topRated.results.slice(0, 6) : [];
+      setSimilar(
+        topRatedList
+          .filter((item) => item.id !== detail.id)
+          .map((item) => ({
+            id: item.id,
+            title: item.title,
+            year: item.release_date ? new Date(item.release_date).getFullYear() : 0,
+            img: item.poster_path ? `${TMDB_BASE}${SIZES.POSTER}${item.poster_path}` : '',
+          }))
+      );
 
-        setReviews(mapMovieReviews(movieReviews, userMeta, commentsByReviewId))
+      // --- PASO 3: DATA PROFUNDA (Avatares y Comentarios con Tipado Fijo) ---
+      const uniqueUserIds = [...new Set(movieReviews.map((r) => r.user_id))];
 
-        const topRatedList = Array.isArray(topRated.results) ? topRated.results.slice(0, 6) : []
-        setSimilar(
-          topRatedList
-            .filter((item) => item.id !== detail.id)
-            .map((item) => ({
-              id: item.id,
-              title: item.title,
-              year: item.release_date ? new Date(item.release_date).getFullYear() : 0,
-              img: item.poster_path ? `${TMDB_POSTER}${item.poster_path}` : '',
-            }))
-        )
+      const [userPairs, commentsPairs] = await Promise.all([
+        Promise.all(uniqueUserIds.map(async (id) => {
+          try {
+            const user = await fetchUserById(id);
+            return [
+              id,
+              { 
+                username: user.username ?? `Usuario ${id}`, 
+                avatarUrl: user.avatar_url ?? null 
+              }
+            ] as [number, { username: string; avatarUrl: string | null }];
+          } catch {
+            return [
+              id,
+              { username: `Usuario ${id}`, avatarUrl: null }
+            ] as [number, { username: string; avatarUrl: string | null }];
+          }
+        })),
+        Promise.all(movieReviews.map(async (review) => {
+          try {
+            const c = await fetchReviewComments(review.id);
+            return [
+              review.id, 
+              Array.isArray(c) ? c : []
+            ] as [number, ReviewCommentApi[]];
+          } catch {
+            return [review.id, []] as [number, ReviewCommentApi[]];
+          }
+        }))
+      ]);
 
-        if (token) {
-          const [myReviews, myWatchlist, myFavorites, myDiary] = await Promise.all([
-            fetchMyReviews(token).catch(() => []),
-            fetchMyWatchlist(token).catch(() => []),
-            fetchMyFavorites(token).catch(() => []),
-            fetchMyDiary(token).catch(() => ({ diary: [] })),
-          ])
+      if (!alive) return;
 
-          if (!alive) return
+      // Solución al error de TS: Mapeo explícito a Record
+      const userMeta: Record<number, { username: string; avatarUrl: string | null }> = 
+        Object.fromEntries(userPairs);
+      
+      const commentsByReviewId: Record<number, ReviewCommentApi[]> = 
+        Object.fromEntries(commentsPairs);
 
-          const myReview = myReviews.find((review) =>
-            isCurrentMovieMatch(review, detail.id, movieId)
-          )
-          setMyReviewId(myReview?.id ?? null)
-          setUserRating(Number(myReview?.rating ?? 0))
-          setInWatchlist(myWatchlist.some((entry) => isCurrentMovieMatch(entry, detail.id, movieId)))
-          setLiked(myFavorites.some((entry) => isCurrentMovieMatch(entry, detail.id, movieId)))
-          setInVault(
-            (myDiary.diary || []).some((entry) =>
-              isCurrentMovieMatch(
-                { movie_id: entry.movie_id, tmdb_id: entry.tmdb_id },
-                detail.id,
-                movieId
-              )
-            )
-          )
-        } else {
-          setMyReviewId(null)
-          setUserRating(0)
-          setInWatchlist(false)
-          setLiked(false)
-          setInVault(false)
-        }
-      } catch (err) {
-        if (!alive) return
-        setError((err as Error).message || 'Error al cargar la película')
-      } finally {
-        if (alive) setLoading(false)
+      setReviews(mapMovieReviews(movieReviews, userMeta, commentsByReviewId));
+    };
+
+    // --- PASO 4: DATOS DE USUARIO LOGUEADO ---
+    const startUserData = async () => {
+      if (!token) {
+        setMyReviewId(null);
+        setUserRating(0);
+        setInWatchlist(false);
+        setLiked(false);
+        setInVault(false);
+        return;
       }
-    }
 
-    loadPage()
+      const [myReviews, myWatchlist, myFavorites, myDiary] = await Promise.all([
+        fetchMyReviews(token).catch(() => []),
+        fetchMyWatchlist(token).catch(() => []),
+        fetchMyFavorites(token).catch(() => []),
+        fetchMyDiary(token).catch(() => ({ diary: [] })),
+      ]);
+
+      if (!alive) return;
+
+      const myReview = myReviews.find((r) => isCurrentMovieMatch(r, detail.id, movieId));
+      setMyReviewId(myReview?.id ?? null);
+      setUserRating(Number(myReview?.rating ?? 0));
+      setInWatchlist(myWatchlist.some((e) => isCurrentMovieMatch(e, detail.id, movieId)));
+      setLiked(myFavorites.some((e) => isCurrentMovieMatch(e, detail.id, movieId)));
+      setInVault((myDiary.diary || []).some((e) => isCurrentMovieMatch(e, detail.id, movieId)));
+    };
+
+    // Lanzamos los procesos en segundo plano
+    startSecondaryData();
+    startUserData();
+
+  } catch (err) {
+    if (!alive) return;
+    setError((err as Error).message || 'Error al cargar la película');
+    setLoading(false);
+  }
+};
+
+// Ejecución obligatoria
+loadPage();
 
     return () => {
       alive = false
@@ -2938,7 +2979,7 @@ export default function MovieDetailPage() {
     .slice(0, 5)
     .map((item) => item.file_path)
     .filter((path): path is string => typeof path === 'string')
-    .map((path) => `${TMDB_STILL}${path}`) // ← Cambio aplicado aquí
+    .map((path) => `${TMDB_BASE}${SIZES.STILL}${path}`) // ← Cambio aplicado aquí
 }, [movie])
 
   const themes = useMemo(() => {

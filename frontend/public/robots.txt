@@ -8,8 +8,6 @@ Disallow: /verify-email
 Disallow: /reset-password
 Disallow: /api/
 
-Content-Signal: search=yes,ai-train=no
-
 User-agent: ClaudeBot
 Disallow: /
 

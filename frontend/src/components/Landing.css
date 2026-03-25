@@ -460,3 +460,16 @@
         padding: 40px 14px 28px;
     }
 }
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+    outline: 2px solid #D4AF7A;
+    outline-offset: 4px;
+}
+
+/* Asegura que los textos silenciados del footer sean legibles */
+.landing-footer a:hover {
+    color: var(--color-accent) !important;
+    text-decoration: underline !important;
+}

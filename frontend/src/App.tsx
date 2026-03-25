@@ -1,6 +1,5 @@
 import { Suspense, lazy, useEffect, useState } from 'react'
 import { Routes, Route } from 'react-router'
-import AuthModal from './components/AuthModal'
 import SeoManager from './components/SeoManager'
 import { SocketProvider } from "./context/SocketContext"
 import { getStoredAccessToken, refreshAccessToken } from './services/authServices'
@@ -12,6 +11,7 @@ const FeedPage = lazy(() => import('./pages/Feed'))
 const ActivityPage = lazy(() => import('./pages/Activity'))
 const ForYouPage = lazy(() => import('./pages/ForYou'))
 const MovieDetail = lazy(() => import('./pages/MovieDetail'))
+const AuthModal = lazy(() => import('./components/AuthModal'))
 const TVDetail = lazy(() => import('./pages/TVDetail'))
 const SearchResults = lazy(() => import('./pages/SearchResults').then((module) => ({ default: module.Search })))
 const PersonPage = lazy(() => import('./pages/PersonPage.tsx'))
@@ -88,8 +88,8 @@ function App() {
 
     return (
         <SocketProvider>
-            <SeoManager />
             <Suspense fallback={<div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#080808', color: '#7A7A7A' }}>Cargando...</div>}>
+                <SeoManager />
                 <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/feed" element={<FeedPage />} />
@@ -127,12 +127,16 @@ function App() {
                 </Routes>
             </Suspense>
             <BottomNav />
-            <div className="bottom-nav-spacer" />
-            <AuthModal
-                isOpen={isAuthModalOpen}
-                onClose={() => setIsAuthModalOpen(false)}
-                initialMode={authMode}
-            />
+                <div className="bottom-nav-spacer" />
+                {isAuthModalOpen && (
+                    <Suspense fallback={null}>
+                        <AuthModal
+                            isOpen={isAuthModalOpen}
+                            onClose={() => setIsAuthModalOpen(false)}
+                            initialMode={authMode}
+                        />
+                    </Suspense>
+                )}
         </SocketProvider>
     )
 }

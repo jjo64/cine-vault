@@ -1,5 +1,13 @@
 import { useState } from 'react';
-import * as FeedFeature from '../features/feed';
+import { 
+    useFeedData, 
+    useFeedActions, 
+    Grain, 
+    FeedNavbar, 
+    FeedCard, 
+    ProgressDots, 
+    NavArrows 
+} from '../features/feed';
 
 /**
  * CineVault — Feed Page (/feed)
@@ -16,7 +24,7 @@ export default function Feed() {
         goToCard,
         canUp,
         canDown
-    } = FeedFeature.useFeedData();
+    } = useFeedData();
 
     const {
         liked,
@@ -24,13 +32,13 @@ export default function Feed() {
         animating,
         toggleLike,
         toggleBookmark
-    } = FeedFeature.useFeedActions();
+    } = useFeedActions();
 
     return (
         <div style={{ background: 'var(--color-bg)', height: '100vh', overflow: 'hidden' }}>
-            <FeedFeature.Grain />
+            <Grain />
 
-            <FeedFeature.FeedNavbar
+            <FeedNavbar
                 activeTab={activeTab}
                 onTab={setActiveTab}
             />
@@ -48,7 +56,7 @@ export default function Feed() {
                 className="feed-container"
             >
                 {feed.map((item, idx) => (
-                    <FeedFeature.FeedCard
+                    <FeedCard
                         key={item.id}
                         item={item}
                         idx={idx}
@@ -62,13 +70,13 @@ export default function Feed() {
                 ))}
             </div>
 
-            <FeedFeature.ProgressDots
+            <ProgressDots
                 total={feed.length}
                 active={activeIdx}
                 onGo={goToCard}
             />
 
-            <FeedFeature.NavArrows
+            <NavArrows
                 onUp={() => goToCard(activeIdx - 1)}
                 onDown={() => goToCard(activeIdx + 1)}
                 canUp={canUp}

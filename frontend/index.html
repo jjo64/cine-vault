@@ -3,8 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-    <link rel="manifest" href="manifest.json" />
+    <link rel="manifest" href="/manifest.json" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://image.tmdb.org">
+    <link rel="dns-prefetch" href="https://image.tmdb.org">
+   <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link 
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Syne:wght@400;500&display=swap" 
+      rel="stylesheet"
+      media="all"
+    >
 
     <!-- Título y descripción base (react-helmet-async los sobreescribe por ruta) -->
     <title>CineVault — El diario cinematográfico que te define</title>
@@ -13,7 +23,6 @@
       content="Guardá películas en tu vault, escribí reseñas, llevá tu diario de cine y recibí una recomendación irrechazable cada noche. Para los que hacen del cine su vida."
     />
     <meta name="robots" content="index, follow" />
-    <link rel="canonical" href="https://cinevault.art/" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
@@ -78,22 +87,6 @@
         ]
       }
     </script>
-    <!-- Google Fonts: Cormorant Garamond + Syne -->
-    <link rel="preconnect" href="https://image.tmdb.org">
-<link rel="dns-prefetch" href="https://image.tmdb.org">
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-<link
-  rel="preload"
-  as="style"
-  href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Syne:wght@400;500&display=swap"
-  onload="this.onload=null;this.rel='stylesheet'"
->
-<noscript>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Syne:wght@400;500&display=swap">
-</noscript>
   </head>
   <body>
     <div id="root"></div>
