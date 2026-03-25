@@ -1344,22 +1344,27 @@ function Hero({
     updateMenuPosition()
 
     const onOutsideClick = (event: MouseEvent) => {
-      if (!actionMenuRef.current) return
-      if (!actionMenuRef.current.contains(event.target as Node)) {
-        setActionMenuOpen(false)
-      }
+      const target = event.target as Node
+      if (actionMenuRef.current?.contains(target)) return
+      if (actionMenuButtonRef.current?.contains(target)) return
+      setActionMenuOpen(false)
     }
 
     const onEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setActionMenuOpen(false)
     }
 
-    document.addEventListener('mousedown', onOutsideClick)
+    // Usamos un pequeño delay para evitar que el mismo click que abre el menú lo cierre
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', onOutsideClick)
+    }, 0)
+
     window.addEventListener('keydown', onEscape)
     window.addEventListener('resize', updateMenuPosition)
     window.addEventListener('scroll', updateMenuPosition, true)
 
     return () => {
+      clearTimeout(timeoutId)
       document.removeEventListener('mousedown', onOutsideClick)
       window.removeEventListener('keydown', onEscape)
       window.removeEventListener('resize', updateMenuPosition)
@@ -1579,7 +1584,10 @@ function Hero({
       ref={actionMenuButtonRef}
       title="Más opciones"
       aria-label="Más opciones"
-      onClick={() => setActionMenuOpen((prev) => !prev)}
+      onClick={(e) => {
+        e.stopPropagation()
+        setActionMenuOpen((prev) => !prev)
+      }}
       className="md-action-icon-btn"
       style={{
         color: actionMenuOpen ? C.accent : C.textSoft,
@@ -1590,7 +1598,7 @@ function Hero({
       <Menu size={15} strokeWidth={1.8} />
     </button>
 
-    {actionMenuOpen && (
+    {actionMenuOpen && actionMenuTop !== 0 && (
       <div
         style={{
           position: 'fixed',
@@ -1608,28 +1616,25 @@ function Hero({
         }}
       >
         <button
-          onClick={() => { setActionMenuOpen(false); onAddToList(); }}
-          style={{
-            width: '100%', border: 'none', background: 'transparent',
-            color: C.text, textAlign: 'left', padding: '9px 10px',
-            cursor: 'pointer', fontFamily: SANS, fontSize: 11,
-            textTransform: 'uppercase', letterSpacing: '0.1em',
-            display: 'flex', alignItems: 'center', gap: 7,
+          className="md-menu-item"
+          onClick={() => {
+            setActionMenuOpen(false);
+            onAddToList();
           }}
         >
-          <List size={13} strokeWidth={1.5} /> Añadir a lista
+          <List size={14} strokeWidth={1.8} />
+          <span>Añadir a lista</span>
         </button>
+
         <button
-          onClick={() => { setActionMenuOpen(false); onShare(); }}
-          style={{
-            width: '100%', border: 'none', background: 'transparent',
-            color: C.text, textAlign: 'left', padding: '9px 10px',
-            cursor: 'pointer', fontFamily: SANS, fontSize: 11,
-            textTransform: 'uppercase', letterSpacing: '0.1em',
-            display: 'flex', alignItems: 'center', gap: 7,
+          className="md-menu-item"
+          onClick={() => {
+            setActionMenuOpen(false);
+            onShare();
           }}
         >
-          <Share2 size={13} strokeWidth={1.5} /> Compartir
+          <Share2 size={14} strokeWidth={1.8} />
+          <span>Compartir</span>
         </button>
       </div>
     )}

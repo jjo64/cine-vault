@@ -1,6 +1,6 @@
 import { Router } from "express"
-import { validarBody } from "../middlewares/validation.middleware.js"
-import { agregarWatchlistSchema } from "../schemas/watchlist.js"
+import { validarBody, validarParams } from "../middlewares/validation.middleware.js"
+import { agregarWatchlistSchema, eliminarWatchlistSchema } from "../schemas/watchlist.js"
 import {
   getWatchlistByUser,
   addMovieToWatchlist,
@@ -151,6 +151,7 @@ router.post(
 router.delete(
   "/:movie_id",
   middlewareAutenticacion,
+  validarParams(eliminarWatchlistSchema),
   manejadorAsincrono(removeMovieFromWatchlist)
 ) // eliminar película de la watchlist
 

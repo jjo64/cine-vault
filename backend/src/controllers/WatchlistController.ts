@@ -30,6 +30,9 @@ export const addMovieToWatchlist = async (req: Request, res: Response) => {
 }
 
 export const removeMovieFromWatchlist = async (req: Request, res: Response) => {
-  await watchlistService.eliminarDeWatchlistService(req.user!.user_id, req.body)
+  const { movie_id } = req.params
+  await watchlistService.eliminarDeWatchlistService(req.user!.user_id, {
+    movie_id: Number(movie_id),
+  })
   res.json({ message: "Película eliminada de la watchlist" })
 }
