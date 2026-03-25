@@ -345,3 +345,18 @@
         white-space: nowrap;
     }
 }
+
+.search-results-filter-bar button,
+.search-nav-mobile-link,
+.search-results-tab-btn {
+    min-height: 44px; /* Asegura el tamaño mínimo para dedos */
+    min-width: 44px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+}
+
+/* Mejora el espaciado en los filtros laterales */
+.search-result-card-layout button {
+    padding: 12px 20px !important; /* Aumenta el área de clic de +Vault y Watchlist */
+}

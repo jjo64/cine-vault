@@ -3,6 +3,9 @@ import express from "express"
 import cors from "cors"
 import helmet from "helmet"
 import cookieParser from "cookie-parser"
+import compression from "compression"
+import path from "path"
+import { fileURLToPath } from 'url'
 import cron from "node-cron"
 import { createServer } from "http"
 import "./config/passport.config.js"
@@ -45,6 +48,14 @@ import { initSocketIO } from "./config/socketio.config.js"
 import swaggerUi from "swagger-ui-express"
 import { swaggerSpec } from "../docs/swagger.js"
 
+
+// Helpers para rutas en ES Modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const publicPath = path.resolve(__dirname, "../../frontend/dist");
+
+
+
 // Configuración inicial
 const app = express()
 const httpServer = createServer(app)
@@ -55,7 +66,28 @@ if (!process.env.JWT_SECRET)
   throw new Error("JWT_SECRET no definido. Detén la app.")
 if (!process.env.API_KEY_TMDB) throw new Error("API_KEY_TMDB no definido")
 
-app.use(helmet()) // Seguridad HTTP headers
+app.use(compression())
+app.use(express.static(publicPath, {
+  maxAge: '1y',
+  etag: true,
+  index: false
+}))
+app.use(helmet({
+  contentSecurityPolicy: false,
+}))
+app.use((req, res, next) => {
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN')
+  res.setHeader('Content-Security-Policy',
+    "default-src 'self'; " +
+    "script-src 'self' 'unsafe-inline' https://*.stripe.com; " +
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+    "font-src 'self' https://fonts.gstatic.com data:; " +
+    "img-src 'self' https://image.tmdb.org https://avatars.githubusercontent.com data: blob:; " +
+    "connect-src 'self' " + (process.env.FRONTEND_URLS || "") + " ws: wss: https://*.stripe.com; " +
+    "frame-src 'self' https://*.stripe.com;"
+  )
+  next()
+})
 
 // Configuración de CORS robusta
 const allowedOrigins = process.env.FRONTEND_URLS
@@ -93,6 +125,8 @@ app.use(passport.initialize())
 /* ==========================================================================
    RUTA RAÍZ DE PRUEBA (ANTES del manejador de errores)
    ========================================================================== */
+
+
 
 app.get("/", (req, res) => {
   res.json({

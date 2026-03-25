@@ -28,9 +28,9 @@ const C = {
   accent: '#D4AF7A',
   accentDim: '#9A7A48',
   accentGlow: 'rgba(212,175,122,0.10)',
-  text: '#E2E2E2',
-  textSoft: '#7A7A7A',
-  textMuted: '#3A3A3A',
+  text: '#FFFFFF',
+  textSoft: '#B0B0B0',
+  textMuted: '#888888',
   gold: '#C8A96E',
 } as const
 
@@ -236,13 +236,13 @@ function Navbar({ query, onSearch }: { query: string; onSearch: (q: string) => v
           }}
         />
         {val && (
-          <button type="button" onClick={() => setVal('')} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: C.textSoft, display: 'flex' }}>
+          <button type="button" onClick={() => setVal('')} aria-label="Limpiar búsqueda" style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: C.textSoft, display: 'flex' }}>
             <X size={14} />
           </button>
         )}
       </form>
 
-      <button onClick={() => navigate(-1)} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.textSoft, background: 'none', border: 'none', cursor: 'pointer', fontFamily: SANS, flexShrink: 0, transition: 'color 0.2s' }}>
+      <button onClick={() => navigate(-1)} aria-label="Volver a la página anterior" style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.textSoft, background: 'none', border: 'none', cursor: 'pointer', fontFamily: SANS, flexShrink: 0, transition: 'color 0.2s' }}>
         <ChevronLeft size={13} /> Volver
       </button>
 
@@ -452,9 +452,9 @@ function FilmResultItem({ item, delay, isDetailsLoading }: { item: FilmResult; d
     <motion.div className="search-result-card-layout" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay }} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={{ gap: 28, padding: '32px 0', borderBottom: `1px solid ${C.border}`, background: hov ? 'rgba(212,175,122,0.02)' : 'transparent', transition: 'background 0.2s', position: 'relative' }}>
       <div style={{ position: 'absolute', left: -20, top: 0, bottom: 0, width: 2, background: `linear-gradient(to bottom, transparent, ${C.accent}, transparent)`, opacity: hov ? 0.6 : 0, transition: 'opacity 0.3s' }} />
 
-      <Link to={href} style={{ textDecoration: 'none', flexShrink: 0 }}>
-        <div className="search-result-poster" style={{ aspectRatio: '2/3', borderRadius: 1, overflow: 'hidden', border: `1px solid ${hov ? C.accentDim : C.border}`, transition: 'border-color 0.3s' }}>
-          <Img src={item.img} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: `saturate(${hov ? 0.8 : 0.5})`, transition: 'filter 0.4s' }} />
+      <Link to={href} aria-hidden="true" tabIndex={-1} style={{ textDecoration: 'none', flexShrink: 0 }}>
+        <div className="search-result-poster"  style={{ aspectRatio: '2/3', borderRadius: 1, overflow: 'hidden', border: `1px solid ${hov ? C.accentDim : C.border}`, transition: 'border-color 0.3s' }}>
+          <Img src={item.img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: `saturate(${hov ? 0.8 : 0.5})`, transition: 'filter 0.4s' }} />
         </div>
       </Link>
 
@@ -498,11 +498,11 @@ function FilmResultItem({ item, delay, isDetailsLoading }: { item: FilmResult; d
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 10, marginTop: 16, opacity: hov ? 1 : 0, transform: hov ? 'translateY(0)' : 'translateY(4px)', transition: 'opacity 0.25s, transform 0.25s' }}>
-          <button onClick={() => setVaulted((v) => !v)} style={{ padding: '7px 18px', background: vaulted ? C.accentDim : C.accent, color: C.bg, border: 'none', fontFamily: SANS, fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', cursor: 'pointer' }}>
+        <div style={{ display: 'flex', gap: 10, marginTop: 16, opacity: hov ? 1 : 0.7, transform: hov ? 'translateY(0)' : 'translateY(4px)', transition: 'opacity 0.25s, transform 0.25s' }}>
+          <button onClick={() => setVaulted((v) => !v)} aria-label={vaulted ? "Quitar de la bóveda" : "Añadir a la bóveda"} style={{ padding: '12px 18px', background: vaulted ? C.accentDim : C.accent, color: C.bg, border: 'none', fontFamily: SANS, fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', cursor: 'pointer' }}>
             {vaulted ? '✓ En Vault' : '+ Vault'}
           </button>
-          <button onClick={() => setBookmarked((v) => !v)} style={{ padding: '7px 14px', background: 'transparent', color: bookmarked ? C.accent : C.textSoft, border: `1px solid ${bookmarked ? C.accentDim : C.border}`, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: SANS, fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase' }}>
+          <button onClick={() => setBookmarked((v) => !v)} aria-label={bookmarked ? "Quitar de la lista de seguimiento" : "Añadir a la lista de seguimiento"} style={{ padding: '12px 14px', background: 'transparent', color: bookmarked ? C.accent : C.textSoft, border: `1px solid ${bookmarked ? C.accentDim : C.border}`, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: SANS, fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase' }}>
             <Bookmark size={11} fill={bookmarked ? C.accent : 'none'} /> {bookmarked ? 'En watchlist' : 'Watchlist'}
           </button>
         </div>
@@ -576,7 +576,7 @@ function Pagination({ current, total, onPage }: { current: number; total: number
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '48px 0 32px' }}>
-      <button onClick={() => onPage(Math.max(1, current - 1))} disabled={current === 1} style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: `1px solid ${current === 1 ? C.textMuted : C.border}`, color: current === 1 ? C.textMuted : C.textSoft, cursor: current === 1 ? 'default' : 'pointer' }}>
+      <button onClick={() => onPage(Math.max(1, current - 1))} disabled={current === 1} aria-label="Ir a la página anterior" style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: `1px solid ${current === 1 ? C.textMuted : C.border}`, color: current === 1 ? C.textMuted : C.textSoft, cursor: current === 1 ? 'default' : 'pointer' }}>
         <ChevronLeft size={14} />
       </button>
 
@@ -586,7 +586,7 @@ function Pagination({ current, total, onPage }: { current: number; total: number
         }
 
         acc.push(
-          <button key={p} onClick={() => onPage(p)} style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', background: p === current ? C.accentGlow : 'transparent', border: `1px solid ${p === current ? C.accentDim : C.border}`, color: p === current ? C.accent : C.textSoft, cursor: 'pointer', fontFamily: SERIF, fontSize: 18 }}>
+          <button key={p} onClick={() => onPage(p)} aria-label={`Página ${p}`} style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', background: p === current ? C.accentGlow : 'transparent', border: `1px solid ${p === current ? C.accentDim : C.border}`, color: p === current ? C.accent : C.textSoft, cursor: 'pointer', fontFamily: SERIF, fontSize: 18 }}>
             {p}
           </button>
         )
@@ -594,7 +594,7 @@ function Pagination({ current, total, onPage }: { current: number; total: number
         return acc
       }, [])}
 
-      <button onClick={() => onPage(Math.min(total, current + 1))} disabled={current === total} style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: `1px solid ${current === total ? C.textMuted : C.border}`, color: current === total ? C.textMuted : C.textSoft, cursor: current === total ? 'default' : 'pointer' }}>
+      <button onClick={() => onPage(Math.min(total, current + 1))} disabled={current === total} aria-label="Ir a la página siguiente" style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: `1px solid ${current === total ? C.textMuted : C.border}`, color: current === total ? C.textMuted : C.textSoft, cursor: current === total ? 'default' : 'pointer' }}>
         <ChevronRight size={14} />
       </button>
     </div>
@@ -621,7 +621,7 @@ function ActiveFilters({ filters, onRemove }: { filters: FiltersState; onRemove:
       {chips.map((chip, i) => (
         <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', background: C.accentGlow, border: `1px solid ${C.accentDim}`, fontFamily: SANS, fontSize: 10, letterSpacing: '0.1em', color: C.accent }}>
           {chip.label}
-          <button onClick={chip.onRemove} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.accentDim, padding: 0, display: 'flex', lineHeight: 1 }}>
+          <button onClick={chip.onRemove} aria-label={`Eliminar filtro ${chip.label}`} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.accentDim, padding: 0, display: 'flex', lineHeight: 1 }}>
             <X size={10} />
           </button>
         </div>
@@ -924,12 +924,12 @@ export function Search() {
           ))}
         </div>
 
-        <div className="search-results-main" style={{ display: 'flex', gap: 0 }}>
+        <main className="search-results-main" style={{ display: 'flex', gap: 0 }}>
           <AnimatePresence>
             <div className={`search-filters-drawer ${isFiltersOpen ? 'search-filters-drawer--open' : ''}`}>
               <div className="search-filters-drawer-header">
                 <div style={{ fontFamily: SANS, fontSize: 12, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.accent }}>Filtros</div>
-                <button onClick={() => setIsFiltersOpen(false)} style={{ background: 'none', border: 'none', color: C.textSoft, cursor: 'pointer' }}>
+                <button onClick={() => setIsFiltersOpen(false)} aria-label="Cerrar" style={{ background: 'none', border: 'none', color: C.textSoft, cursor: 'pointer' }}>
                   <X size={20} />
                 </button>
               </div>
@@ -1070,7 +1070,7 @@ export function Search() {
               <Pagination current={page} total={totalPages} onPage={(nextPage) => { setPage(nextPage); window.scrollTo({ top: 130, behavior: 'smooth' }) }} />
             )}
           </div>
-        </div>
+        </main>
       </div>
     </div>
   )

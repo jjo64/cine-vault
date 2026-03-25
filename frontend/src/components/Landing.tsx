@@ -15,13 +15,14 @@ const C = {
   border: '#252525',
   accent: '#D4AF7A',
   accentDim: '#9A7A48',
-  accentGlow: 'rgba(212,175,122,0.12)',
-  accentGlowStrong: 'rgba(212,175,122,0.22)',
+  accentGlow: 'rgba(212,175,122,0.10)',
+  accentGlowStrong: 'rgba(212,175,122,0.18)',
   text: '#E2E2E2',
-  textSoft: '#7A7A7A',
-  textMuted: '#3A3A3A',
+  textSoft: '#A1A1A1',
+  textMuted: '#B0B0B0',
   gold: '#C8A96E',
 } as const
+
 
 const SERIF = "'Cormorant Garamond', serif"
 const SANS = "'Syne', sans-serif"
@@ -175,7 +176,7 @@ function FilmCardMini({
       onMouseLeave={() => setHovered(false)}
       style={{ cursor: 'pointer' }}
     >
-      <Link to={`/movie/${movieId}-${createSlug(title)}`} style={{ textDecoration: 'none' }}>
+      <Link to={`/movie/${movieId}-${createSlug(title)}`} style={{ textDecoration: 'none' }} aria-label={`Ver detalles de la película ${title}`}>
         <div
           style={{
             aspectRatio: '2/3',
@@ -473,6 +474,7 @@ function Navbar() {
                 navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
                 setIsSearchFocused(false)
               }}
+              aria-label="Buscar"
               style={{
                 background: 'none',
                 border: 'none',
@@ -554,7 +556,7 @@ function Navbar() {
               })
             }}
             className="landing-mobile-menu-btn"
-            aria-label="Abrir menu"
+            aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
           >
             {menuOpen ? <X size={16} /> : <Menu size={16} />}
           </button>
@@ -1072,20 +1074,20 @@ export default function Landing() {
     <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: SANS, overflowX: 'hidden' }}>
       <GrainOverlay />
       <Navbar />
-      <Hero />
+      <main id="main-content">
+        <Hero />
+        <section className="landing-section-sm" style={{ background: C.bg }}>
+          <SectionHeader eyebrow="Lo que otros usuarios estan viendo" title="El canon esta vivo" />
+          <InfiniteSlider />
+        </section>
+        <MovieGridSection endpoint="/api/movies/top-rated" eyebrow="Coleccion" title="Aclamados por la critica" />
+        <MovieGridSection endpoint="/api/movies/upcoming" eyebrow="Coleccion" title="Pronto en cine" />
 
-      <section className="landing-section-sm" style={{ background: C.bg }}>
-        <SectionHeader eyebrow="Lo que otros usuarios estan viendo" title="El canon esta vivo" />
-        <InfiniteSlider />
-      </section>
-
-      <MovieGridSection endpoint="/api/movies/top-rated" eyebrow="Coleccion" title="Aclamados por la critica" />
-      <MovieGridSection endpoint="/api/movies/upcoming" eyebrow="Coleccion" title="Pronto en cine" />
-
-      <HowItWorks />
-      <NightFeature />
-      <ReviewsSection />
-      <FinalCTA />
+        <HowItWorks />
+        <NightFeature />
+        <ReviewsSection />
+        <FinalCTA />
+      </main>
       <Footer />
     </div>
   )
