@@ -1,0 +1,902 @@
+[
+  {
+    "id": 1,
+    "director": "Andrei Tarkovsky",
+    "cita": "El tiempo es la más importante de todas las categorías del cine. Para mí, el cine es ante todo esculpir el tiempo.",
+    "fuente": "Esculpir el tiempo (Libro)"
+  },
+  {
+    "id": 2,
+    "director": "Alfred Hitchcock",
+    "cita": "El cine no es un trozo de vida, sino un pedazo de pastel.",
+    "fuente": "Entrevista con François Truffaut"
+  },
+  {
+    "id": 3,
+    "director": "Jean-Luc Godard",
+    "cita": "El cine no es un oficio. Es un arte. No implica trabajar en equipo. Uno siempre está solo en el plató, igual que ante una página en blanco. Y estar solo... significa hacerse preguntas. Y hacer películas significa responderlas.",
+    "fuente": "Le Petit Soldat (Película)"
+  },
+  {
+    "id": 4,
+    "director": "Martin Scorsese",
+    "cita": "No podemos seguir pensando de forma limitada sobre lo que es el cine. Todavía no sabemos qué es el cine. Quizás el cine solo se pueda aplicar realmente al pasado o a los primeros cien años, cuando la gente iba de verdad al cine a ver una película, ¿entiendes?",
+    "fuente": "Masterclass de dirección"
+  },
+  {
+    "id": 5,
+    "director": "Stanley Kubrick",
+    "cita": "Si puede ser escrito o pensado, puede ser filmado.",
+    "fuente": "Entrevista con Rolling Stone (1987)"
+  },
+  {
+    "id": 6,
+    "director": "Akira Kurosawa",
+    "cita": "En un mundo loco, solo los locos son cuerdos.",
+    "fuente": "Ran (Película)"
+  },
+  {
+    "id": 7,
+    "director": "Ingmar Bergman",
+    "cita": "No hay ninguna forma de arte como el cine para golpear directamente nuestra conciencia.",
+    "fuente": "Introducción a 'Linterna Mágica'"
+  },
+  {
+    "id": 8,
+    "director": "Orson Welles",
+    "cita": "El enemigo del arte es la ausencia de limitaciones.",
+    "fuente": "Entrevista en la BBC"
+  },
+  {
+    "id": 9,
+    "director": "Federico Fellini",
+    "cita": "Un buen vino es como una buena película: dura un instante y te deja en la boca un sabor a gloria.",
+    "fuente": "Entrevistas seleccionadas"
+  },
+  {
+    "id": 10,
+    "director": "Francis Ford Coppola",
+    "cita": "El arte depende de la suerte y el talento.",
+    "fuente": "Documental 'Hearts of Darkness'"
+  },
+  {
+    "id": 11,
+    "director": "Agnès Varda",
+    "cita": "Si abriéramos a la gente, encontraríamos paisajes. Si me abrieran a mí, encontrarían playas.",
+    "fuente": "Las playas de Agnès"
+  },
+  {
+    "id": 12,
+    "director": "Quentin Tarantino",
+    "cita": "Cuando la gente me pregunta si fui a la escuela de cine, les digo: 'No, fui al cine'.",
+    "fuente": "Entrevista en Empire Magazine"
+  },
+  {
+    "id": 13,
+    "director": "David Lynch",
+    "cita": "Las ideas son como peces. Si quieres pescar pececitos, puedes quedarte en la superficie.",
+    "fuente": "Atrapar el pez dorado (Libro)"
+  },
+  {
+    "id": 14,
+    "director": "Bong Joon-ho",
+    "cita": "Una vez que superes la barrera de los subtítulos de una pulgada de alto, conocerás muchas más películas increíbles.",
+    "fuente": "Discurso en los Golden Globes 2020"
+  },
+  {
+    "id": 15,
+    "director": "Guillermo del Toro",
+    "cita": "La perfección es un concepto aburrido. Lo que hace que algo sea bello es lo imperfecto.",
+    "fuente": "Entrevista en el Festival de Cannes"
+  },
+  {
+    "id": 16,
+    "director": "Werner Herzog",
+    "cita": "El cine no es el arte de los académicos, sino de los analfabetos.",
+    "fuente": "Guía para perplejos (Libro)"
+  },
+  {
+    "id": 17,
+    "director": "Steven Spielberg",
+    "cita": "Cada vez que voy al cine es un mundo mágico, no importa de qué trate la película.",
+    "fuente": "Entrevista con el American Film Institute"
+  },
+  {
+    "id": 18,
+    "director": "Luis Buñuel",
+    "cita": "Afortunadamente, en algún lugar entre el azar y el misterio se desliza la imaginación.",
+    "fuente": "Mi último suspiro (Memorias)"
+  },
+  {
+    "id": 19,
+    "director": "Christopher Nolan",
+    "cita": "No creo que el cine deba ser solo sobre el mundo en el que vivimos; debe ser sobre el mundo en el que queremos vivir.",
+    "fuente": "Entrevista en Wired"
+  },
+  {
+    "id": 20,
+    "director": "Woody Allen",
+    "cita": "El 80% del éxito es presentarse.",
+    "fuente": "Entrevista con The New York Times"
+  },
+  {
+    "id": 21,
+    "director": "Billy Wilder",
+    "cita": "Si vas a decirle a la gente la verdad, sé divertido o te matarán.",
+    "fuente": "Entrevista en The Paris Review"
+  },
+  {
+    "id": 22,
+    "director": "François Truffaut",
+    "cita": "El cine de mañana será un acto de amor.",
+    "fuente": "Manifiesto en Cahiers du Cinéma"
+  },
+  {
+    "id": 23,
+    "director": "Pedro Almodóvar",
+    "cita": "La ficción me sirve para vivir mejor la realidad.",
+    "fuente": "Rueda de prensa en Venecia"
+  },
+  {
+    "id": 24,
+    "director": "Greta Gerwig",
+    "cita": "Quiero hacer películas que se sientan como si estuvieras dentro de un mundo.",
+    "fuente": "Entrevista en The Hollywood Reporter"
+  },
+  {
+    "id": 25,
+    "director": "Sidney Lumet",
+    "cita": "El estilo es el resultado de las decisiones que tomas para contar una historia.",
+    "fuente": "Así se hacen las películas (Libro)"
+  },
+  {
+    "id": 26,
+    "director": "Jim Jarmusch",
+    "cita": "Nada es original. Roba de cualquier lugar que resuene con inspiración o alimente tu imaginación.",
+    "fuente": "Reglas de oro para cineastas"
+  },
+  {
+    "id": 27,
+    "director": "Wong Kar-wai",
+    "cita": "Mis películas nunca tratan sobre cómo es Hong Kong, ni pretenden ser un retrato realista, sino sobre lo que yo pienso de Hong Kong y lo que me gustaría que fuera.",
+    "fuente": "Entrevista en Sight & Sound"
+  },
+  {
+    "id": 28,
+    "director": "Hayao Miyazaki",
+    "cita": "La creación de un mundo proviene de una enorme cantidad de fragmentos y caos.",
+    "fuente": "Documental 'The Kingdom of Dreams and Madness'"
+  },
+  {
+    "id": 29,
+    "director": "Kathryn Bigelow",
+    "cita": "Si hay una resistencia específica a las mujeres que hacen cine, yo elijo ignorarla.",
+    "fuente": "Entrevista en The New Yorker"
+  },
+  {
+    "id": 30,
+    "director": "Abbas Kiarostami",
+    "cita": "Las películas que terminan en la sala de cine son aburridas. Prefiero las que empiezan cuando sales.",
+    "fuente": "Entrevista en el Festival de Locarno"
+  },
+  {
+    "id": 31,
+    "director": "Sofia Coppola",
+    "cita": "Me gusta que las películas tengan un poco de misterio y que no lo expliquen todo.",
+    "fuente": "Entrevista en IndieWire"
+  },
+  {
+    "id": 32,
+    "director": "George Lucas",
+    "cita": "El sonido es el 50% de la experiencia cinematográfica.",
+    "fuente": "Entrevista en Lucasfilm"
+  },
+  {
+    "id": 33,
+    "director": "Yasujirō Ozu",
+    "cita": "Solo soy un fabricante de tofu. Si quieres bistec, vete a otro lugar.",
+    "fuente": "Refiriéndose a su estilo minimalista"
+  },
+  {
+    "id": 34,
+    "director": "Ridley Scott",
+    "cita": "El diseño es el método de la narrativa.",
+    "fuente": "Entrevista en British Film Institute"
+  },
+  {
+    "id": 35,
+    "director": "Alejandro González Iñárritu",
+    "cita": "El cine es un espejo que nos permite vernos en situaciones que no hemos vivido.",
+    "fuente": "Discurso en los Oscar"
+  },
+  {
+    "id": 36,
+    "director": "John Ford",
+    "cita": "Me llamo John Ford y hago westerns.",
+    "fuente": "Presentación en el gremio de directores"
+  },
+  {
+    "id": 37,
+    "director": "Fritz Lang",
+    "cita": "El cineasta debe ser un observador de su propio tiempo.",
+    "fuente": "Entrevista con Peter Bogdanovich"
+  },
+  {
+    "id": 38,
+    "director": "Wes Anderson",
+    "cita": "Tengo una forma de filmar que me parece natural, aunque a otros les parezca muy artificial.",
+    "fuente": "Entrevista en The Guardian"
+  },
+  {
+    "id": 39,
+    "director": "Lars von Trier",
+    "cita": "Una película debe ser como una piedra en el zapato.",
+    "fuente": "Manifiesto Dogma 95 (Contexto)"
+  },
+  {
+    "id": 40,
+    "director": "Paul Thomas Anderson",
+    "cita": "Mi trabajo es simplemente no estropearlo cuando los actores están haciendo algo genial.",
+    "fuente": "Entrevista en WTF Podcast"
+  },
+  {
+    "id": 41,
+    "director": "Chloe Zhao",
+    "cita": "Busco la verdad en la belleza de lo cotidiano.",
+    "fuente": "Entrevista tras ganar el Oscar"
+  },
+  {
+    "id": 42,
+    "director": "Charlie Chaplin",
+    "cita": "La vida es una tragedia en primer plano, pero una comedia en plano general.",
+    "fuente": "Entrevistas biográficas"
+  },
+  {
+    "id": 43,
+    "director": "David Fincher",
+    "cita": "La gente dice que hay un millón de maneras de filmar una escena, pero yo creo que solo hay dos, y una está mal.",
+    "fuente": "Entrevista en Premiere"
+  },
+  {
+    "id": 44,
+    "director": "Satyajit Ray",
+    "cita": "El cine es la combinación de la lógica y la magia.",
+    "fuente": "Nuestros filmes, sus filmes (Libro)"
+  },
+  {
+    "id": 45,
+    "director": "Robert Bresson",
+    "cita": "Haz visible lo que, sin ti, quizás nunca se habría visto.",
+    "fuente": "Notas sobre el cinematógrafo (Libro)"
+  },
+  {
+    "id": 46,
+    "director": "Ava DuVernay",
+    "cita": "Si tus sueños solo te incluyen a ti, no son lo suficientemente grandes.",
+    "fuente": "Discurso de graduación"
+  },
+  {
+    "id": 47,
+    "director": "Michael Haneke",
+    "cita": "El cine es 24 mentiras por segundo al servicio de la verdad.",
+    "fuente": "Entrevista en el Festival de Cannes (Parafraseando a Godard)"
+  },
+  {
+    "id": 48,
+    "director": "Spike Lee",
+    "cita": "Tienes que ser capaz de capturar el momento cuando ocurre.",
+    "fuente": "Entrevista en Vice"
+  },
+  {
+    "id": 49,
+    "director": "Pier Paolo Pasolini",
+    "cita": "El cine es la lengua escrita de la realidad.",
+    "fuente": "Ensayos sobre el cine"
+  },
+  {
+    "id": 50,
+    "director": "Jane Campion",
+    "cita": "Para un artista, el mayor riesgo es no tomar ningún riesgo.",
+    "fuente": "Entrevista en Variety"
+  },
+  {
+    "id": 51,
+    "director": "James Cameron",
+    "cita": "La curiosidad es lo más poderoso que posees.",
+    "fuente": "Charla TED: 'Antes de Avatar, un niño curioso'"
+  },
+  {
+    "id": 52,
+    "director": "George Cukor",
+    "cita": "La dirección es, en un 90%, el casting correcto.",
+    "fuente": "Entrevista con Architectural Digest"
+  },
+  {
+    "id": 53,
+    "director": "Douglas Sirk",
+    "cita": "El cine es sangre, lágrimas, violencia, odio, muerte y amor.",
+    "fuente": "Entrevista sobre el melodrama cinematográfico"
+  },
+  {
+    "id": 54,
+    "director": "Nicholas Ray",
+    "cita": "Si todo está en el guion, ¿para qué molestarse en filmar la película?",
+    "fuente": "Cahiers du Cinéma (Entrevista)"
+  },
+  {
+    "id": 55,
+    "director": "Otto Preminger",
+    "cita": "No hago películas para los críticos, las hago para la gente.",
+    "fuente": "The New York Times (Archivo)"
+  },
+  {
+    "id": 56,
+    "director": "Preston Sturges",
+    "cita": "El trabajo de un director es evitar que los actores actúen.",
+    "fuente": "Five Screenplays (Prólogo)"
+  },
+  {
+    "id": 57,
+    "director": "Ernst Lubitsch",
+    "cita": "Hay mil formas de apuntar una cámara, pero en realidad solo hay una que es la correcta.",
+    "fuente": "Citas biográficas recogidas por Billy Wilder"
+  },
+  {
+    "id": 58,
+    "director": "Max Ophüls",
+    "cita": "La cámara existe para crear una tercera dimensión que la realidad nos niega.",
+    "fuente": "Entrevistas sobre el movimiento de cámara"
+  },
+  {
+    "id": 59,
+    "director": "Michael Curtiz",
+    "cita": "La cámara es el ojo de la audiencia; nunca la dejes parpadear sin motivo.",
+    "fuente": "Memorias del rodaje de 'Casablanca'"
+  },
+  {
+    "id": 60,
+    "director": "Victor Fleming",
+    "cita": "No tengo películas favoritas, solo me importa la que estoy haciendo ahora.",
+    "fuente": "Archivo de la MGM"
+  },
+  {
+    "id": 61,
+    "director": "King Vidor",
+    "cita": "Siempre me ha interesado más el personaje que la trama.",
+    "fuente": "Entrevista con el American Film Institute"
+  },
+  {
+    "id": 62,
+    "director": "Raoul Walsh",
+    "cita": "Una película es simplemente una serie de imágenes que te mantienen despierto.",
+    "fuente": "Cada paso un paso (Autobiografía)"
+  },
+  {
+    "id": 63,
+    "director": "Anthony Mann",
+    "cita": "En un buen western, el paisaje es un personaje más que dicta el destino.",
+    "fuente": "Entrevista en Sight & Sound"
+  },
+  {
+    "id": 64,
+    "director": "Samuel Fuller",
+    "cita": "El cine es como un campo de batalla: amor, odio, acción, violencia, muerte. En una palabra: emoción.",
+    "fuente": "Aparición en 'Pierrot le Fou' (Godard)"
+  },
+  {
+    "id": 65,
+    "director": "Nicolas Winding Refn",
+    "cita": "El arte no trata sobre la perfección; el arte es un acto de violencia.",
+    "fuente": "Entrevista en el Festival de Sitges"
+  },
+  {
+    "id": 66,
+    "director": "Denis Villeneuve",
+    "cita": "El cine es una herramienta poderosa para explorar la empatía y lo desconocido.",
+    "fuente": "Entrevista en Variety"
+  },
+  {
+    "id": 67,
+    "director": "Alfonso Cuarón",
+    "cita": "El cine no es sobre el diálogo, es sobre el lenguaje visual y la atmósfera.",
+    "fuente": "Masterclass en el Festival de Cannes"
+  },
+  {
+    "id": 68,
+    "director": "David Cronenberg",
+    "cita": "Todo el mundo es un crítico de cine porque todo el mundo tiene una vida.",
+    "fuente": "Entrevista en The Guardian"
+  },
+  {
+    "id": 69,
+    "director": "Frank Capra",
+    "cita": "No hay reglas en la dirección, solo hay resultados.",
+    "fuente": "The Name Above the Title (Autobiografía)"
+  },
+  {
+    "id": 70,
+    "director": "Sergei Eisenstein",
+    "cita": "El montaje es el sistema nervioso del cine.",
+    "fuente": "La forma del cine (Ensayos)"
+  },
+  {
+    "id": 71,
+    "director": "Jordan Peele",
+    "cita": "El mejor horror es aquel que está profundamente anclado en la verdad.",
+    "fuente": "Documental 'Horror Noire'"
+  },
+  {
+    "id": 72,
+    "director": "Brian De Palma",
+    "cita": "La cámara miente todo el tiempo; miente 24 veces por segundo.",
+    "fuente": "Entrevista en Cahiers du Cinéma"
+  },
+  {
+    "id": 73,
+    "director": "Sam Mendes",
+    "cita": "La audiencia es el último colaborador de una película.",
+    "fuente": "Entrevista en Director's Guild of America"
+  },
+  {
+    "id": 74,
+    "director": "Danny Boyle",
+    "cita": "El cine es una experiencia colectiva, o no es nada.",
+    "fuente": "Entrevista en el Festival de Telluride"
+  },
+  {
+    "id": 75,
+    "director": "Tim Burton",
+    "cita": "Las películas son como una forma muy cara de terapia.",
+    "fuente": "Burton on Burton (Libro)"
+  },
+  {
+    "id": 76,
+    "director": "John Carpenter",
+    "cita": "En las películas de terror, el miedo es el personaje principal.",
+    "fuente": "Entrevista en la BBC"
+  },
+  {
+    "id": 77,
+    "director": "Yorgos Lanthimos",
+    "cita": "Me gusta incomodar al público porque la vida misma es profundamente incómoda.",
+    "fuente": "Entrevista en IndieWire"
+  },
+  {
+    "id": 78,
+    "director": "Paul Verhoeven",
+    "cita": "El cine es, por definición, el arte de la manipulación.",
+    "fuente": "Entrevista sobre 'Total Recall'"
+  },
+  {
+    "id": 79,
+    "director": "Clint Eastwood",
+    "cita": "Un director tiene que ser un líder, no un dictador.",
+    "fuente": "Entrevista con el American Film Institute"
+  },
+  {
+    "id": 80,
+    "director": "Oliver Stone",
+    "cita": "Nunca tengas miedo de ser controvertido si buscas la verdad.",
+    "fuente": "Entrevista en Rolling Stone"
+  },
+  {
+    "id": 81,
+    "director": "Ken Loach",
+    "cita": "El cine debe dar voz a los que no la tienen.",
+    "fuente": "Discurso de la Palma de Oro"
+  },
+  {
+    "id": 82,
+    "director": "Jean-Pierre Melville",
+    "cita": "Un director es un hombre que no hace nada, pero nada sucede sin él.",
+    "fuente": "Entrevista en Cinema 68"
+  },
+  {
+    "id": 83,
+    "director": "Bernardo Bertolucci",
+    "cita": "El cine es una forma de soñar con los ojos abiertos.",
+    "fuente": "Entrevista en el Festival de Venecia"
+  },
+  {
+    "id": 84,
+    "director": "Wim Wenders",
+    "cita": "Las películas no deberían tratar de explicar el mundo, sino de mostrarlo.",
+    "fuente": "La lógica de las imágenes (Libro)"
+  },
+  {
+    "id": 85,
+    "director": "Richard Linklater",
+    "cita": "El cine es la forma de arte definitiva para capturar el paso del tiempo.",
+    "fuente": "Entrevista sobre la trilogía 'Before'"
+  },
+  {
+    "id": 86,
+    "director": "Darren Aronofsky",
+    "cita": "Quiero que la audiencia sienta exactamente lo que el personaje está sintiendo.",
+    "fuente": "Entrevista en The New York Times"
+  },
+  {
+    "id": 87,
+    "director": "Park Chan-wook",
+    "cita": "Hago películas sobre las cosas que me dan miedo.",
+    "fuente": "Entrevista en The Hollywood Reporter"
+  },
+  {
+    "id": 88,
+    "director": "Mike Leigh",
+    "cita": "Todo en una película debe emanar de la verdad de los personajes.",
+    "fuente": "Entrevista en BFI"
+  },
+  {
+    "id": 89,
+    "director": "Luchino Visconti",
+    "cita": "Me atrae la decadencia porque es el momento en que la belleza es más intensa.",
+    "fuente": "Entrevista sobre 'Muerte en Venecia'"
+  },
+  {
+    "id": 90,
+    "director": "Michelangelo Antonioni",
+    "cita": "En el cine, el silencio a menudo dice más que cualquier línea de diálogo.",
+    "fuente": "Entrevista en Sight & Sound"
+  },
+  {
+    "id": 91,
+    "director": "Milos Forman",
+    "cita": "La libertad es algo por lo que tienes que luchar en cada película.",
+    "fuente": "Entrevista en Turn Around (Memorias)"
+  },
+  {
+    "id": 92,
+    "director": "Edward Yang",
+    "cita": "Vivimos nuestras vidas, pero el cine nos da la oportunidad de vivir tres vidas más.",
+    "fuente": "Yi Yi (Guion original)"
+  },
+  {
+    "id": 93,
+    "director": "Ang Lee",
+    "cita": "Cada película es una nueva pregunta que trato de responder.",
+    "fuente": "Entrevista en The Talks"
+  },
+  {
+    "id": 94,
+    "director": "Sam Raimi",
+    "cita": "Si no hay emoción en la historia, no importan los efectos especiales.",
+    "fuente": "Entrevista en Empire"
+  },
+  {
+    "id": 95,
+    "director": "Terry Gilliam",
+    "cita": "No quiero ser un narrador de historias, quiero ser un creador de mundos.",
+    "fuente": "Gilliam on Gilliam (Libro)"
+  },
+  {
+    "id": 96,
+    "director": "Todd Haynes",
+    "cita": "El cine es el lugar donde nuestras identidades pueden ser cuestionadas.",
+    "fuente": "Entrevista en Film Comment"
+  },
+  {
+    "id": 97,
+    "director": "Luca Guadagnino",
+    "cita": "El deseo es el motor más potente que existe en el cine.",
+    "fuente": "Entrevista sobre 'Call Me By Your Name'"
+  },
+  {
+    "id": 98,
+    "director": "Roman Polanski",
+    "cita": "El cine debería hacerte olvidar que estás sentado en un teatro.",
+    "fuente": "Entrevista en The New Yorker"
+  },
+  {
+    "id": 99,
+    "director": "Robert Rodriguez",
+    "cita": "No necesitas dinero para hacer una película, necesitas una buena idea.",
+    "fuente": "Rebel Without a Crew (Libro)"
+  },
+  {
+    "id": 100,
+    "director": "Steven Soderbergh",
+    "cita": "Si no estás aprendiendo algo nuevo en cada rodaje, estás perdiendo el tiempo.",
+    "fuente": "Entrevista en Studio Daily"
+  },
+  {
+    "id": 101,
+    "director": "Jean Renoir",
+    "cita": "En este mundo, lo terrible es que cada uno tiene sus razones.",
+    "fuente": "La regla del juego (Película)"
+  },
+  {
+    "id": 102,
+    "director": "Robert Altman",
+    "cita": "Hacer películas es una oportunidad de vivir muchas vidas.",
+    "fuente": "Entrevista con David Thompson"
+  },
+  {
+    "id": 103,
+    "director": "David Lean",
+    "cita": "Me gustan las historias de gente que se siente sola en un paisaje vasto.",
+    "fuente": "Biografía por Kevin Brownlow"
+  },
+  {
+    "id": 104,
+    "director": "Krzysztof Kieślowski",
+    "cita": "El cine no es solo mostrar la realidad, es mostrar lo que hay debajo.",
+    "fuente": "Introducción a 'El Decálogo'"
+  },
+  {
+    "id": 105,
+    "director": "John Huston",
+    "cita": "Cada película que haces es un nuevo romance.",
+    "fuente": "An Open Book (Memorias)"
+  },
+  {
+    "id": 106,
+    "director": "Vittorio De Sica",
+    "cita": "La realidad es mucho más rica que cualquier invención.",
+    "fuente": "Manifiesto del Neorrealismo"
+  },
+  {
+    "id": 107,
+    "director": "Giuseppe Tornatore",
+    "cita": "El cine es un acto de memoria.",
+    "fuente": "Entrevista sobre Cinema Paradiso"
+  },
+  {
+    "id": 108,
+    "director": "Howard Hawks",
+    "cita": "Un buen director es alguien que no te molesta con la cámara.",
+    "fuente": "Hawks on Hawks (Libro)"
+  },
+  {
+    "id": 109,
+    "director": "Lucrecia Martel",
+    "cita": "El sonido es lo que realmente nos hace sentir el espacio.",
+    "fuente": "Masterclass en el BFI"
+  },
+  {
+    "id": 110,
+    "director": "Pablo Larraín",
+    "cita": "El cine es la mejor manera de enfrentarse a la impunidad.",
+    "fuente": "Entrevista en el diario El País"
+  },
+  {
+    "id": 111,
+    "director": "Víctor Erice",
+    "cita": "El cine es el arte del presente capturado para siempre.",
+    "fuente": "Correspondencia con Abbas Kiarostami"
+  },
+  {
+    "id": 112,
+    "director": "Takeshi Kitano",
+    "cita": "La violencia en el cine debe doler, de lo contrario no tiene sentido.",
+    "fuente": "Entrevista en Sight & Sound"
+  },
+  {
+    "id": 113,
+    "director": "Hirokazu Kore-eda",
+    "cita": "No busco juzgar a mis personajes, solo quiero estar a su lado.",
+    "fuente": "Entrevista en The Guardian"
+  },
+  {
+    "id": 114,
+    "director": "Ari Aster",
+    "cita": "El cine es el lugar donde exorcizamos nuestros miedos más profundos.",
+    "fuente": "Entrevista en IndieWire"
+  },
+  {
+    "id": 115,
+    "director": "Robert Eggers",
+    "cita": "Quiero que el público sienta que ha viajado en el tiempo.",
+    "fuente": "Entrevista en Film Comment"
+  },
+  {
+    "id": 116,
+    "director": "Céline Sciamma",
+    "cita": "La mirada femenina no es solo un tema, es una estética.",
+    "fuente": "Entrevista en Variety"
+  },
+  {
+    "id": 117,
+    "director": "Paolo Sorrentino",
+    "cita": "La belleza es la única respuesta a la vulgaridad del mundo.",
+    "fuente": "Entrevista sobre La Grande Bellezza"
+  },
+  {
+    "id": 118,
+    "director": "Rainer Werner Fassbinder",
+    "cita": "El amor es más frío que la muerte.",
+    "fuente": "Título y filosofía de obra"
+  },
+  {
+    "id": 119,
+    "director": "Peter Weir",
+    "cita": "El cine es un misterio que se resuelve en la sala de montaje.",
+    "fuente": "Entrevista con AFI"
+  },
+  {
+    "id": 120,
+    "director": "Mike Nichols",
+    "cita": "Una película es como una persona: tiene un alma y un cuerpo.",
+    "fuente": "Entrevista en Rolling Stone"
+  },
+  {
+    "id": 121,
+    "director": "Roberto Rossellini",
+    "cita": "No quiero ser un artista, quiero ser un hombre que usa una cámara.",
+    "fuente": "Entrevistas sobre el Neorrealismo"
+  },
+  {
+    "id": 122,
+    "director": "Béla Tarr",
+    "cita": "No cuento historias; muestro la vida pasando.",
+    "fuente": "Entrevista en MUBI"
+  },
+  {
+    "id": 123,
+    "director": "William Wyler",
+    "cita": "No siempre sé cómo hacerlo bien, pero sé cuándo está mal.",
+    "fuente": "Biografía de Jan Herman"
+  },
+  {
+    "id": 124,
+    "director": "Elia Kazan",
+    "cita": "La actuación es la capacidad de vivir de verdad bajo circunstancias imaginarias.",
+    "fuente": "On Directing (Libro)"
+  },
+  {
+    "id": 125,
+    "director": "John Cassavetes",
+    "cita": "No me importa si la imagen está enfocada, me importa si la emoción está enfocada.",
+    "fuente": "Entrevista con Ray Carney"
+  },
+  {
+    "id": 126,
+    "director": "Sergei Parajanov",
+    "cita": "Todo el mundo tiene derecho a la belleza.",
+    "fuente": "Documentos biográficos"
+  },
+  {
+    "id": 127,
+    "director": "Alain Resnais",
+    "cita": "El cine es un experimento sobre la memoria.",
+    "fuente": "Entrevista sobre Hiroshima Mon Amour"
+  },
+  {
+    "id": 128,
+    "director": "Eric Rohmer",
+    "cita": "Prefiero mostrar a la gente hablando que a la gente actuando.",
+    "fuente": "El gusto por la belleza (Libro)"
+  },
+  {
+    "id": 129,
+    "director": "Jacques Demy",
+    "cita": "Quiero que la vida en el cine sea tan colorida como la imaginamos.",
+    "fuente": "Entrevista en Cahiers du Cinéma"
+  },
+  {
+    "id": 130,
+    "director": "Michael Powell",
+    "cita": "El cine debe ser una experiencia mágica, no una lección de moral.",
+    "fuente": "A Life in Movies (Libro)"
+  },
+  {
+    "id": 131,
+    "director": "Kenji Mizoguchi",
+    "cita": "Un plano, una escena. Esa es la esencia de la atmósfera.",
+    "fuente": "Teoría cinematográfica de Mizoguchi"
+  },
+  {
+    "id": 132,
+    "director": "Masaki Kobayashi",
+    "cita": "La humanidad es más importante que el honor.",
+    "fuente": "Entrevista sobre 'Harakiri'"
+  },
+  {
+    "id": 133,
+    "director": "Carlos Saura",
+    "cita": "El cine es un vehículo para recuperar nuestra memoria histórica.",
+    "fuente": "Archivo de RTVE"
+  },
+  {
+    "id": 134,
+    "director": "Luis García Berlanga",
+    "cita": "La vida es una broma pesada, el cine ayuda a reírse de ella.",
+    "fuente": "Entrevista en El Mundo"
+  },
+  {
+    "id": 135,
+    "director": "Barry Jenkins",
+    "cita": "El cine es el arte de la empatía a gran escala.",
+    "fuente": "Discurso en los Premios Oscar"
+  },
+  {
+    "id": 136,
+    "director": "Lynne Ramsay",
+    "cita": "A veces el silencio es la herramienta narrativa más ruidosa.",
+    "fuente": "Entrevista en The New York Times"
+  },
+  {
+    "id": 137,
+    "director": "Claire Denis",
+    "cita": "Filmo cuerpos porque el lenguaje a veces nos traiciona.",
+    "fuente": "Entrevista en Sight & Sound"
+  },
+  {
+    "id": 138,
+    "director": "Andrea Arnold",
+    "cita": "Busco la honestidad en la suciedad de la vida.",
+    "fuente": "Entrevista en el BFI"
+  },
+  {
+    "id": 139,
+    "director": "Ruben Östlund",
+    "cita": "El cine es un experimento sociológico con una audiencia cautiva.",
+    "fuente": "Entrevista en Variety"
+  },
+  {
+    "id": 140,
+    "director": "Thomas Vinterberg",
+    "cita": "Las reglas están para ser rotas, pero primero hay que conocerlas.",
+    "fuente": "Manifiesto Dogma 95"
+  },
+  {
+    "id": 141,
+    "director": "Joachim Trier",
+    "cita": "El cine es el lugar donde la melancolía se convierte en belleza.",
+    "fuente": "Entrevista sobre 'Oslo, 31 de agosto'"
+  },
+  {
+    "id": 142,
+    "director": "Alice Rohrwacher",
+    "cita": "El cine es un puente entre la fábula y la realidad.",
+    "fuente": "Entrevista en el Festival de Cannes"
+  },
+  {
+    "id": 143,
+    "director": "Robert Wise",
+    "cita": "Si la historia es buena, la cámara se moverá sola.",
+    "fuente": "Entrevista con el American Film Institute"
+  },
+  {
+    "id": 144,
+    "director": "Julia Ducournau",
+    "cita": "El cuerpo es el único territorio que realmente poseemos.",
+    "fuente": "Entrevista sobre 'Titane'"
+  },
+  {
+    "id": 145,
+    "director": "Emerald Fennell",
+    "cita": "Quiero hacer películas que se sientan como un caramelo envenenado.",
+    "fuente": "Entrevista en Deadline"
+  },
+  {
+    "id": 146,
+    "director": "Sean Baker",
+    "cita": "El cine digital ha democratizado la mirada del artista.",
+    "fuente": "Entrevista sobre 'Tangerine'"
+  },
+  {
+    "id": 147,
+    "director": "Sarah Polley",
+    "cita": "Contar historias es la forma en que organizamos nuestro caos.",
+    "fuente": "Entrevista en The New Yorker"
+  },
+  {
+    "id": 148,
+    "director": "Kelly Reichardt",
+    "cita": "El ritmo de una película debe dictarlo el paisaje.",
+    "fuente": "Entrevista en IndieWire"
+  },
+  {
+    "id": 149,
+    "director": "Matteo Garrone",
+    "cita": "Me interesan los monstruos que todos llevamos dentro.",
+    "fuente": "Entrevista sobre 'Gomorra'"
+  },
+  {
+    "id": 150,
+    "director": "Apichatpong Weerasethakul",
+    "cita": "El cine es un fantasma que nos acompaña en la oscuridad.",
+    "fuente": "Entrevista en Film Comment"
+  }
+]

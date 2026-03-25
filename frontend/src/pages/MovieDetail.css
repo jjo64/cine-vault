@@ -321,6 +321,10 @@
     }
 }
 
+@media (min-width: 1025px) and (max-width: 1280px) {
+   
+}
+
 @media (max-width: 768px) {
 
     .md-hero {
