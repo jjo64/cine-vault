@@ -1,186 +1,263 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X } from 'lucide-react'
+import { useState, useEffect, useRef, useMemo } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { ChevronLeft, ChevronDown, Menu, X } from 'lucide-react'
+import { getCurrentUser, getStoredAccessToken } from '../services/authServices'
+import { fetchSearchMovies } from '../services/movieDetailServices'
 import { resolveNavPathWithFallback } from '../lib/navigation'
-import { logoutCurrentUser } from '../services/authServices'
-import './Navbar.css'
+import { createSlug } from '../utils/stringUtils'
+import { C, SERIF, SANS, TMDB_BASE, SIZES, tmdbImg } from '../pages/TVDetail/constants'
+import styles from './Navbar.module.css'
 
-interface NavbarProps {
-    className?: string;
+// ─── TYPES ────────────────────────────────────────────────────
+export type NavViewer = {
+  id: number
+  username: string
+  avatar_url?: string | null
+  membership?: string | null
+  role?: string | null
 }
 
-const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
-    const [searchQuery, setSearchQuery] = useState('');
-    const [showUserMenu, setShowUserMenu] = useState(false);
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-    const navigate = useNavigate();
-    const menuRef = useRef<HTMLDivElement>(null);
+type SearchSuggestion = {
+  id: number
+  title?: string
+  name?: string
+  media_type?: 'movie' | 'tv' | 'person'
+  poster_path?: string | null
+  profile_path?: string | null
+}
 
-    // Cerrar menú al hacer clic fuera
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-                setShowUserMenu(false);
-            }
-        };
+// ─── HELPERS ──────────────────────────────────────────────────
+function initials(name: string) {
+  const parts = name.split(' ').filter(Boolean)
+  if (parts.length === 0) return 'CV'
+  if (parts.length === 1) return parts[0][0]?.toUpperCase() ?? 'CV'
+  return `${parts[0][0] ?? ''}${parts[1][0] ?? ''}`.toUpperCase()
+}
 
-        if (showUserMenu) {
-            document.addEventListener('mousedown', handleClickOutside);
-        } else {
-            document.removeEventListener('mousedown', handleClickOutside);
-        }
+function NavImg({ src, alt, style }: React.ImgHTMLAttributes<HTMLImageElement>) {
+  const [err, setErr] = useState(false)
+  if (!src || err) return <div style={{ ...style, background: C.elevated }} />
+  return <img src={src} alt={alt} style={style} onError={() => setErr(true)} />
+}
 
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [showUserMenu]);
+// ─── HOOK ─────────────────────────────────────────────────────
+export function useNavViewer() {
+  const [viewer, setViewer] = useState<NavViewer | null>(null)
 
-    const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (searchQuery.trim()) {
-            navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-            setIsMobileMenuOpen(false)
-        }
-    };
+  useEffect(() => {
+    const token = getStoredAccessToken()
+    if (!token) return
+    getCurrentUser()
+      .then(u => setViewer({
+        id: u.id,
+        username: u.username,
+        avatar_url: u.avatar_url ?? null,
+        membership: u.membership ?? null,
+        role: u.role ?? null,
+      }))
+      .catch(() => setViewer(null))
+  }, [])
 
-    const goTo = (label: string) => {
-        navigate(resolveNavPathWithFallback(label))
+  return viewer
+}
+
+// ─── COMPONENT ────────────────────────────────────────────────
+interface NavbarProps {
+  viewer: NavViewer | null
+  onLogout: () => void
+}
+
+export default function Navbar({ viewer, onLogout }: NavbarProps) {
+  const navigate = useNavigate()
+  const [scrolled, setScrolled] = useState(false)
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState<SearchSuggestion[]>([])
+  const [openDropdown, setOpenDropdown] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const wrapperRef = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const debouncedQuery = useMemo(() => query.trim(), [query])
+
+  useEffect(() => {
+    const h = () => setScrolled(window.scrollY > 60)
+    window.addEventListener('scroll', h)
+    return () => window.removeEventListener('scroll', h)
+  }, [])
+
+  useEffect(() => {
+    if (!debouncedQuery) return
+    const id = window.setTimeout(async () => {
+      try {
+        const data = await fetchSearchMovies(debouncedQuery)
+        setResults(Array.isArray(data.results) ? data.results.slice(0, 6) : [])
+      } catch {
+        setResults([])
+      }
+    }, 250)
+    return () => window.clearTimeout(id)
+  }, [debouncedQuery])
+
+  useEffect(() => {
+    const onOutside = (e: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) setOpenDropdown(false)
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false)
+        setMobileNavOpen(false)
+      }
     }
+    document.addEventListener('mousedown', onOutside)
+    return () => document.removeEventListener('mousedown', onOutside)
+  }, [])
 
-    const handleSignOut = async () => {
-        await logoutCurrentUser()
-        goTo('home')
-    }
+  const navLinks = viewer
+    ? ['Films', 'Lists', 'Members', 'Journal']
+    : ['Sign in', 'Create account', 'Films', 'Lists', 'Members', 'Journal']
 
-    return (
-        <nav className={`subpage-navbar ${className}`} aria-label="Navegación principal">
-            <div className="nav-container">
-                <div className="nav-left">
-                    <Link to="/" className="nav-logo">🎬 Cinevault</Link>
-                    <div className="nav-menu">
-                        <Link to={resolveNavPathWithFallback('films')}>FILMS</Link>
-                        <Link to={resolveNavPathWithFallback('diary')}>DIARY</Link>
-                        <Link to={resolveNavPathWithFallback('esta noche')}>ESTA NOCHE</Link>
-                        <Link to={resolveNavPathWithFallback('feed')}>FEED</Link>
-                        <Link to={resolveNavPathWithFallback('activity')}>ACTIVITY</Link>
-                        <Link to={resolveNavPathWithFallback('lists')}>LISTS</Link>
-                    </div>
-                </div>
+  const openAuthModal = (mode: 'login' | 'register') => {
+    window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: { mode } }))
+  }
 
-                <div className="nav-right">
-                    <form className="nav-search" onSubmit={handleSearch} role="search">
-                        <button type="submit" className="nav-search-btn" aria-label="Buscar">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <circle cx="11" cy="11" r="8"></circle>
-                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                            </svg>
-                        </button>
-                        <label htmlFor="nav-search-desktop" style={{
-                            position: 'absolute', width: 1, height: 1, padding: 0,
-                            margin: -1, overflow: 'hidden', clip: 'rect(0,0,0,0)',
-                            whiteSpace: 'nowrap', border: 0,
-                        }}>Buscar películas</label>
-                        <input
-                            id="nav-search-desktop"
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="nav-search-input"
-                            placeholder=""
-                            aria-label="Buscar películas, directores o personas"
-                        />
-                    </form>
+  const navigateByType = (item: SearchSuggestion) => {
+    const label = item.title || item.name || 'sin-titulo'
+    if (item.media_type === 'person') { navigate(`/person/${item.id}`); return }
+    if (item.media_type === 'tv') { navigate(`/tv/${item.id}`); return }
+    navigate(`/movie/${item.id}-${createSlug(label)}`)
+  }
 
-                    <div className="user-area">
-                        <div
-                            className="user-profile"
-                            onClick={() => setShowUserMenu(!showUserMenu)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                    e.preventDefault()
-                                    setShowUserMenu((prev) => !prev)
-                                }
-                                if (e.key === 'Escape') setShowUserMenu(false)
-                            }}
-                            ref={menuRef}
-                            role="button"
-                            tabIndex={0}
-                            aria-haspopup="menu"
-                            aria-expanded={showUserMenu}
-                            aria-label="Menú de usuario"
-                        >
-                            <img src="https://i.pravatar.cc/32?u=me" alt="Tu foto de perfil" className="nav-avatar" />
-                            <span className="nav-username">USUARIO</span>
-                            <span className={`nav-chevron ${showUserMenu ? 'up' : ''}`}>▼</span>
+  const handleNavLink = (item: string) => {
+    if (item === 'Sign in') { openAuthModal('login'); return }
+    if (item === 'Create account') { openAuthModal('register'); return }
+    navigate(resolveNavPathWithFallback(item))
+  }
 
-                            {showUserMenu && (
-                                <div className="user-dropdown" role="menu" aria-label="Menú de navegación">
-                                    <Link to="/" role="menuitem">Home</Link>
-                                    <Link to="/profile" role="menuitem">Profile</Link>
-                                    <Link to={resolveNavPathWithFallback('films')} role="menuitem">Films</Link>
-                                    <Link to={resolveNavPathWithFallback('diary')} role="menuitem">Diary</Link>
-                                    <Link to={resolveNavPathWithFallback('esta noche')} role="menuitem">Esta noche</Link>
-                                    <Link to={resolveNavPathWithFallback('feed')} role="menuitem">Feed</Link>
-                                    <Link to={resolveNavPathWithFallback('activity')} role="menuitem">Activity</Link>
-                                    <Link to={resolveNavPathWithFallback('lists')} role="menuitem">Lists</Link>
-                                    <div className="dropdown-divider"></div>
-                                    <Link to="/settings" role="menuitem">Settings</Link>
-                                    <button
-                                        type="button"
-                                        role="menuitem"
-                                        onClick={handleSignOut}
-                                        style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', cursor: 'pointer' }}
-                                    >
-                                        Sign Out
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                        <button
-                            className="nav-hamburger"
-                            onClick={() => setIsMobileMenuOpen((prev) => !prev)}
-                            aria-label={isMobileMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
-                            aria-expanded={isMobileMenuOpen}
-                            aria-controls="nav-mobile-overlay"
-                        >
-                            {isMobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
-                        </button>
-                        <button className="btn-log-green">
-                            <span>+ LOG</span>
-                        </button>
-                    </div>
-                </div>
+  return (
+    <nav className={`${styles.navbar} ${scrolled ? styles.navbarScrolled : styles.navbarDefault}`}>
+      {/* LEFT */}
+      <div className={styles.left}>
+        <Link to="/" className={styles.logo}>
+          Cine<span className={styles.logoAccent}>Vault</span>
+        </Link>
+        <ul className={styles.desktopLinks}>
+          {navLinks.map(item => (
+            <li key={item}>
+              <button className={styles.navBtn} onClick={() => handleNavLink(item)}>
+                {item}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* RIGHT */}
+      <div className={styles.right}>
+        {/* Search */}
+        <div className={styles.searchWrapper} ref={wrapperRef}>
+          <div className={styles.searchBox}>
+            <input
+              className={styles.searchInput}
+              value={query}
+              placeholder="Buscar"
+              onFocus={() => setOpenDropdown(true)}
+              onChange={e => { setQuery(e.target.value); setOpenDropdown(true) }}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && query.trim()) {
+                  navigate(`/search?q=${encodeURIComponent(query.trim())}`)
+                  setOpenDropdown(false)
+                }
+              }}
+            />
+          </div>
+          {openDropdown && debouncedQuery && (
+            <div className={styles.searchDropdown}>
+              {results.length > 0 ? results.map(item => (
+                <button key={`${item.media_type}-${item.id}`} className={styles.searchItem}
+                  onClick={() => { navigateByType(item); setOpenDropdown(false); setQuery('') }}>
+                  <NavImg
+                    src={item.media_type === 'person'
+                      ? tmdbImg(item.profile_path, SIZES.PROFILE)
+                      : tmdbImg(item.poster_path, SIZES.PROFILE)}
+                    alt={item.title || item.name || ''}
+                    style={{ width: 30, height: 45, objectFit: 'cover' }}
+                  />
+                  <span className={styles.searchItemTitle}>{item.title || item.name || 'Sin título'}</span>
+                </button>
+              )) : (
+                <div className={styles.searchEmpty}>Sin resultados</div>
+              )}
             </div>
-            <div
-                id="nav-mobile-overlay"
-                className={`nav-mobile-overlay ${isMobileMenuOpen ? 'nav-mobile-overlay--open' : ''}`}
-                aria-hidden={!isMobileMenuOpen}
-                role="navigation"
-                aria-label="Menú móvil"
-            >
-                <form className="nav-mobile-search" onSubmit={handleSearch}>
-                    <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="nav-search-input"
-                        placeholder="Buscar..."
-                    />
-                </form>
+          )}
+        </div>
 
-                {['FILMS', 'DIARY', 'ESTA NOCHE', 'FEED', 'ACTIVITY', 'LISTS', 'PROFILE'].map((link) => (
-                    <Link
-                        key={`mobile-${link}`}
-                        to={resolveNavPathWithFallback(link)}
-                        className="nav-mobile-link"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                        {link}
-                    </Link>
-                ))}
+        {/* Mobile menu */}
+        <div className={styles.mobileMenuBtn}>
+          <button className={styles.mobileToggle} onClick={() => setMobileNavOpen(v => !v)}>
+            {mobileNavOpen ? <X size={14} /> : <Menu size={14} />}
+          </button>
+          {mobileNavOpen && (
+            <div className={styles.mobileDropdown}>
+              <div className={styles.mobileSearchBox}>
+                <input
+                  className={styles.searchInput}
+                  value={query}
+                  placeholder="Buscar"
+                  onFocus={() => setOpenDropdown(true)}
+                  onChange={e => { setQuery(e.target.value); setOpenDropdown(true) }}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && query.trim()) {
+                      navigate(`/search?q=${encodeURIComponent(query.trim())}`)
+                      setOpenDropdown(false)
+                      setMobileNavOpen(false)
+                    }
+                  }}
+                />
+              </div>
+              {navLinks.map(item => (
+                <button key={item} className={styles.mobileNavBtn}
+                  onClick={() => { handleNavLink(item); setMobileNavOpen(false) }}>
+                  {item}
+                </button>
+              ))}
+              {!viewer && (
+                <button className={styles.mobileNavBtn} onClick={() => { navigate(-1); setMobileNavOpen(false) }}>
+                  Volver
+                </button>
+              )}
+              {viewer && (
+                <>
+                  <button className={styles.mobileNavBtn} onClick={() => { navigate('/profile'); setMobileNavOpen(false) }}>Mi perfil</button>
+                  <button className={styles.mobileNavBtn} onClick={() => { navigate('/settings'); setMobileNavOpen(false) }}>Configuración</button>
+                  <button className={styles.mobileNavBtnDanger} onClick={() => { onLogout(); setMobileNavOpen(false) }}>Cerrar sesión</button>
+                </>
+              )}
             </div>
-        </nav>
-    );
-};
+          )}
+        </div>
 
-export default Navbar;
+        {/* User area */}
+        {!viewer ? (
+          <button className={styles.backBtn} onClick={() => navigate(-1)}>
+            <ChevronLeft size={14} strokeWidth={1.5} />
+            Volver
+          </button>
+        ) : (
+          <div ref={menuRef} className={styles.userActions}>
+            <button className={styles.avatarBtn} onClick={() => setMenuOpen(v => !v)}>
+              {viewer.avatar_url
+                ? <NavImg src={viewer.avatar_url} alt={viewer.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : <div className={styles.avatarFallback}>{initials(viewer.username)}</div>
+              }
+            </button>
+            {menuOpen && (
+              <div className={styles.userDropdown}>
+                <button className={styles.dropdownBtn} onClick={() => navigate('/profile')}>Mi perfil</button>
+                <button className={styles.dropdownBtn} onClick={() => navigate('/settings')}>Configuración</button>
+                <button className={styles.dropdownBtnDanger} onClick={onLogout}>Cerrar sesión</button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </nav>
+  )
+}

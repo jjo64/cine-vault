@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { InlineComposer } from '../features/movie-detail/components/InlineComposer'
+import { ReviewRadar } from '../features/movie-detail/components/ReviewRadar'
+import { Hero } from '../features/movie-detail/components/Hero/Hero'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { Bookmark, ChevronLeft, ChevronRight, ExternalLink, Heart, List, Menu, MessageSquare, Pencil, Share2, Trash2, X } from 'lucide-react'
@@ -1296,7 +1299,7 @@ function Navbar({
   )
 }
 
-function Hero({
+function TemporaryOldHero({
   movie,
   userRating,
   inVault,
@@ -3160,7 +3163,18 @@ loadPage();
       <Navbar viewer={viewer} onLogout={handleLogout} />
 
       <Hero
-        movie={movie}
+        title={movie.title || 'Sin título'}
+        originalTitle={movie.original_title || movie.title}
+        releaseYear={movie.release_date ? new Date(movie.release_date).getFullYear() : '----'}
+        country={movie.production_countries?.[0]?.name || 'País no disponible'}
+        runtime={movie.runtime ? `${movie.runtime} min` : 'Duración desconocida'}
+        genresText={(movie.genres || []).slice(0, 2).map((genre) => genre.name).join(' · ') || 'Sin género'}
+        director={directorObj}
+        score={((movie.vote_average || 0) / 2).toFixed(1)}
+        votes={(movie.vote_count || 0).toLocaleString('es-ES')}
+        posterPath={movie.poster_path}
+        backdropPath={movie.backdrop_path}
+        mediaType="movie"
         userRating={userRating}
         inVault={inVault}
         inWatchlist={inWatchlist}

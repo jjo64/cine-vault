@@ -96,6 +96,7 @@ function App() {
                     <Route path="/discover" element={<FeedPage />} />
                     <Route path="/movie/:slugOrId" element={<MovieDetail />} />
                     <Route path="/tv/:id" element={<TVDetail />} />
+                    <Route path="/tv/:slugOrId" element={<TVDetail />} />
                     <Route path="/person/:id" element={<PersonPage />} />
                     <Route path="/settings" element={<SettingsPage />} />
                     <Route path="/search" element={<SearchResults />} />
