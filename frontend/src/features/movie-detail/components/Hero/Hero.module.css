@@ -1,0 +1,391 @@
+/* src/features/movie/components/Hero/Hero.module.css */
+
+.hero {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+
+/* ── Fondo y Capas ── */
+.heroBg {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #0d1118 0%, #08090d 40%, #0a0c08 100%);
+}
+
+.heroBackdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.24) saturate(0.65);
+  z-index: 0;
+}
+
+.heroOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to right,
+    rgba(8,8,8,0.92) 0%,
+    rgba(8,8,8,0.80) 40%,
+    rgba(8,8,8,0.45) 70%,
+    rgba(8,8,8,0.78) 100%
+  );
+}
+
+.heroGlow {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 500px;
+  height: 400px;
+  background: radial-gradient(ellipse at bottom left, rgba(212,175,122,0.10), transparent 70%);
+  pointer-events: none;
+}
+
+/* ── Poster Desktop ── */
+.heroPosterDesktop {
+  position: absolute;
+  top: 23%;
+  z-index: 10;
+  transform: translateY(-50%);
+}
+
+.posterFrame {
+  aspect-ratio: 2 / 3;
+  border-radius: 2px;
+  overflow: hidden;
+  box-shadow: 0 40px 100px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.04);
+  position: relative;
+}
+
+.posterImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(0.6) brightness(0.85);
+}
+
+.posterSheen {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 50%, rgba(0,0,0,0.25) 100%);
+}
+
+.posterBorder {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(212,175,122,0.15);
+  border-radius: 2px;
+}
+
+/* ── Poster Mobile ── */
+.heroPosterMobile {
+  display: none;
+}
+
+.posterMobileImg {
+  background-size: cover;
+  background-position: center;
+  aspect-ratio: 2 / 3;
+  border-radius: 6px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+}
+
+/* ── Contenido Principal ── */
+.heroContent {
+  position: relative;
+  z-index: 20;
+}
+
+/* ── Metadata Row ── */
+.metaRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.genreBadge {
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--md-accent);
+  padding: 4px 10px;
+  border: 1px solid var(--md-accent-dim);
+  font-family: var(--md-font-sans);
+}
+
+.metaDot {
+  color: var(--md-text-muted);
+  font-size: 12px;
+}
+
+.metaInfo {
+  font-size: 11px;
+  color: var(--md-text-soft);
+  letter-spacing: 0.08em;
+  font-family: var(--md-font-sans);
+}
+
+/* ── Bloque Título ── */
+.titleBlock {
+  /* hereda .md-title-block de MovieDetail.css — no duplicamos los media queries aquí */
+}
+
+.titleTextGroup {
+  /* hereda .md-title-text-group */
+}
+
+.title {
+  font-family: var(--md-font-serif);
+  color: var(--md-text);
+}
+
+.subtitle {
+  font-family: var(--md-font-serif);
+}
+
+.directorLine {
+  font-family: var(--md-font-serif);
+  color: var(--md-text-soft);
+}
+
+.directorLink {
+  color: var(--md-accent);
+  text-decoration: none;
+}
+
+.directorLink:hover {
+  text-decoration: underline;
+}
+
+/* ── Ratings ── */
+.ratingsRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  /* hereda .md-hero-ratings */
+}
+
+.scoreBlock {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-left: 1px solid var(--md-border);
+  padding-left: 16px;
+}
+
+.scoreNumberGroup {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+}
+
+.scoreNumber {
+  font-family: var(--md-font-serif);
+  font-size: 44px;
+  font-weight: 300;
+  color: var(--md-gold);
+  line-height: 1;
+}
+
+.scoreOver {
+  font-size: 16px;
+  color: var(--md-text-soft);
+  font-family: var(--md-font-sans);
+}
+
+.scoreInfoStack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.scoreLabel {
+  font-size: 10px;
+  color: var(--md-text-soft);
+  font-family: var(--md-font-sans);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-weight: 600;
+}
+
+.scoreVotes {
+  font-size: 11px;
+  color: var(--md-text-muted);
+  font-family: var(--md-font-sans);
+}
+
+/* ── Acciones ── */
+.actionsRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  margin-top: 32px;
+  padding: 0 24px;
+  color: var(--md-bg);
+  font-family: var(--md-font-serif);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.actionBtn {
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.actionBtnPrimary {
+  background: var(--md-accent);
+  color: var(--md-bg);
+}
+
+.actionBtnActive {
+  background: var(--md-accent-dim);
+  color: var(--md-bg);
+}
+
+.actionBtnOutline {
+  background: transparent;
+  color: var(--md-text-soft);
+  border: 1px solid var(--md-border);
+}
+
+.iconGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.iconBtn {
+  min-width: 44px !important;
+    min-height: 44px !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.iconBtnActive {
+  color: var(--md-accent);
+  border-color: var(--md-accent-dim);
+}
+
+/* ── Dropdown menú ── */
+.menuWrapper {
+  position: relative;
+}
+
+.dropdownMenu {
+  position: fixed;
+  min-width: 180px;
+  border: 1px solid var(--md-border);
+  background: rgba(8,8,8,0.98);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 18px 40px rgba(0,0,0,0.45);
+  padding: 6px;
+  display: grid;
+  gap: 4px;
+  z-index: 30;
+}
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  background: transparent;
+  border: none;
+  color: var(--md-text-soft);
+  font-family: var(--md-font-sans);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.dropdownItem:hover {
+  color: var(--md-text);
+  background: rgba(255,255,255,0.04);
+}
+
+/* ── Scroll Prompt ── */
+.scrollPrompt {
+  position: absolute;
+  bottom: 290px;
+  left: 52px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 50;
+}
+
+.scrollLine {
+  width: 32px;
+  height: 1px;
+  background: var(--md-text-muted);
+  position: relative;
+  overflow: hidden;
+}
+
+.scrollLineFill {
+  position: absolute;
+  inset: 0;
+  background: var(--md-accent);
+}
+
+.scrollText {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--md-text-muted);
+  font-family: var(--md-font-sans);
+}
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .heroPosterDesktop {
+    display: none;
+  }
+
+  .heroPosterMobile {
+    display: block;
+  }
+
+  .actionsRow {
+    flex-wrap: wrap;
+  }
+
+  .iconGroup {
+    width: 100%;
+  }
+
+  .iconBtn {
+    flex: 1;
+    width: auto;
+    height: 44px;
+  }
+
+  .scoreNumber {
+    font-size: 34px;
+  }
+
+  .scrollPrompt {
+    display: none;
+  }
+}
