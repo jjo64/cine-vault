@@ -13,8 +13,8 @@ import { motion, useScroll, useTransform, AnimatePresence } from 'motion/react';
 import {
   ChevronLeft, Bookmark, Share2, List,
   Heart, ChevronRight, ChevronDown,
-  Trophy, Play, Check, Clock, Tv,
-  Users, MessageSquare,
+  Play, Check, Clock, Tv,
+  MessageSquare,
 } from 'lucide-react';
 
 // ─── PALETTE ─────────────────────────────────────────────────
@@ -318,7 +318,7 @@ function Hero() {
   const [inVault,      setInVault]      = useState(false);
   const [inWatchlist,  setInWatchlist]  = useState(false);
   const [liked,        setLiked]        = useState(false);
-  const [tracking,     setTracking]     = useState(true); // seguimiento activo
+  const [tracking]     = useState(true); // seguimiento activo
 
   const heroRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
@@ -537,7 +537,6 @@ function Synopsis() {
 // ─── EPISODE TRACKER ─────────────────────────────────────────
 function EpisodeTracker({ watchedIds }: { watchedIds: Set<string> }) {
   // Total episodes across all seasons
-  const allEps = SEASONS.flatMap(s => s.episodes.map(e => ({ ...e, seasonNum: s.number })));
   const total = SERIES.totalEpisodes;
   const watched = watchedIds.size;
   const pct = Math.round((watched / total) * 100);
@@ -663,7 +662,7 @@ function EpisodeRow({ ep, watched, onToggle, onRate, userRating }: {
         {/* Actions */}
         <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', paddingTop: 2 }}>
           {/* Rate */}
-          <button onClick={() => setRatingOpen(v => !v)} style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: `1px solid ${ratingOpen ? C.accentDim : C.border}`, color: ratingOpen ? C.accent : C.textSoft, cursor: 'pointer', transition: 'all 0.2s', fontSize: 14, opacity: hov || ratingOpen ? 1 : 0, transition: 'all 0.2s' }}>★</button>
+          <button onClick={() => setRatingOpen(v => !v)} style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: `1px solid ${ratingOpen ? C.accentDim : C.border}`, color: ratingOpen ? C.accent : C.textSoft, cursor: 'pointer', transition: 'all 0.2s', fontSize: 14, opacity: hov || ratingOpen ? 1 : 0 }}>★</button>
           {/* Mark watched */}
           <button onClick={onToggle} style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: watched ? C.accentGlow : 'none', border: `1px solid ${watched ? C.accentDim : C.border}`, color: watched ? C.accent : C.textSoft, cursor: 'pointer', transition: 'all 0.2s' }}>
             <Check size={12} />
@@ -767,7 +766,7 @@ function SeasonsPanel({ watchedIds, setWatchedIds, episodeRatings, setEpisodeRat
 
           {/* Episode list */}
           <div>
-            {visibleEps.map((ep, i) => (
+            {visibleEps.map((ep) => (
               <EpisodeRow
                 key={ep.id} ep={ep}
                 watched={watchedIds.has(`s${ep.season}e${ep.number}`)}

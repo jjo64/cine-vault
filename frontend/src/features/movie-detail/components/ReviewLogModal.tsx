@@ -1,8 +1,7 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import { Heart, X } from 'lucide-react';
-import { MovieDetailApi, ReviewMode } from '../../../services/movieDetailServices';
-import { AppReview } from '../types';
+import type { MovieDetailApi, ReviewMode } from '../../../services/movieDetailServices';
+import type { AppReview } from '../types';
 import { REVIEW_DIMENSIONS } from '../constants';
 import { Img } from './Img';
 import { StarRating } from './StarRating';
@@ -293,9 +292,9 @@ export function ReviewLogModal({
           <button onClick={onClose} className="md-modal-mode-btn">
             Cancelar
           </button>
-          <button onClick={onSave} disabled={reviewLogSaving} className="md-modal-btn-save">
-            <Heart size={12} strokeWidth={1.5} fill={reviewLogSaving ? 'none' : "rgba(212,175,122,0.18)"} />
-            {reviewLogSaving ? 'Guardando...' : 'Guardar cambios'}
+          <button onClick={onSave} disabled={saving} className="md-modal-btn-save">
+            <Heart size={12} strokeWidth={1.5} fill={saving ? 'none' : "rgba(212,175,122,0.18)"} />
+            {saving ? 'Guardando...' : 'Guardar cambios'}
           </button>
         </div>
       </motion.div>

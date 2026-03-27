@@ -607,6 +607,7 @@
 }
 
 .md-hero-content {
+    margin-top: 90px;
     padding: 0 52px;
     max-width: 850px; 
     z-index: 10;
@@ -631,6 +632,7 @@
 }
 
 .md-hero-title {
+    font-family: var(--md-font-serif);
     font-weight: 300;
     font-size: clamp(54px, 8vw, 110px); /* Tu valor exacto */
     line-height: 0.82; /* Tu valor exacto */
@@ -644,6 +646,7 @@
 }
 
 .md-hero-subtitle {
+    font-family: var(--md-font-serif);
     font-style: italic;
     font-size: clamp(32px, 5vw, 78px); /* Tu valor exacto */
     font-weight: 300;
@@ -661,6 +664,7 @@
 }
 
 .md-hero-director {
+    font-family: var(--md-font-serif);
     font-size: 22px;
     font-style: italic;
     letter-spacing: 0.01em;
@@ -717,12 +721,16 @@
 }
 
 .md-action-btn {
+    font-family: var(--md-font-sans);
     height: 46px;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
     cursor: pointer;
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;  
 }
 
 .md-action-icons-row {
@@ -821,6 +829,7 @@
 
     /* 1. ALINEACIÓN DE TEXTOS (Título y Subtítulo) */
     .md-hero-content {
+        margin-top: 40px;
         padding: 80px 16px 20px !important;
         /*max-content: 100% !important;*/
         display: flex !important;

@@ -1,7 +1,6 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import './TVDetail.css'
-import { fetchSearchMovies } from '../services/movieDetailServices'
 import { useTVDetail} from './TVDetail/hooks/useTVDetail'
 import SeasonsPanel from './TVDetail/components/SeasonsPanel'
 import CrewSection from './TVDetail/components/CrewSection'
@@ -9,17 +8,14 @@ import ReviewsSection from './TVDetail/components/ReviewsSection'
 import ScoreCard from './TVDetail/components/ScoreCard'
 import TechnicalSheet from './TVDetail/components/TechnicalSheet'
 import { Hero } from '../features/movie-detail/components/Hero'
-import { useUserActions, type AppReview  } from './TVDetail/hooks/useUserActions'
-import { motion, useScroll, useTransform, AnimatePresence } from 'motion/react'
+import { useUserActions } from './TVDetail/hooks/useUserActions'
+import { motion } from 'motion/react'
 import {
-  ChevronLeft, Bookmark, Share2, List, Heart, ChevronRight,
-  ChevronDown, Check, Clock, Tv, MessageSquare, Menu, X
+  ChevronLeft, ChevronRight,
 } from 'lucide-react'
-import { createSlug } from '../utils/stringUtils'
-import { resolveNavPathWithFallback } from '../lib/navigation'
 import Navbar, { useNavViewer } from '../components/Navbar'
 import { type TVDetailApi } from '../services/tvDetailServices'
-import { C, SANS, SERIF, TMDB_POSTER, TMDB_THUMB, TMDB_BASE, SIZES } from './TVDetail/constants'
+import { C, SANS, SERIF, TMDB_THUMB, TMDB_BASE, SIZES } from './TVDetail/constants'
 // import { Footer, Navbar} from '../components/profile-v2/layout'
 
 function img(path?: string | null, size = SIZES.BACKDROP) {
@@ -34,12 +30,6 @@ function slugify(id: number, name: string) {
   return `${id}-${slug}`
 }
 
-function formatDate(value?: string | null) {
-  if (!value) return '—'
-  const d = new Date(value)
-  if (Number.isNaN(d.getTime())) return value
-  return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })
-}
 
 function formatYear(d?: string) { return d ? d.slice(0, 4) : '—' }
 
@@ -72,30 +62,6 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   )
 }
 
-function StarRating({ value, onChange, size = 26 }: { value: number; onChange: (n: number) => void; size?: number }) {
-  const [hover, setHover] = useState(0)
-  const labels = ['', 'Mala', 'Regular', 'Buena', 'Muy buena', 'Obra maestra']
-  const active = hover || value
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-      <div style={{ display: 'flex', gap: 5 }}>
-        {[1, 2, 3, 4, 5].map(i => (
-          <button key={i}
-            onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(0)}
-            onClick={() => onChange(i)}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-              fontSize: size, lineHeight: 1, color: i <= active ? C.gold : C.textMuted,
-              transform: hover === i ? 'scale(1.2)' : 'scale(1)', transition: 'transform 0.15s, color 0.15s',
-            }}>★</button>
-        ))}
-      </div>
-      <div style={{ fontFamily: SERIF, fontSize: 15, fontStyle: 'italic', color: C.textSoft, minWidth: 100 }}>
-        {active > 0 ? labels[active] : 'Tu rating'}
-      </div>
-    </div>
-  )
-}
 
 // ─── HERO ──────────────────────────────────────────────────────
 // function Hero({ detail, userRating, onRatingChange, inVault, onVaultToggle, inWatchlist, onWatchlistToggle, liked, onLikedToggle }: {
@@ -464,7 +430,6 @@ export default function TVDetailPage() {
 
   const { detail, loading, error } = useTVDetail(slugOrId)
   const viewer = useNavViewer()
-  const [liked, setLiked] = useState(false)
   const [watchedIds, setWatchedIds] = useState<Set<string>>(new Set())
 
   const {
@@ -475,7 +440,6 @@ export default function TVDetailPage() {
     isFavorite,
     inWatchlist,
     inDiary,
-    diaryEntryId,
     reviews,
     myReviewId,
     isAuthenticated,
@@ -588,7 +552,7 @@ export default function TVDetailPage() {
             reviewText={reviewText}
             setReviewText={setReviewText}
             onRate={setUserRating}
-            onSave={() => handleSaveReview(detail.id, myReviewId, userRating, reviewText)}
+            onSave={() => handleSaveReview()}
             savingAction={savingAction}
             actionMessage={actionMessage}
             isAuthenticated={isAuthenticated}

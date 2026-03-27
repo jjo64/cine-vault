@@ -581,7 +581,6 @@ export default function TVDetailPage() {
 
   const { detail, loading, error } = useTVDetail(slugOrId)
   const viewer = useNavViewer()
-  const [liked, setLiked] = useState(false)
   const [watchedIds, setWatchedIds] = useState<Set<string>>(new Set())
 
   const {
@@ -592,7 +591,6 @@ export default function TVDetailPage() {
     isFavorite,
     inWatchlist,
     inDiary,
-    diaryEntryId,
     reviews,
     myReviewId,
     isAuthenticated,
@@ -637,9 +635,9 @@ export default function TVDetailPage() {
         }}
       />
       <Hero detail={detail} userRating={userRating} onRatingChange={setUserRating}
-        inVault={inVault} onVaultToggle={() => handleVault(detail.id, inDiary, diaryEntryId)}
-        inWatchlist={inWatchlist} onWatchlistToggle={() => handleWatchlist(detail.id, inWatchlist)}
-        liked={liked} onLikedToggle={() => setLiked(v => !v)} />
+        inVault={inVault} onVaultToggle={() => handleVault()}
+        inWatchlist={inWatchlist} onWatchlistToggle={() => handleWatchlist()}
+        liked={isFavorite} onLikedToggle={() => {}} />
 
       {detail.tagline && (
         <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.9 }}
@@ -667,7 +665,7 @@ export default function TVDetailPage() {
             reviewText={reviewText}
             setReviewText={setReviewText}
             onRate={setUserRating}
-            onSave={() => handleSaveReview(detail.id, myReviewId, userRating, reviewText)}
+            onSave={() => handleSaveReview()}
             savingAction={savingAction}
             actionMessage={actionMessage}
             isAuthenticated={isAuthenticated}

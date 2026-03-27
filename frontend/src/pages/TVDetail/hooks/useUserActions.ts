@@ -96,7 +96,8 @@ export function useUserActions(detailId: number | undefined) {
     }
   }
 
-  const handleVault = (detailId: number, inDiary: boolean, diaryEntryId: number | null) => {
+  const handleVault = () => {
+    if (!detailId) return
     runProtected(async () => {
       const token = getStoredAccessToken()!
       if (inDiary && diaryEntryId) {
@@ -116,7 +117,8 @@ export function useUserActions(detailId: number | undefined) {
     })
   }
 
-  const handleWatchlist = (detailId: number, inWatchlist: boolean) => {
+  const handleWatchlist = () => {
+    if (!detailId) return
     runProtected(async () => {
       const token = getStoredAccessToken()!
       if (inWatchlist) {
@@ -131,7 +133,8 @@ export function useUserActions(detailId: number | undefined) {
     })
   }
 
-  const handleSaveReview = (detailId: number, myReviewId: number | null, userRating: number, reviewText: string) => {
+  const handleSaveReview = () => {
+    if (!detailId) return
     runProtected(async () => {
       const token = getStoredAccessToken()!
       if (!userRating || userRating < 1) {

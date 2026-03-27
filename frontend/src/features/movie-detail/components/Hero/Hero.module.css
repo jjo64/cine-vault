@@ -224,23 +224,25 @@
 /* ── Acciones ── */
 .actionsRow {
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  flex-direction: row;
   align-items: center;
-}
-
-.actionBtn {
-  height: 44px;
+  gap: 12px;
+  margin-top: 32px;
   padding: 0 24px;
-  font-family: var(--md-font-sans);
+  color: var(--md-bg);
+  font-family: var(--md-font-serif);
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  cursor: pointer;
-  display: inline-flex;
+}
+
+.actionBtn {
+  height: 46px;
+  display: flex;
   align-items: center;
-  gap: 8px;
-  border: none;
+  justify-content: center;
+  transition: all 0.2s ease;
+  cursor: pointer;
 }
 
 .actionBtnPrimary {
@@ -266,15 +268,16 @@
 }
 
 .iconBtn {
-  width: 44px;
-  height: 44px;
-  display: grid;
-  place-items: center;
-  background: transparent;
-  border: 1px solid var(--md-border);
-  color: var(--md-text-soft);
-  cursor: pointer;
-  transition: color 0.2s, border-color 0.2s;
+  min-width: 44px !important;
+    min-height: 44px !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 .iconBtnActive {

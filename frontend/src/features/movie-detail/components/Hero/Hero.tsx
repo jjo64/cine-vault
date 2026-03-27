@@ -1,11 +1,10 @@
-// src/features/movie/components/Hero/Hero.tsx
 import { useRef, useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { Bookmark, Heart, List, Menu, MessageSquare, Share2 } from 'lucide-react'
 import { StarRating } from '../StarRating'
 import { Img } from '../Img'
-import styles from './Hero.module.css'
+import { C, SANS } from '../../constants'
 
 const TMDB_BASE = 'https://image.tmdb.org/t/p/'
 
@@ -132,11 +131,9 @@ export function Hero({
   }, [actionMenuOpen])
 
   return (
-    <div ref={heroRef} className={styles.hero}>
-      {/* Fondo base */}
-      <div className={styles.heroBg} />
+    <div ref={heroRef} className="md-hero">
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #0d1118 0%, #08090d 40%, #0a0c08 100%)' }} />
 
-      {/* Backdrop */}
       {backdropUrl && (
         <img
           src={backdropUrl}
@@ -145,24 +142,31 @@ export function Hero({
           fetchPriority="high"
           loading="eager"
           decoding="async"
-          className={styles.heroBackdrop}
+          className="md-hero-backdrop"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            filter: 'brightness(0.24) saturate(0.65)',
+            zIndex: 0,
+          }}
         />
       )}
 
-      {/* Overlays de gradiente */}
-      <div className={styles.heroOverlay} />
-      <div className={styles.heroGlow} />
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(8,8,8,0.92) 0%, rgba(8,8,8,0.8) 40%, rgba(8,8,8,0.45) 70%, rgba(8,8,8,0.78) 100%)' }} />
+      <div style={{ position: 'absolute', bottom: 0, left: 0, width: 500, height: 400, background: 'radial-gradient(ellipse at bottom left, rgba(212,175,122,0.10), transparent 70%)', pointerEvents: 'none' }} />
 
-      {/* Poster flotante (solo desktop) */}
       {posterUrl && (
         <motion.div
-          className={`${styles.heroPoster} ${styles.heroPosterDesktop}`}
+          className="md-hero-poster md-hero-poster-desktop"
           initial={{ opacity: 0, y: -24, scale: 0.94 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.3 }}
-          style={{ y: posterY }}
+          style={{ y: posterY, position: 'absolute', top: '23%', right: '12%', zIndex: 10, width: '220px' }}
         >
-          <div className={styles.posterFrame}>
+          <div style={{ aspectRatio: '2/3', borderRadius: 2, overflow: 'hidden', boxShadow: '0 40px 100px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.04)', position: 'relative' }}>
             <Img
               src={posterUrl}
               alt={`${title} poster`}
@@ -170,41 +174,38 @@ export function Hero({
               fetchPriority="high"
               width={500}
               height={750}
-              className={styles.posterImg}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(0.6) brightness(0.85)' }}
             />
-            <div className={styles.posterSheen} />
-            <div className={styles.posterBorder} />
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 50%, rgba(0,0,0,0.25) 100%)' }} />
+            <div style={{ position: 'absolute', inset: 0, border: '1px solid rgba(212,175,122,0.15)', borderRadius: 2 }} />
           </div>
         </motion.div>
       )}
 
-      {/* Contenido principal */}
       <motion.div
-        className={styles.heroContent}
+        className="md-hero-content"
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 1, ease: 'easeOut', delay: 0.1 }}
       >
-        {/* Metadata superior */}
-        <div className={styles.metaRow}>
-          <span className={styles.genreBadge}>{genresText}</span>
-          <span className={styles.metaDot}>·</span>
-          <span className={styles.metaInfo}>
+        <div className="md-meta-row" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 10, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#D4AF7A', padding: '4px 10px', border: '1px solid #9A7A48', fontFamily: 'Syne, sans-serif' }}>{genresText}</span>
+          <span style={{ color: '#B0B0B0', fontSize: 12 }}>·</span>
+          <span style={{ fontSize: 11, color: '#A1A1A1', letterSpacing: '0.08em', fontFamily: 'Syne, sans-serif' }}>
             {releaseYear} · {country} · {runtime}
           </span>
         </div>
 
-        {/* Bloque título */}
-        <div className={styles.titleBlock}>
-          <div className={styles.titleTextGroup}>
-            <h1 className={styles.title}>{title}</h1>
+        <div className="md-title-block">
+          <div className="md-title-text-group">
+            <h1 className="md-hero-title">{title}</h1>
             {originalTitle && originalTitle !== title && (
-              <div className={styles.subtitle}>{originalTitle}</div>
+              <div className="md-hero-subtitle">{originalTitle}</div>
             )}
-            <div className={styles.directorLine}>
+            <div className="md-hero-director">
               <span>{directorLabel}</span>{' '}
               {director ? (
-                <Link to={`/person/${director.id}`} className={styles.directorLink}>
+                <Link to={`/person/${director.id}`} style={{ color: '#D4AF7A', textDecoration: 'none' }}>
                   {director.name}
                 </Link>
               ) : (
@@ -213,56 +214,55 @@ export function Hero({
             </div>
           </div>
 
-          {/* Poster en mobile (columna derecha) */}
           {posterUrl && (
-            <div className={`${styles.heroPoster} ${styles.heroPosterMobile}`}>
+            <div className="md-hero-poster md-only-mobile">
               <div
-                className={styles.posterMobileImg}
-                style={{ backgroundImage: `url(${TMDB_BASE}w500${posterPath})` }}
+                style={{ backgroundImage: `url(${TMDB_BASE}w500${posterPath})`, backgroundSize: 'cover', backgroundPosition: 'center', aspectRatio: '2/3', borderRadius: '6px', boxShadow: '0 20px 40px rgba(0,0,0,0.5)' }}
               />
             </div>
           )}
         </div>
 
-        {/* Ratings */}
-        <div className={styles.ratingsRow}>
+        <div className="md-hero-ratings">
           <StarRating value={userRating} onChange={onRate} />
 
-          <div className={styles.scoreBlock}>
-            <div className={styles.scoreNumberGroup}>
-              <span className={styles.scoreNumber}>{score}</span>
-              <span className={styles.scoreOver}>/5</span>
+          <div className="md-hero-score">
+            <div className="md-score-number-group">
+              <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 44, fontWeight: 300, color: '#C8A96E', lineHeight: 1 }}>{score}</span>
+              <span style={{ fontSize: 16, color: '#A1A1A1', fontFamily: 'Syne, sans-serif' }}>/5</span>
             </div>
-            <div className={styles.scoreInfoStack}>
-              <span className={styles.scoreLabel}>CINEVAULT</span>
-              <span className={styles.scoreVotes}>{votes} ratings</span>
+            <div className="md-score-info-stack">
+              <span style={{ fontSize: 10, color: '#A1A1A1', fontFamily: 'Syne, sans-serif', textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: 600 }}>CINEVAULT</span>
+              <span style={{ fontSize: 11, color: '#B0B0B0', fontFamily: 'Syne, sans-serif' }}>{votes} ratings</span>
             </div>
           </div>
         </div>
 
-        {/* Acciones */}
-        <div className={styles.actionsRow}>
+        <div className="md-actions-row">
           <button
             onClick={onToggleVault}
-            className={`${styles.actionBtn} ${inVault ? styles.actionBtnActive : styles.actionBtnPrimary}`}
+            className="md-action-btn"
+            style={{ padding: '0 24px', background: inVault ? '#9A7A48' : '#D4AF7A', color: '#080808' }}
           >
             {inVault ? '✓ En mi Vault' : '+ Vault'}
           </button>
 
           <button
             onClick={onWriteReview}
-            className={`${styles.actionBtn} ${styles.actionBtnOutline}`}
+            className="md-action-btn"
+            style={{ padding: '0 24px', background: 'transparent', color: '#A1A1A1', border: '1px solid #252525', gap: 8 }}
           >
             <MessageSquare size={13} strokeWidth={1.5} />
             Review o log
           </button>
 
-          <div className={styles.iconGroup}>
+          <div className="md-action-icons-row">
             <button
               title="Watchlist"
               aria-label="Añadir a mi lista de seguimiento"
               onClick={onToggleWatchlist}
-              className={`${styles.iconBtn} ${inWatchlist ? styles.iconBtnActive : ''}`}
+              className="md-action-icon-btn"
+              style={{ color: inWatchlist ? '#D4AF7A' : '#A1A1A1', border: `1px solid ${inWatchlist ? '#9A7A48' : '#252525'}` }}
             >
               <Bookmark size={15} strokeWidth={1.5} fill={inWatchlist ? 'currentColor' : 'none'} />
             </button>
@@ -271,12 +271,13 @@ export function Hero({
               title="Me gusta"
               aria-label="Marcar como película favorita"
               onClick={onToggleFavorite}
-              className={`${styles.iconBtn} ${liked ? styles.iconBtnActive : ''}`}
+              className="md-action-icon-btn"
+              style={{ color: liked ? '#D4AF7A' : '#A1A1A1', border: `1px solid ${liked ? '#9A7A48' : '#252525'}` }}
             >
               <Heart size={15} strokeWidth={1.5} fill={liked ? 'currentColor' : 'none'} />
             </button>
 
-            <div ref={actionMenuRef} className={styles.menuWrapper}>
+            <div ref={actionMenuRef} className="md-menu-wrapper">
               <button
                 ref={actionMenuButtonRef}
                 title="Más opciones"
@@ -285,21 +286,22 @@ export function Hero({
                   e.stopPropagation()
                   setActionMenuOpen((prev) => !prev)
                 }}
-                className={`${styles.iconBtn} ${actionMenuOpen ? styles.iconBtnActive : ''}`}
+                className="md-action-icon-btn"
+                style={{ color: actionMenuOpen ? '#D4AF7A' : '#A1A1A1', border: `1px solid ${actionMenuOpen ? '#9A7A48' : '#252525'}` }}
               >
                 <Menu size={15} strokeWidth={1.8} />
               </button>
 
               {actionMenuOpen && actionMenuPos.top !== 0 && (
                 <div
-                  className={styles.dropdownMenu}
-                  style={{ top: actionMenuPos.top, left: actionMenuPos.left }}
+                  className="md-dropdown-menu"
+                  style={{ position: 'fixed', top: actionMenuPos.top, left: actionMenuPos.left, minWidth: 180, border: '1px solid #252525', background: 'rgba(8,8,8,0.98)', backdropFilter: 'blur(10px)', boxShadow: '0 18px 40px rgba(0,0,0,0.45)', padding: 6, display: 'grid', gap: 4, zIndex: 30 }}
                 >
-                  <button className={styles.dropdownItem} onClick={() => { setActionMenuOpen(false); onAddToList() }}>
+                  <button className="md-menu-item" onClick={() => { setActionMenuOpen(false); onAddToList() }}>
                     <List size={14} strokeWidth={1.8} />
                     <span>Añadir a lista</span>
                   </button>
-                  <button className={styles.dropdownItem} onClick={() => { setActionMenuOpen(false); onShare() }}>
+                  <button className="md-menu-item" onClick={() => { setActionMenuOpen(false); onShare() }}>
                     <Share2 size={14} strokeWidth={1.8} />
                     <span>Compartir</span>
                   </button>
@@ -310,21 +312,11 @@ export function Hero({
         </div>
       </motion.div>
 
-      {/* Scroll prompt */}
-      <motion.div
-        className={styles.scrollPrompt}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.2 }}
-      >
-        <div className={styles.scrollLine}>
-          <motion.div
-            className={styles.scrollLineFill}
-            animate={{ x: ['-100%', '0%', '100%'] }}
-            transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
-          />
+      <motion.div className="md-hero-scroll-prompt" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2 }} style={{ position: 'absolute', bottom: 290, left: 52, alignItems: 'center', gap: 12, zIndex: 50 }}>
+        <div style={{ width: 32, height: 1, background: C.textMuted, position: 'relative', overflow: 'hidden' }}>
+          <motion.div animate={{ x: ['-100%', '0%', '100%'] }} transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }} style={{ position: 'absolute', inset: 0, background: C.accent }} />
         </div>
-        <span className={styles.scrollText}>Seguir leyendo</span>
+        <span style={{ fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.textMuted, fontFamily: SANS }}>Seguir leyendo</span>
       </motion.div>
     </div>
   )

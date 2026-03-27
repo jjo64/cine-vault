@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 
 interface ImgProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   fallbackClassName?: string;
+  fetchPriority?: 'high' | 'low' | 'auto';
 }
 
 export function Img({ src, alt, style, className, fallbackClassName = 'md-img-error-fallback', ...rest }: ImgProps) {

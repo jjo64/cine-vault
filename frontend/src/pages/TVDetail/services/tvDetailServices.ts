@@ -11,6 +11,7 @@ export type TVDetailApi = {
   in_production?: boolean
   number_of_seasons?: number
   number_of_episodes?: number
+  episode_run_time?: number[]
   overview?: string
   tagline?: string | null
   vote_average?: number

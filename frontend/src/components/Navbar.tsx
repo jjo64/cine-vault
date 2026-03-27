@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ChevronLeft, ChevronDown, Menu, X } from 'lucide-react'
+import { ChevronLeft, Menu, X } from 'lucide-react'
 import { getCurrentUser, getStoredAccessToken } from '../services/authServices'
 import { fetchSearchMovies } from '../services/movieDetailServices'
 import { resolveNavPathWithFallback } from '../lib/navigation'
 import { createSlug } from '../utils/stringUtils'
-import { C, SERIF, SANS, TMDB_BASE, SIZES, tmdbImg } from '../pages/TVDetail/constants'
+import { C, SIZES, tmdbImg } from '../pages/TVDetail/constants'
 import styles from './Navbar.module.css'
 
 // ─── TYPES ────────────────────────────────────────────────────

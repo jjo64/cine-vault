@@ -1,4 +1,3 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import type { UserListSummary } from '../../../services/listsServices';
