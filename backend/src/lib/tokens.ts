@@ -9,7 +9,7 @@ import { sessionRepository } from "../repositories/SessionRepository.js"
 const EXPIRACION_TOKEN_ACCESO = "15m"
 const DIAS_EXPIRACION_TOKEN_REFRESCO = 7
 const IS_PRODUCTION = process.env.NODE_ENV === "production"
-const COOKIE_SAME_SITE = (IS_PRODUCTION ? "none" : "lax") as const
+const COOKIE_SAME_SITE: "none" | "lax" = IS_PRODUCTION ? "none" : "lax"
 /* ==========================================================================
    1. CONFIGURACIÓN DE COOKIES
    ========================================================================== */
