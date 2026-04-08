@@ -1,6 +1,6 @@
 import { authorizedFetch, getStoredAccessToken } from './authServices'
 
-const API_URL = String(import.meta.env.VITE_API_URL || 'https://api.cinevault.art').trim().replace(/\/+$/, '')
+const API_URL = String(import.meta.env.VITE_API_URL || 'https://cine-vault-ncuh.onrender.com').trim().replace(/\/+$/, '')
 
 type FetchOptions = {
   token?: string | null

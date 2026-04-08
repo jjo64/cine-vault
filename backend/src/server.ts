@@ -91,9 +91,28 @@ app.use((req, res, next) => {
 })
 
 // Configuración de CORS robusta
-const allowedOrigins = process.env.FRONTEND_URLS
-  ? process.env.FRONTEND_URLS.split(",").map((url) => url.trim())
-  : []
+const normalizeOrigin = (value: string) => value.trim().replace(/\/+$/, "")
+
+const configuredOrigins = String(process.env.FRONTEND_URLS || "")
+  .split(",")
+  .map((url) => url.trim())
+  .filter(Boolean)
+
+const frontendUrl = String(process.env.FRONTEND_URL || "").trim()
+const localDevOrigins = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://localhost:5000",
+  "http://localhost:3000",
+]
+
+const allowedOrigins = new Set(
+  [
+    ...configuredOrigins,
+    ...(frontendUrl ? [frontendUrl] : []),
+    ...(process.env.NODE_ENV === "production" ? [] : localDevOrigins),
+  ].map(normalizeOrigin)
+)
 
 app.use(
   cors({
@@ -101,7 +120,7 @@ app.use(
       // Permitir solicitudes sin origen (ej: Postman, scripts) o desde URLs permitidas
       if (!origin) return callback(null, true)
 
-      if (allowedOrigins.includes(origin)) {
+      if (allowedOrigins.has(normalizeOrigin(origin))) {
         return callback(null, true)
       }
 
