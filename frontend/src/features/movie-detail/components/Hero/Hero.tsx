@@ -164,7 +164,7 @@ export function Hero({
           initial={{ opacity: 0, y: -24, scale: 0.94 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.3 }}
-          style={{ y: posterY, position: 'absolute', top: '23%', right: '12%', zIndex: 10, width: '220px' }}
+          style={{ y: posterY, position: 'absolute', top: '15%', right: '12%', zIndex: 10, width: '300px' }}
         >
           <div style={{ aspectRatio: '2/3', borderRadius: 2, overflow: 'hidden', boxShadow: '0 40px 100px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.04)', position: 'relative' }}>
             <Img

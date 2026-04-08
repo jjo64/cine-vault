@@ -34,6 +34,7 @@ import rutasArcos from "./routes/arcos.routes.js"
 import rutasActivity from "./routes/activity.routes.js"
 import rutasFeed from "./routes/feed.routes.js"
 import rutasRecommendations from "./routes/recommendations.routes.js"
+import rutasReports from "./routes/reports.routes.js"
 
 // Middlewares
 import { manejadorErrores } from "./middlewares/error.middlewares.js"
@@ -165,6 +166,7 @@ app.use("/api/arcos", rutasArcos)
 app.use("/api/activity", rutasActivity)
 app.use("/api/feed", rutasFeed)
 app.use("/api/recommendations", rutasRecommendations)
+app.use("/api/reports", rutasReports)
 app.use("/api", rutasSeo)
 
 /* ==========================================================================

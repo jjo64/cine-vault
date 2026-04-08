@@ -3,6 +3,7 @@ import { listsRepository } from "../repositories/ListsRepository.js"
 import {
   AddMovieToListDTO,
   CreateListDTO,
+  ListPublicListsQueryDTO,
   UpdateListDTO,
 } from "../schemas/lists.js"
 import { ensureMovieRefId, findMovieRefIdByCandidate } from "./movieRef.services.js"
@@ -95,4 +96,14 @@ export const removeMovieFromListService = async (
   if (!movieRefId) return
 
   await listsRepository.removeMovie(listId, movieRefId)
+}
+
+export const getPublicListsService = async (query: ListPublicListsQueryDTO) => {
+  return listsRepository.listPublic(query.page, query.limit)
+}
+
+export const getPublicListDetailService = async (listId: number) => {
+  const list = await listsRepository.getPublicDetail(listId)
+  if (!list) throw new NotFoundError("Lista pública no encontrada")
+  return list
 }

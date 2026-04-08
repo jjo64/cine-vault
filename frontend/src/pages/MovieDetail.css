@@ -161,11 +161,13 @@
     margin-left: 4px;
 }
 
+
+
 .md-inline-composer {
     border: 1px solid var(--md-border);
     background: var(--md-surface);
     padding: 16px;
-    marginBottom: 18px;
+    margin-bottom: 18px;
 }
 
 .md-composer-title {
@@ -194,7 +196,7 @@
     display: flex;
     justify-content: flex-end;
     gap: 8px;
-    marginTop: 10px;
+    margin-top: 10px;
 }
 
 .md-composer-btn {
@@ -315,10 +317,10 @@
 }
 
 .md-modal-movie-title {
-    marginTop: 8px;
+    margin-top: 8px;
     font-family: var(--md-font-serif);
     color: var(--md-text);
-    fontSize: 15px;
+    font-size: 15px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -607,9 +609,9 @@
 }
 
 .md-hero-content {
-    margin-top: 90px;
+    margin-top: 120px;
     padding: 0 52px;
-    max-width: 850px; 
+    max-width: 60%; /* Extendida a aproximadamente mitad de página */
     z-index: 10;
     position: relative;
 }
@@ -618,12 +620,14 @@
 .md-title-text-group {
     display: flex;
     flex-direction: column;
-    gap: 0;
+    align-items: flex-start;
+    text-align: left;
+    max-width: 100%;
 }
 
 .md-hero-poster {
     right: 12%;
-    width: 220px;
+    width: 300px;
     position: absolute; /* Asegúrate de que sea absoluto si usas 'right' */
 }
 
@@ -631,36 +635,37 @@
     display: none !important; /* OCULTO POR DEFECTO EN DESKTOP */
 }
 
+
+
 .md-hero-title {
     font-family: var(--md-font-serif);
     font-weight: 300;
-    font-size: clamp(54px, 8vw, 110px); /* Tu valor exacto */
-    line-height: 0.82; /* Tu valor exacto */
+    font-size: clamp(54px, 8vw, 110px); 
+    line-height: 0.82; 
     letter-spacing: -0.04em;
     margin: 0;
+    text-align: left; /* Asegura pegado a la izquierda */
 }
 
 .md-title-block {
-    max-width: calc(100% - 400px); /* Evita que el título pise al póster */
+    max-width: 100%; /* Permite que el título aproveche el ancho del contenedor */
     margin-bottom: 24px;
 }
 
 .md-hero-subtitle {
     font-family: var(--md-font-serif);
     font-style: italic;
-    font-size: clamp(32px, 5vw, 78px); /* Tu valor exacto */
+    font-size: clamp(24px, 4vw, 52px); /* Tamaño reducido */
     font-weight: 300;
-    line-height: 1.2;
+    line-height: 1.1;
     letter-spacing: -0.01em;
     margin: 0;
-    margin-top: 4px;
+    margin-top: 8px;
     color: rgba(226,226,226,0.35);
-    /* Forzar horizontal */
     display: block;
-    width: max-content;
     max-width: 100%;
-    white-space: nowrap;
-    text-overflow: ellipsis;
+    /* Permitimos que el subtítulo envuelva si es necesario */
+    white-space: normal; 
 }
 
 .md-hero-director {
@@ -809,11 +814,17 @@
 @media (max-width: 1024px) {
     .md-hero-poster {
         right: 5%;
-        width: 180px;
+        width: 240px;
     }
 
     .md-hero-content {
         padding: 0 28px 40px;
+    }
+}
+
+@media (max-width: 768px) {
+    .md-hero-poster-desktop {
+        display: none !important;
     }
 }
 
@@ -846,7 +857,7 @@
     /* Contenedor para Título + Póster arriba (Rejilla Mágica) */
     .md-title-block {
         display: grid !important;
-        grid-template-columns: 1fr 100px !important; /* Texto izquierda, Póster derecha */
+        grid-template-columns: 1fr 140px !important; /* Texto izquierda, Póster derecha */
         gap: 16px !important;
         max-width: 100% !important;
         align-items: start !important;
@@ -972,7 +983,7 @@
     /* 2. REJILLA SUPERIOR (Título + Póster) */
     .md-title-block {
         display: grid !important;
-        grid-template-columns: 1fr 85px !important; /* Reducimos el póster de 100px a 85px */
+        grid-template-columns: 1fr 110px !important; /* Reducimos el póster de 100px a 110px (ajustado) */
         gap: 12px !important;
         margin-bottom: 20px !important;
     }

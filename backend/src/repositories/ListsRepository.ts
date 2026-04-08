@@ -12,12 +12,18 @@ type ListEntity = {
 
 export type ListSummary = {
   id: number
+  user_id: number
   name: string
   description: string | null
   is_public: boolean
   created_at: Date
   updated_at: Date
   items_count: number
+  owner?: {
+    id: number
+    username: string
+    avatar_url: string | null
+  }
 }
 
 export type ListItem = {
@@ -61,6 +67,7 @@ export class ListsRepository {
 
     return lists.map((list) => ({
       id: list.id,
+      user_id: list.user_id,
       name: list.name,
       description: list.description,
       is_public: list.is_public,
@@ -92,12 +99,110 @@ export class ListsRepository {
 
     return {
       id: list.id,
+      user_id: list.user_id,
       name: list.name,
       description: list.description,
       is_public: list.is_public,
       created_at: list.created_at,
       updated_at: list.updated_at,
       items_count: list._count.items,
+      items: list.items.map((item) => ({
+        movie_id: item.movie_id,
+        tmdb_id: item.movie_ref?.tmdb_id ?? null,
+        added_at: item.added_at,
+      })),
+    }
+  }
+
+  async listPublic(page: number, limit: number) {
+    const skip = (page - 1) * limit
+
+    const [rows, total] = await Promise.all([
+      prisma.user_lists.findMany({
+        where: { is_public: true },
+        include: {
+          users: {
+            select: {
+              id: true,
+              username: true,
+              avatar_url: true,
+            },
+          },
+          _count: {
+            select: { items: true },
+          },
+        },
+        orderBy: { updated_at: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.user_lists.count({ where: { is_public: true } }),
+    ])
+
+    return {
+      page,
+      limit,
+      total,
+      has_more: skip + rows.length < total,
+      items: rows.map((list) => ({
+        id: list.id,
+        user_id: list.user_id,
+        name: list.name,
+        description: list.description,
+        is_public: list.is_public,
+        created_at: list.created_at,
+        updated_at: list.updated_at,
+        items_count: list._count.items,
+        owner: {
+          id: list.users.id,
+          username: list.users.username,
+          avatar_url: list.users.avatar_url,
+        },
+      })),
+    }
+  }
+
+  async getPublicDetail(listId: number): Promise<ListDetail | null> {
+    const list = await prisma.user_lists.findFirst({
+      where: { id: listId, is_public: true },
+      include: {
+        users: {
+          select: {
+            id: true,
+            username: true,
+            avatar_url: true,
+          },
+        },
+        items: {
+          include: {
+            movie_ref: {
+              select: { tmdb_id: true },
+            },
+          },
+          orderBy: { added_at: "desc" },
+        },
+        _count: {
+          select: { items: true },
+        },
+      },
+    })
+
+    if (!list) return null
+
+    return {
+      id: list.id,
+      user_id: list.user_id,
+      name: list.name,
+      description: list.description,
+      is_public: list.is_public,
+      created_at: list.created_at,
+      updated_at: list.updated_at,
+      items_count: list._count.items,
+      owner: {
+        id: list.users.id,
+        username: list.users.username,
+        avatar_url: list.users.avatar_url,
+      },
       items: list.items.map((item) => ({
         movie_id: item.movie_id,
         tmdb_id: item.movie_ref?.tmdb_id ?? null,

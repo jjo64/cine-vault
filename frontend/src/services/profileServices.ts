@@ -53,6 +53,36 @@ export type ReviewEntry = {
   } | null
 }
 
+export type VaultSocialEntry = {
+  id: number
+  user_id: number
+  movie_id: number | null
+  tmdb_id: number | null
+  entry_type: 'reflexion' | 'edit' | 'critica' | 'recomendacion'
+  card_type: 'review' | 'video' | 'list'
+  title: string
+  content: string
+  cover_url: string | null
+  duration_label: string | null
+  likes_count: number
+  comments_count: number
+  is_public: boolean
+  created_at: string
+  updated_at: string
+  movie_info?: {
+    title?: string | null
+    poster_path?: string | null
+  } | null
+}
+
+export type VaultSocialResponse = {
+  page: number
+  limit: number
+  total: number
+  has_more: boolean
+  items: VaultSocialEntry[]
+}
+
 export type FavoriteEntry = { movie_id: number; rank_position: number | null }
 
 export type FollowUserEntry = {
@@ -179,6 +209,23 @@ export const fetchReviews = (userId: number, token?: string | null, isSelf?: boo
     token: isSelf ? token : undefined,
     defaultValue: [],
   })
+
+export const fetchVaultSocial = (
+  userId: number,
+  token?: string | null,
+  isSelf?: boolean,
+  page = 1,
+  limit = 24,
+) =>
+  apiFetch<VaultSocialResponse>(
+    isSelf
+      ? `/api/vault/social/mine?page=${page}&limit=${limit}`
+      : `/api/vault/social/user/${userId}?page=${page}&limit=${limit}`,
+    {
+      token: isSelf ? token : undefined,
+      defaultValue: { page, limit, total: 0, has_more: false, items: [] },
+    }
+  )
 
 export const fetchFollowers = (userId: number) =>
   apiFetch<FollowUserEntry[]>(`/api/users/${userId}/followers`, {
