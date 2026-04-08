@@ -20,9 +20,9 @@ type RecoveryCodesStatusResponse = {
   remaining: number
 }
 
-const API_URL = String(import.meta.env.VITE_API_URL || 'https://api.cinevault.art').trim().replace(/\/+$/, '')
+const API_URL = String(import.meta.env.VITE_API_URL || 'https://cine-vault-ncuh.onrender.com').trim().replace(/\/+$/, '')
 const GOOGLE_REDIRECT_URI_ENV = String(import.meta.env.VITE_GOOGLE_REDIRECT_URI || '').trim()
-const GOOGLE_REDIRECT_URI_PROD = 'https://api.cinevault.art/api/auth/google/callback'
+const GOOGLE_REDIRECT_URI_PROD = 'https://cine-vault-ncuh.onrender.com/api/auth/google/callback'
 const GOOGLE_REDIRECT_URI_DEV = 'http://localhost:4000/api/auth/google/callback'
 const ACCESS_TOKEN_KEY = 'token'
 const AUTH_STORAGE_MODE_RAW = String(import.meta.env.VITE_AUTH_STORAGE_MODE || 'hybrid').toLowerCase()
