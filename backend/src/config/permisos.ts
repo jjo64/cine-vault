@@ -22,6 +22,9 @@ export const PERMISOS = {
   CAMBIAR_ROL_USUARIOS: "cambiar_rol_usuarios",
   VER_ACTIVIDAD_USUARIOS: "ver_actividad_usuarios",
 
+  // Arcos
+  GESTIONAR_ARCOS: "gestionar_arcos",
+
   // Pagos
   VER_PAGOS: "ver_pagos",
 
@@ -43,9 +46,10 @@ const PERMISOS_POR_ROL: Record<string, Permiso[]> = {
     PERMISOS.GESTIONAR_NOTICIAS,
     PERMISOS.CAMBIAR_ROL_USUARIOS,
     PERMISOS.VER_ACTIVIDAD_USUARIOS,
+    PERMISOS.GESTIONAR_ARCOS,
     PERMISOS.VER_PAGOS,
   ],
-  editor: [PERMISOS.GESTIONAR_NOTICIAS, PERMISOS.VER_REPORTES],
+  editor: [PERMISOS.GESTIONAR_NOTICIAS, PERMISOS.VER_REPORTES, PERMISOS.GESTIONAR_ARCOS],
   user: [],
 }
 

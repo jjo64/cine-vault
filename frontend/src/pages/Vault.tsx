@@ -15,10 +15,12 @@ import { getCurrentUser, getStoredAccessToken } from '../services/authServices';
 import {
   fetchDiary,
   fetchReviews,
+  fetchVaultSocial,
   fetchUserProfileByUsername,
   type ProfileUser,
   type ReviewEntry,
   type RichDiaryEntry,
+  type VaultSocialEntry,
 } from '../services/profileServices';
 import './Vault.css';
 
@@ -316,6 +318,32 @@ function fromDiaryToVault(diary: RichDiaryEntry[]): VaultEntry[] {
   return entries;
 }
 
+function fromSocialToVault(entries: VaultSocialEntry[]): VaultEntry[] {
+  return entries.map((entry) => {
+    const baseImage = entry.cover_url || toTmdbImage(entry.movie_info?.poster_path || null);
+    const mappedType: EntryType = entry.card_type === 'video'
+      ? 'video'
+      : entry.card_type === 'list'
+        ? 'list'
+        : 'review';
+
+    return {
+      id: 5000 + entry.id,
+      type: mappedType,
+      title: entry.title,
+      film: entry.movie_info?.title || undefined,
+      likes: entry.likes_count || 0,
+      comments: entry.comments_count || 0,
+      img: baseImage,
+      text: entry.content || undefined,
+      duration: entry.duration_label || undefined,
+      posters: mappedType === 'list' ? [baseImage] : undefined,
+      posterCount: mappedType === 'list' ? 1 : undefined,
+      imgs: undefined,
+    };
+  });
+}
+
 function toVaultUser(profile: ProfileUser | null, entriesCount: number): VaultUser {
   if (!profile) {
     return {
@@ -585,15 +613,24 @@ export function Vault() {
           return;
         }
 
-        const diaryRes = await fetchDiary(profile.id, token, owner);
-        const reviewsRes = await fetchReviews(profile.id, token, owner);
+        const socialRes = await fetchVaultSocial(profile.id, token, owner);
 
         if (!active) return;
 
-        const diaryEntries = Array.isArray(diaryRes.diary) ? diaryRes.diary : [];
-        const reviewEntries = Array.isArray(reviewsRes) ? reviewsRes : [];
-        const mapped = [...fromReviewsToVault(reviewEntries), ...fromDiaryToVault(diaryEntries)]
-          .sort((a, b) => b.id - a.id);
+        let mapped = Array.isArray(socialRes.items) ? fromSocialToVault(socialRes.items) : [];
+
+        if (!mapped.length) {
+          const [diaryRes, reviewsRes] = await Promise.all([
+            fetchDiary(profile.id, token, owner),
+            fetchReviews(profile.id, token, owner),
+          ]);
+
+          const diaryEntries = Array.isArray(diaryRes.diary) ? diaryRes.diary : [];
+          const reviewEntries = Array.isArray(reviewsRes) ? reviewsRes : [];
+          mapped = [...fromReviewsToVault(reviewEntries), ...fromDiaryToVault(diaryEntries)];
+        }
+
+        mapped = mapped.sort((a, b) => b.id - a.id);
 
         setEntries(mapped);
         setUser(toVaultUser(profile, mapped.length));

@@ -1,10 +1,11 @@
 import { Router } from "express"
 import { middlewareAutenticacion } from "../middlewares/auth.middlewares.js"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
-import { validarBody, validarParams } from "../middlewares/validation.middleware.js"
+import { validarBody, validarParams, validarQuery } from "../middlewares/validation.middleware.js"
 import {
   addMovieToListSchema,
   createListSchema,
+  listPublicListsQuerySchema,
   listIdParamsSchema,
   listItemParamsSchema,
   updateListSchema,
@@ -13,6 +14,8 @@ import {
   addMovieToList,
   createList,
   deleteList,
+  getPublicListDetail,
+  getPublicLists,
   getMyListDetail,
   getMyLists,
   removeMovieFromList,
@@ -20,6 +23,17 @@ import {
 } from "../controllers/ListsController.js"
 
 const router = Router()
+
+router.get(
+  "/public",
+  validarQuery(listPublicListsQuerySchema),
+  manejadorAsincrono(getPublicLists)
+)
+router.get(
+  "/public/:id",
+  validarParams(listIdParamsSchema),
+  manejadorAsincrono(getPublicListDetail)
+)
 
 router.get("/", middlewareAutenticacion, manejadorAsincrono(getMyLists))
 router.post(

@@ -41,3 +41,14 @@ export const removeMovieFromList = async (req: Request, res: Response) => {
   await listsService.removeMovieFromListService(req.user!.user_id, listId, movieId)
   res.json({ message: "Película eliminada de la lista" })
 }
+
+export const getPublicLists = async (req: Request, res: Response) => {
+  const lists = await listsService.getPublicListsService(req.query as any)
+  res.json(lists)
+}
+
+export const getPublicListDetail = async (req: Request, res: Response) => {
+  const listId = Number(req.params.id)
+  const detail = await listsService.getPublicListDetailService(listId)
+  res.json(detail)
+}
