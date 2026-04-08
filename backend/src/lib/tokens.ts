@@ -8,52 +8,54 @@ import { sessionRepository } from "../repositories/SessionRepository.js"
 
 const EXPIRACION_TOKEN_ACCESO = "15m"
 const DIAS_EXPIRACION_TOKEN_REFRESCO = 7
+const IS_PRODUCTION = process.env.NODE_ENV === "production"
+const COOKIE_SAME_SITE = (IS_PRODUCTION ? "none" : "lax") as const
 /* ==========================================================================
    1. CONFIGURACIÓN DE COOKIES
    ========================================================================== */
 
 export const COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "lax" as const,
+  secure: IS_PRODUCTION,
+  sameSite: COOKIE_SAME_SITE,
   path: "/",
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días en ms
 }
 
 export const ACCESS_COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "lax" as const,
+  secure: IS_PRODUCTION,
+  sameSite: COOKIE_SAME_SITE,
   path: "/",
   maxAge: 15 * 60 * 1000,
 }
 
 export const TRUSTED_DEVICE_COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "lax" as const,
+  secure: IS_PRODUCTION,
+  sameSite: COOKIE_SAME_SITE,
   path: "/",
   maxAge: 30 * 24 * 60 * 60 * 1000,
 }
 
 export const COOKIE_CLEAR_OPTIONS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "lax" as const,
+  secure: IS_PRODUCTION,
+  sameSite: COOKIE_SAME_SITE,
   path: "/",
 }
 
 export const ACCESS_COOKIE_CLEAR_OPTIONS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "lax" as const,
+  secure: IS_PRODUCTION,
+  sameSite: COOKIE_SAME_SITE,
   path: "/",
 }
 
 export const TRUSTED_DEVICE_COOKIE_CLEAR_OPTIONS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "lax" as const,
+  secure: IS_PRODUCTION,
+  sameSite: COOKIE_SAME_SITE,
   path: "/",
 }
 
