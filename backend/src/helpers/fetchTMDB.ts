@@ -7,11 +7,11 @@ type TMDBFetchOptions = {
   includeDefaultLanguage?: boolean
 }
 
-export const consultarTMDB = async (
+export const consultarTMDB = async <T = unknown>(
   endpoint: string,
   params: Record<string, string> = {},
   options: TMDBFetchOptions = {}
-) => {
+): Promise<T> => {
   const defaultLanguage = options.defaultLanguage || "es-ES"
   const includeDefaultLanguage = options.includeDefaultLanguage ?? true
 
@@ -43,5 +43,5 @@ export const consultarTMDB = async (
   if (!respuesta.ok) {
     throw new Error(`Error de TMDB. Estado: ${respuesta.status}`)
   }
-  return respuesta.json()
+  return respuesta.json() as T
 }

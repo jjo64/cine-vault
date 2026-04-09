@@ -29,7 +29,8 @@ beforeEach(() => {
 describe("email helpers", () => {
   it("usa stub cuando falta RESEND_API_KEY", async () => {
     vi.stubEnv("NODE_ENV", "test")
-    const email = await loadEmail()
+    vi.stubEnv("RESEND_API_KEY", "") // fuerza que no haya API key
+    const email = await import("../../lib/email.js")
     const result = await email.enviarCorreoVerificacion("a@b.com", "tok")
     expect(result).toEqual({ id: "mocked-email", mocked: true })
     expect(sendMock).not.toHaveBeenCalled()

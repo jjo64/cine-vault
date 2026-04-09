@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { NotFoundError } from "../errors/AppErrors.js"
+import type { RichDiaryEntry} from "../repositories/DiaryRepository.js"
+import type { diary_entries } from "@prisma/client"
 
 /* ==========================================================================
    UNIT TESTS — diary.services
@@ -30,14 +32,14 @@ beforeEach(() => {
 
 describe("obtenerDiarioService", () => {
   it("lanza NotFoundError si el diario está vacío", async () => {
-    vi.mocked(diaryRepository.buildRichResponse).mockResolvedValue(null as any)
+    vi.mocked(diaryRepository.buildRichResponse).mockResolvedValue(null as unknown as Awaited<ReturnType<typeof diaryRepository.buildRichResponse>>)
     await expect(obtenerDiarioService(1)).rejects.toThrow(NotFoundError)
   })
 
   it("devuelve el diario enriquecido si hay entradas", async () => {
     const ricas = [
       { id: 1, movie_info: { title: "El club de la lucha" } },
-    ] as any
+    ] as unknown as RichDiaryEntry[]
     vi.mocked(diaryRepository.buildRichResponse).mockResolvedValue(ricas)
 
     const resultado = await obtenerDiarioService(1)
@@ -48,12 +50,13 @@ describe("obtenerDiarioService", () => {
 
 describe("crearEntradaDiarioService", () => {
   it("crea y devuelve la entrada del diario", async () => {
+    // crearEntradaDiarioService
     const entrada = {
       id: 1,
       user_id: 1,
       movie_id: 2,
       watched_date: new Date(),
-    } as any
+    } as unknown as diary_entries
     vi.mocked(diaryRepository.create).mockResolvedValue(entrada)
 
     const resultado = await crearEntradaDiarioService(1, {
@@ -66,9 +69,10 @@ describe("crearEntradaDiarioService", () => {
 
 describe("eliminarEntradaDiarioService", () => {
   it("elimina la entrada si el usuario es el propietario", async () => {
-    const entrada = { id: 5, user_id: 1 } as any
+    // eliminarEntradaDiarioService
+    const entrada = { id: 5, user_id: 1 } as unknown as diary_entries
     vi.mocked(diaryRepository.findById).mockResolvedValue(entrada)
-    vi.mocked(diaryRepository.delete).mockResolvedValue(entrada)
+    vi.mocked(diaryRepository.delete).mockResolvedValue(undefined)
 
     await expect(eliminarEntradaDiarioService(1, 5)).resolves.not.toThrow()
     expect(diaryRepository.delete).toHaveBeenCalledWith(5)
@@ -86,7 +90,7 @@ describe("eliminarEntradaDiarioService", () => {
     vi.mocked(diaryRepository.findById).mockResolvedValue({
       id: 5,
       user_id: 99,
-    } as any)
+    } as unknown as diary_entries)
     await expect(eliminarEntradaDiarioService(1, 5)).rejects.toThrow(
       ForbiddenError
     )

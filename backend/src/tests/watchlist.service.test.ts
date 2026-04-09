@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { ConflictError } from "../errors/AppErrors.js"
+import type { watchlist } from "@prisma/client"
+import type { RichWatchlistEntry } from "../repositories/WatchlistRepository.js"
 
 /* ==========================================================================
    UNIT TESTS — watchlist.services
@@ -30,8 +32,8 @@ beforeEach(() => {
 
 describe("obtenerWatchlistService", () => {
   it("devuelve la watchlist enriquecida del usuario", async () => {
-    const entradas = [{ id: 1, user_id: 1, movie_id: 10 }] as any
-    const ricas = [{ id: 1, movie_info: { title: "Inception" } }] as any
+    const entradas = [{ id: 1, user_id: 1, movie_id: 10 }] as unknown as watchlist[]
+    const ricas = [{ id: 1, movie_info: { title: "Inception" } }] as unknown as RichWatchlistEntry[]
     vi.mocked(watchlistRepository.findByUserId).mockResolvedValue(entradas)
     vi.mocked(watchlistRepository.buildRichResponse).mockResolvedValue(ricas)
 
@@ -42,7 +44,7 @@ describe("obtenerWatchlistService", () => {
 
 describe("agregarAWatchlistService", () => {
   it("añade la película si no existe en la watchlist", async () => {
-    const item = { id: 1, user_id: 1, movie_id: 10 } as any
+    const item = { id: 1, user_id: 1, movie_id: 10 } as unknown as watchlist
     vi.mocked(watchlistRepository.exists).mockResolvedValue(false)
     vi.mocked(watchlistRepository.create).mockResolvedValue(item)
 

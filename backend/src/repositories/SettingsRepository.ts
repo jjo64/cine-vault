@@ -1,8 +1,7 @@
 import { users } from "@prisma/client"
 import { prisma } from "../lib/prisma.js"
 import type {
-  ActualizarPerfilDTO,
-  ActualizarAuthDTO,
+  ActualizarPerfilDTO
 } from "../schemas/settings.js"
 
 /* ==========================================================================

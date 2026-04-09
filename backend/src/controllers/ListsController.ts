@@ -1,5 +1,6 @@
 import { Request, Response } from "express"
 import * as listsService from "../services/lists.services.js"
+import { ListPublicListsQueryDTO } from "../schemas/lists.js"
 
 export const getMyLists = async (req: Request, res: Response) => {
   const lists = await listsService.getMyListsService(req.user!.user_id)
@@ -43,7 +44,7 @@ export const removeMovieFromList = async (req: Request, res: Response) => {
 }
 
 export const getPublicLists = async (req: Request, res: Response) => {
-  const lists = await listsService.getPublicListsService(req.query as any)
+  const lists = await listsService.getPublicListsService(req.query as unknown as ListPublicListsQueryDTO)
   res.json(lists)
 }
 

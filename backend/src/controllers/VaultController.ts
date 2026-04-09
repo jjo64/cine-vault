@@ -8,6 +8,7 @@ import {
   obtenerVaultSocialService,
   obtenerVaultService,
 } from "../services/vault.services.js"
+import { ListVaultSocialQueryDTO } from "../schemas/vault.js"
 
 export const getMyVault = async (req: Request, res: Response) => {
   const result = await obtenerVaultService(req.user!.user_id)
@@ -36,7 +37,7 @@ export const getVaultSocialByUser = async (req: Request, res: Response) => {
   const payload = await obtenerVaultSocialService(
     Number(req.params.id_user),
     viewerUserId,
-    req.query as any
+    req.query as unknown as ListVaultSocialQueryDTO
   )
   res.json(payload)
 }
@@ -45,7 +46,7 @@ export const getMyVaultSocial = async (req: Request, res: Response) => {
   const payload = await obtenerVaultSocialService(
     req.user!.user_id,
     req.user!.user_id,
-    req.query as any
+    req.query as unknown as ListVaultSocialQueryDTO
   )
   res.json(payload)
 }

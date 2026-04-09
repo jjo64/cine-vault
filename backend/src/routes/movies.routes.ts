@@ -141,7 +141,6 @@ router.get(
       // Cachear también la resolución slug → id
       const datosBusqueda = (await getOSet(
         `tmdb:slug:${idOSlug}`,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         async () => {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const [enData, esData]: any[] = await Promise.all([
@@ -191,7 +190,6 @@ router.get(
       `tmdb:movie:${idPelicula}`,
       async () => {
         const [detalles, creditos, proveedores, titulos, imagenes] =
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (await Promise.all([
             consultarTMDB(`movie/${idPelicula}`),
             consultarTMDB(`movie/${idPelicula}/credits`),

@@ -4,9 +4,10 @@ import {
   listReportsService,
   moderateReportService,
 } from "../services/reports.services.js"
+import { ListReportsQueryDTO } from "../schemas/reports.js"
 
 export const getReports = async (req: Request, res: Response) => {
-  const payload = await listReportsService(req.query as any)
+  const payload = await listReportsService(req.query as unknown as ListReportsQueryDTO)
   res.json(payload)
 }
 

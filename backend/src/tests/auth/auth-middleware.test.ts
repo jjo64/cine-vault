@@ -11,11 +11,11 @@ describe("middlewareAutenticacion", () => {
   const makeReq = (token?: string) =>
     ({
       headers: token ? { authorization: `Bearer ${token}` } : {},
-    }) as any
+    }) as unknown as Parameters<typeof middlewareAutenticacion>[0]
 
   it("lanza UnauthorizedError cuando falta token", () => {
     const req = makeReq()
-    const res = {} as any
+    const res = {} as unknown as Parameters<typeof middlewareAutenticacion>[1]
     const next = vi.fn()
 
     expect(() => middlewareAutenticacion(req, res, next)).toThrow(
@@ -26,7 +26,7 @@ describe("middlewareAutenticacion", () => {
 
   it("propaga UnauthorizedError cuando el token es inválido", () => {
     const req = makeReq("token-invalido")
-    const res = {} as any
+    const res = {} as unknown as Parameters<typeof middlewareAutenticacion>[1]
     const next = vi.fn()
 
     middlewareAutenticacion(req, res, next)
@@ -41,7 +41,7 @@ describe("middlewareAutenticacion", () => {
       process.env.JWT_SECRET!
     )
     const req = makeReq(token)
-    const res = {} as any
+    const res = {} as unknown as Parameters<typeof middlewareAutenticacion>[1]
     const next = vi.fn()
 
     middlewareAutenticacion(req, res, next)
