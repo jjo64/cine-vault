@@ -1,9 +1,10 @@
 import { Server } from "socket.io"
+import { Server as HttpServer } from "http"
 
 export const usuariosConectados = new Map<number, string>()
 export let io: Server
 
-export const initSocketIO = (httpServer: any) => {
+export const initSocketIO = (httpServer: HttpServer) => {
   io = new Server(httpServer, {
     cors: {
       origin: process.env.FRONTEND_URLS

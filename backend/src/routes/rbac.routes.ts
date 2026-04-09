@@ -10,7 +10,6 @@ import { middlewareAutenticacion } from "../middlewares/auth.middlewares.js"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
 import {
   verificarPermiso,
-  verificarRol,
   verificarPropietarioOPermiso,
 } from "../middlewares/rbac.middleware.js"
 import { PERMISOS } from "../config/permisos.js"

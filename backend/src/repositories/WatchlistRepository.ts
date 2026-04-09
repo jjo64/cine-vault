@@ -11,6 +11,12 @@ import { consultarTMDB } from "../helpers/fetchTMDB.js"
    ========================================================================== */
 
 /** Tipo enriquecido con metadatos de TMDB */
+
+type TMDBMovieResponse = {
+  title: string
+  poster_path: string
+}
+
 export interface RichWatchlistEntry {
   movie_id: number
   tmdb_id: number | null
@@ -75,9 +81,9 @@ export class WatchlistRepository implements IWatchlistRepository {
 
     const tmdbResults = await Promise.allSettled(
       movies.map((movie) =>
-        consultarTMDB(`movie/${movie.tmdb_id}`).then((data: any) => ({
-          title: data.title as string,
-          poster_path: data.poster_path as string,
+        consultarTMDB<TMDBMovieResponse>(`movie/${movie.tmdb_id}`).then((data) => ({
+          title: data.title,
+          poster_path: data.poster_path
         }))
       )
     )

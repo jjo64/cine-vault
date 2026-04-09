@@ -15,7 +15,8 @@ passport.use(
     async (accessToken, refreshToken, profile, done) => {
       // Buscar o crear usuario en DB
       try {
-        const email = profile.emails?.[0].value!
+        const email = profile.emails?.[0].value
+        if (!email) throw new Error("Google profile has no email");
 
         // Buscar si ya existe
         let usuario = await prisma.users.findUnique({ where: { email } })

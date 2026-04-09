@@ -1,14 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { crearEntradaDiarioService } from "../../services/diary.services.js"
 import { diaryRepository } from "../../repositories/DiaryRepository.js"
+import type { CrearEntradaDiarioDTO } from "../../schemas/diary.js"
+
 
 vi.mock("../../repositories/DiaryRepository.js", () => ({
   diaryRepository: {
     findByUserMovieDate: vi.fn().mockResolvedValue(null),
     create: vi
       .fn()
-      .mockImplementation((_userId: number, data: any) =>
-        Promise.resolve(data)
+      .mockImplementation((_userId: number, data: CrearEntradaDiarioDTO) =>
+        Promise.resolve({ ...data, id: 1, user_id: _userId })
       ),
   },
 }))

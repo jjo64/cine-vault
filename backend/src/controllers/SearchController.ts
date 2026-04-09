@@ -12,10 +12,9 @@ import {
 import {
   analizarQuery,
   calcularPersonNameScore,
-  enriquecerConDatosLocales,
   fuzzyTokenMatchAny,
-} from "../services/search.services.js"
-
+} from "../helpers/searchUtils.js"
+import { enriquecerConDatosLocalesService } from "../services/search.services.js"
 const TTL_BUSQUEDA = 60 * 60 * 2
 const SEARCH_PAGE_SIZE = 20
 const FIRST_PAGE_CANDIDATE_PAGES = ["1", "2", "3"]
@@ -642,7 +641,7 @@ const runSmartUnifiedSearch = async ({
     }
   }
 
-  const localCountsMap = await enriquecerConDatosLocales(Array.from(movieMap.keys()))
+  const localCountsMap = await enriquecerConDatosLocalesService(Array.from(movieMap.keys()))
 
   let rankedMovies = Array.from(movieMap.values()).map((entry) => {
     const localCounts = localCountsMap.get(Number(entry.movie.id))

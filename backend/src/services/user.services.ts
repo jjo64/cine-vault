@@ -1,10 +1,11 @@
-import { Prisma } from "@prisma/client"
-import { prisma } from "../lib/prisma.js"
 import {
   ConflictError,
   ValidationError,
   NotFoundError,
 } from "../errors/AppErrors.js"
+import { Prisma } from "@prisma/client" 
+import { userProfileRepository } from "../repositories/userProfileRepository.js"
+import { userRepository } from "../repositories/UserRepository.js"
 
 // Tipo tipado para la actualización de perfil (reemplaza `any`)
 type ActualizarPerfil = {
@@ -52,19 +53,16 @@ export const actualizarPerfilService = async (
     throw new ValidationError("No hay datos para actualizar")
   }
 
-  try {
-    await prisma.users.update({
-      where: { id: idUsuario },
-      data: datosActualizar,
-    })
+ try {
+    await userProfileRepository.update(idUsuario, datosActualizar)
   } catch (error) {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2002"
-    ) {
-      throw new ConflictError("El nombre de usuario ya está en uso")
-    }
-    throw error
+  if (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2002"
+  ) {
+    throw new ConflictError("El nombre de usuario ya está en uso")
+  }
+  throw error
   }
 }
 
@@ -81,9 +79,7 @@ export const seguirUsuarioService = async (
   }
 
   try {
-    await prisma.follows.create({
-      data: { follower_id: idUsuario, following_id: idUsuarioSeguir },
-    })
+    await userProfileRepository.createFollow(idUsuario, idUsuarioSeguir)
   } catch (error) {
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -103,9 +99,7 @@ export const dejarDeSeguirUsuarioService = async (
   idUsuario: number,
   idUsuarioDejar: number
 ) => {
-  const eliminado = await prisma.follows.deleteMany({
-    where: { follower_id: idUsuario, following_id: idUsuarioDejar },
-  })
+  const eliminado = await userProfileRepository.deleteFollow(idUsuario, idUsuarioDejar)
 
   if (eliminado.count === 0) {
     throw new NotFoundError("No estabas siguiendo a este usuario")
@@ -116,15 +110,7 @@ export const dejarDeSeguirUsuarioService = async (
  * Obtiene todos los usuarios con campos seguros (sin contraseña).
  */
 export const obtenerUsuariosService = async () => {
-  return prisma.users.findMany({
-    select: {
-      id: true,
-      username: true,
-      email: true,
-      role: true,
-      avatar_url: true,
-    },
-  })
+  return userRepository.findAll()
 }
 
 /**
@@ -136,48 +122,13 @@ export const obtenerUsuarioPorIdService = async (
   id: number,
   viewerId: number | null = null
 ) => {
-  const usuario = await prisma.users.findUnique({
-    where: { id },
-    select: {
-      id: true,
-      username: true,
-      avatar_url: true,
-      bio: true,
-      created_at: true,
-      _count: {
-        select: {
-          reviews: true,
-          diary_entries: true,
-          watchlist: true,
-          follows_follows_follower_idTousers: true,
-          follows_follows_following_idTousers: true,
-        },
-      },
-    },
-  })
+  const usuario = await userProfileRepository.findPublicById(id)
   if (!usuario) throw new NotFoundError("Usuario no encontrado")
 
-  if (!viewerId || viewerId === id) {
-    return {
-      ...usuario,
-      is_following: false,
-    }
-  }
+  if (!viewerId || viewerId === id) return { ...usuario, is_following: false }
 
-  const relacion = await prisma.follows.findUnique({
-    where: {
-      follower_id_following_id: {
-        follower_id: viewerId,
-        following_id: id,
-      },
-    },
-    select: { follower_id: true },
-  })
-
-  return {
-    ...usuario,
-    is_following: Boolean(relacion),
-  }
+  const relacion = await userProfileRepository.findFollow(viewerId, id)
+  return { ...usuario, is_following: Boolean(relacion) }
 }
 
 /**
@@ -187,26 +138,7 @@ export const obtenerUsuarioPorUsernameService = async (username: string) => {
   const normalized = username.trim()
   if (!normalized) throw new ValidationError("Username inválido")
 
-  const usuario = await prisma.users.findUnique({
-    where: { username: normalized },
-    select: {
-      id: true,
-      username: true,
-      avatar_url: true,
-      bio: true,
-      created_at: true,
-      _count: {
-        select: {
-          reviews: true,
-          diary_entries: true,
-          watchlist: true,
-          follows_follows_follower_idTousers: true,
-          follows_follows_following_idTousers: true,
-        },
-      },
-    },
-  })
-
+  const usuario = await userProfileRepository.findPublicByUsername(normalized)
   if (!usuario) throw new NotFoundError("Usuario no encontrado")
   return usuario
 }
@@ -216,28 +148,7 @@ export const buscarUsuariosService = async (query: string, limit = 12) => {
   if (!normalized) return []
 
   const take = Math.max(1, Math.min(30, Number.isFinite(limit) ? limit : 12))
-
-  return prisma.users.findMany({
-    where: {
-      OR: [
-        { username: { contains: normalized } },
-        { bio: { contains: normalized } },
-      ],
-    },
-    select: {
-      id: true,
-      username: true,
-      avatar_url: true,
-      bio: true,
-      _count: {
-        select: {
-          reviews: true,
-        },
-      },
-    },
-    orderBy: [{ username: "asc" }],
-    take,
-  })
+  return userProfileRepository.search(normalized, take)
 }
 
 /**
@@ -245,18 +156,7 @@ export const buscarUsuariosService = async (query: string, limit = 12) => {
  * Resuelto con include anidado en UNA SOLA QUERY (fix N+1).
  */
 export const obtenerSeguidoresService = async (id: number) => {
-  const usuario = await prisma.users.findUnique({
-    where: { id },
-    include: {
-      follows_follows_following_idTousers: {
-        include: {
-          users_follows_follower_idTousers: {
-            select: { id: true, username: true, avatar_url: true },
-          },
-        },
-      },
-    },
-  })
+ const usuario = await userProfileRepository.findFollowers(id)
   if (!usuario) throw new NotFoundError("Usuario no encontrado")
   return usuario.follows_follows_following_idTousers
     .map((f) => f.users_follows_follower_idTousers)
@@ -268,101 +168,38 @@ export const obtenerSeguidoresService = async (id: number) => {
  * Resuelto con include anidado en UNA SOLA QUERY (fix N+1).
  */
 export const obtenerSiguiendoService = async (id: number) => {
-  const usuario = await prisma.users.findUnique({
-    where: { id },
-    include: {
-      follows_follows_follower_idTousers: {
-        include: {
-          users_follows_following_idTousers: {
-            select: { id: true, username: true, avatar_url: true },
-          },
-        },
-      },
-    },
-  })
+  const usuario = await userProfileRepository.findFollowing(id)
   if (!usuario) throw new NotFoundError("Usuario no encontrado")
   return usuario.follows_follows_follower_idTousers
     .map((f) => f.users_follows_following_idTousers)
     .filter(Boolean)
 }
 
-export const obtenerFirmaCinematograficaPublicaService = async (id: number) => {
-  const user = await prisma.users.findUnique({
-    where: { id },
-    select: { id: true },
-  })
+const EMPTY_SIGNATURE = {
+  pivotal_film: null, pivotal_film_detail: null,
+  formative_director: null, formative_director_detail: null,
+  unforgettable_scene: null, unforgettable_scene_detail: null,
+  cinema_turning_year: null, cinema_turning_year_detail: null,
+}
 
+export const obtenerFirmaCinematograficaPublicaService = async (id: number) => {
+  const user = await userProfileRepository.findById(id)
   if (!user) throw new NotFoundError("Usuario no encontrado")
 
   try {
-    const rows = await prisma.$queryRaw<Array<Record<string, string | number | null>>>(Prisma.sql`
-      SELECT
-        user_id,
-        pivotal_film,
-        pivotal_film_detail,
-        formative_director,
-        formative_director_detail,
-        unforgettable_scene,
-        unforgettable_scene_detail,
-        cinema_turning_year,
-        cinema_turning_year_detail
-      FROM cinematographic_signature
-      WHERE user_id = ${id}
-      LIMIT 1
-    `)
-
-    const row = rows[0]
-    if (!row) {
-      return {
-        user_id: id,
-        pivotal_film: null,
-        pivotal_film_detail: null,
-        formative_director: null,
-        formative_director_detail: null,
-        unforgettable_scene: null,
-        unforgettable_scene_detail: null,
-        cinema_turning_year: null,
-        cinema_turning_year_detail: null,
-      }
-    }
-
-    return row
+    const rows = await userProfileRepository.findCinematographicSignature(id)
+    return rows[0] ?? { user_id: id, ...EMPTY_SIGNATURE }
   } catch {
-    return {
-      user_id: id,
-      pivotal_film: null,
-      pivotal_film_detail: null,
-      formative_director: null,
-      formative_director_detail: null,
-      unforgettable_scene: null,
-      unforgettable_scene_detail: null,
-      cinema_turning_year: null,
-      cinema_turning_year_detail: null,
-    }
+    return { user_id: id, ...EMPTY_SIGNATURE }
   }
 }
 
 export const obtenerGaleriaCuradaPublicaService = async (id: number) => {
-  const user = await prisma.users.findUnique({
-    where: { id },
-    select: { id: true },
-  })
-
+  const user = await userProfileRepository.findById(id)
   if (!user) throw new NotFoundError("Usuario no encontrado")
 
   try {
-    const items = await prisma.$queryRaw<Array<Record<string, string | number | null>>>(Prisma.sql`
-      SELECT
-        cgi.movie_id,
-        cgi.order_index,
-        cgi.note,
-        mr.tmdb_id
-      FROM curated_gallery_items cgi
-      INNER JOIN movies_ref mr ON mr.id = cgi.movie_id
-      WHERE cgi.user_id = ${id}
-      ORDER BY cgi.order_index ASC
-    `)
-
+    const items = await userProfileRepository.findCuratedGallery(id)
     return { items }
   } catch {
     return { items: [] }

@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest"
 import {
   analizarQuery,
   calcularPersonNameScore,
-  fuzzyMatch,
   fuzzyTokenMatchAny,
   levenshtein,
-} from "../../services/search.services.js"
+  fuzzyMatch
+} from "../../helpers/searchUtils.js"
 
 describe("semantic search helpers", () => {
   it("detecta consulta de persona con tokens improbables", () => {

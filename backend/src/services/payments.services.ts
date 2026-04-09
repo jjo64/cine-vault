@@ -70,7 +70,7 @@ export async function createPortalSessionService(
   if (!stripeSubId) throw new ValidationError("Suscripción sin ID de Stripe")
 
   const stripeSub = await stripe.subscriptions.retrieve(stripeSubId)
-  const customerId = (stripeSub as any).customer as string
+  const customerId = (stripeSub as Stripe.Subscription).customer as string
   if (!customerId) throw new ValidationError("Stripe no devolvió customer")
 
   const portal = await stripe.billingPortal.sessions.create({
@@ -136,8 +136,11 @@ export async function processWebhookEventService(
 
     // Renovación mensual → actualizar end_date
     case "invoice.payment_succeeded": {
-      const invoice = event.data.object as Stripe.Invoice
-      const stripeSubId = (invoice as any).subscription as string
+      const invoice = event.data.object as Stripe.Invoice & { 
+        subscription?: string
+        payment_intent?: string 
+      }
+      const stripeSubId = invoice.subscription as string    
 
       // Solo procesar renovaciones, no el pago inicial
       if (invoice.billing_reason === "subscription_create") break
@@ -153,7 +156,7 @@ export async function processWebhookEventService(
           subscriptionId: sub.id,
           amount: (invoice.amount_paid ?? 0) / 100,
           currency: invoice.currency ?? "eur",
-          providerPaymentId: (invoice as any).payment_intent ?? invoice.id,
+          providerPaymentId: invoice.payment_intent as string ?? invoice.id,
           status: "paid",
         })
       }
@@ -161,8 +164,11 @@ export async function processWebhookEventService(
     }
 
     case "invoice.payment_failed": {
-      const invoice = event.data.object as Stripe.Invoice
-      const stripeSubId = (invoice as any).subscription as string
+      const invoice = event.data.object as Stripe.Invoice & { 
+        subscription?: string
+        payment_intent?: string 
+      }
+      const stripeSubId = invoice.subscription as string
       const sub =
         await paymentsRepository.findSubscriptionByProviderId(stripeSubId)
       if (sub) {
@@ -175,7 +181,7 @@ export async function processWebhookEventService(
           subscriptionId: sub.id,
           amount: (invoice.amount_due ?? 0) / 100,
           currency: invoice.currency ?? "eur",
-          providerPaymentId: (invoice as any).payment_intent ?? invoice.id,
+          providerPaymentId: invoice.payment_intent as string ?? invoice.id,
           status: "failed",
         })
       }
