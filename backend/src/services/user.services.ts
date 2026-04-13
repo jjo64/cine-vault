@@ -56,13 +56,13 @@ export const actualizarPerfilService = async (
   try {
     await userProfileRepository.update(idUsuario, datosActualizar)
   } catch (error) {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2002"
-    ) {
-      throw new ConflictError("El nombre de usuario ya está en uso")
-    }
-    throw error
+  if (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2002"
+  ) {
+    throw new ConflictError("El nombre de usuario ya está en uso")
+  }
+  throw error
   }
 }
 
