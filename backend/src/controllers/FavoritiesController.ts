@@ -1,5 +1,6 @@
 import { Request, Response } from "express"
 import * as favoritiesService from "../services/favorities.services.js"
+import type { UserIdParamsFavDTO, MovieIdParamsFavDTO } from "../schemas/favorites.js"
 
 /* ==========================================================================
    CONTROLADOR DE FAVORITOS
@@ -16,9 +17,8 @@ export const getFavorites = async (req: Request, res: Response) => {
 }
 
 export const getFavoritesByUserId = async (req: Request, res: Response) => {
-  const favoritos = await favoritiesService.obtenerFavoritosPorUsuarioService(
-    Number(req.params.userId)
-  )
+  const { userId } = req.params as unknown as UserIdParamsFavDTO
+  const favoritos = await favoritiesService.obtenerFavoritosPorUsuarioService(userId)
   res.json(favoritos)
 }
 
@@ -31,9 +31,7 @@ export const addMovieToFavorites = async (req: Request, res: Response) => {
 }
 
 export const removeMovieFromFavorites = async (req: Request, res: Response) => {
-  await favoritiesService.eliminarFavoritoService(
-    req.user!.user_id,
-    Number(req.params.movieId)
-  )
+  const { movieId } = req.params as unknown as MovieIdParamsFavDTO
+  await favoritiesService.eliminarFavoritoService(req.user!.user_id, movieId)
   res.json({ message: "Eliminado de favoritos" })
 }

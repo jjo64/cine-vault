@@ -21,7 +21,9 @@ type DirectorTimelineItem = {
 export const obtenerDirectorAutopsyService = async (tmdbPersonId: number) => {
   const [personRaw, creditsRaw] = await Promise.all([
     consultarTMDB(`person/${tmdbPersonId}`, { language: "es-ES" }),
-    consultarTMDB(`person/${tmdbPersonId}/combined_credits`, { language: "es-ES" }),
+    consultarTMDB(`person/${tmdbPersonId}/combined_credits`, {
+      language: "es-ES",
+    }),
   ])
 
   const person = personRaw as {
@@ -89,8 +91,10 @@ export const obtenerDirectorAutopsyService = async (tmdbPersonId: number) => {
       const count = movies.length
       const avg =
         count > 0
-          ? movies.reduce((acc, movie) => acc + Number(movie.vote_average || 0), 0) /
-            count
+          ? movies.reduce(
+              (acc, movie) => acc + Number(movie.vote_average || 0),
+              0
+            ) / count
           : 0
 
       return {
@@ -102,13 +106,15 @@ export const obtenerDirectorAutopsyService = async (tmdbPersonId: number) => {
     .sort((a, b) => a.year - b.year)
 
   const firstYear = timeline.length > 0 ? timeline[0].year : null
-  const lastYear = timeline.length > 0 ? timeline[timeline.length - 1].year : null
+  const lastYear =
+    timeline.length > 0 ? timeline[timeline.length - 1].year : null
 
   return {
     person_id: person.id,
     name: person.name || "Sin nombre",
     profile_path: person.profile_path || null,
-    years: [person.birthday, person.deathday].filter(Boolean).join(" - ") || null,
+    years:
+      [person.birthday, person.deathday].filter(Boolean).join(" - ") || null,
     nationality: person.place_of_birth || "N/D",
     biography: person.biography || "",
     movies_directed: directedMovies,

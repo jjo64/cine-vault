@@ -11,6 +11,10 @@ import {
   obtenerMiArcoByIdService,
   obtenerMisArcosService,
 } from "../services/arcos.services.js"
+import type {
+  ArcoIdParamsDTO,
+  ListArcosModeracionQueryDTO,
+} from "../schemas/arcos.js"
 
 export const getArcos = async (_req: Request, res: Response) => {
   const result = await obtenerArcosService()
@@ -18,8 +22,9 @@ export const getArcos = async (_req: Request, res: Response) => {
 }
 
 export const getArcoById = async (req: Request, res: Response) => {
+  const { id } = req.params as unknown as ArcoIdParamsDTO
   const userId = req.user?.user_id
-  const result = await obtenerArcoByIdService(Number(req.params.id), userId)
+  const result = await obtenerArcoByIdService(id, userId)
   res.json(result)
 }
 
@@ -29,7 +34,8 @@ export const getMyArcos = async (req: Request, res: Response) => {
 }
 
 export const getMyArcoById = async (req: Request, res: Response) => {
-  const result = await obtenerMiArcoByIdService(req.user!.user_id, Number(req.params.id))
+  const { id } = req.params as unknown as ArcoIdParamsDTO
+  const result = await obtenerMiArcoByIdService(req.user!.user_id, id)
   res.json(result)
 }
 
@@ -39,33 +45,38 @@ export const createArcoDraft = async (req: Request, res: Response) => {
 }
 
 export const updateArcoDraft = async (req: Request, res: Response) => {
+  const { id } = req.params as unknown as ArcoIdParamsDTO
   const result = await actualizarArcoBorradorService(
     req.user!.user_id,
-    Number(req.params.id),
+    id,
     req.body
   )
   res.json(result)
 }
 
 export const submitArcoReview = async (req: Request, res: Response) => {
-  const result = await enviarArcoRevisionService(req.user!.user_id, Number(req.params.id))
+  const { id } = req.params as unknown as ArcoIdParamsDTO
+  const result = await enviarArcoRevisionService(req.user!.user_id, id)
   res.json(result)
 }
 
 export const getArcosModeration = async (req: Request, res: Response) => {
-  const result = await obtenerArcosModeracionService(req.query.status as string | undefined)
+  const { status } = req.query as unknown as ListArcosModeracionQueryDTO
+  const result = await obtenerArcosModeracionService(status)
   res.json(result)
 }
 
 export const moderateArco = async (req: Request, res: Response) => {
-  const result = await moderarArcoService(req.user!.user_id, Number(req.params.id), req.body)
+  const { id } = req.params as unknown as ArcoIdParamsDTO
+  const result = await moderarArcoService(req.user!.user_id, id, req.body)
   res.json(result)
 }
 
 export const marcarProgresoArco = async (req: Request, res: Response) => {
+  const { id } = req.params as unknown as ArcoIdParamsDTO
   const result = await marcarProgresoArcoService(
     req.user!.user_id,
-    Number(req.params.id),
+    id,
     req.body.movie_id
   )
   res.status(201).json(result)

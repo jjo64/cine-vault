@@ -50,7 +50,7 @@ export const validarQuery =
         .join(" | ")
       throw new ValidationError(mensaje)
     }
-    Object.defineProperty(req, 'query', {
+    Object.defineProperty(req, "query", {
       value: result.data,
       writable: true,
       configurable: true,

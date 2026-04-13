@@ -15,7 +15,10 @@ export const consultarTMDB = async <T = unknown>(
   const defaultLanguage = options.defaultLanguage || "es-ES"
   const includeDefaultLanguage = options.includeDefaultLanguage ?? true
 
-  const hasExplicitLanguage = Object.prototype.hasOwnProperty.call(params, "language")
+  const hasExplicitLanguage = Object.prototype.hasOwnProperty.call(
+    params,
+    "language"
+  )
 
   const normalizedParams = new URLSearchParams()
   if (includeDefaultLanguage && !hasExplicitLanguage && defaultLanguage) {

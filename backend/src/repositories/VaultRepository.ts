@@ -13,7 +13,11 @@ export interface RichVaultEntry {
   added_at: Date | null
 }
 
-export type VaultSocialEntryType = "reflexion" | "edit" | "critica" | "recomendacion"
+export type VaultSocialEntryType =
+  | "reflexion"
+  | "edit"
+  | "critica"
+  | "recomendacion"
 
 export type VaultSocialEntryRow = {
   id: number
@@ -64,7 +68,10 @@ export interface IVaultRepository {
     durationLabel: string | null
     isPublic: boolean | null
   }): Promise<void>
-  getSocialEntryByIdForOwner(id: number, userId: number): Promise<VaultSocialEntryRow | null>
+  getSocialEntryByIdForOwner(
+    id: number,
+    userId: number
+  ): Promise<VaultSocialEntryRow | null>
   deleteSocialEntry(id: number, userId: number): Promise<void>
 }
 

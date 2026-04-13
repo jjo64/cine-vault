@@ -3,7 +3,7 @@ import {
   ValidationError,
   NotFoundError,
 } from "../errors/AppErrors.js"
-import { Prisma } from "@prisma/client" 
+import { Prisma } from "@prisma/client"
 import { userProfileRepository } from "../repositories/userProfileRepository.js"
 import { userRepository } from "../repositories/UserRepository.js"
 
@@ -53,7 +53,7 @@ export const actualizarPerfilService = async (
     throw new ValidationError("No hay datos para actualizar")
   }
 
- try {
+  try {
     await userProfileRepository.update(idUsuario, datosActualizar)
   } catch (error) {
   if (
@@ -99,7 +99,10 @@ export const dejarDeSeguirUsuarioService = async (
   idUsuario: number,
   idUsuarioDejar: number
 ) => {
-  const eliminado = await userProfileRepository.deleteFollow(idUsuario, idUsuarioDejar)
+  const eliminado = await userProfileRepository.deleteFollow(
+    idUsuario,
+    idUsuarioDejar
+  )
 
   if (eliminado.count === 0) {
     throw new NotFoundError("No estabas siguiendo a este usuario")
@@ -156,7 +159,7 @@ export const buscarUsuariosService = async (query: string, limit = 12) => {
  * Resuelto con include anidado en UNA SOLA QUERY (fix N+1).
  */
 export const obtenerSeguidoresService = async (id: number) => {
- const usuario = await userProfileRepository.findFollowers(id)
+  const usuario = await userProfileRepository.findFollowers(id)
   if (!usuario) throw new NotFoundError("Usuario no encontrado")
   return usuario.follows_follows_following_idTousers
     .map((f) => f.users_follows_follower_idTousers)
@@ -176,10 +179,14 @@ export const obtenerSiguiendoService = async (id: number) => {
 }
 
 const EMPTY_SIGNATURE = {
-  pivotal_film: null, pivotal_film_detail: null,
-  formative_director: null, formative_director_detail: null,
-  unforgettable_scene: null, unforgettable_scene_detail: null,
-  cinema_turning_year: null, cinema_turning_year_detail: null,
+  pivotal_film: null,
+  pivotal_film_detail: null,
+  formative_director: null,
+  formative_director_detail: null,
+  unforgettable_scene: null,
+  unforgettable_scene_detail: null,
+  cinema_turning_year: null,
+  cinema_turning_year_detail: null,
 }
 
 export const obtenerFirmaCinematograficaPublicaService = async (id: number) => {

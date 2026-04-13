@@ -10,6 +10,7 @@ export interface IUserRepository {
   findById(id: number): Promise<users | null>
   findByEmail(email: string): Promise<users | null>
   findByUsername(username: string): Promise<users | null>
+  deleteById(id: number): Promise<void>
   create(data: CreateUserInput): Promise<users>
   update(id: number, data: Partial<CreateUserInput>): Promise<users>
 }
@@ -65,6 +66,10 @@ export class UserRepository implements IUserRepository {
         avatar_url: true,
       },
     }) as Promise<UserWithoutPassword[]>
+  }
+
+  async deleteById(id: number): Promise<void> {
+    await prisma.users.delete({ where: { id } })
   }
 }
 

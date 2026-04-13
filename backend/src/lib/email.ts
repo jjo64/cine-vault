@@ -18,7 +18,9 @@ const resendClient = apiKey ? new Resend(apiKey) : null
 const sendEmail = async ({ to, subject, html, text, from }: EmailPayload) => {
   if (!resendClient) {
     if (allowMockSend || process.env.NODE_ENV === "test") {
-      console.warn("[Email] Envio simulado (EMAIL_SIMULATE=true o NODE_ENV=test)")
+      console.warn(
+        "[Email] Envio simulado (EMAIL_SIMULATE=true o NODE_ENV=test)"
+      )
       return { id: "mocked-email", mocked: true }
     }
 
@@ -36,7 +38,12 @@ const sendEmail = async ({ to, subject, html, text, from }: EmailPayload) => {
     text,
   })
 
-  if (result && typeof result === "object" && "error" in result && result.error) {
+  if (
+    result &&
+    typeof result === "object" &&
+    "error" in result &&
+    result.error
+  ) {
     const err = result.error as { message?: string }
     throw new Error(err.message || "Resend rechazo el envio del correo")
   }

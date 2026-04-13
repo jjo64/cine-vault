@@ -54,7 +54,11 @@ const ARCOS_FALLBACK: ArcoFallback[] = [
 const parseCount = (value: bigint | number | null | undefined) =>
   Number(value ?? 0)
 
-type ArcoModerationStatus = "pending_review" | "approved" | "rejected" | "archived"
+type ArcoModerationStatus =
+  | "pending_review"
+  | "approved"
+  | "rejected"
+  | "archived"
 
 const mapArcoSummary = (row: {
   id: number
@@ -65,7 +69,12 @@ const mapArcoSummary = (row: {
   description: string | null
   poster_url: string | null
   level: string
-  moderation_status: "draft" | "pending_review" | "approved" | "rejected" | "archived"
+  moderation_status:
+    | "draft"
+    | "pending_review"
+    | "approved"
+    | "rejected"
+    | "archived"
   review_note: string | null
   cinevault_badge: string | null
   is_official: number
@@ -139,7 +148,9 @@ const normalizeMovies = async (
   for (const [index, movie] of movies.entries()) {
     const movieRefId = await ensureMovieRefId(movie.movie_id)
     if (seenMovieIds.has(movieRefId)) {
-      throw new ValidationError("No se permiten peliculas repetidas dentro del mismo arco")
+      throw new ValidationError(
+        "No se permiten peliculas repetidas dentro del mismo arco"
+      )
     }
 
     seenMovieIds.add(movieRefId)
@@ -238,13 +249,17 @@ const buildArcoDetail = async (arcoId: number, userId?: number) => {
     progress: {
       completed: completedCount,
       total: totalCount,
-      percentage: totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0,
+      percentage:
+        totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0,
     },
     movies: moviesDetailed,
   }
 }
 
-export const obtenerArcoByIdService = async (arcoId: number, userId?: number) => {
+export const obtenerArcoByIdService = async (
+  arcoId: number,
+  userId?: number
+) => {
   try {
     const arco = await arcosRepository.findPublicArcoById(arcoId)
     if (!arco) throw new NotFoundError("Arco no encontrado")
@@ -300,7 +315,10 @@ export const obtenerMisArcosService = async (userId: number) => {
   return rows.map(mapArcoSummary)
 }
 
-export const obtenerMiArcoByIdService = async (userId: number, arcoId: number) => {
+export const obtenerMiArcoByIdService = async (
+  userId: number,
+  arcoId: number
+) => {
   const arco = await arcosRepository.findArcoByIdForOwner(arcoId, userId)
   if (!arco) throw new NotFoundError("Arco no encontrado")
 
@@ -312,7 +330,10 @@ export const obtenerMiArcoByIdService = async (userId: number, arcoId: number) =
   }
 }
 
-export const crearArcoBorradorService = async (userId: number, data: CrearArcoDTO) => {
+export const crearArcoBorradorService = async (
+  userId: number,
+  data: CrearArcoDTO
+) => {
   const slug = await buildUniqueArcoSlug(data.title)
   const movies = await normalizeMovies(data.movies)
 
@@ -341,8 +362,13 @@ export const actualizarArcoBorradorService = async (
   const arco = await arcosRepository.findArcoByIdForOwner(arcoId, userId)
   if (!arco) throw new NotFoundError("Arco no encontrado")
 
-  if (arco.moderation_status !== "draft" && arco.moderation_status !== "rejected") {
-    throw new ValidationError("Solo se pueden editar arcos en estado draft o rejected")
+  if (
+    arco.moderation_status !== "draft" &&
+    arco.moderation_status !== "rejected"
+  ) {
+    throw new ValidationError(
+      "Solo se pueden editar arcos en estado draft o rejected"
+    )
   }
 
   await arcosRepository.updateArcoDraft(arcoId, userId, {
@@ -360,17 +386,27 @@ export const actualizarArcoBorradorService = async (
   return obtenerMiArcoByIdService(userId, arcoId)
 }
 
-export const enviarArcoRevisionService = async (userId: number, arcoId: number) => {
+export const enviarArcoRevisionService = async (
+  userId: number,
+  arcoId: number
+) => {
   const arco = await arcosRepository.findArcoByIdForOwner(arcoId, userId)
   if (!arco) throw new NotFoundError("Arco no encontrado")
 
-  if (arco.moderation_status !== "draft" && arco.moderation_status !== "rejected") {
-    throw new ValidationError("Solo se pueden enviar a revision arcos en estado draft o rejected")
+  if (
+    arco.moderation_status !== "draft" &&
+    arco.moderation_status !== "rejected"
+  ) {
+    throw new ValidationError(
+      "Solo se pueden enviar a revision arcos en estado draft o rejected"
+    )
   }
 
   const totalMovies = await arcosRepository.countArcoMovies(arcoId)
   if (totalMovies < 2) {
-    throw new ValidationError("Un arco debe tener al menos 2 peliculas para enviarse a revision")
+    throw new ValidationError(
+      "Un arco debe tener al menos 2 peliculas para enviarse a revision"
+    )
   }
 
   await arcosRepository.sendArcoToReview(arcoId, userId)
@@ -392,12 +428,14 @@ export const moderarArcoService = async (
   if (!arco) throw new NotFoundError("Arco no encontrado")
 
   if (arco.moderation_status !== "pending_review") {
-    throw new ValidationError("Solo se pueden moderar arcos en estado pending_review")
+    throw new ValidationError(
+      "Solo se pueden moderar arcos en estado pending_review"
+    )
   }
 
   const isApproved = data.status === "approved"
   const cinevaultBadge = isApproved
-    ? (data.cinevault_badge?.trim() || "Recomendado por CineVault")
+    ? data.cinevault_badge?.trim() || "Recomendado por CineVault"
     : null
 
   await arcosRepository.moderateArco(arcoId, {

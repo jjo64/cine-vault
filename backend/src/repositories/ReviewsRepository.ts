@@ -120,6 +120,32 @@ export class ReviewsRepository implements IReviewsRepository {
     return prisma.reviews.findUnique({ where: { id } })
   }
 
+  async findDetailedByUserAndMovie(userId: number, movieRefId: number) {
+    return prisma.reviews.findFirst({
+      where: {
+        user_id: userId,
+        movie_id: movieRefId,
+      },
+      orderBy: { created_at: "desc" },
+      include: {
+        users: {
+          select: { id: true, username: true, avatar_url: true },
+        },
+        movies_ref: {
+          select: { id: true, tmdb_id: true, slug: true },
+        },
+        review_comments: {
+          orderBy: { created_at: "asc" },
+          include: {
+            users: {
+              select: { id: true, username: true, avatar_url: true },
+            },
+          },
+        },
+      },
+    })
+  }
+
   async aggregateByMovie(movieId: number) {
     const aggregate = await prisma.reviews.aggregate({
       where: { movie_id: movieId },

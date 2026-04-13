@@ -14,43 +14,46 @@ const toNumber = (value: unknown, fallback: number) => {
 
 type RecommendationItem =
   | {
-    id: string
-    type: "movie"
-    movie: {
-      id: number
-      title: string
-      year: number | null
-      poster_path: string | null
-      vote_average: number
-      reason: string
+      id: string
+      type: "movie"
+      movie: {
+        id: number
+        title: string
+        year: number | null
+        poster_path: string | null
+        vote_average: number
+        reason: string
+      }
     }
-  }
   | {
-    id: string
-    type: "review"
-    review: {
-      id: number
-      content: string | null
-      rating: number | null
-      mode: string
-      created_at: string
+      id: string
+      type: "review"
+      review: {
+        id: number
+        content: string | null
+        rating: number | null
+        mode: string
+        created_at: string
+      }
+      user: {
+        id: number
+        username: string
+        avatar_url: string | null
+      }
+      movie: {
+        id: number
+        tmdb_id: number
+      }
     }
-    user: {
-      id: number
-      username: string
-      avatar_url: string | null
-    }
-    movie: {
-      id: number
-      tmdb_id: number
-    }
-  }
 
 const curatedFallbackDirectors = [
   { name: "Chantal Akerman", reason: "Cine de observación y riesgo formal" },
   { name: "Andrei Tarkovsky", reason: "Poesía visual y tempo contemplativo" },
   { name: "Agnès Varda", reason: "Mirada íntima y documental sensible" },
-  { name: "Apichatpong Weerasethakul", reason: "Narrativas hipnóticas y sensoriales" },
+  {
+    name: "Apichatpong Weerasethakul",
+    reason: "Narrativas hipnóticas y sensoriales",
+  },
 ]
 
 router.get(
@@ -95,9 +98,12 @@ router.get(
       const recommendationPages = await Promise.all(
         seedTmdbIds.map(async (tmdbId) => {
           try {
-            const payload = (await consultarTMDB(`movie/${tmdbId}/recommendations`, {
-              page: "1",
-            })) as {
+            const payload = (await consultarTMDB(
+              `movie/${tmdbId}/recommendations`,
+              {
+                page: "1",
+              }
+            )) as {
               results?: Array<{
                 id: number
                 title?: string
@@ -125,7 +131,9 @@ router.get(
           movie: {
             id: item.id,
             title: item.title || "Sin título",
-            year: item.release_date ? Number(item.release_date.slice(0, 4)) || null : null,
+            year: item.release_date
+              ? Number(item.release_date.slice(0, 4)) || null
+              : null,
             poster_path: item.poster_path || null,
             vote_average: Number(item.vote_average || 0),
             reason: "Basada en tu historial reciente",
@@ -137,7 +145,10 @@ router.get(
     }
 
     if (recommendedMovies.length === 0) {
-      const fallback = (await consultarTMDB("movie/popular", { page: "1", region: "ES" })) as {
+      const fallback = (await consultarTMDB("movie/popular", {
+        page: "1",
+        region: "ES",
+      })) as {
         results?: Array<{
           id: number
           title?: string
@@ -147,14 +158,18 @@ router.get(
         }>
       }
 
-      for (const item of Array.isArray(fallback.results) ? fallback.results.slice(0, 12) : []) {
+      for (const item of Array.isArray(fallback.results)
+        ? fallback.results.slice(0, 12)
+        : []) {
         recommendedMovies.push({
           id: `movie-${item.id}`,
           type: "movie",
           movie: {
             id: item.id,
             title: item.title || "Sin título",
-            year: item.release_date ? Number(item.release_date.slice(0, 4)) || null : null,
+            year: item.release_date
+              ? Number(item.release_date.slice(0, 4)) || null
+              : null,
             poster_path: item.poster_path || null,
             vote_average: Number(item.vote_average || 0),
             reason: "Selección general de descubrimiento",
@@ -176,40 +191,42 @@ router.get(
 
     const reviewSuggestions = movieRefCandidates.length
       ? await prisma.reviews.findMany({
-        where: {
-          movie_id: { in: movieRefCandidates.map((item) => item.id) },
-          user_id: { not: viewerId },
-          content: { not: null },
-        },
-        take: 8,
-        orderBy: { created_at: "desc" },
-        include: {
-          users: { select: { id: true, username: true, avatar_url: true } },
-          movies_ref: { select: { id: true, tmdb_id: true } },
-        },
-      })
+          where: {
+            movie_id: { in: movieRefCandidates.map((item) => item.id) },
+            user_id: { not: viewerId },
+            content: { not: null },
+          },
+          take: 8,
+          orderBy: { created_at: "desc" },
+          include: {
+            users: { select: { id: true, username: true, avatar_url: true } },
+            movies_ref: { select: { id: true, tmdb_id: true } },
+          },
+        })
       : []
 
-    const reviewItems: RecommendationItem[] = reviewSuggestions.map((entry) => ({
-      id: `review-${entry.id}`,
-      type: "review",
-      review: {
-        id: entry.id,
-        content: entry.content,
-        rating: entry.rating ? Number(entry.rating) : null,
-        mode: entry.mode,
-        created_at: entry.created_at.toISOString(),
-      },
-      user: {
-        id: entry.users.id,
-        username: entry.users.username,
-        avatar_url: entry.users.avatar_url || null,
-      },
-      movie: {
-        id: entry.movies_ref.id,
-        tmdb_id: entry.movies_ref.tmdb_id,
-      },
-    }))
+    const reviewItems: RecommendationItem[] = reviewSuggestions.map(
+      (entry) => ({
+        id: `review-${entry.id}`,
+        type: "review",
+        review: {
+          id: entry.id,
+          content: entry.content,
+          rating: entry.rating ? Number(entry.rating) : null,
+          mode: entry.mode,
+          created_at: entry.created_at.toISOString(),
+        },
+        user: {
+          id: entry.users.id,
+          username: entry.users.username,
+          avatar_url: entry.users.avatar_url || null,
+        },
+        movie: {
+          id: entry.movies_ref.id,
+          tmdb_id: entry.movies_ref.tmdb_id,
+        },
+      })
+    )
 
     const mergedItems = [...recommendedMovies, ...reviewItems]
     const start = (page - 1) * limit
@@ -240,7 +257,9 @@ router.get(
       orderBy: { added_at: "desc" },
     })
 
-    const tmdbIds = Array.from(new Set(refs.map((entry) => entry.movies_ref.tmdb_id))).slice(0, 10)
+    const tmdbIds = Array.from(
+      new Set(refs.map((entry) => entry.movies_ref.tmdb_id))
+    ).slice(0, 10)
 
     if (tmdbIds.length === 0) {
       return res.json({
@@ -265,12 +284,18 @@ router.get(
             crew: Array.isArray(payload.crew) ? payload.crew : [],
           }
         } catch {
-          return { tmdbId, crew: [] as Array<{ id: number; name?: string; job?: string }> }
+          return {
+            tmdbId,
+            crew: [] as Array<{ id: number; name?: string; job?: string }>,
+          }
         }
       })
     )
 
-    const byDirector = new Map<string, { name: string; score: number; movies: number[] }>()
+    const byDirector = new Map<
+      string,
+      { name: string; score: number; movies: number[] }
+    >()
 
     for (const entry of creditsPayload) {
       for (const person of entry.crew) {

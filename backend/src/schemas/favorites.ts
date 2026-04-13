@@ -18,4 +18,14 @@ export const agregarFavoritoSchema = z.object({
     .optional(),
 })
 
+export const userIdParamsFavSchema = z.object({
+  userId: z.coerce.number().int().positive("userId debe ser positivo"),
+})
+
+export const movieIdParamsFavSchema = z.object({
+  movieId: z.coerce.number().int().positive("movieId debe ser positivo"),
+})
+
+export type UserIdParamsFavDTO = z.infer<typeof userIdParamsFavSchema>
+export type MovieIdParamsFavDTO = z.infer<typeof movieIdParamsFavSchema>
 export type AgregarFavoritoDTO = z.infer<typeof agregarFavoritoSchema>

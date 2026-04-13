@@ -8,7 +8,10 @@ import {
 } from "../controllers/FeedController.js"
 import { middlewareAutenticacion } from "../middlewares/auth.middlewares.js"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
-import { validarBody, validarQuery } from "../middlewares/validation.middleware.js"
+import {
+  validarBody,
+  validarQuery,
+} from "../middlewares/validation.middleware.js"
 import {
   feedBookmarkActionSchema,
   feedHideActionSchema,

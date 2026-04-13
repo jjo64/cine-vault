@@ -10,7 +10,12 @@ export type ArcoSummaryRow = {
   description: string | null
   poster_url: string | null
   level: string
-  moderation_status: "draft" | "pending_review" | "approved" | "rejected" | "archived"
+  moderation_status:
+    | "draft"
+    | "pending_review"
+    | "approved"
+    | "rejected"
+    | "archived"
   review_note: string | null
   cinevault_badge: string | null
   is_official: number
@@ -105,7 +110,9 @@ export class ArcosRepository {
     `)
   }
 
-  listArcosByModerationStatus(status: "pending_review" | "approved" | "rejected" | "archived") {
+  listArcosByModerationStatus(
+    status: "pending_review" | "approved" | "rejected" | "archived"
+  ) {
     return prisma.$queryRaw<ArcoSummaryRow[]>(Prisma.sql`
       ${ARCO_SUMMARY_SELECT}
       WHERE a.moderation_status = ${status}
@@ -217,8 +224,9 @@ export class ArcosRepository {
 
       if (!movies.length) return
 
-      const values = movies.map((movie) =>
-        Prisma.sql`(${arcoId}, ${movie.movie_id}, ${movie.order_index}, ${movie.note}, ${movie.is_optional})`
+      const values = movies.map(
+        (movie) =>
+          Prisma.sql`(${arcoId}, ${movie.movie_id}, ${movie.order_index}, ${movie.note}, ${movie.is_optional})`
       )
 
       await tx.$executeRaw(Prisma.sql`

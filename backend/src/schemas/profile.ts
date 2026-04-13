@@ -27,19 +27,28 @@ export const actualizarFirmaSchema = z
 export const curatedGalleryItemSchema = z.object({
   movie_id: z.coerce.number().int().positive("movie_id debe ser positivo"),
   order_index: z.coerce.number().int().min(1, "order_index debe iniciar en 1"),
-  note: z.string().max(255, "La nota no puede superar 255 caracteres").optional().nullable(),
+  note: z
+    .string()
+    .max(255, "La nota no puede superar 255 caracteres")
+    .optional()
+    .nullable(),
 })
 
 export const actualizarGaleriaCuradaSchema = z
   .object({
     items: z.array(curatedGalleryItemSchema).min(1).max(12),
   })
-  .refine((data) => {
-    const indices = data.items.map((item) => item.order_index)
-    const unique = new Set(indices)
-    return unique.size === indices.length
-  }, { message: "order_index no puede repetirse" })
+  .refine(
+    (data) => {
+      const indices = data.items.map((item) => item.order_index)
+      const unique = new Set(indices)
+      return unique.size === indices.length
+    },
+    { message: "order_index no puede repetirse" }
+  )
 
 export type ActualizarFirmaDTO = z.infer<typeof actualizarFirmaSchema>
 export type CuratedGalleryItemDTO = z.infer<typeof curatedGalleryItemSchema>
-export type ActualizarGaleriaCuradaDTO = z.infer<typeof actualizarGaleriaCuradaSchema>
+export type ActualizarGaleriaCuradaDTO = z.infer<
+  typeof actualizarGaleriaCuradaSchema
+>

@@ -1,6 +1,9 @@
 import { watchlistRepository } from "../repositories/WatchlistRepository.js"
 import { ConflictError } from "../errors/AppErrors.js"
-import { ensureMovieRefId, findMovieRefIdByCandidate } from "./movieRef.services.js"
+import {
+  ensureMovieRefId,
+  findMovieRefIdByCandidate,
+} from "./movieRef.services.js"
 import type {
   AgregarWatchlistDTO,
   EliminarWatchlistDTO,

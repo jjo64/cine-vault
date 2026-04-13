@@ -67,7 +67,7 @@ export class WatchlistRepository implements IWatchlistRepository {
     const entries = await prisma.watchlist.findMany({
       where: { user_id: userId },
       select: { movie_id: true, added_at: true },
-      orderBy: { added_at: 'desc' },
+      orderBy: { added_at: "desc" },
     })
 
     if (entries.length === 0) return []
@@ -81,10 +81,12 @@ export class WatchlistRepository implements IWatchlistRepository {
 
     const tmdbResults = await Promise.allSettled(
       movies.map((movie) =>
-        consultarTMDB<TMDBMovieResponse>(`movie/${movie.tmdb_id}`).then((data) => ({
-          title: data.title,
-          poster_path: data.poster_path
-        }))
+        consultarTMDB<TMDBMovieResponse>(`movie/${movie.tmdb_id}`).then(
+          (data) => ({
+            title: data.title,
+            poster_path: data.poster_path,
+          })
+        )
       )
     )
 

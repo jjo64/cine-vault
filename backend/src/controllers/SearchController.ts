@@ -22,7 +22,8 @@ const SEARCH_CACHE_VERSION = "v20"
 
 const getEnvNumber = (name: string, fallback: number) => {
   const raw = process.env[name]
-  if (raw === undefined || raw === null || String(raw).trim() === "") return fallback
+  if (raw === undefined || raw === null || String(raw).trim() === "")
+    return fallback
   const parsed = Number(raw)
   return Number.isFinite(parsed) ? parsed : fallback
 }
@@ -37,11 +38,23 @@ const TV_EXACT_BOOST = getEnvNumber("SEARCH_TV_EXACT_BOOST", 5000)
 const LOCAL_VAULT_BOOST = getEnvNumber("SEARCH_LOCAL_VAULT_BOOST", 240)
 const LOCAL_REVIEW_BOOST = getEnvNumber("SEARCH_LOCAL_REVIEW_BOOST", 180)
 const LOCAL_WATCHLIST_BOOST = getEnvNumber("SEARCH_LOCAL_WATCHLIST_BOOST", 90)
-const PERSON_STRONG_MATCH_BOOST = getEnvNumber("SEARCH_PERSON_STRONG_MATCH_BOOST", 3600)
-const PERSON_TITLE_NOISE_PENALTY = getEnvNumber("SEARCH_PERSON_TITLE_NOISE_PENALTY", 1600)
+const PERSON_STRONG_MATCH_BOOST = getEnvNumber(
+  "SEARCH_PERSON_STRONG_MATCH_BOOST",
+  3600
+)
+const PERSON_TITLE_NOISE_PENALTY = getEnvNumber(
+  "SEARCH_PERSON_TITLE_NOISE_PENALTY",
+  1600
+)
 const TV_NON_EXACT_PENALTY = getEnvNumber("SEARCH_TV_NON_EXACT_PENALTY", 1200)
-const VOTE_COUNT_BOOST_WEIGHT = getEnvNumber("SEARCH_VOTE_COUNT_BOOST_WEIGHT", 700)
-const VOTE_AVERAGE_BOOST_WEIGHT = getEnvNumber("SEARCH_VOTE_AVERAGE_BOOST_WEIGHT", 140)
+const VOTE_COUNT_BOOST_WEIGHT = getEnvNumber(
+  "SEARCH_VOTE_COUNT_BOOST_WEIGHT",
+  700
+)
+const VOTE_AVERAGE_BOOST_WEIGHT = getEnvNumber(
+  "SEARCH_VOTE_AVERAGE_BOOST_WEIGHT",
+  140
+)
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRecord = any
@@ -77,7 +90,10 @@ const normalizeQuery = (raw: string) =>
     .trim()
     .replace(/\s+/g, " ")
 
-const getMatchStrength = (candidateRaw: string | null | undefined, rawQuery: string) => {
+const getMatchStrength = (
+  candidateRaw: string | null | undefined,
+  rawQuery: string
+) => {
   const candidate = normalizeQuery(candidateRaw || "").toLowerCase()
   const query = normalizeQuery(rawQuery).toLowerCase()
   if (!candidate || !query) return 0
@@ -88,7 +104,9 @@ const getMatchStrength = (candidateRaw: string | null | undefined, rawQuery: str
 }
 
 const toTitleCandidates = (movie: AnyRecord) => {
-  const localized = Array.isArray(movie.localized_titles) ? movie.localized_titles : []
+  const localized = Array.isArray(movie.localized_titles)
+    ? movie.localized_titles
+    : []
   return [
     movie.title,
     movie.title_en,
@@ -103,14 +121,20 @@ const toTitleCandidates = (movie: AnyRecord) => {
 
 const toContextCandidates = (movie: AnyRecord) => {
   const overview = normalizeQuery(String(movie?.overview || "")).toLowerCase()
-  const localizedOverview = normalizeQuery(String(movie?.overview_es || "")).toLowerCase()
-  return [...toTitleCandidates(movie), overview, localizedOverview].filter(Boolean)
+  const localizedOverview = normalizeQuery(
+    String(movie?.overview_es || "")
+  ).toLowerCase()
+  return [...toTitleCandidates(movie), overview, localizedOverview].filter(
+    Boolean
+  )
 }
 
 const hasExactTitleMatch = (movie: AnyRecord, query: string) => {
   const normalizedQuery = normalizeQuery(query).toLowerCase()
   if (!normalizedQuery) return false
-  return toTitleCandidates(movie).some((candidate) => candidate === normalizedQuery)
+  return toTitleCandidates(movie).some(
+    (candidate) => candidate === normalizedQuery
+  )
 }
 
 const hasExactTVNameMatch = (tv: AnyRecord, query: string) => {
@@ -172,9 +196,13 @@ const runRankedMovieSearch = async ({
 }) => {
   const normalizedQuery = normalizeQuery(query)
   const currentPage = Math.max(1, Number(page || "1") || 1)
-  const candidatePages = currentPage === 1 ? FIRST_PAGE_CANDIDATE_PAGES : [String(currentPage)]
+  const candidatePages =
+    currentPage === 1 ? FIRST_PAGE_CANDIDATE_PAGES : [String(currentPage)]
 
-  const pagePayloads: Array<{ primaryData: AnyRecord; spanishData: AnyRecord }> = await pMap(
+  const pagePayloads: Array<{
+    primaryData: AnyRecord
+    spanishData: AnyRecord
+  }> = await pMap(
     candidatePages,
     async (candidatePage) => {
       const [primaryData, spanishData]: AnyRecord[] = await Promise.all([
@@ -205,23 +233,40 @@ const runRankedMovieSearch = async ({
   )
 
   const primaryResults = pagePayloads.flatMap((payload) =>
-    Array.isArray(payload.primaryData?.results) ? payload.primaryData.results : ([] as AnyRecord[])
+    Array.isArray(payload.primaryData?.results)
+      ? payload.primaryData.results
+      : ([] as AnyRecord[])
   )
   const spanishResults = pagePayloads.flatMap((payload) =>
-    Array.isArray(payload.spanishData?.results) ? payload.spanishData.results : ([] as AnyRecord[])
+    Array.isArray(payload.spanishData?.results)
+      ? payload.spanishData.results
+      : ([] as AnyRecord[])
   )
 
-  const { merged } = mergeEnglishAndSpanishResults(primaryResults, spanishResults)
+  const { merged } = mergeEnglishAndSpanishResults(
+    primaryResults,
+    spanishResults
+  )
 
   const rankedResults = await pMap(
     merged,
     async (movie: AnyRecord) => {
       const [credits, titles]: AnyRecord[] = await Promise.all([
-        consultarTMDB(`movie/${movie.id}/credits`, { language: "en-US" }, { includeDefaultLanguage: false }),
-        consultarTMDB(`movie/${movie.id}/alternative_titles`, {}, { includeDefaultLanguage: false }),
+        consultarTMDB(
+          `movie/${movie.id}/credits`,
+          { language: "en-US" },
+          { includeDefaultLanguage: false }
+        ),
+        consultarTMDB(
+          `movie/${movie.id}/alternative_titles`,
+          {},
+          { includeDefaultLanguage: false }
+        ),
       ])
 
-      const director = credits.crew?.find((person: AnyRecord) => person.job === "Director")?.name
+      const director = credits.crew?.find(
+        (person: AnyRecord) => person.job === "Director"
+      )?.name
       const withTitles = attachAlternativeTitles(movie, titles.titles || [])
 
       return {
@@ -233,12 +278,18 @@ const runRankedMovieSearch = async ({
     { concurrency: 3 }
   )
 
-  rankedResults.sort((a: AnyRecord, b: AnyRecord) => Number(b._title_rank || 0) - Number(a._title_rank || 0))
+  rankedResults.sort(
+    (a: AnyRecord, b: AnyRecord) =>
+      Number(b._title_rank || 0) - Number(a._title_rank || 0)
+  )
 
   const primaryPayload = pagePayloads[0] || { primaryData: {}, spanishData: {} }
 
   return {
-    results: currentPage === 1 ? rankedResults.slice(0, SEARCH_PAGE_SIZE) : rankedResults,
+    results:
+      currentPage === 1
+        ? rankedResults.slice(0, SEARCH_PAGE_SIZE)
+        : rankedResults,
     total_pages: Math.max(
       Number(primaryPayload.primaryData?.total_pages || 1),
       Number(primaryPayload.spanishData?.total_pages || 1)
@@ -247,7 +298,11 @@ const runRankedMovieSearch = async ({
       Number(primaryPayload.primaryData?.total_results || rankedResults.length),
       Number(primaryPayload.spanishData?.total_results || rankedResults.length)
     ),
-    page: Number(primaryPayload.primaryData?.page || primaryPayload.spanishData?.page || page),
+    page: Number(
+      primaryPayload.primaryData?.page ||
+        primaryPayload.spanishData?.page ||
+        page
+    ),
   }
 }
 
@@ -289,7 +344,9 @@ const collectPersonCandidates = (
       known_for_department: person.known_for_department,
       known_for: Array.isArray(person.known_for)
         ? person.known_for
-            .filter((item: AnyRecord) => (item.title || item.name) && item.poster_path)
+            .filter(
+              (item: AnyRecord) => (item.title || item.name) && item.poster_path
+            )
             .slice(0, 3)
             .map((item: AnyRecord) => ({
               id: item.id,
@@ -304,19 +361,29 @@ const collectPersonCandidates = (
   const scored = Array.from(byId.values())
     .map((candidate) => {
       const nameNormalized = normalizeQuery(candidate.name || "").toLowerCase()
-      const department = String(candidate.known_for_department || "").toLowerCase()
+      const department = String(
+        candidate.known_for_department || ""
+      ).toLowerCase()
       const knownForTitles = Array.isArray(candidate.known_for)
-        ? candidate.known_for.map((item) => String(item.title || item.name || "")).filter(Boolean)
+        ? candidate.known_for
+            .map((item) => String(item.title || item.name || ""))
+            .filter(Boolean)
         : []
       const nameTokenCount = nameNormalized.split(/\s+/).filter(Boolean).length
 
       let score = Number(candidate.popularity || 0) * 0.05
       score += candidate.personNameScore * 500
       if (nameNormalized === normalizedQuery) score += 600
-      if (nameNormalized.includes(normalizedQuery) && normalizedQuery.length >= 4) score += 320
+      if (
+        nameNormalized.includes(normalizedQuery) &&
+        normalizedQuery.length >= 4
+      )
+        score += 320
       if (queryTokens.length === 1 && normalizedQuery.length >= 5) {
-        if (nameTokenCount === 1 && nameNormalized === normalizedQuery) score -= 380
-        if (nameTokenCount >= 2 && nameNormalized.includes(normalizedQuery)) score += 220
+        if (nameTokenCount === 1 && nameNormalized === normalizedQuery)
+          score -= 380
+        if (nameTokenCount >= 2 && nameNormalized.includes(normalizedQuery))
+          score += 220
       }
       if (fuzzyTokenMatchAny(queryTokens, [candidate.name])) score += 260
       if (fuzzyTokenMatchAny(queryTokens, knownForTitles)) score += 120
@@ -350,7 +417,8 @@ const mergeMovieFromPersonCredit = (
 ) => {
   if (!movieCredit?.id) return
 
-  const personRoleBase = role === "director" ? DIRECTOR_CREDIT_BOOST : ACTOR_CREDIT_BOOST
+  const personRoleBase =
+    role === "director" ? DIRECTOR_CREDIT_BOOST : ACTOR_CREDIT_BOOST
   const personRoleScore = personRoleBase * personNameScore
 
   const existing = map.get(movieCredit.id)
@@ -384,7 +452,10 @@ const mergeMovieFromPersonCredit = (
   map.set(movieCredit.id, existing)
 }
 
-const mergeMovieFromTitleSearch = (map: Map<number, MovieAggregate>, movie: AnyRecord) => {
+const mergeMovieFromTitleSearch = (
+  map: Map<number, MovieAggregate>,
+  movie: AnyRecord
+) => {
   if (!movie?.id) return
 
   const existing = map.get(movie.id)
@@ -445,7 +516,9 @@ const mergeMovieFromTokenSearch = (
   map.set(movie.id, existing)
 }
 
-const runPersonMovieMatches = async (candidates: PersonCandidate[]): Promise<Map<number, MovieAggregate>> => {
+const runPersonMovieMatches = async (
+  candidates: PersonCandidate[]
+): Promise<Map<number, MovieAggregate>> => {
   const map = new Map<number, MovieAggregate>()
 
   await pMap(
@@ -454,12 +527,21 @@ const runPersonMovieMatches = async (candidates: PersonCandidate[]): Promise<Map
       const credits: AnyRecord = await fetchCreditsForPerson(person)
 
       const directedMovies = Array.isArray(credits?.crew)
-        ? credits.crew.filter((item: AnyRecord) => item?.job === "Director").slice(0, 20)
+        ? credits.crew
+            .filter((item: AnyRecord) => item?.job === "Director")
+            .slice(0, 20)
         : []
-      const actedMovies = Array.isArray(credits?.cast) ? credits.cast.slice(0, 20) : []
+      const actedMovies = Array.isArray(credits?.cast)
+        ? credits.cast.slice(0, 20)
+        : []
 
       for (const movie of directedMovies) {
-        mergeMovieFromPersonCredit(map, movie, "director", person.personNameScore)
+        mergeMovieFromPersonCredit(
+          map,
+          movie,
+          "director",
+          person.personNameScore
+        )
       }
       for (const movie of actedMovies) {
         mergeMovieFromPersonCredit(map, movie, "actor", person.personNameScore)
@@ -471,7 +553,8 @@ const runPersonMovieMatches = async (candidates: PersonCandidate[]): Promise<Map
   return map
 }
 
-const extractTmdbResults = (payload: AnyRecord) => (Array.isArray(payload?.results) ? payload.results : [])
+const extractTmdbResults = (payload: AnyRecord) =>
+  Array.isArray(payload?.results) ? payload.results : []
 
 const EMPTY_SEARCH_PAYLOAD = {
   results: [],
@@ -488,8 +571,10 @@ const localSignalScore = (counts?: {
   if (!counts) return 0
 
   const vault = Math.log10((counts.vault_count || 0) + 1) * LOCAL_VAULT_BOOST
-  const reviews = Math.log10((counts.review_count || 0) + 1) * LOCAL_REVIEW_BOOST
-  const watchlist = Math.log10((counts.watchlist_count || 0) + 1) * LOCAL_WATCHLIST_BOOST
+  const reviews =
+    Math.log10((counts.review_count || 0) + 1) * LOCAL_REVIEW_BOOST
+  const watchlist =
+    Math.log10((counts.watchlist_count || 0) + 1) * LOCAL_WATCHLIST_BOOST
 
   return vault + reviews + watchlist
 }
@@ -499,7 +584,8 @@ const tmdbRatingSignalScore = (movie: AnyRecord) => {
   const voteAverage = Number(movie?.vote_average || 0)
 
   const voteCountBoost = Math.log10(voteCount + 1) * VOTE_COUNT_BOOST_WEIGHT
-  const voteAverageBoost = Math.max(0, Math.min(voteAverage, 10)) * VOTE_AVERAGE_BOOST_WEIGHT
+  const voteAverageBoost =
+    Math.max(0, Math.min(voteAverage, 10)) * VOTE_AVERAGE_BOOST_WEIGHT
 
   return {
     voteCountBoost,
@@ -540,11 +626,18 @@ const runSmartUnifiedSearch = async ({
   const { tokens, queries_tmdb } = analisis
   const isCombinedQuery = tokens.length > 1
   const personIntentMultiplier =
-    analisis.tipo_detectado === "persona" ? 2.8 : analisis.tipo_detectado === "mixto" ? 2.2 : 1
+    analisis.tipo_detectado === "persona"
+      ? 2.8
+      : analisis.tipo_detectado === "mixto"
+        ? 2.2
+        : 1
 
   const [movieData, personData, tvData] = await Promise.all([
     queries_tmdb.buscar_peliculas
-      ? runRankedMovieSearch({ query: queries_tmdb.termino_pelicula || normalizedQuery, page })
+      ? runRankedMovieSearch({
+          query: queries_tmdb.termino_pelicula || normalizedQuery,
+          page,
+        })
       : Promise.resolve(EMPTY_SEARCH_PAYLOAD),
     queries_tmdb.buscar_personas
       ? consultarTMDB(
@@ -564,14 +657,19 @@ const runSmartUnifiedSearch = async ({
 
   const likelyPersonTokens = selectLikelyPersonTokens(tokens)
 
-  const tokenPersonPayloads = isCombinedQuery && queries_tmdb.buscar_personas
-    ? await pMap(
-        likelyPersonTokens,
-        async (token) =>
-          consultarTMDB("search/person", { query: token, page: "1" }, { includeDefaultLanguage: false }),
-        { concurrency: 2 }
-      )
-    : []
+  const tokenPersonPayloads =
+    isCombinedQuery && queries_tmdb.buscar_personas
+      ? await pMap(
+          likelyPersonTokens,
+          async (token) =>
+            consultarTMDB(
+              "search/person",
+              { query: token, page: "1" },
+              { includeDefaultLanguage: false }
+            ),
+          { concurrency: 2 }
+        )
+      : []
 
   const personCandidates = collectPersonCandidates(
     normalizedQuery,
@@ -580,11 +678,19 @@ const runSmartUnifiedSearch = async ({
     tokenPersonPayloads.flatMap((payload) => extractTmdbResults(payload))
   )
 
-  if (personCandidates.length === 0 && isCombinedQuery && queries_tmdb.buscar_personas) {
+  if (
+    personCandidates.length === 0 &&
+    isCombinedQuery &&
+    queries_tmdb.buscar_personas
+  ) {
     const tokenPersonFallbackPayloads = await pMap(
       likelyPersonTokens,
       async (token) =>
-        consultarTMDB("search/person", { query: token, page: "2" }, { includeDefaultLanguage: false }),
+        consultarTMDB(
+          "search/person",
+          { query: token, page: "2" },
+          { includeDefaultLanguage: false }
+        ),
       { concurrency: 2 }
     )
 
@@ -594,14 +700,20 @@ const runSmartUnifiedSearch = async ({
         tokens,
         extractTmdbResults(personData),
         [
-          ...tokenPersonPayloads.flatMap((payload) => extractTmdbResults(payload)),
-          ...tokenPersonFallbackPayloads.flatMap((payload) => extractTmdbResults(payload)),
+          ...tokenPersonPayloads.flatMap((payload) =>
+            extractTmdbResults(payload)
+          ),
+          ...tokenPersonFallbackPayloads.flatMap((payload) =>
+            extractTmdbResults(payload)
+          ),
         ]
       )
     )
   }
 
-  const topPersonDepartment = String(personCandidates[0]?.known_for_department || "").toLowerCase()
+  const topPersonDepartment = String(
+    personCandidates[0]?.known_for_department || ""
+  ).toLowerCase()
   const preferDirectorCredits = topPersonDepartment.includes("direct")
 
   const personMovieMatches = await runPersonMovieMatches(personCandidates)
@@ -618,16 +730,30 @@ const runSmartUnifiedSearch = async ({
       continue
     }
 
-    existing.personRoleScore = Math.max(existing.personRoleScore, fromPerson.personRoleScore)
-    existing.personNameScore = Math.max(existing.personNameScore, fromPerson.personNameScore)
+    existing.personRoleScore = Math.max(
+      existing.personRoleScore,
+      fromPerson.personRoleScore
+    )
+    existing.personNameScore = Math.max(
+      existing.personNameScore,
+      fromPerson.personNameScore
+    )
     movieMap.set(movieId, existing)
   }
 
-  if (isCombinedQuery && (analisis.tipo_detectado === "mixto" || analisis.tipo_detectado === "persona")) {
+  if (
+    isCombinedQuery &&
+    (analisis.tipo_detectado === "mixto" ||
+      analisis.tipo_detectado === "persona")
+  ) {
     const tokenMoviePayloads = await pMap(
       tokens,
       async (token) =>
-        consultarTMDB("search/movie", { query: token, page: "1" }, { includeDefaultLanguage: false }),
+        consultarTMDB(
+          "search/movie",
+          { query: token, page: "1" },
+          { includeDefaultLanguage: false }
+        ),
       { concurrency: 2 }
     )
 
@@ -641,7 +767,9 @@ const runSmartUnifiedSearch = async ({
     }
   }
 
-  const localCountsMap = await enriquecerConDatosLocalesService(Array.from(movieMap.keys()))
+  const localCountsMap = await enriquecerConDatosLocalesService(
+    Array.from(movieMap.keys())
+  )
 
   let rankedMovies = Array.from(movieMap.values()).map((entry) => {
     const localCounts = localCountsMap.get(Number(entry.movie.id))
@@ -649,19 +777,29 @@ const runSmartUnifiedSearch = async ({
     const titleRank = rankMovieByQuery(entry.movie, normalizedQuery)
     const titleSourceBoost = entry.hasTitleSource ? TITLE_SOURCE_BOOST : 0
     const tokenSourceBoost = entry.hasTokenSource ? TOKEN_SOURCE_BOOST : 0
-    const exactTitleBoost = hasExactTitleMatch(entry.movie, normalizedQuery) ? TITLE_EXACT_BOOST : 0
-    const exactTokenBoost = tokens.length > 1 && hasExactTokenTitleMatch(entry.movie, tokens) ? 3200 : 0
+    const exactTitleBoost = hasExactTitleMatch(entry.movie, normalizedQuery)
+      ? TITLE_EXACT_BOOST
+      : 0
+    const exactTokenBoost =
+      tokens.length > 1 && hasExactTokenTitleMatch(entry.movie, tokens)
+        ? 3200
+        : 0
     const fuzzyBoost = hasFuzzyTokenTitleMatch(entry.movie, tokens) ? 900 : 0
-    const contextualTokenBoost = entry.tokenMatches > 0 ? entry.tokenMatches * 550 : 0
+    const contextualTokenBoost =
+      entry.tokenMatches > 0 ? entry.tokenMatches * 550 : 0
     const personBoost = entry.personRoleScore * personIntentMultiplier
     const personNameScore = Number(entry.personNameScore || 0)
     const roleThreshold =
-      (preferDirectorCredits ? DIRECTOR_CREDIT_BOOST : ACTOR_CREDIT_BOOST) * Math.max(0.75, personNameScore)
+      (preferDirectorCredits ? DIRECTOR_CREDIT_BOOST : ACTOR_CREDIT_BOOST) *
+      Math.max(0.75, personNameScore)
     const hasStrongRoleSignal = entry.personRoleScore >= roleThreshold
     const strongPersonMatchBoost =
-      personNameScore >= 0.82 && hasStrongRoleSignal ? PERSON_STRONG_MATCH_BOOST * personNameScore : 0
+      personNameScore >= 0.82 && hasStrongRoleSignal
+        ? PERSON_STRONG_MATCH_BOOST * personNameScore
+        : 0
     const personTitleNoisePenalty =
-      (analisis.tipo_detectado === "persona" || analisis.tipo_detectado === "mixto") &&
+      (analisis.tipo_detectado === "persona" ||
+        analisis.tipo_detectado === "mixto") &&
       personNameScore >= 0.8 &&
       entry.hasTitleSource &&
       !hasStrongRoleSignal
@@ -723,7 +861,8 @@ const runSmartUnifiedSearch = async ({
     const hasExact = hasExactTVNameMatch(tv, normalizedQuery)
     if (hasExact) score += TV_EXACT_BOOST
     else score -= TV_NON_EXACT_PENALTY
-    if (getMatchStrength(tv.name || tv.original_name, normalizedQuery) >= 70) score += TV_SOURCE_BOOST
+    if (getMatchStrength(tv.name || tv.original_name, normalizedQuery) >= 70)
+      score += TV_SOURCE_BOOST
 
     return {
       ...tv,
@@ -742,8 +881,16 @@ const runSmartUnifiedSearch = async ({
       tokens,
       async (token) => {
         const [moviePayload, tvPayload] = await Promise.all([
-          consultarTMDB("search/movie", { query: token, page: "1" }, { includeDefaultLanguage: false }),
-          consultarTMDB("search/tv", { query: token, page: "1" }, { includeDefaultLanguage: false }),
+          consultarTMDB(
+            "search/movie",
+            { query: token, page: "1" },
+            { includeDefaultLanguage: false }
+          ),
+          consultarTMDB(
+            "search/tv",
+            { query: token, page: "1" },
+            { includeDefaultLanguage: false }
+          ),
         ])
         return { moviePayload, tvPayload }
       },
@@ -782,25 +929,29 @@ const runSmartUnifiedSearch = async ({
       }
     }
 
-    rankedMovies = Array.from(fallbackById.values())
-      .map((movie) => ({
-        ...movie,
-        _smart_rank: rankMovieByQuery(movie, normalizedQuery),
-      }))
-    rankedTV = Array.from(fallbackTVById.values())
-      .map((tv) => ({
-        ...tv,
-        _smart_rank: getMatchStrength(tv.name, normalizedQuery) + Number(tv.popularity || 0) * 0.02,
-      }))
+    rankedMovies = Array.from(fallbackById.values()).map((movie) => ({
+      ...movie,
+      _smart_rank: rankMovieByQuery(movie, normalizedQuery),
+    }))
+    rankedTV = Array.from(fallbackTVById.values()).map((tv) => ({
+      ...tv,
+      _smart_rank:
+        getMatchStrength(tv.name, normalizedQuery) +
+        Number(tv.popularity || 0) * 0.02,
+    }))
   } else {
-    rankedTV.sort((a: AnyRecord, b: AnyRecord) => Number(b._smart_rank || 0) - Number(a._smart_rank || 0))
+    rankedTV.sort(
+      (a: AnyRecord, b: AnyRecord) =>
+        Number(b._smart_rank || 0) - Number(a._smart_rank || 0)
+    )
   }
 
   rankedMovies.sort((a, b) => {
     const aExact = hasExactTitleMatch(a, normalizedQuery)
     const bExact = hasExactTitleMatch(b, normalizedQuery)
     const directorRoleThreshold =
-      ((DIRECTOR_CREDIT_BOOST + ACTOR_CREDIT_BOOST) / 2) * personIntentMultiplier
+      ((DIRECTOR_CREDIT_BOOST + ACTOR_CREDIT_BOOST) / 2) *
+      personIntentMultiplier
 
     if (aExact && bExact) {
       const byVotes = Number(b.vote_count || 0) - Number(a.vote_count || 0)
@@ -814,8 +965,10 @@ const runSmartUnifiedSearch = async ({
     const aRoleBoost = Number(a?._score_debug?.person_role_boost || 0)
     const bRoleBoost = Number(b?._score_debug?.person_role_boost || 0)
 
-    const aDirectorLike = aPersonNameScore >= 0.82 && aRoleBoost >= directorRoleThreshold
-    const bDirectorLike = bPersonNameScore >= 0.82 && bRoleBoost >= directorRoleThreshold
+    const aDirectorLike =
+      aPersonNameScore >= 0.82 && aRoleBoost >= directorRoleThreshold
+    const bDirectorLike =
+      bPersonNameScore >= 0.82 && bRoleBoost >= directorRoleThreshold
     if (aDirectorLike !== bDirectorLike) return aDirectorLike ? -1 : 1
 
     if (aRoleBoost !== bRoleBoost) return bRoleBoost - aRoleBoost
@@ -823,12 +976,19 @@ const runSmartUnifiedSearch = async ({
     return Number(b._smart_rank || 0) - Number(a._smart_rank || 0)
   })
 
-  if (currentPage === 1 && (analisis.tipo_detectado === "persona" || analisis.tipo_detectado === "mixto")) {
+  if (
+    currentPage === 1 &&
+    (analisis.tipo_detectado === "persona" ||
+      analisis.tipo_detectado === "mixto")
+  ) {
     const forcedTopMovie = rankedMovies.find(
       (movie) => Number(movie?._score_debug?.strong_person_match_boost || 0) > 0
     )
     if (forcedTopMovie) {
-      rankedMovies = [forcedTopMovie, ...rankedMovies.filter((movie) => movie.id !== forcedTopMovie.id)]
+      rankedMovies = [
+        forcedTopMovie,
+        ...rankedMovies.filter((movie) => movie.id !== forcedTopMovie.id),
+      ]
     }
   }
 
@@ -840,12 +1000,19 @@ const runSmartUnifiedSearch = async ({
     const hasExactMovieMatch = rankedMovies.some((movie: AnyRecord) =>
       hasExactTitleMatch(movie, normalizedQuery)
     )
-    const exactTVMatches = rankedTV.filter((tv: AnyRecord) => hasExactTVNameMatch(tv, normalizedQuery)).slice(0, 2)
+    const exactTVMatches = rankedTV
+      .filter((tv: AnyRecord) => hasExactTVNameMatch(tv, normalizedQuery))
+      .slice(0, 2)
     if (exactTVMatches.length > 0 && !hasExactMovieMatch) {
-      const promotedIds = new Set(exactTVMatches.map((item: AnyRecord) => item.id))
+      const promotedIds = new Set(
+        exactTVMatches.map((item: AnyRecord) => item.id)
+      )
       mergedMainResults = [
         ...exactTVMatches,
-        ...mergedMainResults.filter((item: AnyRecord) => !promotedIds.has(item.id) || item.media_type !== "tv"),
+        ...mergedMainResults.filter(
+          (item: AnyRecord) =>
+            !promotedIds.has(item.id) || item.media_type !== "tv"
+        ),
       ]
     }
   }
@@ -861,7 +1028,10 @@ const runSmartUnifiedSearch = async ({
     tv_results: tvResults,
     people_results: currentPage === 1 ? personCandidates.slice(0, 3) : [],
     total_results: mergedMainResults.length,
-    total_pages: Math.max(1, Math.ceil(mergedMainResults.length / SEARCH_PAGE_SIZE)),
+    total_pages: Math.max(
+      1,
+      Math.ceil(mergedMainResults.length / SEARCH_PAGE_SIZE)
+    ),
     page: currentPage,
     ...(includeDebug
       ? {
@@ -903,7 +1073,10 @@ export const getTVDetail = async (req: Request, res: Response) => {
       const seasons = Array.isArray(detail?.seasons) ? detail.seasons : []
       const seasonNumbers = seasons
         .map((season: AnyRecord) => Number(season?.season_number))
-        .filter((seasonNumber: number) => Number.isFinite(seasonNumber) && seasonNumber >= 0)
+        .filter(
+          (seasonNumber: number) =>
+            Number.isFinite(seasonNumber) && seasonNumber >= 0
+        )
         .slice(0, 20)
 
       const seasonDetails = await pMap(
@@ -934,7 +1107,9 @@ export const getSearch = async (req: Request, res: Response) => {
   const pagina = String(req.query.page || "1")
 
   if (!q) {
-    return res.status(400).json({ error: "Debe proporcionar un termino de busqueda." })
+    return res
+      .status(400)
+      .json({ error: "Debe proporcionar un termino de busqueda." })
   }
 
   const cacheKey = buildMovieSearchCacheKey("general", q, pagina)
@@ -959,10 +1134,16 @@ export const getSearchDebug = async (req: Request, res: Response) => {
   const pagina = String(req.query.page || "1")
 
   if (!q) {
-    return res.status(400).json({ error: "Debe proporcionar un termino de busqueda." })
+    return res
+      .status(400)
+      .json({ error: "Debe proporcionar un termino de busqueda." })
   }
 
-  const resultado = await runSmartUnifiedSearch({ query: q, page: pagina, includeDebug: true })
+  const resultado = await runSmartUnifiedSearch({
+    query: q,
+    page: pagina,
+    includeDebug: true,
+  })
   res.status(200).json(resultado)
 }
 
@@ -980,14 +1161,21 @@ export const getPersonSearch = async (req: Request, res: Response) => {
   await assertNotRateLimited(req.ip!)
   const q = normalizeQuery(req.query.q as string)
   if (!q) {
-    return res.status(400).json({ error: "Debe proporcionar un termino de busqueda." })
+    return res
+      .status(400)
+      .json({ error: "Debe proporcionar un termino de busqueda." })
   }
 
   const page = String(req.query.page || "1")
   const cacheKey = buildMovieSearchCacheKey("person", q, page)
   const datos = await getOSet(
     cacheKey,
-    () => consultarTMDB("search/person", { query: q, page }, { includeDefaultLanguage: false }),
+    () =>
+      consultarTMDB(
+        "search/person",
+        { query: q, page },
+        { includeDefaultLanguage: false }
+      ),
     TTL_BUSQUEDA
   )
   res.status(200).json(datos)
@@ -997,7 +1185,9 @@ export const getMovieSearch = async (req: Request, res: Response) => {
   await assertNotRateLimited(req.ip!)
   const q = normalizeQuery(req.query.q as string)
   if (!q) {
-    return res.status(400).json({ error: "Debe proporcionar un termino de busqueda." })
+    return res
+      .status(400)
+      .json({ error: "Debe proporcionar un termino de busqueda." })
   }
 
   const page = String(req.query.page || "1")
@@ -1026,14 +1216,21 @@ export const getTVSearch = async (req: Request, res: Response) => {
   await assertNotRateLimited(req.ip!)
   const q = normalizeQuery(req.query.q as string)
   if (!q) {
-    return res.status(400).json({ error: "Debe proporcionar un termino de busqueda." })
+    return res
+      .status(400)
+      .json({ error: "Debe proporcionar un termino de busqueda." })
   }
 
   const page = String(req.query.page || "1")
   const cacheKey = buildMovieSearchCacheKey("tv", q, page)
   const datos = await getOSet(
     cacheKey,
-    () => consultarTMDB("search/tv", { query: q, page }, { includeDefaultLanguage: false }),
+    () =>
+      consultarTMDB(
+        "search/tv",
+        { query: q, page },
+        { includeDefaultLanguage: false }
+      ),
     TTL_BUSQUEDA
   )
   res.status(200).json(datos)
@@ -1044,4 +1241,3 @@ const assertNotRateLimited = async (ip: string) => {
     throw new TooManyRequestsError("Demasiadas solicitudes, intenta mas tarde")
   }
 }
-

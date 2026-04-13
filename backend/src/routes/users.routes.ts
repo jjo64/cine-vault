@@ -18,9 +18,18 @@ import {
   actualizarAvatar,
 } from "../controllers/SettingsController.js"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
-import { validarBody } from "../middlewares/validation.middleware.js"
+import {
+  validarBody,
+  validarQuery,
+  validarParams,
+} from "../middlewares/validation.middleware.js"
 import { actualizarFirmaSchema } from "../schemas/profile.js"
 import { actualizarAvatarSchema } from "../schemas/settings.js"
+import { idParamSchema } from "../schemas/common.js"
+import {
+  buscarUsuariosQuerySchema,
+  usernameParamSchema,
+} from "../schemas/user.js"
 
 /**
  * @swagger
@@ -69,9 +78,14 @@ router.get("/", middlewareAutenticacion, manejadorAsincrono(obtenerUsuarios))
 
 router.get(
   "/username/:username",
+  validarParams(usernameParamSchema),
   manejadorAsincrono(obtenerUsuarioPorUsername)
 )
-router.get("/search", manejadorAsincrono(buscarUsuarios))
+router.get(
+  "/search",
+  validarQuery(buscarUsuariosQuerySchema),
+  manejadorAsincrono(buscarUsuarios)
+)
 
 /**
  * @swagger
@@ -104,13 +118,19 @@ router.get("/search", manejadorAsincrono(buscarUsuarios))
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.get("/:id", manejadorAsincrono(obtenerUsuarioPorId)) // Datos del pefil (nombre, bio, avatar, stats)
+router.get(
+  "/:id",
+  validarParams(idParamSchema),
+  manejadorAsincrono(obtenerUsuarioPorId)
+) // Datos del pefil (nombre, bio, avatar, stats)
 router.get(
   "/:id/profile/signature",
+  validarParams(idParamSchema),
   manejadorAsincrono(obtenerFirmaCinematograficaPublica)
 )
 router.get(
   "/:id/profile/curated-gallery",
+  validarParams(idParamSchema),
   manejadorAsincrono(obtenerGaleriaCuradaPublica)
 )
 
@@ -165,6 +185,7 @@ router.post(
 router.post(
   "/follow/:id",
   middlewareAutenticacion,
+  validarParams(idParamSchema),
   manejadorAsincrono(seguirUsuario)
 ) //seguir usuario
 
@@ -198,6 +219,7 @@ router.post(
 router.delete(
   "/unfollow/:id",
   middlewareAutenticacion,
+  validarParams(idParamSchema),
   manejadorAsincrono(dejarDeSeguirUsuario)
 ) // dejar de seguir usuario
 
@@ -232,7 +254,11 @@ router.delete(
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.get("/:id/followers", manejadorAsincrono(obtenerSeguidores)) // seguidores
+router.get(
+  "/:id/followers",
+  validarParams(idParamSchema),
+  manejadorAsincrono(obtenerSeguidores)
+) // seguidores
 
 /**
  * @swagger

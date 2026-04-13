@@ -1,7 +1,10 @@
 import { z } from "zod"
 
 export const listReportsQuerySchema = z.object({
-  status: z.enum(["pending", "resolved", "rejected", "all"]).optional().default("pending"),
+  status: z
+    .enum(["pending", "resolved", "rejected", "all"])
+    .optional()
+    .default("pending"),
   page: z.coerce.number().int().positive().optional().default(1),
   limit: z.coerce.number().int().min(1).max(50).optional().default(20),
   review_id: z.coerce.number().int().positive().optional(),

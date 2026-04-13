@@ -107,4 +107,6 @@ export type MarcarProgresoArcoDTO = z.infer<typeof marcarProgresoArcoSchema>
 export type CrearArcoDTO = z.infer<typeof crearArcoSchema>
 export type ActualizarArcoDTO = z.infer<typeof actualizarArcoSchema>
 export type ModerarArcoDTO = z.infer<typeof moderarArcoSchema>
-export type ListArcosModeracionQueryDTO = z.infer<typeof listArcosModeracionQuerySchema>
+export type ListArcosModeracionQueryDTO = z.infer<
+  typeof listArcosModeracionQuerySchema
+>

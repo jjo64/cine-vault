@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { NotFoundError } from "../errors/AppErrors.js"
-import type { RichDiaryEntry} from "../repositories/DiaryRepository.js"
+import type { RichDiaryEntry } from "../repositories/DiaryRepository.js"
 import type { diary_entries } from "@prisma/client"
 
 /* ==========================================================================
@@ -32,7 +32,11 @@ beforeEach(() => {
 
 describe("obtenerDiarioService", () => {
   it("lanza NotFoundError si el diario está vacío", async () => {
-    vi.mocked(diaryRepository.buildRichResponse).mockResolvedValue(null as unknown as Awaited<ReturnType<typeof diaryRepository.buildRichResponse>>)
+    vi.mocked(diaryRepository.buildRichResponse).mockResolvedValue(
+      null as unknown as Awaited<
+        ReturnType<typeof diaryRepository.buildRichResponse>
+      >
+    )
     await expect(obtenerDiarioService(1)).rejects.toThrow(NotFoundError)
   })
 

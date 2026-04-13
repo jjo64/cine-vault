@@ -39,8 +39,12 @@ describe("title ranking helper", () => {
   })
 
   it("fusiona resultados EN y ES sin perder title_en y localized", () => {
-    const en = [{ id: 10, title: "Stalker", original_title: "Сталкер", overview: "A" }]
-    const es = [{ id: 10, title: "La zona", original_title: "Сталкер", overview: "B" }]
+    const en = [
+      { id: 10, title: "Stalker", original_title: "Сталкер", overview: "A" },
+    ]
+    const es = [
+      { id: 10, title: "La zona", original_title: "Сталкер", overview: "B" },
+    ]
 
     const { merged } = mergeEnglishAndSpanishResults(en, es)
 

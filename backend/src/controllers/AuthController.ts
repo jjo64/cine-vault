@@ -50,7 +50,12 @@ export const registrar = async (req: Request, res: Response) => {
     })
   }
 
-  res.status(201).json({ message: "Usuario registrado exitosamente", userId: resultado.userId })
+  res
+    .status(201)
+    .json({
+      message: "Usuario registrado exitosamente",
+      userId: resultado.userId,
+    })
 }
 
 export const verificarEmail = async (req: Request, res: Response) => {

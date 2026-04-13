@@ -5,8 +5,13 @@ import {
   addMovieToFavorites,
   removeMovieFromFavorites,
 } from "../controllers/FavoritiesController.js"
+import {
+  userIdParamsFavSchema,
+  movieIdParamsFavSchema,
+} from "../schemas/favorites.js"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
 import { middlewareAutenticacion } from "../middlewares/auth.middlewares.js"
+import { validarParams } from "../middlewares/validation.middleware.js"
 
 /**
  * @swagger
@@ -80,7 +85,11 @@ router.get("/", middlewareAutenticacion, manejadorAsincrono(getFavorites)) // Ob
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.get("/user/:userId", manejadorAsincrono(getFavoritesByUserId)) // Obtener los favoritos de un usuario
+router.get(
+  "/user/:userId",
+  validarParams(userIdParamsFavSchema),
+  manejadorAsincrono(getFavoritesByUserId)
+) // Obtener los favoritos de un usuario
 
 /**
  * @swagger
@@ -141,12 +150,14 @@ router.get("/user/:userId", manejadorAsincrono(getFavoritesByUserId)) // Obtener
 router.post(
   "/:movieId",
   middlewareAutenticacion,
+  validarParams(movieIdParamsFavSchema),
   manejadorAsincrono(addMovieToFavorites)
 ) // Añadir una película a favoritos
 router.delete(
   "/:movieId",
   middlewareAutenticacion,
+  validarParams(movieIdParamsFavSchema),
   manejadorAsincrono(removeMovieFromFavorites)
-) // Eliminar una película de favoritos
+)// Eliminar una película de favoritos
 
 export default router

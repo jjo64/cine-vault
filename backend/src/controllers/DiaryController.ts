@@ -2,6 +2,7 @@ import { Request, Response } from "express"
 import * as diaryService from "../services/diary.services.js"
 import { checkIPSpike } from "../services/security.services.js"
 import { TooManyRequestsError } from "../errors/AppErrors.js"
+import type { DiaryUserParamsDTO, DiaryIdParamsDTO } from "../schemas/diary.js"
 
 /* ==========================================================================
    CONTROLADOR DE DIARIO
@@ -25,18 +26,15 @@ export const getMyDiary = async (req: Request, res: Response) => {
 }
 
 export const getDiaryUser = async (req: Request, res: Response) => {
-  const diario = await diaryService.obtenerDiarioService(
-    Number(req.params.id_user)
-  )
+  const { id_user } = req.params as unknown as DiaryUserParamsDTO
+  const diario = await diaryService.obtenerDiarioService(id_user)
   res.json({ diary: diario })
 }
 
 export const removeDiary = async (req: Request, res: Response) => {
   await assertNotRateLimited(req.ip!)
-  await diaryService.eliminarEntradaDiarioService(
-    req.user!.user_id,
-    Number(req.params.id)
-  )
+  const { id } = req.params as unknown as DiaryIdParamsDTO
+  await diaryService.eliminarEntradaDiarioService(req.user!.user_id, id)
   res.json({ message: "Eliminada exitosamente" })
 }
 

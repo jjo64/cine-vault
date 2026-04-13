@@ -14,8 +14,14 @@ export interface IUserProfileRepository {
   search(query: string, take: number): Promise<UserSearchResult[]>
   update(id: number, data: ActualizarPerfilData): Promise<void>
   createFollow(followerId: number, followingId: number): Promise<void>
-  deleteFollow(followerId: number, followingId: number): Promise<{ count: number }>
-  findFollow(viewerId: number, targetId: number): Promise<{ follower_id: number } | null>
+  deleteFollow(
+    followerId: number,
+    followingId: number
+  ): Promise<{ count: number }>
+  findFollow(
+    viewerId: number,
+    targetId: number
+  ): Promise<{ follower_id: number } | null>
   findFollowers(id: number): Promise<FollowsWithFollower | null>
   findFollowing(id: number): Promise<FollowsWithFollowing | null>
   findCinematographicSignature(id: number): Promise<RawRow[]>
@@ -57,7 +63,9 @@ type UserSearchResult = {
   _count: { reviews: number }
 }
 
-type FollowsWithFollower = Awaited<ReturnType<typeof prisma.users.findUnique>> & {
+type FollowsWithFollower = Awaited<
+  ReturnType<typeof prisma.users.findUnique>
+> & {
   follows_follows_following_idTousers: Array<{
     users_follows_follower_idTousers: {
       id: number
@@ -67,7 +75,9 @@ type FollowsWithFollower = Awaited<ReturnType<typeof prisma.users.findUnique>> &
   }>
 }
 
-type FollowsWithFollowing = Awaited<ReturnType<typeof prisma.users.findUnique>> & {
+type FollowsWithFollowing = Awaited<
+  ReturnType<typeof prisma.users.findUnique>
+> & {
   follows_follows_follower_idTousers: Array<{
     users_follows_following_idTousers: {
       id: number
@@ -80,14 +90,20 @@ type FollowsWithFollowing = Awaited<ReturnType<typeof prisma.users.findUnique>> 
 // ─── Implementación ───────────────────────────────────────────────────────────
 
 export class UserProfileRepository implements IUserProfileRepository {
-    async findPublicById(id: number) {
+  async findPublicById(id: number) {
     return prisma.users.findUnique({
       where: { id },
       select: {
-        id: true, username: true, avatar_url: true, bio: true, created_at: true,
+        id: true,
+        username: true,
+        avatar_url: true,
+        bio: true,
+        created_at: true,
         _count: {
           select: {
-            reviews: true, diary_entries: true, watchlist: true,
+            reviews: true,
+            diary_entries: true,
+            watchlist: true,
             follows_follows_follower_idTousers: true,
             follows_follows_following_idTousers: true,
           },
@@ -100,10 +116,16 @@ export class UserProfileRepository implements IUserProfileRepository {
     return prisma.users.findUnique({
       where: { username },
       select: {
-        id: true, username: true, avatar_url: true, bio: true, created_at: true,
+        id: true,
+        username: true,
+        avatar_url: true,
+        bio: true,
+        created_at: true,
         _count: {
           select: {
-            reviews: true, diary_entries: true, watchlist: true,
+            reviews: true,
+            diary_entries: true,
+            watchlist: true,
             follows_follows_follower_idTousers: true,
             follows_follows_following_idTousers: true,
           },
@@ -111,7 +133,7 @@ export class UserProfileRepository implements IUserProfileRepository {
       },
     })
   }
-  
+
   async findById(id: number) {
     return prisma.users.findUnique({
       where: { id },
@@ -171,10 +193,7 @@ export class UserProfileRepository implements IUserProfileRepository {
   async search(query: string, take: number) {
     return prisma.users.findMany({
       where: {
-        OR: [
-          { username: { contains: query } },
-          { bio: { contains: query } },
-        ],
+        OR: [{ username: { contains: query } }, { bio: { contains: query } }],
       },
       select: {
         id: true,

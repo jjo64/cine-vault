@@ -7,8 +7,12 @@ import {
 } from "../controllers/DiaryController.js"
 import { middlewareAutenticacion } from "../middlewares/auth.middlewares.js"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
-import { validarBody } from "../middlewares/validation.middleware.js"
-import { crearEntradaDiarioSchema } from "../schemas/diary.js"
+import { validarBody, validarParams } from "../middlewares/validation.middleware.js"
+import {
+  crearEntradaDiarioSchema,
+  diaryUserParamsSchema,
+  diaryIdParamsSchema,
+} from "../schemas/diary.js"
 
 /**
  * @swagger
@@ -100,7 +104,11 @@ router.get("/", middlewareAutenticacion, manejadorAsincrono(getMyDiary)) // obte
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.get("/:id_user", manejadorAsincrono(getDiaryUser)) // obtener diario de otro usuario
+router.get(
+  "/:id_user",
+  validarParams(diaryUserParamsSchema),
+  manejadorAsincrono(getDiaryUser)
+)// obtener diario de otro usuario
 
 /**
  * @swagger
@@ -149,6 +157,7 @@ router.post(
 router.delete(
   "/:id",
   middlewareAutenticacion,
+  validarParams(diaryIdParamsSchema),
   manejadorAsincrono(removeDiary)
 ) // eliminar entrada por id
 

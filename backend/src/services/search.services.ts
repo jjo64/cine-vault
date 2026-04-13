@@ -18,7 +18,6 @@ export const enriquecerConDatosLocalesService = async (
       })
     }
     return mapa
-
   } catch (error) {
     const maybePrismaError = error as { code?: string }
     if (maybePrismaError?.code === "P2022") return new Map()

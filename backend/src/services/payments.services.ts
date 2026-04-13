@@ -136,11 +136,11 @@ export async function processWebhookEventService(
 
     // Renovación mensual → actualizar end_date
     case "invoice.payment_succeeded": {
-      const invoice = event.data.object as Stripe.Invoice & { 
+      const invoice = event.data.object as Stripe.Invoice & {
         subscription?: string
-        payment_intent?: string 
+        payment_intent?: string
       }
-      const stripeSubId = invoice.subscription as string    
+      const stripeSubId = invoice.subscription as string
 
       // Solo procesar renovaciones, no el pago inicial
       if (invoice.billing_reason === "subscription_create") break
@@ -156,7 +156,7 @@ export async function processWebhookEventService(
           subscriptionId: sub.id,
           amount: (invoice.amount_paid ?? 0) / 100,
           currency: invoice.currency ?? "eur",
-          providerPaymentId: invoice.payment_intent as string ?? invoice.id,
+          providerPaymentId: (invoice.payment_intent as string) ?? invoice.id,
           status: "paid",
         })
       }
@@ -164,9 +164,9 @@ export async function processWebhookEventService(
     }
 
     case "invoice.payment_failed": {
-      const invoice = event.data.object as Stripe.Invoice & { 
+      const invoice = event.data.object as Stripe.Invoice & {
         subscription?: string
-        payment_intent?: string 
+        payment_intent?: string
       }
       const stripeSubId = invoice.subscription as string
       const sub =
@@ -181,7 +181,7 @@ export async function processWebhookEventService(
           subscriptionId: sub.id,
           amount: (invoice.amount_due ?? 0) / 100,
           currency: invoice.currency ?? "eur",
-          providerPaymentId: invoice.payment_intent as string ?? invoice.id,
+          providerPaymentId: (invoice.payment_intent as string) ?? invoice.id,
           status: "failed",
         })
       }

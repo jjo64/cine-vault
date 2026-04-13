@@ -74,7 +74,9 @@ afterAll(async () => {
 
 describe("Sprint social endpoints", () => {
   it("GET /api/reviews/:username/:movieSlug devuelve hilo de reseña", async () => {
-    const response = await request(app).get(`/api/reviews/${username}/${movieRefId}`)
+    const response = await request(app).get(
+      `/api/reviews/${username}/${movieRefId}`
+    )
 
     expect(response.status).toBe(200)
     expect(response.body.user_id).toBe(userId)

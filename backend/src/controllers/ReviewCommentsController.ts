@@ -4,6 +4,14 @@ import { emitirNotificacionService } from "../services/notifications.services.js
 import type { SolicitudAutenticada } from "../middlewares/auth.middlewares.js"
 import { checkIPSpike } from "../services/security.services.js"
 import { TooManyRequestsError } from "../errors/AppErrors.js"
+import type { z } from "zod"
+import type {
+  reviewIdParamsSchema,
+  commentIdParamsSchema,
+} from "../schemas/reviews.js"
+
+type ReviewIdParams = z.infer<typeof reviewIdParamsSchema>
+type CommentIdParams = z.infer<typeof commentIdParamsSchema>
 
 /* ==========================================================================
    CONTROLADOR DE COMENTARIOS EN RESEÑAS
@@ -13,16 +21,15 @@ import { TooManyRequestsError } from "../errors/AppErrors.js"
    ========================================================================== */
 
 export const getCommentsByReviewId = async (req: Request, res: Response) => {
-  const comentarios = await reviewsService.obtenerComentariosService(
-    Number(req.params.reviewId)
-  )
+  const { reviewId } = req.params as unknown as ReviewIdParams
+  const comentarios = await reviewsService.obtenerComentariosService(reviewId)
   res.json(comentarios)
 }
 
 export const addComment = async (req: SolicitudAutenticada, res: Response) => {
   await assertNotRateLimited(req.ip!)
   const userId = req.user!.user_id
-  const reviewId = Number(req.params.reviewId)
+  const { reviewId } = req.params as unknown as ReviewIdParams
 
   const { comentario, review } = await reviewsService.crearComentarioService(
     userId,
@@ -46,10 +53,8 @@ export const removeComment = async (
   res: Response
 ) => {
   await assertNotRateLimited(req.ip!)
-  await reviewsService.eliminarComentarioService(
-    req.user!.user_id,
-    Number(req.params.commentId)
-  )
+  const { commentId } = req.params as unknown as CommentIdParams
+  await reviewsService.eliminarComentarioService(req.user!.user_id, commentId)
   res.json({ message: "Comentario eliminado correctamente" })
 }
 
@@ -58,9 +63,10 @@ export const updateComment = async (
   res: Response
 ) => {
   await assertNotRateLimited(req.ip!)
+  const { commentId } = req.params as unknown as CommentIdParams
   const comentario = await reviewsService.actualizarComentarioService(
     req.user!.user_id,
-    Number(req.params.commentId),
+    commentId,
     req.body
   )
   res.json(comentario)

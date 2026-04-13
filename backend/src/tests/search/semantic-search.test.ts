@@ -4,7 +4,7 @@ import {
   calcularPersonNameScore,
   fuzzyTokenMatchAny,
   levenshtein,
-  fuzzyMatch
+  fuzzyMatch,
 } from "../../helpers/searchUtils.js"
 
 describe("semantic search helpers", () => {
@@ -64,8 +64,14 @@ describe("semantic search helpers", () => {
   })
 
   it("calcula score alto por typo en nombre completo", () => {
-    const typoScore = calcularPersonNameScore("charlote wells", "Charlotte Wells")
-    const exactScore = calcularPersonNameScore("charlotte wells", "Charlotte Wells")
+    const typoScore = calcularPersonNameScore(
+      "charlote wells",
+      "Charlotte Wells"
+    )
+    const exactScore = calcularPersonNameScore(
+      "charlotte wells",
+      "Charlotte Wells"
+    )
 
     expect(typoScore).toBeGreaterThanOrEqual(0.82)
     expect(exactScore).toBe(1)

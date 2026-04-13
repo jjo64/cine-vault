@@ -8,7 +8,11 @@ import {
 import { middlewareAutenticacion } from "../middlewares/auth.middlewares.js"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
 import { verificarPermiso } from "../middlewares/rbac.middleware.js"
-import { validarBody, validarParams, validarQuery } from "../middlewares/validation.middleware.js"
+import {
+  validarBody,
+  validarParams,
+  validarQuery,
+} from "../middlewares/validation.middleware.js"
 import {
   listReportsQuerySchema,
   moderateReportSchema,

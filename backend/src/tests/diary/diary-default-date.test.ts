@@ -3,7 +3,6 @@ import { crearEntradaDiarioService } from "../../services/diary.services.js"
 import { diaryRepository } from "../../repositories/DiaryRepository.js"
 import type { CrearEntradaDiarioDTO } from "../../schemas/diary.js"
 
-
 vi.mock("../../repositories/DiaryRepository.js", () => ({
   diaryRepository: {
     findByUserMovieDate: vi.fn().mockResolvedValue(null),

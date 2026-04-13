@@ -27,7 +27,9 @@ export const feedActionSchema = z
     item_id: z.coerce.number().int().positive().optional(),
   })
   .refine(
-    (payload) => Boolean(payload.item_ref) || (Boolean(payload.item_type) && Boolean(payload.item_id)),
+    (payload) =>
+      Boolean(payload.item_ref) ||
+      (Boolean(payload.item_type) && Boolean(payload.item_id)),
     {
       message: "Debe enviar item_ref o item_type + item_id",
     }

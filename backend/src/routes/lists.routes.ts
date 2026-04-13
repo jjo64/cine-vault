@@ -1,7 +1,11 @@
 import { Router } from "express"
 import { middlewareAutenticacion } from "../middlewares/auth.middlewares.js"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
-import { validarBody, validarParams, validarQuery } from "../middlewares/validation.middleware.js"
+import {
+  validarBody,
+  validarParams,
+  validarQuery,
+} from "../middlewares/validation.middleware.js"
 import {
   addMovieToListSchema,
   createListSchema,

@@ -56,7 +56,11 @@ beforeAll(async () => {
   const review = await request(app)
     .post("/api/reviews")
     .set("Authorization", `Bearer ${ownerToken}`)
-    .send({ movie_id: movieId, rating: 4, content: "Reseña base para comentarios" })
+    .send({
+      movie_id: movieId,
+      rating: 4,
+      content: "Reseña base para comentarios",
+    })
 
   reviewId = review.body.id
 })
@@ -89,11 +93,15 @@ describe("Reviews comments flow", () => {
     expect(createResponse.body.content).toBe("Comentario inicial")
     commentId = createResponse.body.id
 
-    const listResponse = await request(app).get(`/api/reviews/${reviewId}/comments`)
+    const listResponse = await request(app).get(
+      `/api/reviews/${reviewId}/comments`
+    )
 
     expect(listResponse.status).toBe(200)
     expect(Array.isArray(listResponse.body)).toBe(true)
-    expect(listResponse.body.some((item: { id: number }) => item.id === commentId)).toBe(true)
+    expect(
+      listResponse.body.some((item: { id: number }) => item.id === commentId)
+    ).toBe(true)
   })
 
   it("PUT /api/reviews/comments/:commentId — actualiza comentario via alias", async () => {

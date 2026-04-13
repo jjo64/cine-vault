@@ -6,22 +6,33 @@ import {
   ListPublicListsQueryDTO,
   UpdateListDTO,
 } from "../schemas/lists.js"
-import { ensureMovieRefId, findMovieRefIdByCandidate } from "./movieRef.services.js"
+import {
+  ensureMovieRefId,
+  findMovieRefIdByCandidate,
+} from "./movieRef.services.js"
 
 export const getMyListsService = async (userId: number) => {
   return listsRepository.listByUser(userId)
 }
 
-export const getMyListDetailService = async (userId: number, listId: number) => {
+export const getMyListDetailService = async (
+  userId: number,
+  listId: number
+) => {
   const list = await listsRepository.getDetailForUser(listId, userId)
   if (!list) throw new NotFoundError("Lista no encontrada")
   return list
 }
 
-export const createListService = async (userId: number, data: CreateListDTO) => {
+export const createListService = async (
+  userId: number,
+  data: CreateListDTO
+) => {
   const name = data.name.trim()
   const existing = await listsRepository.listByUser(userId)
-  const duplicate = existing.some((list) => list.name.toLowerCase() === name.toLowerCase())
+  const duplicate = existing.some(
+    (list) => list.name.toLowerCase() === name.toLowerCase()
+  )
 
   if (duplicate) {
     throw new ConflictError("Ya existe una lista con ese nombre")
@@ -76,7 +87,9 @@ export const addMovieToListService = async (
 
   const movieRefId = await ensureMovieRefId(data.movie_id)
   const detail = await listsRepository.getDetailForUser(listId, userId)
-  const alreadyInList = detail?.items.some((item) => item.movie_id === movieRefId)
+  const alreadyInList = detail?.items.some(
+    (item) => item.movie_id === movieRefId
+  )
   if (alreadyInList) {
     throw new ConflictError("La película ya está en la lista")
   }

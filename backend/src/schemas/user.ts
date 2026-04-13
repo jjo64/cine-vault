@@ -33,4 +33,16 @@ function validarUsuario(data: unknown) {
   return { success: true, data: resultado.data }
 }
 
+export const buscarUsuariosQuerySchema = z.object({
+  q: z.string().default(""),
+  limit: z.coerce.number().int().positive().max(30).default(12),
+})
+
+export const usernameParamSchema = z.object({
+  username: z.string().min(1),
+})
+
+export type BuscarUsuariosQuery = z.infer<typeof buscarUsuariosQuerySchema>
+export type UsernameParam = z.infer<typeof usernameParamSchema>
+
 export { validarUsuario }
