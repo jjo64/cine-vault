@@ -74,17 +74,23 @@ export class FeedRepository {
   ) {
     if (!refs.length) return []
 
-    const byType = refs.reduce<Record<FeedItemType, number[]>>((acc, ref) => {
-      if (!acc[ref.item_type]) acc[ref.item_type] = []
-      acc[ref.item_type].push(ref.item_id)
-      return acc
-    }, {} as Record<FeedItemType, number[]>)
-
-    const conditions = Object.entries(byType).map(([itemType, itemIds]) =>
-      Prisma.sql`(item_type = ${itemType as FeedItemType} AND item_id IN (${Prisma.join(itemIds)}))`
+    const byType = refs.reduce<Record<FeedItemType, number[]>>(
+      (acc, ref) => {
+        if (!acc[ref.item_type]) acc[ref.item_type] = []
+        acc[ref.item_type].push(ref.item_id)
+        return acc
+      },
+      {} as Record<FeedItemType, number[]>
     )
 
-    return prisma.$queryRaw<Array<{ item_type: FeedItemType; item_id: number }>>(Prisma.sql`
+    const conditions = Object.entries(byType).map(
+      ([itemType, itemIds]) =>
+        Prisma.sql`(item_type = ${itemType as FeedItemType} AND item_id IN (${Prisma.join(itemIds)}))`
+    )
+
+    return prisma.$queryRaw<
+      Array<{ item_type: FeedItemType; item_id: number }>
+    >(Prisma.sql`
       SELECT item_type, item_id
       FROM user_feed_bookmarks
       WHERE user_id = ${viewerId}
@@ -98,17 +104,23 @@ export class FeedRepository {
   ) {
     if (!refs.length) return []
 
-    const byType = refs.reduce<Record<FeedItemType, number[]>>((acc, ref) => {
-      if (!acc[ref.item_type]) acc[ref.item_type] = []
-      acc[ref.item_type].push(ref.item_id)
-      return acc
-    }, {} as Record<FeedItemType, number[]>)
-
-    const conditions = Object.entries(byType).map(([itemType, itemIds]) =>
-      Prisma.sql`(item_type = ${itemType as FeedItemType} AND item_id IN (${Prisma.join(itemIds)}))`
+    const byType = refs.reduce<Record<FeedItemType, number[]>>(
+      (acc, ref) => {
+        if (!acc[ref.item_type]) acc[ref.item_type] = []
+        acc[ref.item_type].push(ref.item_id)
+        return acc
+      },
+      {} as Record<FeedItemType, number[]>
     )
 
-    return prisma.$queryRaw<Array<{ item_type: FeedItemType; item_id: number }>>(Prisma.sql`
+    const conditions = Object.entries(byType).map(
+      ([itemType, itemIds]) =>
+        Prisma.sql`(item_type = ${itemType as FeedItemType} AND item_id IN (${Prisma.join(itemIds)}))`
+    )
+
+    return prisma.$queryRaw<
+      Array<{ item_type: FeedItemType; item_id: number }>
+    >(Prisma.sql`
       SELECT item_type, item_id
       FROM user_feed_hides
       WHERE user_id = ${viewerId}
@@ -156,7 +168,12 @@ export class FeedRepository {
     })
   }
 
-  async setBookmark(viewerId: number, itemType: FeedItemType, itemId: number, active: boolean) {
+  async setBookmark(
+    viewerId: number,
+    itemType: FeedItemType,
+    itemId: number,
+    active: boolean
+  ) {
     if (active) {
       await prisma.$executeRaw(Prisma.sql`
         INSERT IGNORE INTO user_feed_bookmarks (user_id, item_type, item_id)
@@ -171,7 +188,12 @@ export class FeedRepository {
     `)
   }
 
-  async setHidden(viewerId: number, itemType: FeedItemType, itemId: number, active: boolean) {
+  async setHidden(
+    viewerId: number,
+    itemType: FeedItemType,
+    itemId: number,
+    active: boolean
+  ) {
     if (active) {
       await prisma.$executeRaw(Prisma.sql`
         INSERT IGNORE INTO user_feed_hides (user_id, item_type, item_id)

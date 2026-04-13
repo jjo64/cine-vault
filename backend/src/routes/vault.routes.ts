@@ -30,7 +30,11 @@ import {
 const router = Router()
 
 router.get("/", middlewareAutenticacion, manejadorAsincrono(getMyVault))
-router.get("/user/:id_user", manejadorAsincrono(getVaultByUser))
+router.get(
+  "/user/:id_user",
+  validarParams(vaultSocialUserParamsSchema),
+  manejadorAsincrono(getVaultByUser)
+)
 router.get(
   "/social/mine",
   middlewareAutenticacion,

@@ -4,6 +4,18 @@ import { emitirNotificacionService } from "../services/notifications.services.js
 import type { SolicitudAutenticada } from "../middlewares/auth.middlewares.js"
 import { checkIPSpike } from "../services/security.services.js"
 import { TooManyRequestsError } from "../errors/AppErrors.js"
+import type { z } from "zod"
+import type {
+  reviewIdParamsSchema,
+  userIdParamsSchema,
+  movieIdParamsSchema,
+  usernameMovieSlugParamsSchema,
+} from "../schemas/reviews.js"
+
+type ReviewIdParams = z.infer<typeof reviewIdParamsSchema>
+type UserIdParams = z.infer<typeof userIdParamsSchema>
+type MovieIdParams = z.infer<typeof movieIdParamsSchema>
+type UsernameMovieSlugParams = z.infer<typeof usernameMovieSlugParamsSchema>
 
 /* ==========================================================================
    CONTROLADOR DE RESEÑAS
@@ -20,9 +32,8 @@ export const getReviews = async (req: Request, res: Response) => {
 }
 
 export const getReviewsByUserId = async (req: Request, res: Response) => {
-  const resenas = await reviewsService.obtenerResenasPorUsuarioService(
-    Number(req.params.userId)
-  )
+  const { userId } = req.params as unknown as UserIdParams
+  const resenas = await reviewsService.obtenerResenasPorUsuarioService(userId)
   res.json(resenas)
 }
 
@@ -37,17 +48,14 @@ export const addReview = async (req: Request, res: Response) => {
 
 export const removeReview = async (req: Request, res: Response) => {
   await assertNotRateLimited(req.ip!)
-  await reviewsService.eliminarResenaService(
-    req.user!.user_id,
-    Number(req.params.reviewId)
-  )
+  const { reviewId } = req.params as unknown as ReviewIdParams
+  await reviewsService.eliminarResenaService(req.user!.user_id, reviewId)
   res.json({ message: "Reseña eliminada correctamente" })
 }
 
 export const getReviewsByMovieId = async (req: Request, res: Response) => {
-  const resenas = await reviewsService.obtenerResenasPorPeliculaService(
-    Number(req.params.movieId)
-  )
+  const { movieId } = req.params as unknown as MovieIdParams
+  const resenas = await reviewsService.obtenerResenasPorPeliculaService(movieId)
   res.json(resenas)
 }
 
@@ -55,9 +63,11 @@ export const getReviewByUsernameAndMovieSlug = async (
   req: Request,
   res: Response
 ) => {
+  const { username, movieSlug } =
+    req.params as unknown as UsernameMovieSlugParams
   const review = await reviewsService.obtenerResenaPorUsernameYMovieSlugService(
-    String(req.params.username),
-    String(req.params.movieSlug)
+    username,
+    movieSlug
   )
   res.json(review)
 }
@@ -65,7 +75,7 @@ export const getReviewByUsernameAndMovieSlug = async (
 export const likeReview = async (req: Request, res: Response) => {
   await assertNotRateLimited(req.ip!)
   const userId = req.user!.user_id
-  const reviewId = Number(req.params.reviewId)
+  const { reviewId } = req.params as unknown as ReviewIdParams
 
   const { like, review } = await reviewsService.darLikeResenaService(
     userId,
@@ -88,18 +98,20 @@ export const removeLikeReview = async (
   res: Response
 ) => {
   await assertNotRateLimited(req.ip!)
+  const { reviewId } = req.params as unknown as ReviewIdParams
   const { like, review } = await reviewsService.quitarLikeResenaService(
     req.user!.user_id,
-    Number(req.params.reviewId)
+    reviewId
   )
   res.json({ review, like })
 }
 
 export const updateReview = async (req: Request, res: Response) => {
   await assertNotRateLimited(req.ip!)
+  const { reviewId } = req.params as unknown as ReviewIdParams
   const resena = await reviewsService.actualizarResenaService(
     req.user!.user_id,
-    Number(req.params.reviewId),
+    reviewId,
     req.body
   )
   res.json(resena)
@@ -107,9 +119,10 @@ export const updateReview = async (req: Request, res: Response) => {
 
 export const reportReview = async (req: Request, res: Response) => {
   await assertNotRateLimited(req.ip!)
+  const { reviewId } = req.params as unknown as ReviewIdParams
   const reporte = await reviewsService.reportarResenaService(
     req.user!.user_id,
-    Number(req.params.reviewId),
+    reviewId,
     req.body
   )
   res.json(reporte)

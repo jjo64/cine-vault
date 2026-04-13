@@ -1,7 +1,14 @@
-import { ConflictError, NotFoundError, ValidationError } from "../errors/AppErrors.js"
+import {
+  ConflictError,
+  NotFoundError,
+  ValidationError,
+} from "../errors/AppErrors.js"
 import { consultarTMDB } from "../helpers/fetchTMDB.js"
 import { vaultRepository } from "../repositories/VaultRepository.js"
-import { ensureMovieRefId, findMovieRefIdByCandidate } from "./movieRef.services.js"
+import {
+  ensureMovieRefId,
+  findMovieRefIdByCandidate,
+} from "./movieRef.services.js"
 import type {
   AgregarVaultDTO,
   CreateVaultSocialEntryDTO,
@@ -12,7 +19,10 @@ import type {
 export const obtenerVaultService = (userId: number) =>
   vaultRepository.buildRichResponse(userId)
 
-export const agregarVaultService = async (userId: number, data: AgregarVaultDTO) => {
+export const agregarVaultService = async (
+  userId: number,
+  data: AgregarVaultDTO
+) => {
   const movieId = await ensureMovieRefId(data.movie_id)
   const yaExiste = await vaultRepository.exists(userId, movieId)
 
@@ -23,7 +33,10 @@ export const agregarVaultService = async (userId: number, data: AgregarVaultDTO)
   await vaultRepository.create(userId, movieId)
 }
 
-export const eliminarVaultService = async (userId: number, movieIdCandidate: number) => {
+export const eliminarVaultService = async (
+  userId: number,
+  movieIdCandidate: number
+) => {
   const resolvedMovieId = await findMovieRefIdByCandidate(movieIdCandidate)
   if (!resolvedMovieId) return
   await vaultRepository.deleteByMovieId(userId, resolvedMovieId)
@@ -35,7 +48,9 @@ const parsePage = (value: unknown, fallback: number) => {
   return Math.floor(parsed)
 }
 
-const mapSocialCardType = (entryType: "reflexion" | "edit" | "critica" | "recomendacion") => {
+const mapSocialCardType = (
+  entryType: "reflexion" | "edit" | "critica" | "recomendacion"
+) => {
   if (entryType === "edit") return "video"
   if (entryType === "recomendacion") return "list"
   return "review"
@@ -142,7 +157,10 @@ export const actualizarVaultSocialEntryService = async (
   entryId: number,
   data: UpdateVaultSocialEntryDTO
 ) => {
-  const current = await vaultRepository.getSocialEntryByIdForOwner(entryId, userId)
+  const current = await vaultRepository.getSocialEntryByIdForOwner(
+    entryId,
+    userId
+  )
   if (!current) throw new NotFoundError("Entrada de vault no encontrada")
 
   const movieId = data.movie_id ? await ensureMovieRefId(data.movie_id) : null
@@ -159,7 +177,10 @@ export const actualizarVaultSocialEntryService = async (
     isPublic: data.is_public ?? null,
   })
 
-  const updated = await vaultRepository.getSocialEntryByIdForOwner(entryId, userId)
+  const updated = await vaultRepository.getSocialEntryByIdForOwner(
+    entryId,
+    userId
+  )
   if (!updated) throw new NotFoundError("Entrada de vault no encontrada")
 
   return {
@@ -175,8 +196,14 @@ export const actualizarVaultSocialEntryService = async (
   }
 }
 
-export const eliminarVaultSocialEntryService = async (userId: number, entryId: number) => {
-  const current = await vaultRepository.getSocialEntryByIdForOwner(entryId, userId)
+export const eliminarVaultSocialEntryService = async (
+  userId: number,
+  entryId: number
+) => {
+  const current = await vaultRepository.getSocialEntryByIdForOwner(
+    entryId,
+    userId
+  )
   if (!current) throw new NotFoundError("Entrada de vault no encontrada")
   await vaultRepository.deleteSocialEntry(entryId, userId)
 }

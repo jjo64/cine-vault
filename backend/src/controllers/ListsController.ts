@@ -1,6 +1,14 @@
 import { Request, Response } from "express"
 import * as listsService from "../services/lists.services.js"
-import { ListPublicListsQueryDTO } from "../schemas/lists.js"
+import type { z } from "zod"
+import type {
+  listIdParamsSchema,
+  listItemParamsSchema,
+  ListPublicListsQueryDTO,
+} from "../schemas/lists.js"
+
+type ListIdParams = z.infer<typeof listIdParamsSchema>
+type ListItemParams = z.infer<typeof listItemParamsSchema>
 
 export const getMyLists = async (req: Request, res: Response) => {
   const lists = await listsService.getMyListsService(req.user!.user_id)
@@ -8,8 +16,11 @@ export const getMyLists = async (req: Request, res: Response) => {
 }
 
 export const getMyListDetail = async (req: Request, res: Response) => {
-  const listId = Number(req.params.id)
-  const detail = await listsService.getMyListDetailService(req.user!.user_id, listId)
+  const { id: listId } = req.params as unknown as ListIdParams
+  const detail = await listsService.getMyListDetailService(
+    req.user!.user_id,
+    listId
+  )
   res.json(detail)
 }
 
@@ -19,37 +30,47 @@ export const createList = async (req: Request, res: Response) => {
 }
 
 export const updateList = async (req: Request, res: Response) => {
-  const listId = Number(req.params.id)
-  const updated = await listsService.updateListService(req.user!.user_id, listId, req.body)
+  const { id: listId } = req.params as unknown as ListIdParams
+  const updated = await listsService.updateListService(
+    req.user!.user_id,
+    listId,
+    req.body
+  )
   res.json(updated)
 }
 
 export const deleteList = async (req: Request, res: Response) => {
-  const listId = Number(req.params.id)
+  const { id: listId } = req.params as unknown as ListIdParams
   await listsService.deleteListService(req.user!.user_id, listId)
   res.json({ message: "Lista eliminada" })
 }
 
 export const addMovieToList = async (req: Request, res: Response) => {
-  const listId = Number(req.params.id)
+  const { id: listId } = req.params as unknown as ListIdParams
   await listsService.addMovieToListService(req.user!.user_id, listId, req.body)
   res.status(201).json({ message: "Película agregada a la lista" })
 }
 
 export const removeMovieFromList = async (req: Request, res: Response) => {
-  const listId = Number(req.params.id)
-  const movieId = Number(req.params.movie_id)
-  await listsService.removeMovieFromListService(req.user!.user_id, listId, movieId)
+  const { id: listId, movie_id: movieId } =
+    req.params as unknown as ListItemParams
+  await listsService.removeMovieFromListService(
+    req.user!.user_id,
+    listId,
+    movieId
+  )
   res.json({ message: "Película eliminada de la lista" })
 }
 
 export const getPublicLists = async (req: Request, res: Response) => {
-  const lists = await listsService.getPublicListsService(req.query as unknown as ListPublicListsQueryDTO)
+  const lists = await listsService.getPublicListsService(
+    req.query as unknown as ListPublicListsQueryDTO
+  )
   res.json(lists)
 }
 
 export const getPublicListDetail = async (req: Request, res: Response) => {
-  const listId = Number(req.params.id)
+  const { id: listId } = req.params as unknown as ListIdParams
   const detail = await listsService.getPublicListDetailService(listId)
   res.json(detail)
 }

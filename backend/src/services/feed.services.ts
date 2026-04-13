@@ -43,17 +43,30 @@ const parseFeedItemRef = (
   }
 }
 
-export const getFriendsFeedService = async (viewerId: number, query: FeedQueryDTO) => {
+export const getFriendsFeedService = async (
+  viewerId: number,
+  query: FeedQueryDTO
+) => {
   const page = Math.max(1, Number(query.page || 1))
   const limit = Math.min(30, Math.max(1, Number(query.limit || 10)))
 
   const sourceUserIds = await feedRepository.listSourceUserIds(viewerId)
-  const { reviews, vaultEntries, watchlistEntries } = await feedRepository.listFeedRows(sourceUserIds)
+  const { reviews, vaultEntries, watchlistEntries } =
+    await feedRepository.listFeedRows(sourceUserIds)
 
   const refs: Array<{ item_type: FeedItemType; item_id: number }> = [
-    ...reviews.map((entry) => ({ item_type: "review" as const, item_id: entry.id })),
-    ...vaultEntries.map((entry) => ({ item_type: "vault" as const, item_id: entry.id })),
-    ...watchlistEntries.map((entry) => ({ item_type: "watchlist" as const, item_id: entry.id })),
+    ...reviews.map((entry) => ({
+      item_type: "review" as const,
+      item_id: entry.id,
+    })),
+    ...vaultEntries.map((entry) => ({
+      item_type: "vault" as const,
+      item_id: entry.id,
+    })),
+    ...watchlistEntries.map((entry) => ({
+      item_type: "watchlist" as const,
+      item_id: entry.id,
+    })),
   ]
 
   const [likedReviewIds, bookmarkedRefs, hiddenRefs] = await Promise.all([
@@ -66,8 +79,12 @@ export const getFriendsFeedService = async (viewerId: number, query: FeedQueryDT
   ])
 
   const likedSet = new Set(likedReviewIds)
-  const bookmarkSet = new Set(bookmarkedRefs.map((item) => `${item.item_type}-${item.item_id}`))
-  const hiddenSet = new Set(hiddenRefs.map((item) => `${item.item_type}-${item.item_id}`))
+  const bookmarkSet = new Set(
+    bookmarkedRefs.map((item) => `${item.item_type}-${item.item_id}`)
+  )
+  const hiddenSet = new Set(
+    hiddenRefs.map((item) => `${item.item_type}-${item.item_id}`)
+  )
 
   const items = [
     ...reviews.map((entry) => ({
@@ -144,7 +161,10 @@ export const getFriendsFeedService = async (viewerId: number, query: FeedQueryDT
   }
 }
 
-export const setFeedLikeService = async (viewerId: number, payload: FeedLikeActionDTO) => {
+export const setFeedLikeService = async (
+  viewerId: number,
+  payload: FeedLikeActionDTO
+) => {
   const { itemType, itemId } = parseFeedItemRef(payload)
 
   if (itemType !== "review") {
@@ -154,7 +174,11 @@ export const setFeedLikeService = async (viewerId: number, payload: FeedLikeActi
   const exists = await feedRepository.existsReview(itemId)
   if (!exists) throw new NotFoundError("Review no encontrada")
 
-  const likes = await feedRepository.setReviewLike(viewerId, itemId, payload.active)
+  const likes = await feedRepository.setReviewLike(
+    viewerId,
+    itemId,
+    payload.active
+  )
 
   return {
     item_ref: `${itemType}-${itemId}`,
@@ -177,7 +201,10 @@ export const setFeedBookmarkService = async (
   }
 }
 
-export const setFeedHideService = async (viewerId: number, payload: FeedHideActionDTO) => {
+export const setFeedHideService = async (
+  viewerId: number,
+  payload: FeedHideActionDTO
+) => {
   const { itemType, itemId } = parseFeedItemRef(payload)
 
   await feedRepository.setHidden(viewerId, itemType, itemId, payload.active)
@@ -194,7 +221,12 @@ export const trackFeedShareService = async (
 ) => {
   const { itemType, itemId } = parseFeedItemRef(payload)
 
-  await feedRepository.createShareEvent(viewerId, itemType, itemId, payload.channel)
+  await feedRepository.createShareEvent(
+    viewerId,
+    itemType,
+    itemId,
+    payload.channel
+  )
 
   return {
     item_ref: `${itemType}-${itemId}`,

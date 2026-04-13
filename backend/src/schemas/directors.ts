@@ -7,4 +7,6 @@ export const directorAutopsyParamsSchema = z.object({
     .positive("id debe ser positivo"),
 })
 
-export type DirectorAutopsyParamsDTO = z.infer<typeof directorAutopsyParamsSchema>
+export type DirectorAutopsyParamsDTO = z.infer<
+  typeof directorAutopsyParamsSchema
+>

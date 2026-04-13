@@ -10,7 +10,9 @@ const SITEMAP_TTL_SECONDS = 60 * 60
 const ROBOTS_TTL_SECONDS = 60 * 60 * 6
 const SITEMAP_MAX_URLS = 50_000
 
-const SITE_URL = (process.env.PUBLIC_SITE_URL || "https://cinevault.art").replace(/\/$/, "")
+const SITE_URL = (
+  process.env.PUBLIC_SITE_URL || "https://cinevault.art"
+).replace(/\/$/, "")
 
 const toIsoDate = (value: Date | string | null | undefined) => {
   if (!value) return new Date().toISOString().slice(0, 10)
@@ -40,7 +42,7 @@ const buildUrlSetXml = (entries: SitemapEntry[]) => {
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
     ...entries.map((entry) => buildUrlEntry(entry)),
-    '</urlset>',
+    "</urlset>",
   ].join("\n")
 }
 
@@ -48,14 +50,16 @@ const buildSitemapIndexXml = (locs: string[]) => {
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-    ...locs.map((loc) => `  <sitemap>\n    <loc>${escapeXml(loc)}</loc>\n  </sitemap>`),
-    '</sitemapindex>',
+    ...locs.map(
+      (loc) => `  <sitemap>\n    <loc>${escapeXml(loc)}</loc>\n  </sitemap>`
+    ),
+    "</sitemapindex>",
   ].join("\n")
 }
 
 const buildMoviePath = (tmdbId: number, slug: string | null) => {
   if (!slug) return `/movie/${tmdbId}`
-  const normalizedSlug = slug.trim().replace(/^\/+/, '')
+  const normalizedSlug = slug.trim().replace(/^\/+/, "")
   if (!normalizedSlug) return `/movie/${tmdbId}`
   return normalizedSlug.startsWith(`${tmdbId}-`)
     ? `/movie/${normalizedSlug}`
@@ -116,19 +120,19 @@ const getSitemapEntries = async () => {
   ]
 
   const movieEntries: SitemapEntry[] = movies.map((movie) => ({
-      loc: `${SITE_URL}${buildMoviePath(movie.tmdb_id, movie.slug)}`,
-      lastmod: toIsoDate(movie.updated_at),
-    }))
+    loc: `${SITE_URL}${buildMoviePath(movie.tmdb_id, movie.slug)}`,
+    lastmod: toIsoDate(movie.updated_at),
+  }))
 
   const profileEntries: SitemapEntry[] = users.map((user) => ({
-      loc: `${SITE_URL}/${encodeURIComponent(user.username)}`,
-      lastmod: toIsoDate(user.updated_at),
-    }))
+    loc: `${SITE_URL}/${encodeURIComponent(user.username)}`,
+    lastmod: toIsoDate(user.updated_at),
+  }))
 
   const newsEntries: SitemapEntry[] = news.map((item) => ({
-      loc: `${SITE_URL}/news/${item.id}`,
-      lastmod: toIsoDate(item.created_at),
-    }))
+    loc: `${SITE_URL}/news/${item.id}`,
+    lastmod: toIsoDate(item.created_at),
+  }))
 
   return {
     staticEntries,
@@ -147,8 +151,14 @@ const chunkEntries = (entries: SitemapEntry[], size: number) => {
 }
 
 const buildRootSitemapXml = async () => {
-  const { staticEntries, movieEntries, profileEntries, newsEntries } = await getSitemapEntries()
-  const allEntries = [...staticEntries, ...movieEntries, ...profileEntries, ...newsEntries]
+  const { staticEntries, movieEntries, profileEntries, newsEntries } =
+    await getSitemapEntries()
+  const allEntries = [
+    ...staticEntries,
+    ...movieEntries,
+    ...profileEntries,
+    ...newsEntries,
+  ]
 
   if (allEntries.length <= SITEMAP_MAX_URLS) {
     return buildUrlSetXml(allEntries)
@@ -165,7 +175,8 @@ const buildRootSitemapXml = async () => {
 const buildChildSitemapXml = async (
   type: "pages" | "movies" | "profiles" | "news"
 ) => {
-  const { staticEntries, movieEntries, profileEntries, newsEntries } = await getSitemapEntries()
+  const { staticEntries, movieEntries, profileEntries, newsEntries } =
+    await getSitemapEntries()
 
   const sourceMap = {
     pages: staticEntries,
@@ -180,7 +191,9 @@ const buildChildSitemapXml = async (
   }
 
   const chunks = chunkEntries(source, SITEMAP_MAX_URLS)
-  const childLocs = chunks.map((_, index) => `${SITE_URL}/sitemaps/${type}-${index + 1}.xml`)
+  const childLocs = chunks.map(
+    (_, index) => `${SITE_URL}/sitemaps/${type}-${index + 1}.xml`
+  )
 
   return buildSitemapIndexXml(childLocs)
 }
@@ -189,7 +202,8 @@ const buildChildChunkSitemapXml = async (
   type: "movies" | "profiles" | "news" | "pages",
   chunkIndex: number
 ) => {
-  const { staticEntries, movieEntries, profileEntries, newsEntries } = await getSitemapEntries()
+  const { staticEntries, movieEntries, profileEntries, newsEntries } =
+    await getSitemapEntries()
   const sourceMap = {
     pages: staticEntries,
     movies: movieEntries,
@@ -251,7 +265,11 @@ const buildRobotsTxt = () => {
 
 router.get("/sitemap.xml", async (_req, res) => {
   try {
-    const xml = await getOSet("seo:sitemap:xml", () => buildRootSitemapXml(), SITEMAP_TTL_SECONDS)
+    const xml = await getOSet(
+      "seo:sitemap:xml",
+      () => buildRootSitemapXml(),
+      SITEMAP_TTL_SECONDS
+    )
     res.setHeader("Content-Type", "application/xml; charset=utf-8")
     res.setHeader("Cache-Control", "public, max-age=3600")
     res.status(200).send(xml)
@@ -269,7 +287,11 @@ router.get("/sitemaps/:type.xml", async (req, res) => {
       return
     }
 
-    const xml = await getOSet(`seo:sitemap:${type}:xml`, () => buildChildSitemapXml(type), SITEMAP_TTL_SECONDS)
+    const xml = await getOSet(
+      `seo:sitemap:${type}:xml`,
+      () => buildChildSitemapXml(type),
+      SITEMAP_TTL_SECONDS
+    )
     res.setHeader("Content-Type", "application/xml; charset=utf-8")
     res.setHeader("Cache-Control", "public, max-age=3600")
     res.status(200).send(xml)
@@ -283,13 +305,21 @@ router.get("/sitemaps/:type-:chunk.xml", async (req, res) => {
   try {
     const type = req.params.type as "pages" | "movies" | "profiles" | "news"
     const chunk = Number(req.params.chunk)
-    if (!["pages", "movies", "profiles", "news"].includes(type) || !Number.isInteger(chunk) || chunk < 1) {
+    if (
+      !["pages", "movies", "profiles", "news"].includes(type) ||
+      !Number.isInteger(chunk) ||
+      chunk < 1
+    ) {
       res.status(404).json({ message: "Sitemap no encontrada" })
       return
     }
 
     const cacheKey = `seo:sitemap:${type}:${chunk}:xml`
-    const xml = await getOSet(cacheKey, () => buildChildChunkSitemapXml(type, chunk - 1), SITEMAP_TTL_SECONDS)
+    const xml = await getOSet(
+      cacheKey,
+      () => buildChildChunkSitemapXml(type, chunk - 1),
+      SITEMAP_TTL_SECONDS
+    )
 
     if (!xml) {
       res.status(404).json({ message: "Sitemap no encontrada" })
@@ -307,7 +337,11 @@ router.get("/sitemaps/:type-:chunk.xml", async (req, res) => {
 
 router.get("/robots.txt", async (_req, res) => {
   try {
-    const text = await getOSet("seo:robots:txt", async () => buildRobotsTxt(), ROBOTS_TTL_SECONDS)
+    const text = await getOSet(
+      "seo:robots:txt",
+      async () => buildRobotsTxt(),
+      ROBOTS_TTL_SECONDS
+    )
     res.setHeader("Content-Type", "text/plain; charset=utf-8")
     res.setHeader("Cache-Control", "public, max-age=3600")
     res.status(200).send(text)
@@ -336,9 +370,13 @@ router.get(["/film/:id", "/movie/:id"], async (req, res, next) => {
       return
     }
 
-    const year = detail.release_date ? new Date(detail.release_date).getFullYear() : new Date().getFullYear()
+    const year = detail.release_date
+      ? new Date(detail.release_date).getFullYear()
+      : new Date().getFullYear()
     const slug = generateSlug(detail.title, year)
-    const target = req.path.startsWith("/film/") ? `/film/${slug}` : `/movie/${movieId}-${slug}`
+    const target = req.path.startsWith("/film/")
+      ? `/film/${slug}`
+      : `/movie/${movieId}-${slug}`
     res.redirect(301, target)
   } catch (error) {
     next(error)

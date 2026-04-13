@@ -20,4 +20,14 @@ export const crearEntradaDiarioSchema = z.object({
     .optional(),
 })
 
+export const diaryUserParamsSchema = z.object({
+  id_user: z.coerce.number().int().positive("id_user debe ser positivo"),
+})
+
+export const diaryIdParamsSchema = z.object({
+  id: z.coerce.number().int().positive("id debe ser positivo"),
+})
+
+export type DiaryUserParamsDTO = z.infer<typeof diaryUserParamsSchema>
+export type DiaryIdParamsDTO = z.infer<typeof diaryIdParamsSchema>
 export type CrearEntradaDiarioDTO = z.infer<typeof crearEntradaDiarioSchema>

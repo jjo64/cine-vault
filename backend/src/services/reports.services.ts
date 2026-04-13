@@ -1,5 +1,8 @@
 import { NotFoundError, ValidationError } from "../errors/AppErrors.js"
-import { ReportRow, reportsRepository } from "../repositories/ReportsRepository.js"
+import {
+  ReportRow,
+  reportsRepository,
+} from "../repositories/ReportsRepository.js"
 import { ListReportsQueryDTO, ModerateReportDTO } from "../schemas/reports.js"
 
 const mapReport = (row: ReportRow) => ({
@@ -63,7 +66,9 @@ export const moderateReportService = async (
   if (!report) throw new NotFoundError("Reporte no encontrado")
 
   if (report.status !== "pending") {
-    throw new ValidationError("Solo se pueden moderar reportes en estado pending")
+    throw new ValidationError(
+      "Solo se pueden moderar reportes en estado pending"
+    )
   }
 
   await reportsRepository.moderateReport({

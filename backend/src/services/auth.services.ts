@@ -40,7 +40,10 @@ const RECOVERY_CODES_TTL_SECONDS = 180 * 24 * 60 * 60
 const RECOVERY_CODES_COUNT = 8
 
 const trustedDeviceFingerprint = (userAgent: string) =>
-  crypto.createHash("sha256").update(userAgent || "unknown").digest("hex")
+  crypto
+    .createHash("sha256")
+    .update(userAgent || "unknown")
+    .digest("hex")
 
 const trustedDeviceKey = (
   userId: number,
@@ -539,7 +542,10 @@ export const verificar2FAService = async (
 
   let trustedDeviceToken: string | undefined
   if (rememberDevice) {
-    trustedDeviceToken = await registerTrustedDevice(usuario.id, userAgent || "")
+    trustedDeviceToken = await registerTrustedDevice(
+      usuario.id,
+      userAgent || ""
+    )
   }
 
   return {

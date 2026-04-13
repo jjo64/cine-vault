@@ -9,7 +9,10 @@ import {
 import { FeedQueryDTO } from "../schemas/feed.js"
 
 export const getFeed = async (req: Request, res: Response) => {
-  const payload = await getFriendsFeedService(req.user!.user_id, req.query as unknown as FeedQueryDTO)
+  const payload = await getFriendsFeedService(
+    req.user!.user_id,
+    req.query as unknown as FeedQueryDTO
+  )
   res.json(payload)
 }
 

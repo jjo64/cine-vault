@@ -1,6 +1,12 @@
 import { Router } from "express"
-import { validarBody, validarParams } from "../middlewares/validation.middleware.js"
-import { agregarWatchlistSchema, eliminarWatchlistSchema } from "../schemas/watchlist.js"
+import {
+  validarBody,
+  validarParams,
+} from "../middlewares/validation.middleware.js"
+import {
+  agregarWatchlistSchema,
+  eliminarWatchlistSchema,
+} from "../schemas/watchlist.js"
 import {
   getWatchlistByUser,
   addMovieToWatchlist,

@@ -45,7 +45,8 @@ import {
 
 const router = Router()
 
-const DEFAULT_LOCAL_GOOGLE_CALLBACK = "http://localhost:4000/api/auth/google/callback"
+const DEFAULT_LOCAL_GOOGLE_CALLBACK =
+  "http://localhost:4000/api/auth/google/callback"
 const GOOGLE_STATE_PREFIX = "cv_google_cb:"
 
 const normalizeUrl = (value: string) => value.trim().replace(/\/+$/, "")
@@ -92,11 +93,14 @@ const readCallbackFromState = (state: unknown) => {
 
 const resolveGoogleCallback = (req: Request) => {
   const fromState = readCallbackFromState(req.query.state)
-  const fromQuery = typeof req.query.redirect_uri === "string"
-    ? req.query.redirect_uri.trim()
-    : ""
+  const fromQuery =
+    typeof req.query.redirect_uri === "string"
+      ? req.query.redirect_uri.trim()
+      : ""
 
-  const candidate = normalizeUrl(fromState || fromQuery || getDefaultGoogleCallback())
+  const candidate = normalizeUrl(
+    fromState || fromQuery || getDefaultGoogleCallback()
+  )
   const allowlist = getAllowedGoogleCallbacks()
   if (allowlist.has(candidate)) return candidate
 
@@ -152,20 +156,17 @@ router.post("/refresh", manejadorAsincrono(renovarToken))
 // ---------------------------------------------------------------------------
 // GOOGLE OAuth
 // ---------------------------------------------------------------------------
-router.get(
-  "/google",
-  (req, res, next) => {
-    const callbackURL = resolveGoogleCallback(req)
-    const state = buildGoogleState(callbackURL)
-    const authOptions = {
-      scope: ["profile", "email"],
-      callbackURL,
-      state,
-    } as unknown as Parameters<typeof passport.authenticate>[1]
+router.get("/google", (req, res, next) => {
+  const callbackURL = resolveGoogleCallback(req)
+  const state = buildGoogleState(callbackURL)
+  const authOptions = {
+    scope: ["profile", "email"],
+    callbackURL,
+    state,
+  } as unknown as Parameters<typeof passport.authenticate>[1]
 
-    passport.authenticate("google", authOptions)(req, res, next)
-  }
-)
+  passport.authenticate("google", authOptions)(req, res, next)
+})
 router.get(
   "/google/callback",
   (req, res, next) => {

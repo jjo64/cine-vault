@@ -120,7 +120,9 @@ export class ReportsRepository {
   }
 
   async getReportsStats() {
-    const rows = await prisma.$queryRaw<Array<{ status: ReportStatus; total: bigint }>>(Prisma.sql`
+    const rows = await prisma.$queryRaw<
+      Array<{ status: ReportStatus; total: bigint }>
+    >(Prisma.sql`
       SELECT status, COUNT(*) AS total
       FROM reports
       GROUP BY status

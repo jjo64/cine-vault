@@ -33,11 +33,7 @@ const router = Router()
 
 router.get("/", manejadorAsincrono(getArcos))
 
-router.get(
-  "/mine",
-  middlewareAutenticacion,
-  manejadorAsincrono(getMyArcos)
-)
+router.get("/mine", middlewareAutenticacion, manejadorAsincrono(getMyArcos))
 
 router.get(
   "/mine/:id",
@@ -85,7 +81,11 @@ router.patch(
   manejadorAsincrono(moderateArco)
 )
 
-router.get("/:id", validarParams(arcoIdParamsSchema), manejadorAsincrono(getArcoById))
+router.get(
+  "/:id",
+  validarParams(arcoIdParamsSchema),
+  manejadorAsincrono(getArcoById)
+)
 
 router.post(
   "/:id/progress",

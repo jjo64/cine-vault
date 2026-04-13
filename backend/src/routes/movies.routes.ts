@@ -95,7 +95,9 @@ router.get(
     const page = String(req.query.page || "1").trim()
 
     if (!query) {
-      return res.status(400).json({ message: "Debe proporcionar un término de búsqueda." })
+      return res
+        .status(400)
+        .json({ message: "Debe proporcionar un término de búsqueda." })
     }
 
     const data = await getOSet(
@@ -167,7 +169,9 @@ router.get(
               ...movie,
               _title_rank: rankMovieByQuery(movie, nombreLimpio),
             }))
-            .sort((a, b) => Number(b._title_rank || 0) - Number(a._title_rank || 0))
+            .sort(
+              (a, b) => Number(b._title_rank || 0) - Number(a._title_rank || 0)
+            )
 
           return {
             results: ranked,
@@ -196,12 +200,20 @@ router.get(
             consultarTMDB(`movie/${idPelicula}/watch/providers`, {
               language: "es-ES",
             }),
-            consultarTMDB(`movie/${idPelicula}/alternative_titles`, {
-              language: "",
-            }, { includeDefaultLanguage: false }),
-            consultarTMDB(`movie/${idPelicula}/images`, {
-              include_image_language: "en,null",
-            }, { includeDefaultLanguage: false }),
+            consultarTMDB(
+              `movie/${idPelicula}/alternative_titles`,
+              {
+                language: "",
+              },
+              { includeDefaultLanguage: false }
+            ),
+            consultarTMDB(
+              `movie/${idPelicula}/images`,
+              {
+                include_image_language: "en,null",
+              },
+              { includeDefaultLanguage: false }
+            ),
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ])) as [any, any, any, any, any]
 

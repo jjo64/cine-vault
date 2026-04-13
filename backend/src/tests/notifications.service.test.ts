@@ -49,14 +49,14 @@ beforeEach(() => {
 
 describe("emitirNotificacionService", () => {
   it("persiste la notificación y emite via Socket.IO si el usuario está conectado", async () => {
-    const notif = { 
-      id: 1, 
-      user_id: 1, 
-      type: "like", 
+    const notif = {
+      id: 1,
+      user_id: 1,
+      type: "like",
       read: false,
       sender_id: 2,
       created_at: new Date(),
-      sender: null
+      sender: null,
     } as unknown as Awaited<ReturnType<typeof notificationsRepository.create>>
     vi.mocked(notificationsRepository.create).mockResolvedValue(notif)
 
@@ -72,14 +72,14 @@ describe("emitirNotificacionService", () => {
   })
 
   it("persiste la notificación sin emitir si el usuario no está conectado", async () => {
-    const notif = { 
-      id: 2, 
-      user_id: 99, 
-      type: "comment", 
+    const notif = {
+      id: 2,
+      user_id: 99,
+      type: "comment",
       read: false,
       sender_id: 2,
       created_at: new Date(),
-      sender: null
+      sender: null,
     } as unknown as Awaited<ReturnType<typeof notificationsRepository.create>>
     vi.mocked(notificationsRepository.create).mockResolvedValue(notif)
 
@@ -101,15 +101,19 @@ describe("emitirNotificacionService", () => {
 
 describe("obtenerNotificacionesService", () => {
   it("devuelve las notificaciones del usuario", async () => {
-    const notifs = [{ 
-    id: 1, 
-    user_id: 1, 
-    type: "like" as const,
-    read: false,
-    sender_id: null,
-    created_at: new Date(),
-    sender: null
-    }] as unknown as Awaited<ReturnType<typeof notificationsRepository.findByUserId>>
+    const notifs = [
+      {
+        id: 1,
+        user_id: 1,
+        type: "like" as const,
+        read: false,
+        sender_id: null,
+        created_at: new Date(),
+        sender: null,
+      },
+    ] as unknown as Awaited<
+      ReturnType<typeof notificationsRepository.findByUserId>
+    >
     vi.mocked(notificationsRepository.findByUserId).mockResolvedValue(notifs)
 
     const resultado = await obtenerNotificacionesService(1)
@@ -120,7 +124,11 @@ describe("obtenerNotificacionesService", () => {
 
 describe("marcarComoLeidaService", () => {
   it("llama al repositorio con los parámetros correctos", async () => {
-    vi.mocked(notificationsRepository.markAsRead).mockResolvedValue({} as unknown as Awaited<ReturnType<typeof notificationsRepository.markAsRead>>)
+    vi.mocked(notificationsRepository.markAsRead).mockResolvedValue(
+      {} as unknown as Awaited<
+        ReturnType<typeof notificationsRepository.markAsRead>
+      >
+    )
     await marcarComoLeidaService(1, 5)
     expect(notificationsRepository.markAsRead).toHaveBeenCalledWith(5, 1)
   })

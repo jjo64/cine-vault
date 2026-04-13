@@ -37,7 +37,10 @@ export type ListDetail = ListSummary & {
 }
 
 export class ListsRepository {
-  async create(userId: number, data: { name: string; description?: string | null; is_public?: boolean }) {
+  async create(
+    userId: number,
+    data: { name: string; description?: string | null; is_public?: boolean }
+  ) {
     return prisma.user_lists.create({
       data: {
         user_id: userId,
@@ -77,7 +80,10 @@ export class ListsRepository {
     }))
   }
 
-  async getDetailForUser(listId: number, userId: number): Promise<ListDetail | null> {
+  async getDetailForUser(
+    listId: number,
+    userId: number
+  ): Promise<ListDetail | null> {
     const list = await prisma.user_lists.findFirst({
       where: { id: listId, user_id: userId },
       include: {
@@ -211,7 +217,10 @@ export class ListsRepository {
     }
   }
 
-  async update(listId: number, data: { name?: string; description?: string | null; is_public?: boolean }) {
+  async update(
+    listId: number,
+    data: { name?: string; description?: string | null; is_public?: boolean }
+  ) {
     return prisma.user_lists.update({
       where: { id: listId },
       data,

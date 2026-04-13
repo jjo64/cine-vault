@@ -1,9 +1,9 @@
 import cloudinary from "../config/claudinary.config.js"
-import { Prisma } from "@prisma/client"
 import { settingsRepository } from "../repositories/SettingsRepository.js"
 import { userRepository } from "../repositories/UserRepository.js"
+import { cinematographicSignatureRepository } from "../repositories/CinematographicSignatureRepository.js"
+import { curatedGalleryRepository } from "../repositories/CuratedGalleryRepository.js"
 import { hashearContrasena, compararContrasena } from "../lib/crypto.js"
-import { prisma } from "../lib/prisma.js"
 import {
   NotFoundError,
   UnauthorizedError,
@@ -47,7 +47,7 @@ export const actualizarAuthService = async (
   userId: number,
   data: ActualizarAuthDTO
 ) => {
-  const usuario = await userRepository.findById(userId)
+  const usuario = await settingsRepository.findById(userId)
   if (!usuario) throw new NotFoundError("Usuario no encontrado")
 
   const passwordValida = await compararContrasena(
@@ -89,123 +89,34 @@ export const actualizarAvatarService = async (
 }
 
 export const eliminarCuentaService = async (userId: number) => {
-  const usuario = await userRepository.findById(userId)
+  const usuario = await settingsRepository.findById(userId)
   if (!usuario) throw new NotFoundError("Usuario no encontrado")
-  // La eliminación en cascada de Prisma (onDelete: Cascade) limpia el resto
-  await userRepository.update(userId, {})
-  // Prisma no tiene un método delete en IUserRepository, lo extendemos aquí
-  // a través del repositorio base usando la instancia de la clase
-  const { prisma } = await import("../lib/prisma.js")
-  await prisma.users.delete({ where: { id: userId } })
+  await userRepository.deleteById(userId)
 }
 
+// ---------------------------------------------------------------------------
+// Firma Cinematográfica
+// ---------------------------------------------------------------------------
+
 export const obtenerFirmaCinematograficaService = async (userId: number) => {
-  try {
-    const rows = await prisma.$queryRaw<Array<Record<string, string | number | null>>>(Prisma.sql`
-      SELECT
-        user_id,
-        pivotal_film,
-        pivotal_film_detail,
-        formative_director,
-        formative_director_detail,
-        unforgettable_scene,
-        unforgettable_scene_detail,
-        cinema_turning_year,
-        cinema_turning_year_detail
-      FROM cinematographic_signature
-      WHERE user_id = ${userId}
-      LIMIT 1
-    `)
-
-    const row = rows[0]
-    if (!row) {
-      return {
-        user_id: userId,
-        pivotal_film: null,
-        pivotal_film_detail: null,
-        formative_director: null,
-        formative_director_detail: null,
-        unforgettable_scene: null,
-        unforgettable_scene_detail: null,
-        cinema_turning_year: null,
-        cinema_turning_year_detail: null,
-      }
-    }
-
-    return row
-  } catch {
-    return {
-      user_id: userId,
-      pivotal_film: null,
-      pivotal_film_detail: null,
-      formative_director: null,
-      formative_director_detail: null,
-      unforgettable_scene: null,
-      unforgettable_scene_detail: null,
-      cinema_turning_year: null,
-      cinema_turning_year_detail: null,
-    }
-  }
+  return cinematographicSignatureRepository.findByUserId(userId)
 }
 
 export const actualizarFirmaCinematograficaService = async (
   userId: number,
   data: ActualizarFirmaDTO
 ) => {
-  await prisma.$executeRaw(Prisma.sql`
-    INSERT INTO cinematographic_signature (
-      user_id,
-      pivotal_film,
-      pivotal_film_detail,
-      formative_director,
-      formative_director_detail,
-      unforgettable_scene,
-      unforgettable_scene_detail,
-      cinema_turning_year,
-      cinema_turning_year_detail
-    ) VALUES (
-      ${userId},
-      ${data.pivotal_film ?? null},
-      ${data.pivotal_film_detail ?? null},
-      ${data.formative_director ?? null},
-      ${data.formative_director_detail ?? null},
-      ${data.unforgettable_scene ?? null},
-      ${data.unforgettable_scene_detail ?? null},
-      ${data.cinema_turning_year ?? null},
-      ${data.cinema_turning_year_detail ?? null}
-    )
-    ON DUPLICATE KEY UPDATE
-      pivotal_film = COALESCE(${data.pivotal_film ?? null}, pivotal_film),
-      pivotal_film_detail = COALESCE(${data.pivotal_film_detail ?? null}, pivotal_film_detail),
-      formative_director = COALESCE(${data.formative_director ?? null}, formative_director),
-      formative_director_detail = COALESCE(${data.formative_director_detail ?? null}, formative_director_detail),
-      unforgettable_scene = COALESCE(${data.unforgettable_scene ?? null}, unforgettable_scene),
-      unforgettable_scene_detail = COALESCE(${data.unforgettable_scene_detail ?? null}, unforgettable_scene_detail),
-      cinema_turning_year = COALESCE(${data.cinema_turning_year ?? null}, cinema_turning_year),
-      cinema_turning_year_detail = COALESCE(${data.cinema_turning_year_detail ?? null}, cinema_turning_year_detail)
-  `)
-
-  return obtenerFirmaCinematograficaService(userId)
+  await cinematographicSignatureRepository.upsert(userId, data)
+  return cinematographicSignatureRepository.findByUserId(userId)
 }
 
-export const obtenerGaleriaCuradaService = async (userId: number) => {
-  try {
-    const items = await prisma.$queryRaw<Array<Record<string, string | number | null>>>(Prisma.sql`
-      SELECT
-        cgi.movie_id,
-        cgi.order_index,
-        cgi.note,
-        mr.tmdb_id
-      FROM curated_gallery_items cgi
-      INNER JOIN movies_ref mr ON mr.id = cgi.movie_id
-      WHERE cgi.user_id = ${userId}
-      ORDER BY cgi.order_index ASC
-    `)
+// ---------------------------------------------------------------------------
+// Galería Curada
+// ---------------------------------------------------------------------------
 
-    return { items }
-  } catch {
-    return { items: [] }
-  }
+export const obtenerGaleriaCuradaService = async (userId: number) => {
+  const items = await curatedGalleryRepository.findByUserId(userId)
+  return { items }
 }
 
 export const actualizarGaleriaCuradaService = async (
@@ -213,29 +124,12 @@ export const actualizarGaleriaCuradaService = async (
   data: ActualizarGaleriaCuradaDTO
 ) => {
   const movieIds = data.items.map((item) => item.movie_id)
-  const existingMovies = await prisma.$queryRaw<Array<{ id: number }>>(Prisma.sql`
-    SELECT id
-    FROM movies_ref
-    WHERE id IN (${Prisma.join(movieIds)})
-  `)
+  const found = await curatedGalleryRepository.existMovieIds(movieIds)
 
-  if (existingMovies.length !== movieIds.length) {
+  if (found.length !== movieIds.length) {
     throw new ValidationError("Una o más películas no existen en movies_ref")
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.$executeRaw(Prisma.sql`
-      DELETE FROM curated_gallery_items
-      WHERE user_id = ${userId}
-    `)
-
-    for (const item of data.items) {
-      await tx.$executeRaw(Prisma.sql`
-        INSERT INTO curated_gallery_items (user_id, movie_id, order_index, note)
-        VALUES (${userId}, ${item.movie_id}, ${item.order_index}, ${item.note ?? null})
-      `)
-    }
-  })
-
+  await curatedGalleryRepository.replace(userId, data)
   return obtenerGaleriaCuradaService(userId)
 }

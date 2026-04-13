@@ -14,7 +14,11 @@ export interface IFavoritiesRepository {
   findByUserId(
     userId: number
   ): Promise<
-    Array<{ movie_id: number; rank_position: number | null; tmdb_id: number | null }>
+    Array<{
+      movie_id: number
+      rank_position: number | null
+      tmdb_id: number | null
+    }>
   >
   findFirst(userId: number, movieId: number): Promise<favorites | null>
   create(userId: number, data: AgregarFavoritoDTO): Promise<favorites>

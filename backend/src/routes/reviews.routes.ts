@@ -19,13 +19,22 @@ import {
 import { Router } from "express"
 import { middlewareAutenticacion } from "../middlewares/auth.middlewares.js"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
-import { validarBody } from "../middlewares/validation.middleware.js"
+import {
+  validarBody,
+  validarParams,
+} from "../middlewares/validation.middleware.js"
 import {
   crearResenaSchema,
   actualizarResenaSchema,
   reportarResenaSchema,
   crearComentarioSchema,
   actualizarComentarioSchema,
+  reviewIdParamsSchema,
+  movieIdParamsSchema,
+  userIdParamsSchema,
+  commentParamsSchema,
+  commentIdParamsSchema,
+  usernameMovieSlugParamsSchema,
 } from "../schemas/reviews.js"
 
 /**
@@ -99,7 +108,11 @@ router.get("/", middlewareAutenticacion, manejadorAsincrono(getReviews)) // Obte
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.get("/user/:userId", manejadorAsincrono(getReviewsByUserId)) // Obtener las reseñas de un usuario
+router.get(
+  "/user/:userId",
+  validarParams(userIdParamsSchema),
+  manejadorAsincrono(getReviewsByUserId)
+) // Obtener las reseñas de un usuario
 
 /**
  * @swagger
@@ -133,7 +146,11 @@ router.get("/user/:userId", manejadorAsincrono(getReviewsByUserId)) // Obtener l
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.get("/movie/:movieId", manejadorAsincrono(getReviewsByMovieId)) // Obtener las reseñas de una pelicula
+router.get(
+  "/movie/:movieId",
+  validarParams(movieIdParamsSchema),
+  manejadorAsincrono(getReviewsByMovieId)
+) // Obtener las reseñas de una pelicula
 
 // Reseñas (privadas)
 /**
@@ -264,12 +281,14 @@ router.post(
 router.patch(
   "/:reviewId",
   middlewareAutenticacion,
+  validarParams(reviewIdParamsSchema),
   validarBody(actualizarResenaSchema),
   manejadorAsincrono(updateReview)
 ) // Actualizar una review
 router.delete(
   "/:reviewId",
   middlewareAutenticacion,
+  validarParams(reviewIdParamsSchema),
   manejadorAsincrono(removeReview)
 ) // Eliminar una review
 
@@ -348,11 +367,13 @@ router.delete(
 router.post(
   "/:reviewId/like",
   middlewareAutenticacion,
+  validarParams(reviewIdParamsSchema),
   manejadorAsincrono(likeReview)
 ) // Dar like a una review
 router.delete(
   "/:reviewId/like",
   middlewareAutenticacion,
+  validarParams(reviewIdParamsSchema),
   manejadorAsincrono(removeLikeReview)
 ) // Quitar like a una review
 
@@ -398,6 +419,7 @@ router.delete(
 router.post(
   "/:reviewId/report",
   middlewareAutenticacion,
+  validarParams(reviewIdParamsSchema),
   validarBody(reportarResenaSchema),
   manejadorAsincrono(reportReview)
 ) // Reportar una review
@@ -475,10 +497,15 @@ router.post(
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.get("/:reviewId/comments", manejadorAsincrono(getCommentsByReviewId))
+router.get(
+  "/:reviewId/comments",
+  validarParams(reviewIdParamsSchema),
+  manejadorAsincrono(getCommentsByReviewId)
+)
 router.post(
   "/:reviewId/comments",
   middlewareAutenticacion,
+  validarParams(reviewIdParamsSchema),
   validarBody(crearComentarioSchema),
   manejadorAsincrono(addComment)
 )
@@ -565,6 +592,7 @@ router.post(
 router.patch(
   "/:reviewId/comments/:commentId",
   middlewareAutenticacion,
+  validarParams(commentParamsSchema),
   validarBody(actualizarComentarioSchema),
   manejadorAsincrono(updateComment)
 )
@@ -574,6 +602,7 @@ router.patch(
 router.put(
   "/comments/:commentId",
   middlewareAutenticacion,
+  validarParams(commentIdParamsSchema),
   validarBody(actualizarComentarioSchema),
   manejadorAsincrono(updateComment)
 )
@@ -581,15 +610,21 @@ router.put(
 router.delete(
   "/:reviewId/comments/:commentId",
   middlewareAutenticacion,
+  validarParams(commentParamsSchema),
   manejadorAsincrono(removeComment)
 )
 
 router.delete(
   "/comments/:commentId",
   middlewareAutenticacion,
+  validarParams(commentIdParamsSchema),
   manejadorAsincrono(removeComment)
 )
 
-router.get("/:username/:movieSlug", manejadorAsincrono(getReviewByUsernameAndMovieSlug))
+router.get(
+  "/:username/:movieSlug",
+  validarParams(usernameMovieSlugParamsSchema),
+  manejadorAsincrono(getReviewByUsernameAndMovieSlug)
+)
 
 export default router

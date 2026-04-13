@@ -60,7 +60,9 @@ describe("eliminarFavoritoService", () => {
     vi.mocked(favoritiesRepository.findFirst).mockResolvedValue({
       id: 5,
     } as unknown as favorites)
-    vi.mocked(favoritiesRepository.delete).mockResolvedValue(undefined as unknown as void)
+    vi.mocked(favoritiesRepository.delete).mockResolvedValue(
+      undefined as unknown as void
+    )
 
     await expect(eliminarFavoritoService(1, 10)).resolves.not.toThrow()
     expect(favoritiesRepository.delete).toHaveBeenCalledWith(5)

@@ -99,5 +99,9 @@ export const updateVaultSocialEntrySchema = z
 export type AgregarVaultDTO = z.infer<typeof agregarVaultSchema>
 export type EliminarVaultParamsDTO = z.infer<typeof eliminarVaultParamsSchema>
 export type ListVaultSocialQueryDTO = z.infer<typeof listVaultSocialQuerySchema>
-export type CreateVaultSocialEntryDTO = z.infer<typeof createVaultSocialEntrySchema>
-export type UpdateVaultSocialEntryDTO = z.infer<typeof updateVaultSocialEntrySchema>
+export type CreateVaultSocialEntryDTO = z.infer<
+  typeof createVaultSocialEntrySchema
+>
+export type UpdateVaultSocialEntryDTO = z.infer<
+  typeof updateVaultSocialEntrySchema
+>

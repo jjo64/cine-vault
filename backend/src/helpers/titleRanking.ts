@@ -24,8 +24,9 @@ const normalizeText = (value: string | null | undefined) =>
     .toLowerCase()
     .trim()
 
-const uniqueStrings = (values: Array<string | null | undefined>) =>
-  [...new Set(values.map((value) => String(value || "").trim()).filter(Boolean))]
+const uniqueStrings = (values: Array<string | null | undefined>) => [
+  ...new Set(values.map((value) => String(value || "").trim()).filter(Boolean)),
+]
 
 const matchStrength = (candidate: string, query: string) => {
   if (!candidate || !query) return 0
@@ -34,7 +35,10 @@ const matchStrength = (candidate: string, query: string) => {
   if (candidate.includes(query)) return 40
 
   const queryTokens = query.split(/\s+/).filter(Boolean)
-  if (queryTokens.length > 1 && queryTokens.every((token) => candidate.includes(token))) {
+  if (
+    queryTokens.length > 1 &&
+    queryTokens.every((token) => candidate.includes(token))
+  ) {
     return 25
   }
 
@@ -64,15 +68,15 @@ const buildWeightedCandidateMap = (
 }
 
 const withNormalizedCandidates = (values: Array<string | null | undefined>) =>
-  uniqueStrings(values)
-    .map(normalizeText)
-    .filter(Boolean)
+  uniqueStrings(values).map(normalizeText).filter(Boolean)
 
-const getLocalizedTitlesFromAlternative = (titles: TMDBAlternativeTitle[] = []) =>
-  uniqueStrings(titles.map((item) => item.title))
+const getLocalizedTitlesFromAlternative = (
+  titles: TMDBAlternativeTitle[] = []
+) => uniqueStrings(titles.map((item) => item.title))
 
 const getSpanishTitleFromAlternative = (titles: TMDBAlternativeTitle[] = []) =>
-  titles.find((item) => (item.iso_3166_1 || "").toUpperCase() === "ES")?.title || null
+  titles.find((item) => (item.iso_3166_1 || "").toUpperCase() === "ES")
+    ?.title || null
 
 export const rankMovieByQuery = (movie: SearchMovieLike, rawQuery: string) => {
   const query = normalizeText(rawQuery)
@@ -83,9 +87,7 @@ export const rankMovieByQuery = (movie: SearchMovieLike, rawQuery: string) => {
     movie.title,
   ])
 
-  const originalCandidates = withNormalizedCandidates([
-    movie.original_title,
-  ])
+  const originalCandidates = withNormalizedCandidates([movie.original_title])
 
   const localizedCandidates = withNormalizedCandidates([
     movie.title_es,
@@ -155,14 +157,24 @@ export const mergeEnglishAndSpanishResults = (
     }
 
     const mergedLocalized = uniqueStrings([
-      ...(Array.isArray(existing.localized_titles) ? existing.localized_titles : []),
+      ...(Array.isArray(existing.localized_titles)
+        ? existing.localized_titles
+        : []),
       movie.title,
     ])
 
     Object.assign(existing, {
       // Keep english title as primary response title to satisfy priority requirement.
-      title: existing.title_en || existing.title || movie.title || existing.original_title,
-      title_en: existing.title_en || movie.original_title || existing.original_title || null,
+      title:
+        existing.title_en ||
+        existing.title ||
+        movie.title ||
+        existing.original_title,
+      title_en:
+        existing.title_en ||
+        movie.original_title ||
+        existing.original_title ||
+        null,
       title_es: movie.title || existing.title_es || null,
       localized_title: movie.title || existing.localized_title || null,
       localized_titles: mergedLocalized,
@@ -197,7 +209,8 @@ export const attachAlternativeTitles = (
     ...movie,
     alternative_titles: titles,
     title_es: movie.title_es || spanishFromAlt || null,
-    localized_title: movie.localized_title || movie.title_es || spanishFromAlt || null,
+    localized_title:
+      movie.localized_title || movie.title_es || spanishFromAlt || null,
     localized_titles: localizedTitles,
   }
 }

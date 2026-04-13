@@ -1,8 +1,6 @@
 import { users } from "@prisma/client"
 import { prisma } from "../lib/prisma.js"
-import type {
-  ActualizarPerfilDTO
-} from "../schemas/settings.js"
+import type { ActualizarPerfilDTO } from "../schemas/settings.js"
 
 /* ==========================================================================
    SETTINGS REPOSITORY

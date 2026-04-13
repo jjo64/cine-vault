@@ -32,8 +32,12 @@ beforeEach(() => {
 
 describe("obtenerWatchlistService", () => {
   it("devuelve la watchlist enriquecida del usuario", async () => {
-    const entradas = [{ id: 1, user_id: 1, movie_id: 10 }] as unknown as watchlist[]
-    const ricas = [{ id: 1, movie_info: { title: "Inception" } }] as unknown as RichWatchlistEntry[]
+    const entradas = [
+      { id: 1, user_id: 1, movie_id: 10 },
+    ] as unknown as watchlist[]
+    const ricas = [
+      { id: 1, movie_info: { title: "Inception" } },
+    ] as unknown as RichWatchlistEntry[]
     vi.mocked(watchlistRepository.findByUserId).mockResolvedValue(entradas)
     vi.mocked(watchlistRepository.buildRichResponse).mockResolvedValue(ricas)
 

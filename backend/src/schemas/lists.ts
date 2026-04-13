@@ -1,14 +1,33 @@
 import { z } from "zod"
 
 export const createListSchema = z.object({
-  name: z.string().trim().min(1, "Nombre requerido").max(120, "Máximo 120 caracteres"),
-  description: z.string().trim().max(400, "Máximo 400 caracteres").optional().nullable(),
+  name: z
+    .string()
+    .trim()
+    .min(1, "Nombre requerido")
+    .max(120, "Máximo 120 caracteres"),
+  description: z
+    .string()
+    .trim()
+    .max(400, "Máximo 400 caracteres")
+    .optional()
+    .nullable(),
   is_public: z.boolean().optional(),
 })
 
 export const updateListSchema = z.object({
-  name: z.string().trim().min(1, "Nombre requerido").max(120, "Máximo 120 caracteres").optional(),
-  description: z.string().trim().max(400, "Máximo 400 caracteres").optional().nullable(),
+  name: z
+    .string()
+    .trim()
+    .min(1, "Nombre requerido")
+    .max(120, "Máximo 120 caracteres")
+    .optional(),
+  description: z
+    .string()
+    .trim()
+    .max(400, "Máximo 400 caracteres")
+    .optional()
+    .nullable(),
   is_public: z.boolean().optional(),
 })
 

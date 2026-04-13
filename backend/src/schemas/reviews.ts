@@ -33,64 +33,89 @@ const timestampSchema = z.object({
 const optionalDimensionRating = ratingStep.optional()
 
 /** Crear una nueva reseña */
-export const crearResenaSchema = z.object({
-  movie_id: z.coerce
-    .number({ error: "movie_id debe ser un número" })
-    .int("movie_id debe ser un entero")
-    .positive("movie_id debe ser positivo"),
-  content: z
-    .string()
-    .trim()
-    .max(8000, "El contenido no puede superar 8000 caracteres")
-    .optional(),
-  rating: ratingStep.optional(),
-  mode: reviewModeSchema.default("RAPIDO"),
-  veredicto: z
-    .string()
-    .trim()
-    .max(280, "El veredicto no puede superar 280 caracteres")
-    .optional(),
-  rating_direccion: optionalDimensionRating,
-  rating_guion: optionalDimensionRating,
-  rating_fotografia: optionalDimensionRating,
-  rating_actuaciones: optionalDimensionRating,
-  rating_banda_sonora: optionalDimensionRating,
-  cita_dialogo: z
-    .string()
-    .trim()
-    .max(500, "La cita no puede superar 500 caracteres")
-    .optional(),
-  cita_personaje: z
-    .string()
-    .trim()
-    .max(120, "El personaje no puede superar 120 caracteres")
-    .optional(),
-  timestamps: z.array(timestampSchema).max(12, "No puedes agregar más de 12 timestamps").optional(),
-  contiene_spoilers: z.boolean().optional(),
-}).superRefine((data, ctx) => {
-  const mode = data.mode || "RAPIDO"
-  const content = (data.content || "").trim()
+export const crearResenaSchema = z
+  .object({
+    movie_id: z.coerce
+      .number({ error: "movie_id debe ser un número" })
+      .int("movie_id debe ser un entero")
+      .positive("movie_id debe ser positivo"),
+    content: z
+      .string()
+      .trim()
+      .max(8000, "El contenido no puede superar 8000 caracteres")
+      .optional(),
+    rating: ratingStep.optional(),
+    mode: reviewModeSchema.default("RAPIDO"),
+    veredicto: z
+      .string()
+      .trim()
+      .max(280, "El veredicto no puede superar 280 caracteres")
+      .optional(),
+    rating_direccion: optionalDimensionRating,
+    rating_guion: optionalDimensionRating,
+    rating_fotografia: optionalDimensionRating,
+    rating_actuaciones: optionalDimensionRating,
+    rating_banda_sonora: optionalDimensionRating,
+    cita_dialogo: z
+      .string()
+      .trim()
+      .max(500, "La cita no puede superar 500 caracteres")
+      .optional(),
+    cita_personaje: z
+      .string()
+      .trim()
+      .max(120, "El personaje no puede superar 120 caracteres")
+      .optional(),
+    timestamps: z
+      .array(timestampSchema)
+      .max(12, "No puedes agregar más de 12 timestamps")
+      .optional(),
+    contiene_spoilers: z.boolean().optional(),
+  })
+  .superRefine((data, ctx) => {
+    const mode = data.mode || "RAPIDO"
+    const content = (data.content || "").trim()
 
-  if (mode === "RAPIDO") {
-    if (!data.rating) {
-      ctx.addIssue({ code: "custom", path: ["rating"], message: "En modo rápido el rating es obligatorio" })
+    if (mode === "RAPIDO") {
+      if (!data.rating) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["rating"],
+          message: "En modo rápido el rating es obligatorio",
+        })
+      }
+      if (!content) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["content"],
+          message: "En modo rápido debes dejar al menos una línea",
+        })
+      }
+      if (content.length > 280) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["content"],
+          message: "En modo rápido el texto no puede superar 280 caracteres",
+        })
+      }
     }
-    if (!content) {
-      ctx.addIssue({ code: "custom", path: ["content"], message: "En modo rápido debes dejar al menos una línea" })
-    }
-    if (content.length > 280) {
-      ctx.addIssue({ code: "custom", path: ["content"], message: "En modo rápido el texto no puede superar 280 caracteres" })
-    }
-  }
 
-  if (mode === "ESTANDAR" && !data.veredicto?.trim()) {
-    ctx.addIssue({ code: "custom", path: ["veredicto"], message: "El veredicto es obligatorio en modo estándar" })
-  }
+    if (mode === "ESTANDAR" && !data.veredicto?.trim()) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["veredicto"],
+        message: "El veredicto es obligatorio en modo estándar",
+      })
+    }
 
-  if (mode === "CRITICO" && content.length < 500) {
-    ctx.addIssue({ code: "custom", path: ["content"], message: "El modo crítico requiere al menos 500 caracteres" })
-  }
-})
+    if (mode === "CRITICO" && content.length < 500) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["content"],
+        message: "El modo crítico requiere al menos 500 caracteres",
+      })
+    }
+  })
 
 /** Actualizar una reseña existente (todos los campos opcionales, movie_id inmutable) */
 export const actualizarResenaSchema = z
@@ -103,15 +128,30 @@ export const actualizarResenaSchema = z
       .optional(),
     rating: ratingStep.optional(),
     mode: reviewModeSchema.optional(),
-    veredicto: z.string().trim().max(280, "El veredicto no puede superar 280 caracteres").optional(),
+    veredicto: z
+      .string()
+      .trim()
+      .max(280, "El veredicto no puede superar 280 caracteres")
+      .optional(),
     rating_direccion: optionalDimensionRating,
     rating_guion: optionalDimensionRating,
     rating_fotografia: optionalDimensionRating,
     rating_actuaciones: optionalDimensionRating,
     rating_banda_sonora: optionalDimensionRating,
-    cita_dialogo: z.string().trim().max(500, "La cita no puede superar 500 caracteres").optional(),
-    cita_personaje: z.string().trim().max(120, "El personaje no puede superar 120 caracteres").optional(),
-    timestamps: z.array(timestampSchema).max(12, "No puedes agregar más de 12 timestamps").optional(),
+    cita_dialogo: z
+      .string()
+      .trim()
+      .max(500, "La cita no puede superar 500 caracteres")
+      .optional(),
+    cita_personaje: z
+      .string()
+      .trim()
+      .max(120, "El personaje no puede superar 120 caracteres")
+      .optional(),
+    timestamps: z
+      .array(timestampSchema)
+      .max(12, "No puedes agregar más de 12 timestamps")
+      .optional(),
     contiene_spoilers: z.boolean().optional(),
   })
   .refine((data) => Object.values(data).some((value) => value !== undefined), {
@@ -141,6 +181,34 @@ export const actualizarComentarioSchema = z.object({
     .min(1, "El comentario no puede estar vacío")
     .max(1000, "El comentario no puede superar 1000 caracteres")
     .transform((s) => s.trim()),
+})
+
+const idPositivo = z.coerce.number().int().positive()
+
+export const reviewIdParamsSchema = z.object({
+  reviewId: idPositivo,
+})
+
+export const movieIdParamsSchema = z.object({
+  movieId: idPositivo,
+})
+
+export const userIdParamsSchema = z.object({
+  userId: idPositivo,
+})
+
+export const commentParamsSchema = z.object({
+  reviewId: idPositivo,
+  commentId: idPositivo,
+})
+
+export const commentIdParamsSchema = z.object({
+  commentId: idPositivo,
+})
+
+export const usernameMovieSlugParamsSchema = z.object({
+  username: z.string().min(1),
+  movieSlug: z.string().min(1),
 })
 
 // Tipos inferidos — exportar para usar en servicios y controladores

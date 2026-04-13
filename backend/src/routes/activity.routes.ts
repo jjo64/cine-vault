@@ -53,20 +53,18 @@ router.get(
     const page = Math.max(1, toNumber(req.query.page, 1))
     const limit = Math.min(50, Math.max(1, toNumber(req.query.limit, 20)))
 
-    const followingIds = type === "friends"
-      ? (
-        await prisma.follows.findMany({
-          where: { follower_id: viewerId },
-          select: { following_id: true },
-        })
-      ).map((item) => item.following_id)
-      : []
-
-    const sourceUserIds = type === "own"
-      ? [viewerId]
-      : followingIds.length > 0
-        ? followingIds
+    const followingIds =
+      type === "friends"
+        ? (
+            await prisma.follows.findMany({
+              where: { follower_id: viewerId },
+              select: { following_id: true },
+            })
+          ).map((item) => item.following_id)
         : []
+
+    const sourceUserIds =
+      type === "own" ? [viewerId] : followingIds.length > 0 ? followingIds : []
 
     if (sourceUserIds.length === 0) {
       return res.json({
@@ -78,7 +76,14 @@ router.get(
       })
     }
 
-    const [reviews, diaryEntries, vaultEntries, watchlistEntries, likes, followsNotifications] = await Promise.all([
+    const [
+      reviews,
+      diaryEntries,
+      vaultEntries,
+      watchlistEntries,
+      likes,
+      followsNotifications,
+    ] = await Promise.all([
       prisma.reviews.findMany({
         where: { user_id: { in: sourceUserIds } },
         take: 100,
@@ -218,9 +223,9 @@ router.get(
         },
         movie: entry.reviews.movies_ref
           ? {
-            id: entry.reviews.movies_ref.id,
-            tmdb_id: entry.reviews.movies_ref.tmdb_id,
-          }
+              id: entry.reviews.movies_ref.id,
+              tmdb_id: entry.reviews.movies_ref.tmdb_id,
+            }
           : undefined,
         review: {
           id: entry.reviews.id,
@@ -239,10 +244,10 @@ router.get(
         },
         target_user: entry.receiver
           ? {
-            id: entry.receiver.id,
-            username: entry.receiver.username,
-            avatar_url: entry.receiver.avatar_url || null,
-          }
+              id: entry.receiver.id,
+              username: entry.receiver.username,
+              avatar_url: entry.receiver.avatar_url || null,
+            }
           : undefined,
       })),
     ]

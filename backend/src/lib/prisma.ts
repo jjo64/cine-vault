@@ -11,7 +11,7 @@ const adapter = new PrismaMariaDb({
   connectionLimit: 5,
   allowPublicKeyRetrieval: true,
   ssl: {
-    rejectUnauthorized: true
+    rejectUnauthorized: true,
   },
 })
 

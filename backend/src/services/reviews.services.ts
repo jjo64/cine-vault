@@ -8,6 +8,7 @@ import {
 import { invalidateKeys, getCache, setCache } from "../lib/cache.js"
 import { diaryRepository } from "../repositories/DiaryRepository.js"
 import { userRepository } from "../repositories/UserRepository.js"
+import { movieRefRepository } from "../repositories/MovieRefRepository.js"
 import type {
   CrearResenaDTO,
   ActualizarResenaDTO,
@@ -15,8 +16,11 @@ import type {
   CrearComentarioDTO,
   ActualizarComentarioDTO,
 } from "../schemas/reviews.js"
-import { ensureMovieRefId, findMovieRefIdByCandidate } from "./movieRef.services.js"
-import { prisma } from "../lib/prisma.js"
+import {
+  ensureMovieRefId,
+  findMovieRefIdByCandidate,
+} from "./movieRef.services.js"
+import { normalizeReviewPayload, MovieAggregate } from "../lib/reviews.utils.js"
 
 /* ==========================================================================
    REVIEWS SERVICE
@@ -64,16 +68,16 @@ const verificarYCrearResenaUnica = async (
   const usuario = await userRepository.findById(userId)
   if (!usuario) throw new NotFoundError("Usuario no encontrado")
 
-  if (data.mode === "CRITICO" && !canUseCriticalMode(usuario.membership, usuario.role)) {
+  if (
+    data.mode === "CRITICO" &&
+    !canUseCriticalMode(usuario.membership, usuario.role)
+  ) {
     throw new ForbiddenError("El modo crítico es exclusivo para miembros Pro")
   }
 
   const normalized = normalizeReviewPayload(data)
   const movieId = await ensureMovieRefId(data.movie_id)
-  const existente = await reviewsRepository.findByUserAndMovie(
-    userId,
-    movieId
-  )
+  const existente = await reviewsRepository.findByUserAndMovie(userId, movieId)
   if (existente)
     throw new ConflictError("Ya tienes una reseña para esta película")
   const resena = await reviewsRepository.create(userId, {
@@ -98,11 +102,17 @@ export const actualizarResenaService = async (
   const usuario = await userRepository.findById(userId)
   if (!usuario) throw new NotFoundError("Usuario no encontrado")
 
-  if (data.mode === "CRITICO" && !canUseCriticalMode(usuario.membership, usuario.role)) {
+  if (
+    data.mode === "CRITICO" &&
+    !canUseCriticalMode(usuario.membership, usuario.role)
+  ) {
     throw new ForbiddenError("El modo crítico es exclusivo para miembros Pro")
   }
 
-  const updated = await reviewsRepository.update(id, normalizeReviewPayload(data))
+  const updated = await reviewsRepository.update(
+    id,
+    normalizeReviewPayload(data)
+  )
   await invalidateResenaCache(resena.movie_id)
   return updated
 }
@@ -224,6 +234,34 @@ export const eliminarComentarioService = async (
   await reviewsRepository.deleteComment(commentId)
 }
 
+// ---------------------------------------------------------------------------
+// Helpers privados
+// ---------------------------------------------------------------------------
+
+const resolverMovieRefIdPorSlug = async (
+  movieSlug: string
+): Promise<number | null> => {
+  const slug = movieSlug.trim().toLowerCase()
+  const tmdbCandidate = Number(slug.split("-")[0])
+
+  // 1. Buscar por tmdb_id si el slug empieza por número
+  if (Number.isFinite(tmdbCandidate)) {
+    const byTmdb = await movieRefRepository.findByTmdbId(tmdbCandidate)
+    if (byTmdb) return byTmdb.id
+  }
+
+  // 2. Buscar por slug exacto
+  const bySlug = await movieRefRepository.findBySlug(slug)
+  if (bySlug) return bySlug.id
+
+  // 3. Fallback: intentar crear/recuperar el ref vía TMDB API
+  if (Number.isFinite(tmdbCandidate)) {
+    return findMovieRefIdByCandidate(tmdbCandidate)
+  }
+
+  return null
+}
+
 export const obtenerResenaPorUsernameYMovieSlugService = async (
   username: string,
   movieSlug: string
@@ -231,70 +269,13 @@ export const obtenerResenaPorUsernameYMovieSlugService = async (
   const usuario = await userRepository.findByUsername(username)
   if (!usuario) throw new NotFoundError("Usuario no encontrado")
 
-  const slug = movieSlug.trim().toLowerCase()
-  const tmdbCandidateRaw = slug.split("-")[0]
-  const tmdbCandidate = Number(tmdbCandidateRaw)
-
-  let movieRefId: number | null = null
-
-  if (Number.isFinite(tmdbCandidate)) {
-    const byTmdb = await prisma.movies_ref.findUnique({
-      where: { tmdb_id: tmdbCandidate },
-      select: { id: true },
-    })
-    movieRefId = byTmdb?.id ?? null
-  }
-
-  if (!movieRefId) {
-    const bySlug = await prisma.movies_ref.findUnique({
-      where: { slug },
-      select: { id: true },
-    })
-    movieRefId = bySlug?.id ?? null
-  }
-
-  if (!movieRefId && Number.isFinite(tmdbCandidate)) {
-    movieRefId = await findMovieRefIdByCandidate(tmdbCandidate)
-  }
-
+  const movieRefId = await resolverMovieRefIdPorSlug(movieSlug)
   if (!movieRefId) throw new NotFoundError("Película no encontrada")
 
-  const review = await prisma.reviews.findFirst({
-    where: {
-      user_id: usuario.id,
-      movie_id: movieRefId,
-    },
-    orderBy: { created_at: "desc" },
-    include: {
-      users: {
-        select: {
-          id: true,
-          username: true,
-          avatar_url: true,
-        },
-      },
-      movies_ref: {
-        select: {
-          id: true,
-          tmdb_id: true,
-          slug: true,
-        },
-      },
-      review_comments: {
-        orderBy: { created_at: "asc" },
-        include: {
-          users: {
-            select: {
-              id: true,
-              username: true,
-              avatar_url: true,
-            },
-          },
-        },
-      },
-    },
-  })
-
+  const review = await reviewsRepository.findDetailedByUserAndMovie(
+    usuario.id,
+    movieRefId
+  )
   if (!review) throw new NotFoundError("Reseña no encontrada")
 
   return review
@@ -329,62 +310,10 @@ const buildMovieAggregate = async (
   }
 }
 
-type MovieAggregate = {
-  movie_id: number
-  reviews_count: number
-  avg_rating: number | null
-  likes_total: number
-  diary_entries: number
-}
-
-const maybeRoundHalf = (value: number | null | undefined) => {
-  if (value === null || value === undefined) return undefined
-  if (!Number.isFinite(value)) return undefined
-  return Math.round(value * 2) / 2
-}
-
-const computeReadingTime = (content: string | undefined) => {
-  const words = (content || "").trim().split(/\s+/).filter(Boolean).length
-  if (words === 0) return null
-  return Math.max(1, Math.ceil(words / 200))
-}
-
-const normalizeReviewPayload = (
-  data: Partial<CrearResenaDTO> & Partial<ActualizarResenaDTO>
+const canUseCriticalMode = (
+  membership?: string | null,
+  role?: string | null
 ) => {
-  const ratings = [
-    maybeRoundHalf(data.rating_direccion),
-    maybeRoundHalf(data.rating_guion),
-    maybeRoundHalf(data.rating_fotografia),
-    maybeRoundHalf(data.rating_actuaciones),
-    maybeRoundHalf(data.rating_banda_sonora),
-  ].filter((n): n is number => typeof n === "number")
-
-  let rating = maybeRoundHalf(data.rating)
-  if ((rating === undefined || rating === null) && ratings.length > 0) {
-    const avg = ratings.reduce((acc, n) => acc + n, 0) / ratings.length
-    rating = Math.round(avg * 2) / 2
-  }
-
-  const mode = data.mode || "RAPIDO"
-  const content = data.content?.trim()
-
-  return {
-    ...data,
-    content,
-    rating,
-    mode,
-    es_critica_larga: mode === "CRITICO",
-    tiempo_lectura_min: computeReadingTime(content),
-    rating_direccion: maybeRoundHalf(data.rating_direccion),
-    rating_guion: maybeRoundHalf(data.rating_guion),
-    rating_fotografia: maybeRoundHalf(data.rating_fotografia),
-    rating_actuaciones: maybeRoundHalf(data.rating_actuaciones),
-    rating_banda_sonora: maybeRoundHalf(data.rating_banda_sonora),
-  }
-}
-
-const canUseCriticalMode = (membership?: string | null, role?: string | null) => {
   const normalizedMembership = String(membership || "").toLowerCase()
   const normalizedRole = String(role || "").toLowerCase()
   return normalizedMembership === "pro" || normalizedRole === "admin"

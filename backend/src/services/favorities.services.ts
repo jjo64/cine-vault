@@ -1,7 +1,10 @@
 import { favoritiesRepository } from "../repositories/FavoritiesRepository.js"
 import { NotFoundError } from "../errors/AppErrors.js"
 import type { AgregarFavoritoDTO } from "../schemas/favorites.js"
-import { ensureMovieRefId, findMovieRefIdByCandidate } from "./movieRef.services.js"
+import {
+  ensureMovieRefId,
+  findMovieRefIdByCandidate,
+} from "./movieRef.services.js"
 
 /* ==========================================================================
    FAVORITIES SERVICE
