@@ -322,7 +322,7 @@ function Navbar() {
   }, [])
 
   const visibleResults = useMemo(() => searchResults.slice(0, 6), [searchResults])
-  const navLinks = viewerUsername ? ['Films', 'Lists', 'Members', 'Journal'] : ['Sign in', 'Create account', 'Films', 'Lists', 'Members', 'Journal']
+  const navLinks = viewerUsername ? ['Sign in', 'Create account', 'Films', 'Lists', 'Members', 'Journal'] : ['Sign in', 'Create account', 'Films', 'Lists', 'Members', 'Journal']
   const visibleNavLinks = navLinks
 
   const navigateByType = (item: SearchMovie) => {
@@ -376,7 +376,7 @@ function Navbar() {
         Cine<span style={{ color: C.accent }}>Vault</span>
       </Link>
 
-      <ul className="landing-desktop-links landing-nav-links" style={{ display: 'flex', listStyle: 'none', margin: 0, padding: 0, alignItems: 'center' }}>
+      <ul className="landing-desktop-links landing-nav-links" style={{ display: 'flex', listStyle: 'none', margin: 0, padding: 0, alignItems: 'center', left: '3%', position: 'relative'}}>
         {visibleNavLinks.map((link) => (
           <li key={link}>
             {link === 'Sign in' || link === 'Create account' ? (
@@ -388,42 +388,20 @@ function Navbar() {
                     })
                   )
                 }}
-                style={{ fontFamily: SANS, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.text, textDecoration: 'none', border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}
+                style={{ fontFamily: SANS, fontSize: 12, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.text, textDecoration: 'none', border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}
               >
                 {link}
               </button>
             ) : (
               <button
                 onClick={() => navigate(resolveNavPathWithFallback(link))}
-                style={{ fontFamily: SANS, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.text, textDecoration: 'none', border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}
+                style={{ fontFamily: SANS, fontSize: 12, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.text, textDecoration: 'none', border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}
               >
                 {link}
               </button>
             )}
           </li>
         ))}
-        {viewerUsername && (
-          <>
-            <li>
-              <Link to="/profile" style={{ fontFamily: SANS, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.accent, textDecoration: 'none' }}>
-                @{viewerUsername}
-              </Link>
-            </li>
-            <li>
-              <button
-                onClick={async () => {
-                  await logoutCurrentUser()
-                  setViewerUsername(null)
-                  notifyAuthStateChanged(false)
-                  navigate('/')
-                }}
-                style={{ fontFamily: SANS, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#ff8d8d', textDecoration: 'none', border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}
-              >
-                Cerrar sesión
-              </button>
-            </li>
-          </>
-        )}
       </ul>
 
       <div className="landing-nav-right">
