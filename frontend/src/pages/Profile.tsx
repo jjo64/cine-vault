@@ -2,18 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { GrainOverlay } from '../components/profile-v2/primitives'
-import { Footer, Navbar, ProfileHero, TabsBar } from '../components/profile-v2/layout'
-import {
-  DiaryPanel,
-  ListsPanel,
-  OverviewPanel,
-  ProfileSidebar,
-  ReviewsPanel,
-  VaultPanel,
-  WatchlistPanel,
-} from '../components/profile-v2/panels'
-import { C, SANS } from '../components/profile-v2/theme'
+import { C, SANS, SERIF, textClampOneLine } from '../components/profile-v2/theme'
 import { useProfilePageData } from '../hooks/useProfilePageData'
 import {
   type CuratedGalleryItemData,
@@ -23,7 +12,20 @@ import {
   updateOwnerCuratedGallery,
 } from '../services/profileServices'
 import { getStoredAccessToken } from '../services/authServices'
+import { notify } from '../lib/notify'
 import { SeoHead } from '../components/SeoHead'
+import { Footer, ProfileHero, TabsBar } from '../components/profile-v2/layout'
+import {
+  DiaryPanel,
+  ListsPanel,
+  OverviewPanel,
+  ProfileSidebar,
+  ReviewsPanel,
+  VaultPanel,
+  WatchlistPanel,
+} from '../components/profile-v2/panels'
+import { GrainOverlay, Img } from '../components/profile-v2/primitives'
+import type { EnrichedMovie } from '../components/profile-v2/models'
 import '../components/profile-v2/Profile.css'
 
 type CinematicSignaturePayload = {
@@ -217,7 +219,7 @@ function CinematicSignature({
                     }))
                   }}
                   rows={2}
-                  style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical', background: C.bg, border: `1px solid ${C.border}`, color: C.text, fontFamily: 'Cormorant Garamond, serif', fontSize: 18, lineHeight: 1.2, marginBottom: 6, padding: '6px 8px' }}
+                  style={{ width: '100%', boxSizing: 'border-box', resize: 'none', background: C.bg, border: `1px solid ${C.border}`, color: C.text, fontFamily: 'Cormorant Garamond, serif', fontSize: 18, lineHeight: 1.2, marginBottom: 6, padding: '6px 8px' }}
                 />
                 <textarea
                   value={(draft[field.detailKey as keyof CinematicSignaturePayload] as string | null) || ''}
@@ -229,7 +231,7 @@ function CinematicSignature({
                     }))
                   }}
                   rows={2}
-                  style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical', background: C.bg, border: `1px solid ${C.border}`, color: C.textSoft, fontFamily: SANS, fontSize: 11, fontStyle: 'italic', marginBottom: 4, padding: '6px 8px' }}
+                  style={{ width: '100%', boxSizing: 'border-box', resize: 'none', background: C.bg, border: `1px solid ${C.border}`, color: C.textSoft, fontFamily: SANS, fontSize: 11, fontStyle: 'italic', marginBottom: 4, padding: '6px 8px' }}
                 />
                 <div style={{ fontSize: 10, color: C.textMuted, fontFamily: SANS, textAlign: 'right' }}>
                   {((draft[field.key as keyof CinematicSignaturePayload] as string | null) || '').length}/280
@@ -385,6 +387,7 @@ export function Profile() {
     userLists,
     signature,
     curatedGalleryItems,
+    allDiaryFilms,
   } = useProfilePageData(username)
 
   const [isFollowing, setIsFollowing] = useState(false)
@@ -393,9 +396,6 @@ export function Profile() {
   const [localSignature, setLocalSignature] = useState<CinematicSignaturePayload | null>(signature)
   const [localCuratedItems, setLocalCuratedItems] = useState<CuratedGalleryItemData[]>([])
 
-  const searchFromNavbar = (query: string) => {
-    navigate(`/search?q=${encodeURIComponent(query.trim())}`)
-  }
 
   const handleTabChange = useCallback(
     (tab: (typeof PROFILE_TABS)[number]) => {
@@ -492,26 +492,32 @@ export function Profile() {
     setLocalSignature(response.data)
   }
 
-  const handleCurateGallery = async () => {
+  const [isCurating, setIsCurating] = useState(false)
+
+  const handleCurateGallery = () => {
+    setIsCurating(true)
+  }
+
+  const handleSaveCurated = async (selectedIds: number[]) => {
     const token = getStoredAccessToken()
     if (!token) return
 
-    const selected = [...recentlyWatched, ...watchlistFilms]
-      .map((item) => item.movieId)
-      .filter((movieId, index, arr) => arr.indexOf(movieId) === index)
-      .slice(0, 6)
+    try {
+      const response = await updateOwnerCuratedGallery(
+        token,
+        selectedIds.map((movieId, index) => ({
+          movie_id: movieId,
+          order_index: index + 1,
+        }))
+      )
 
-    if (selected.length === 0) return
-
-    const response = await updateOwnerCuratedGallery(
-      token,
-      selected.map((movieId, index) => ({
-        movie_id: movieId,
-        order_index: index + 1,
-      }))
-    )
-
-    setLocalCuratedItems(response.data.items)
+      setLocalCuratedItems(response.data.items)
+      setIsCurating(false)
+      notify.success('Galería actualizada correctamente')
+    } catch (err) {
+      console.error(err)
+      notify.error('No se pudo guardar la galería')
+    }
   }
 
   const showGuestHint = !loading && !hasTargetProfile && !isAuthenticated
@@ -529,9 +535,10 @@ export function Profile() {
         reviewItems={reviewItems}
         curatedMovieIds={localCuratedMovieIds}
         curatedNotesByMovieId={curatedNotesByMovieId}
+        allDiaryFilms={allDiaryFilms}
         canEditCurated={canEditProfile}
         onCurateGallery={handleCurateGallery}
-        onJumpToTab={(tab) => handleTabChange(tab)}
+        onJumpToTab={(tab: 'Vault' | 'Watchlist' | 'Reseñas' | 'Diario') => handleTabChange(tab)}
       />
     ),
     Diario: <DiaryPanel diaryTimeline={diaryTimeline} />,
@@ -550,7 +557,6 @@ export function Profile() {
       )}
 
       <GrainOverlay />
-      <Navbar onNavigateHome={() => navigate('/')} onSearch={searchFromNavbar} />
 
       <div className="profile-hero-container">
         <ProfileHero
@@ -558,7 +564,7 @@ export function Profile() {
           stats={displayStats}
           followers={followerUsers}
           following={followingUsers}
-          onNavigateToUser={(targetUsername) => navigate(`/${encodeURIComponent(targetUsername.trim())}`)}
+          onNavigateToUser={(targetUsername: string) => navigate(`/${encodeURIComponent(targetUsername.trim())}`)}
           canEditProfile={canEditProfile}
           isPublicProfile={isPublicProfile}
           isFollowing={isFollowing}
@@ -577,7 +583,7 @@ export function Profile() {
         onSave={handleSaveSignature}
       />
 
-      <TabsBar active={activeTab} onSelect={(tab) => handleTabChange(normalizeTab(tab))} />
+      <TabsBar active={activeTab} onSelect={(tab: string) => handleTabChange(normalizeTab(tab))} />
 
       <div className="profile-main-wrapper">
         {loading && <div style={{ color: C.textSoft, marginBottom: 16 }}>Cargando perfil...</div>}
@@ -609,6 +615,283 @@ export function Profile() {
       </div>
 
       <Footer />
+
+      <AnimatePresence>
+        {isCurating && (
+          <CuratedGallerySelectionModal
+            available={allDiaryFilms}
+            initialSelected={localCuratedMovieIds}
+            onClose={() => setIsCurating(false)}
+            onSave={handleSaveCurated}
+          />
+        )}
+      </AnimatePresence>
     </div>
+  )
+}
+
+function CuratedGallerySelectionModal({
+  available,
+  initialSelected,
+  onClose,
+  onSave,
+}: {
+  available: EnrichedMovie[]
+  initialSelected: number[]
+  onClose: () => void
+  onSave: (ids: number[]) => Promise<void>
+}) {
+  // Deduplicar por movieId
+  const [selected, setSelected] = useState<number[]>(initialSelected)
+  const [busy, setBusy] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [minRating, setMinRating] = useState<number>(0)
+  const [sortBy, setSortBy] = useState<'recent' | 'rating' | 'title'>('recent')
+
+  const uniqueAvailable = useMemo(() => {
+    const seen = new Set<number>()
+    let items = available.filter((m) => {
+      if (seen.has(m.movieId)) return false
+      seen.add(m.movieId)
+      return true
+    })
+
+    // Filter text
+    if (searchTerm.trim()) {
+      const q = searchTerm.toLowerCase().trim()
+      items = items.filter(m => 
+        (m.title || '').toLowerCase().includes(q) || 
+        (m.director || '').toLowerCase().includes(q)
+      )
+    }
+
+    // Filter rating
+    if (minRating > 0) {
+      items = items.filter(m => (m.rating || 0) >= minRating)
+    }
+
+    // Sort
+    items = [...items].sort((a, b) => {
+      if (sortBy === 'title') return (a.title || '').localeCompare(b.title || '')
+      if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0)
+      return 0 // 'recent' is default (diary order)
+    })
+
+    return items
+  }, [available, searchTerm, sortBy])
+
+  const toggle = (id: number) => {
+    setSelected((prev) => {
+      if (prev.includes(id)) return prev.filter((i) => i !== id)
+      if (prev.length >= 6) return prev // Max 6
+      return [...prev, id]
+    })
+  }
+
+  const handleSave = async () => {
+    setBusy(true)
+    try {
+      await onSave(selected)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.85)',
+        backdropFilter: 'blur(12px)',
+        zIndex: 2000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 24,
+      }}
+    >
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        style={{
+          width: '100%',
+          maxWidth: 900,
+          maxHeight: '85vh',
+          background: C.surface,
+          border: `1px solid ${C.border}`,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          boxShadow: '0 40px 100px rgba(0,0,0,0.8)',
+        }}
+      >
+        <div style={{ padding: '24px 32px', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 24 }}>
+          <div style={{ flexShrink: 0 }}>
+            <h3 style={{ fontFamily: SERIF, fontSize: 28, fontWeight: 400, color: C.text, margin: 0 }}>Cura tu Galería</h3>
+            <p style={{ fontSize: 11, color: C.textSoft, fontFamily: SANS, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '4px 0 0' }}>
+              Seleccionados: <strong style={{color: C.accent}}>{selected.length} / 6</strong>
+            </p>
+          </div>
+
+          <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ position: 'relative', flex: 1 }}>
+              <input 
+                type="text" 
+                placeholder="Busca tus películas vistas..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                style={{
+                  width: '100%',
+                  background: 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${C.border}`,
+                  padding: '10px 16px 10px 40px',
+                  color: C.text,
+                  fontFamily: SANS,
+                  fontSize: 14,
+                  outline: 'none',
+                  borderRadius: 4,
+                  transition: 'border-color 0.2s',
+                }}
+                onFocus={e => e.target.style.borderColor = C.accent}
+                onBlur={e => e.target.style.borderColor = C.border}
+              />
+              <svg 
+                style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: C.textSoft }}
+                width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+              >
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+              </svg>
+            </div>
+
+            <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.03)', padding: 4, borderRadius: 4, border: `1px solid ${C.border}` }}>
+              {[
+                { id: 'recent', label: 'Recientes' },
+                { id: 'rating', label: 'Rating' },
+                { id: 'title', label: 'A-Z' }
+              ].map(opt => (
+                <button
+                  key={opt.id}
+                  onClick={() => setSortBy(opt.id as any)}
+                  style={{
+                    padding: '6px 12px',
+                    background: sortBy === opt.id ? C.accent : 'transparent',
+                    color: sortBy === opt.id ? C.bg : C.textSoft,
+                    border: 'none',
+                    borderRadius: 2,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    fontFamily: SANS,
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 8 }}>
+              <span style={{ fontSize: 10, color: C.textMuted, fontFamily: SANS, textTransform: 'uppercase' }}>Min </span>
+              <select
+                value={minRating}
+                onChange={(e) => setMinRating(Number(e.target.value))}
+                style={{
+                  background: 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${C.border}`,
+                  color: C.text,
+                  fontSize: 12,
+                  padding: '4px 8px',
+                  borderRadius: 4,
+                  outline: 'none',
+                }}
+              >
+                <option value={0}>Todas</option>
+                <option value={5}>5 ★</option>
+                <option value={4}>4+ ★</option>
+                <option value={3}>3+ ★</option>
+                <option value={2}>2+ ★</option>
+                <option value={1}>1+ ★</option>
+              </select>
+            </div>
+          </div>
+
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: C.textSoft, cursor: 'pointer', padding: 8, flexShrink: 0 }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <div style={{ flex: 1, overflowY: 'auto', padding: '32px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 20 }}>
+            {uniqueAvailable.length === 0 ? (
+              <div style={{ gridColumn: '1/-1', textAlign: 'center', color: C.textSoft, padding: '40px 0', fontFamily: SERIF, fontSize: 18 }}>
+                No tienes películas suficientes en tu historial de visionado.
+              </div>
+            ) : (
+              uniqueAvailable.map((movie) => {
+                const isSelected = selected.includes(movie.movieId)
+                return (
+                  <div
+                    key={movie.movieId}
+                    onClick={() => toggle(movie.movieId)}
+                    style={{ cursor: 'pointer', position: 'relative' }}
+                  >
+                    <div style={{
+                      aspectRatio: '2/3',
+                      borderRadius: 2,
+                      overflow: 'hidden',
+                      border: `1px solid ${isSelected ? C.accent : C.border}`,
+                      opacity: isSelected ? 1 : 0.6,
+                      transition: 'all 0.2s',
+                    }}>
+                      <Img src={movie.posterUrl} alt={movie.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      {isSelected && (
+                        <div style={{ position: 'absolute', top: 8, right: 8, background: C.accent, color: C.bg, width: 20, height: 20, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>
+                          {selected.indexOf(movie.movieId) + 1}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 10, color: isSelected ? C.text : C.textSoft, fontFamily: SANS, marginTop: 8, ...textClampOneLine }}>
+                      {movie.title}
+                    </div>
+                  </div>
+                )
+              })
+            )}
+          </div>
+        </div>
+
+        <div style={{ padding: '20px 32px', borderTop: `1px solid ${C.border}`, display: 'flex', justifyContent: 'flex-end', gap: 16, background: 'rgba(0,0,0,0.2)' }}>
+          <button
+            onClick={onClose}
+            style={{ padding: '10px 24px', background: 'transparent', border: `1px solid ${C.border}`, color: C.textSoft, fontFamily: SANS, fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', cursor: 'pointer' }}
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={busy || selected.length === 0}
+            style={{
+              padding: '10px 28px',
+              background: busy ? C.accentDim : C.accent,
+              color: C.bg,
+              border: 'none',
+              fontFamily: SANS,
+              fontSize: 11,
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              cursor: busy ? 'default' : 'pointer',
+              fontWeight: 600,
+            }}
+          >
+            {busy ? 'Guardando...' : 'Confirmar Selección'}
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
   )
 }

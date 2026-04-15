@@ -4,7 +4,7 @@ import { motion, useScroll, useTransform } from 'motion/react'
 import { Search, ChevronRight, Star, Users, BookOpen, Layers, ArrowRight, Film, Sparkles, Lock, Clapperboard, Menu, X } from 'lucide-react'
 import InfiniteSlider from './InfiniteSlider'
 import { createSlug } from '../utils/stringUtils'
-import { getCurrentUser, logoutCurrentUser, notifyAuthStateChanged } from '../services/authServices'
+import { getCurrentUser} from '../services/authServices'
 import { resolveNavPathWithFallback } from '../lib/navigation'
 import './Landing.css'
 
@@ -322,7 +322,7 @@ function Navbar() {
   }, [])
 
   const visibleResults = useMemo(() => searchResults.slice(0, 6), [searchResults])
-  const navLinks = viewerUsername ? ['Films', 'Lists', 'Members', 'Journal'] : ['Sign in', 'Create account', 'Films', 'Lists', 'Members', 'Journal']
+  const navLinks = viewerUsername ? ['Sign in', 'Create account', 'Films', 'Lists', 'Members', 'Journal'] : ['Sign in', 'Create account', 'Films', 'Lists', 'Members', 'Journal']
   const visibleNavLinks = navLinks
 
   const navigateByType = (item: SearchMovie) => {
@@ -376,7 +376,7 @@ function Navbar() {
         Cine<span style={{ color: C.accent }}>Vault</span>
       </Link>
 
-      <ul className="landing-desktop-links landing-nav-links" style={{ display: 'flex', listStyle: 'none', margin: 0, padding: 0, alignItems: 'center' }}>
+      <ul className="landing-desktop-links landing-nav-links" style={{ display: 'flex', listStyle: 'none', margin: 0, padding: 0, alignItems: 'center', left: '3%', position: 'relative'}}>
         {visibleNavLinks.map((link) => (
           <li key={link}>
             {link === 'Sign in' || link === 'Create account' ? (
@@ -388,42 +388,20 @@ function Navbar() {
                     })
                   )
                 }}
-                style={{ fontFamily: SANS, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.text, textDecoration: 'none', border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}
+                style={{ fontFamily: SANS, fontSize: 12, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.text, textDecoration: 'none', border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}
               >
                 {link}
               </button>
             ) : (
               <button
                 onClick={() => navigate(resolveNavPathWithFallback(link))}
-                style={{ fontFamily: SANS, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.text, textDecoration: 'none', border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}
+                style={{ fontFamily: SANS, fontSize: 12, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.text, textDecoration: 'none', border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}
               >
                 {link}
               </button>
             )}
           </li>
         ))}
-        {viewerUsername && (
-          <>
-            <li>
-              <Link to="/profile" style={{ fontFamily: SANS, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.accent, textDecoration: 'none' }}>
-                @{viewerUsername}
-              </Link>
-            </li>
-            <li>
-              <button
-                onClick={async () => {
-                  await logoutCurrentUser()
-                  setViewerUsername(null)
-                  notifyAuthStateChanged(false)
-                  navigate('/')
-                }}
-                style={{ fontFamily: SANS, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#ff8d8d', textDecoration: 'none', border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}
-              >
-                Cerrar sesión
-              </button>
-            </li>
-          </>
-        )}
       </ul>
 
       <div className="landing-nav-right">
@@ -595,7 +573,7 @@ function Hero() {
   const y = useTransform(scrollY, [0, 540], ['0%', '28%'])
   const scale = useTransform(scrollY, [0, 540], [1, 1.08])
 
-  const typewriterTexts = ['resenas.', 'obsesiones.', 'rituales.', 'descubrimientos.', 'opiniones.']
+  const typewriterTexts = ['reseñas.', 'obsesiones.', 'rituales.', 'descubrimientos.', 'opiniones.']
 
   return (
     <div style={{ position: 'relative', height: '100vh', minHeight: 640, overflow: 'hidden' }}>
@@ -1022,7 +1000,7 @@ function FinalCTA() {
 function Footer() {
   const cols = [
     { title: 'Explorar', links: ['Films', 'Directores', 'Listas', 'Journal', 'Miembros'] },
-    { title: 'Tu cuenta', links: ['Iniciar sesion', 'Crear cuenta', 'El Vault', 'Watchlist', 'Resenas'] },
+    { title: 'Tu cuenta', links: ['Iniciar sesion', 'Crear cuenta', 'El Vault', 'Watchlist', 'Reseñas'] },
     { title: 'CineVault', links: ['Quienes somos', 'Manifiesto', 'Prensa', 'Contacto', 'API'] },
   ]
 
@@ -1045,7 +1023,7 @@ function Footer() {
             <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
               {col.links.map((link) => (
                 <li key={link}>
-                  <a href="#" style={{ fontFamily: SANS, fontSize: 12, color: C.textSoft, textDecoration: 'none', letterSpacing: '0.06em' }}>
+                  <a href={`/${link.toLowerCase()}`} style={{ fontFamily: SANS, fontSize: 12, color: C.textSoft, textDecoration: 'none', letterSpacing: '0.06em' }}>
                     {link}
                   </a>
                 </li>

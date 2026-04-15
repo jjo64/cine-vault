@@ -9,7 +9,19 @@ import type { ActualizarFirmaDTO } from "../schemas/profile.js"
    equivalente en Prisma sin dos roundtrips. El SELECT es un JOIN futuro-proof.
    ========================================================================== */
 
-type FirmaRow = Record<string, string | number | null>
+export interface FirmaRow {
+  user_id: number
+  pivotal_film: string | null
+  pivotal_film_detail: string | null
+  formative_director: string | null
+  formative_director_detail: string | null
+  unforgettable_scene: string | null
+  unforgettable_scene_detail: string | null
+  cinema_turning_year: string | null
+  cinema_turning_year_detail: string | null
+  created_at?: Date | null
+  updated_at?: Date | null
+}
 
 const FIRMA_VACIA = (userId: number): FirmaRow => ({
   user_id: userId,
@@ -25,48 +37,36 @@ const FIRMA_VACIA = (userId: number): FirmaRow => ({
 
 export const cinematographicSignatureRepository = {
   async findByUserId(userId: number): Promise<FirmaRow> {
-    const rows = await prisma.$queryRaw<FirmaRow[]>(Prisma.sql`
-      SELECT
-        user_id,
-        pivotal_film,
-        pivotal_film_detail,
-        formative_director,
-        formative_director_detail,
-        unforgettable_scene,
-        unforgettable_scene_detail,
-        cinema_turning_year,
-        cinema_turning_year_detail
-      FROM cinematographic_signature
-      WHERE user_id = ${userId}
-      LIMIT 1
-    `)
-    return rows[0] ?? FIRMA_VACIA(userId)
+    const record = await prisma.cinematographic_signature.findUnique({
+      where: { user_id: userId },
+    })
+    return record ?? FIRMA_VACIA(userId)
   },
 
   async upsert(userId: number, data: ActualizarFirmaDTO): Promise<void> {
-    await prisma.$executeRaw(Prisma.sql`
-      INSERT INTO cinematographic_signature (
-        user_id,
-        pivotal_film, pivotal_film_detail,
-        formative_director, formative_director_detail,
-        unforgettable_scene, unforgettable_scene_detail,
-        cinema_turning_year, cinema_turning_year_detail
-      ) VALUES (
-        ${userId},
-        ${data.pivotal_film ?? null}, ${data.pivotal_film_detail ?? null},
-        ${data.formative_director ?? null}, ${data.formative_director_detail ?? null},
-        ${data.unforgettable_scene ?? null}, ${data.unforgettable_scene_detail ?? null},
-        ${data.cinema_turning_year ?? null}, ${data.cinema_turning_year_detail ?? null}
-      )
-      ON DUPLICATE KEY UPDATE
-        pivotal_film            = COALESCE(${data.pivotal_film ?? null}, pivotal_film),
-        pivotal_film_detail     = COALESCE(${data.pivotal_film_detail ?? null}, pivotal_film_detail),
-        formative_director      = COALESCE(${data.formative_director ?? null}, formative_director),
-        formative_director_detail = COALESCE(${data.formative_director_detail ?? null}, formative_director_detail),
-        unforgettable_scene     = COALESCE(${data.unforgettable_scene ?? null}, unforgettable_scene),
-        unforgettable_scene_detail = COALESCE(${data.unforgettable_scene_detail ?? null}, unforgettable_scene_detail),
-        cinema_turning_year     = COALESCE(${data.cinema_turning_year ?? null}, cinema_turning_year),
-        cinema_turning_year_detail = COALESCE(${data.cinema_turning_year_detail ?? null}, cinema_turning_year_detail)
-    `)
+    await prisma.cinematographic_signature.upsert({
+      where: { user_id: userId },
+      update: {
+        pivotal_film: data.pivotal_film ?? null,
+        pivotal_film_detail: data.pivotal_film_detail ?? null,
+        formative_director: data.formative_director ?? null,
+        formative_director_detail: data.formative_director_detail ?? null,
+        unforgettable_scene: data.unforgettable_scene ?? null,
+        unforgettable_scene_detail: data.unforgettable_scene_detail ?? null,
+        cinema_turning_year: data.cinema_turning_year ?? null,
+        cinema_turning_year_detail: data.cinema_turning_year_detail ?? null,
+      },
+      create: {
+        user_id: userId,
+        pivotal_film: data.pivotal_film ?? null,
+        pivotal_film_detail: data.pivotal_film_detail ?? null,
+        formative_director: data.formative_director ?? null,
+        formative_director_detail: data.formative_director_detail ?? null,
+        unforgettable_scene: data.unforgettable_scene ?? null,
+        unforgettable_scene_detail: data.unforgettable_scene_detail ?? null,
+        cinema_turning_year: data.cinema_turning_year ?? null,
+        cinema_turning_year_detail: data.cinema_turning_year_detail ?? null,
+      },
+    })
   },
 }

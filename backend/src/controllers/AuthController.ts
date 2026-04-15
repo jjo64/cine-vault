@@ -101,7 +101,8 @@ export const cerrarSesion = async (req: Request, res: Response) => {
       await authService.cerrarSesionService(req.cookies.refresh_token)
     }
   } catch {
-    // Logout should still clear cookies even if session revocation fails.
+    // Si el token no es válido o ya fue revocado, igual limpiamos las cookies y respondemos con éxito para evitar confusión al usuario. No es necesario
+    // diferenciar entre "sesión ya cerrada" y "error al cerrar sesión" en este caso.
   }
 
   res.clearCookie("refresh_token", COOKIE_CLEAR_OPTIONS)

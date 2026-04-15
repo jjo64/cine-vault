@@ -109,7 +109,7 @@ async function fetchMovieMetaMap(targets: MovieMetaTarget[]) {
         .filter((item) => item.tmdbId !== null)
         .map((item) => [item.movieId, item.tmdbId as number]),
     ).entries(),
-  ).slice(0, 50)
+  )
 
   const entries = await Promise.allSettled(
     normalized.map(async ([movieId, tmdbId]) => {
@@ -402,9 +402,10 @@ export function useProfilePageData(userParam?: string) {
   })), [following])
 
   const recentlyWatched: RecentlyWatchedItem[] = useMemo(() => (
-    diary.slice(0, 8).map((entry) => {
+    diary.slice(0, 6).map((entry) => {
       const fromMovieMap = movieMap.get(entry.movie_id)
       return {
+        id: entry.id,
         movieId: entry.movie_id,
         tmdbId: entry.tmdb_id ?? fromMovieMap?.tmdbId ?? null,
         title: entry.movie_info?.title || fromMovieMap?.title || `Pelicula ${entry.movie_id}`,
@@ -457,6 +458,22 @@ export function useProfilePageData(userParam?: string) {
     })
   ), [writtenReviews, movieMap, diary, watchlist, reviewSequenceById, profile?.username])
 
+  const allDiaryFilms: RecentlyWatchedItem[] = useMemo(() => (
+    diary.map((entry) => {
+      const fromMovieMap = movieMap.get(entry.movie_id)
+      return {
+        id: entry.id,
+        movieId: entry.movie_id,
+        tmdbId: entry.tmdb_id ?? fromMovieMap?.tmdbId ?? null,
+        title: entry.movie_info?.title || fromMovieMap?.title || `Pelicula ${entry.movie_id}`,
+        year: fromMovieMap?.year ?? null,
+        director: fromMovieMap?.director || 'Desconocido',
+        posterUrl: entry.movie_info?.poster_path ? moviePoster(entry.movie_info.poster_path, 'w500') : fromMovieMap?.posterUrl || IMG.grain,
+        rating: parseRatingValue(entry.review?.rating),
+      }
+    })
+  ), [diary, movieMap])
+
   const diaryTimeline: DiaryTimelineItem[] = useMemo(() => (
     diary.slice(0, 12).map((entry, index) => {
       const fromMovieMap = movieMap.get(entry.movie_id)
@@ -475,6 +492,7 @@ export function useProfilePageData(userParam?: string) {
         watchedDateLabel: formatDiaryDateLabel(entry.watched_date),
         moodLabel: mapMoodFromRating(rating),
         stageLabel: mapStageFromIndex(index),
+        id: entry.id,
         note,
       }
     })
@@ -500,5 +518,6 @@ export function useProfilePageData(userParam?: string) {
     userLists,
     signature,
     curatedGalleryItems,
+    allDiaryFilms,
   }
 }

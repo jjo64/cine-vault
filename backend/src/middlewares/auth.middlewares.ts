@@ -25,7 +25,7 @@ declare module "express-serve-static-core" {
   }
 }
 
-// Alias semántico — úsalo en controllers que SIEMPRE tienen middlewareAutenticacion antes
+// Alias semántico — usar en controllers que SIEMPRE tienen middlewareAutenticacion antes
 export type SolicitudAutenticada = Request
 
 /* ==========================================================================

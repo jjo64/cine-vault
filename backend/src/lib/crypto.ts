@@ -43,7 +43,7 @@ export const crearTOTP = (secreto: string) =>
     algorithm: "SHA1",
     digits: 6,
     period: 30,
-    secret: OTPAuth.Secret.fromBase32(secreto),
+    secret: OTPAuth.Secret.fromBase32(secreto.trim()),
   })
 
 /**

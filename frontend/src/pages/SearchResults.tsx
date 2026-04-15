@@ -1,11 +1,9 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
 import {
-  Search as SearchIcon,
-  X,
-  Menu,
   SlidersHorizontal,
+  X,
   ChevronLeft,
   ChevronRight,
   Clock,
@@ -15,7 +13,6 @@ import {
   Bookmark,
 } from 'lucide-react'
 import { createSlug } from '../utils/stringUtils'
-import { resolveNavPathWithFallback } from '../lib/navigation'
 import { fetchMovieDetail } from '../services/movieDetailServices'
 import { searchMovies, searchUsers, type SearchMovieResult, type SearchPersonPanel, type SearchUserResult } from '../services/searchServices'
 import './SearchResults.css'
@@ -184,97 +181,7 @@ function toPersonResult(item: SearchPersonPanel): PersonResult {
   }
 }
 
-function Navbar({ query, onSearch }: { query: string; onSearch: (q: string) => void }) {
-  const [val, setVal] = useState(query)
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const navigate = useNavigate()
-  const inputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
-    setVal(query)
-  }, [query])
-
-  const submit = (event: React.FormEvent) => {
-    event.preventDefault()
-    if (val.trim()) {
-      onSearch(val.trim())
-      setIsMobileMenuOpen(false)
-    }
-  }
-
-  return (
-    <nav className="search-nav" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200, display: 'flex', alignItems: 'center', gap: 24, background: 'rgba(8,8,8,0.97)', backdropFilter: 'blur(24px)', borderBottom: `1px solid ${C.border}` }}>
-      <Link to="/" style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 500, letterSpacing: '0.13em', textTransform: 'uppercase', color: C.text, textDecoration: 'none', flexShrink: 0 }}>
-        Cine<span style={{ color: C.accent }}>Vault</span>
-      </Link>
-
-      <form onSubmit={submit} className="search-input-wrapper search-results-input-wrapper" style={{ flex: 1, maxWidth: 640, position: 'relative' }}>
-        <SearchIcon size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: C.textSoft, pointerEvents: 'none' }} />
-        <input
-          ref={inputRef}
-          value={val}
-          onChange={(event) => setVal(event.target.value)}
-          placeholder="Buscar película, persona, lista..."
-          style={{
-            width: '100%',
-            padding: '10px 44px 10px 44px',
-            background: C.surface,
-            border: `1px solid ${C.border}`,
-            color: C.text,
-            fontFamily: SANS,
-            fontSize: 13,
-            letterSpacing: '0.04em',
-            outline: 'none',
-            transition: 'border-color 0.2s',
-            boxSizing: 'border-box',
-          }}
-          onFocus={(event) => {
-            event.target.style.borderColor = C.accentDim
-          }}
-          onBlur={(event) => {
-            event.target.style.borderColor = C.border
-          }}
-        />
-        {val && (
-          <button type="button" onClick={() => setVal('')} aria-label="Limpiar búsqueda" style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: C.textSoft, display: 'flex' }}>
-            <X size={14} />
-          </button>
-        )}
-      </form>
-
-      <button onClick={() => navigate(-1)} aria-label="Volver a la página anterior" style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: C.textSoft, background: 'none', border: 'none', cursor: 'pointer', fontFamily: SANS, flexShrink: 0, transition: 'color 0.2s' }}>
-        <ChevronLeft size={13} /> Volver
-      </button>
-
-      <button className="search-nav-hamburger" onClick={() => setIsMobileMenuOpen((prev) => !prev)} aria-label="Abrir menu">
-        {isMobileMenuOpen ? <X size={16} /> : <Menu size={16} />}
-      </button>
-
-      <div className={`search-nav-mobile-menu ${isMobileMenuOpen ? 'search-nav-mobile-menu--open' : ''}`}>
-        <form onSubmit={submit} className="search-nav-mobile-search">
-          <input
-            value={val}
-            onChange={(event) => setVal(event.target.value)}
-            placeholder="Buscar..."
-            className="search-nav-mobile-input"
-          />
-        </form>
-        {['films', 'diary', 'esta noche', 'feed', 'activity', 'lists', 'profile'].map((link) => (
-          <button
-            key={`mobile-${link}`}
-            className="search-nav-mobile-link"
-            onClick={() => {
-              navigate(resolveNavPathWithFallback(link))
-              setIsMobileMenuOpen(false)
-            }}
-          >
-            {link}
-          </button>
-        ))}
-      </div>
-    </nav>
-  )
-}
 
 function FiltersPanel({ filters, onChange, onClear }: { filters: FiltersState; onChange: (k: keyof FiltersState, v: FiltersState[keyof FiltersState]) => void; onClear: () => void }) {
   const [expandedGenres, setExpandedGenres] = useState(false)
@@ -643,7 +550,7 @@ const EMPTY_FILTERS = {
 } satisfies FiltersState
 
 export function Search() {
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams] = useSearchParams()
   const query = searchParams.get('q')?.trim() || ''
   const [activeTab, setActiveTab] = useState('all')
   const [filters, setFilters] = useState<FiltersState>({ ...EMPTY_FILTERS })
@@ -894,16 +801,10 @@ export function Search() {
   return (
     <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: SANS, textAlign: 'left' }}>
       <Grain />
-      <Navbar
-        query={query}
-        onSearch={(q) => {
-          setPage(1)
-          setSearchParams({ q })
-        }}
-      />
 
-      <div style={{ paddingTop: 72 }}>
-        <div style={{ borderBottom: `1px solid ${C.border}`, padding: '20px 40px', display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+
+      <div style={{ paddingTop: 'var(--nav-height, 72px)' }}>
+        <div style={{ borderBottom: `1px solid ${C.border}`, padding: '20px 48px', display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
           <div>
             <span style={{ fontFamily: SERIF, fontSize: 28, fontWeight: 300, color: C.text }}>{counts.all} resultado{counts.all !== 1 ? 's' : ''}</span>
             <span style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 22, color: C.textSoft }}> para "{query || '...'}"</span>
@@ -915,7 +816,7 @@ export function Search() {
           </div>
         </div>
 
-        <div className="search-tabs-bar" style={{ borderBottom: `1px solid ${C.border}`, padding: '0 40px', display: 'flex', gap: 0 }}>
+        <div className="search-tabs-bar" style={{ borderBottom: `1px solid ${C.border}`, padding: '0 48px', display: 'flex', gap: 0 }}>
           {TABS.map((tab) => (
             <button key={tab.key} onClick={() => { setActiveTab(tab.key); setPage(1) }} style={{ padding: '14px 20px', background: 'none', border: 'none', borderBottom: `2px solid ${activeTab === tab.key ? C.accent : 'transparent'}`, fontFamily: SANS, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: activeTab === tab.key ? C.text : C.textSoft, cursor: 'pointer', marginBottom: -1, display: 'flex', alignItems: 'center', gap: 7 }}>
               <span style={{ color: activeTab === tab.key ? C.accent : C.textMuted }}>{tab.icon}</span>
@@ -965,7 +866,7 @@ export function Search() {
             )}
           </AnimatePresence>
 
-          <div style={{ flex: 1, padding: '32px 40px', minWidth: 0 }}>
+          <div style={{ flex: 1, padding: '32px 48px', minWidth: 0 }}>
             <button className="search-results-mobile-only-btn" onClick={() => setIsFiltersOpen(true)}>
               <SlidersHorizontal size={14} /> Filtros
             </button>

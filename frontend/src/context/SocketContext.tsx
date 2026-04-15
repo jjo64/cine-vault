@@ -1,8 +1,8 @@
-/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useState } from "react"
 import type { ReactNode } from "react"
 import { io } from "socket.io-client"
 import { authorizedFetch, clearStoredAccessToken, getStoredAccessToken } from "../services/authServices"
+import { notify } from "../lib/notify"
 
 export const socket = io(import.meta.env.VITE_API_URL, {
   withCredentials: true,
@@ -22,9 +22,10 @@ interface Notificacion {
   id: number
   user_id: number
   sender_id: number
-  type: "follow" | "like" | "comment" | "report_resolved"
+  type: "follow" | "like" | "comment" | "report_resolved" | "review" | "system"
   read: boolean
   created_at: string
+  message?: string | null
   sender: {
     id: number
     username: string
@@ -35,14 +36,25 @@ interface Notificacion {
 interface SocketContextType {
   notificaciones: Notificacion[]
   noLeidas: number
-  marcarLeida: (id: number) => void
-  marcarTodasLeidas: () => void
+  marcarLeida: (id: number) => Promise<void>
+  marcarTodasLeidas: () => Promise<void>
+  loading: boolean
 }
 
 const SocketContext = createContext<SocketContextType | null>(null)
 
+const mergeUniqueById = (base: Notificacion[], incoming: Notificacion[]) => {
+  const map = new Map<number, Notificacion>()
+  for (const item of base) map.set(item.id, item)
+  for (const item of incoming) map.set(item.id, item)
+  return Array.from(map.values()).sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  )
+}
+
 export const SocketProvider = ({ children }: { children: ReactNode }) => {
   const [notificaciones, setNotificaciones] = useState<Notificacion[]>([])
+  const [loading, setLoading] = useState(true)
 
   const getUserIdFromToken = (token: string): number | null => {
     try {
@@ -60,6 +72,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       const token = getStoredAccessToken()
       if (!token) {
         setNotificaciones([])
+        setLoading(false)
         return
       }
 
@@ -67,6 +80,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       if (!userId) {
         clearStoredAccessToken()
         setNotificaciones([])
+        setLoading(false)
         return
       }
 
@@ -79,25 +93,59 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
 
         socket.on("nueva_notificacion", (notificacion: Notificacion) => {
           setNotificaciones((prev) => [notificacion, ...prev])
+          notify.fromSocket({
+            type: notificacion.type,
+            sender: notificacion.sender ? { username: notificacion.sender.username } : undefined,
+            message: notificacion.message ?? undefined,
+          })
         })
 
+        // Fetch normal notifications
         const res = await authorizedFetch('/api/notifications')
-        if (!res.ok) {
-          setNotificaciones([])
-          return
+        const baseList = res.ok ? await res.json() : []
+
+        // Fetch pending (offline) notifications from Redis
+        const pendingRes = await authorizedFetch('/api/notifications/pending')
+        let pendingList: Notificacion[] = []
+        if (pendingRes.ok) {
+          const pendingData = await pendingRes.json()
+          pendingList = Array.isArray(pendingData.pending) ? pendingData.pending : []
+          
+          // Show toasts for pending notifications that are new
+          const pendingNuevas = pendingList.filter(
+            (pending) => !baseList.some((existing: Notificacion) => existing.id === pending.id)
+          )
+          for (const pending of pendingNuevas) {
+            notify.fromSocket({
+              type: pending.type,
+              sender: pending.sender ? { username: pending.sender.username } : undefined,
+              message: pending.message ?? undefined,
+            })
+          }
         }
 
-        const data = await res.json()
-        if (active) setNotificaciones(Array.isArray(data) ? data : [])
-      } catch {
+        if (active) {
+          const merged = mergeUniqueById(Array.isArray(baseList) ? baseList : [], pendingList)
+          setNotificaciones(merged)
+        }
+      } catch (err) {
+        console.error("Error initializing socket/notifications:", err)
         if (active) setNotificaciones([])
+      } finally {
+        if (active) setLoading(false)
       }
     }
 
+    const onAuthChange = () => {
+      start()
+    }
+
+    window.addEventListener('auth-state-changed', onAuthChange)
     start()
 
     return () => {
       active = false
+      window.removeEventListener('auth-state-changed', onAuthChange)
       socket.off("connect")
       socket.off("nueva_notificacion")
       desconectarSocket()
@@ -125,7 +173,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <SocketContext.Provider value={{ notificaciones, noLeidas, marcarLeida, marcarTodasLeidas }}>
+    <SocketContext.Provider value={{ notificaciones, noLeidas, marcarLeida, marcarTodasLeidas, loading }}>
       {children}
     </SocketContext.Provider>
   )

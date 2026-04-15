@@ -541,11 +541,14 @@ function WatchlistStrip({ watchlistFilms }: { watchlistFilms: WatchlistItem[] })
 function buildCuratedGallery(
   recentlyWatched: RecentlyWatchedItem[],
   watchlistFilms: WatchlistItem[],
-  curatedMovieIds: number[]
+  curatedMovieIds: number[],
+  allDiaryFilms: RecentlyWatchedItem[] = []
 ) {
   if (curatedMovieIds.length > 0) {
     const byId = new Map<number, EnrichedMovie>()
-    for (const film of [...recentlyWatched, ...watchlistFilms]) {
+    // Prefer all diary films as source if provided
+    const sourcePool = allDiaryFilms.length > 0 ? allDiaryFilms : recentlyWatched
+    for (const film of [...sourcePool, ...watchlistFilms]) {
       byId.set(film.movieId, film)
     }
 
@@ -626,7 +629,7 @@ function CuratedGallery({
         </div>
       ) : null}
 
-      <div className="profile-grid-6" style={{ gap: 10, overflow: 'visible' }}>
+      <div className="profile-grid-6" style={{ overflow: 'visible' }}>
         {films.map((film, i) => (
           <motion.div
             key={film.movieId}
@@ -640,7 +643,7 @@ function CuratedGallery({
           >
             <div style={{
               aspectRatio: '2/3',
-              borderRadius: 1,
+              borderRadius: 2,
               overflow: 'hidden',
               marginBottom: 10,
               border: `1px solid ${hoveredId === film.movieId ? C.accentDim : C.border}`,
@@ -702,6 +705,7 @@ export function OverviewPanel({
   reviewItems,
   curatedMovieIds,
   curatedNotesByMovieId,
+  allDiaryFilms,
   canEditCurated,
   onCurateGallery,
   onJumpToTab,
@@ -712,13 +716,14 @@ export function OverviewPanel({
   reviewItems: ReviewItem[]
   curatedMovieIds: number[]
   curatedNotesByMovieId: Record<number, string>
+  allDiaryFilms: RecentlyWatchedItem[]
   canEditCurated: boolean
   onCurateGallery: () => void
   onJumpToTab: (tab: 'Vault' | 'Watchlist' | 'Reseñas' | 'Diario') => void
 }) {
   void _stats
   const recommendation = watchlistFilms[0] || null
-  const curatedGallery = buildCuratedGallery(recentlyWatched, watchlistFilms, curatedMovieIds)
+  const curatedGallery = buildCuratedGallery(recentlyWatched, watchlistFilms, curatedMovieIds, allDiaryFilms)
   return (
     <div>
       <CuratedGallery films={curatedGallery} curatedNotesByMovieId={curatedNotesByMovieId} canEdit={canEditCurated} onCurate={onCurateGallery} />
@@ -727,12 +732,12 @@ export function OverviewPanel({
       <SectionHeader title="Vistas recientemente" link="Ver historial" onLinkClick={() => onJumpToTab('Diario')} />
       <div className="profile-mobile-only profile-mobile-only-flex" style={{ flexDirection: 'column', gap: 10, marginBottom: 48 }}>
         {recentlyWatched.slice(0, 4).map((film, index) => (
-          <FilmCardMobile key={film.movieId} film={film} delay={index * 0.05} />
+          <FilmCardMobile key={film.id} film={film} delay={index * 0.05} />
         ))}
       </div>
       <div className="profile-desktop-grid profile-grid-auto" style={{ marginBottom: 48 }}>
         {recentlyWatched.map((film, index) => (
-          <FilmCard key={film.movieId} film={film} delay={index * 0.05} />
+          <FilmCard key={film.id} film={film} delay={index * 0.05} />
         ))}
       </div>
 
@@ -1015,12 +1020,12 @@ export function HistoryPanel({ recentlyWatched }: { recentlyWatched: RecentlyWat
 
       <div className="profile-mobile-only profile-mobile-only-flex" style={{ flexDirection: 'column', gap: 10 }}>
         {recentlyWatched.map((film, index) => (
-          <FilmCardMobile key={film.movieId} film={film} delay={index * 0.03} />
+          <FilmCardMobile key={film.id} film={film} delay={index * 0.03} />
         ))}
       </div>
       <div className="profile-desktop-grid profile-grid-auto">
         {recentlyWatched.map((film, index) => (
-          <FilmCard key={film.movieId} film={film} delay={index * 0.04} />
+          <FilmCard key={film.id} film={film} delay={index * 0.04} />
         ))}
       </div>
     </div>
@@ -1052,7 +1057,7 @@ export function DiaryPanel({ diaryTimeline }: { diaryTimeline: DiaryTimelineItem
 
         {diaryTimeline.map((entry, i) => (
           <motion.div
-            key={entry.movieId}
+            key={entry.id}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.1, duration: 0.5, ease: 'easeOut' }}

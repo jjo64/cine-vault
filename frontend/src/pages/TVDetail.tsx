@@ -1,19 +1,19 @@
 import { useState, useMemo } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import './TVDetail.css'
+import './MovieDetail.css'
 import { useTVDetail} from './TVDetail/hooks/useTVDetail'
 import SeasonsPanel from './TVDetail/components/SeasonsPanel'
-import CrewSection from './TVDetail/components/CrewSection'
 import ReviewsSection from './TVDetail/components/ReviewsSection'
 import ScoreCard from './TVDetail/components/ScoreCard'
 import TechnicalSheet from './TVDetail/components/TechnicalSheet'
 import { Hero } from '../features/movie-detail/components/Hero'
+import { CastCrew } from '../features/movie-detail/components/CastCrew'
 import { useUserActions } from './TVDetail/hooks/useUserActions'
 import { motion } from 'motion/react'
 import {
   ChevronLeft, ChevronRight,
 } from 'lucide-react'
-import Navbar, { useNavViewer } from '../components/Navbar'
 import { type TVDetailApi } from '../services/tvDetailServices'
 import { C, SANS, SERIF, TMDB_THUMB, TMDB_BASE, SIZES } from './TVDetail/constants'
 // import { Footer, Navbar} from '../components/profile-v2/layout'
@@ -309,39 +309,6 @@ function Synopsis({ detail }: { detail: TVDetailApi }) {
   )
 }
 
-// ─── CAST ─────────────────────────────────────────────────────
-function CastSection({ detail }: { detail: TVDetailApi }) {
-  const cast = (detail.credits?.cast || []).slice(0, 16)
-  if (cast.length === 0) return null
-  return (
-    <motion.section initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }} style={{ marginBottom: 64 }}>
-      <SectionLabel>Reparto principal</SectionLabel>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10 }}>
-        {cast.map(member => (
-          <div key={member.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: C.surface, border: `1px solid ${C.border}`, cursor: 'pointer', transition: 'border-color 0.2s' }}
-            onMouseEnter={e => (e.currentTarget.style.borderColor = C.accentDim)}
-            onMouseLeave={e => (e.currentTarget.style.borderColor = C.border)}>
-            {member.profile_path ? (
-              <img src={img(member.profile_path, TMDB_THUMB)} alt={member.name} style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
-            ) : (
-              <div style={{ width: 36, height: 36, borderRadius: '50%', background: C.elevated, border: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <span style={{ fontFamily: SERIF, fontSize: 16, color: C.accentDim }}>{(member.name || '?')[0].toUpperCase()}</span>
-              </div>
-            )}
-            <div>
-              <div style={{ fontFamily: SANS, fontSize: 12, color: C.text, marginBottom: 2 }}>{member.name}</div>
-              <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 12, color: C.textSoft }}>{member.character || '—'}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </motion.section>
-  )
-}
-
-// ─── CREW ─────────────────────────────────────────────────────
-
-
 // ─── GALLERY ──────────────────────────────────────────────────
 function Gallery({ detail }: { detail: TVDetailApi }) {
   const [hov, setHov] = useState<number | null>(null)
@@ -429,7 +396,6 @@ export default function TVDetailPage() {
   const navigate = useNavigate()
 
   const { detail, loading, error } = useTVDetail(slugOrId)
-  const viewer = useNavViewer()
   const [watchedIds, setWatchedIds] = useState<Set<string>>(new Set())
 
   const {
@@ -472,6 +438,10 @@ export default function TVDetailPage() {
   }
 
   const inVault = inDiary || isFavorite
+  const totalEpisodes = detail.number_of_episodes || detail.season_details?.reduce((acc, s) => acc + (s.episode_count || 0), 0) || 0
+  const runtimeLabel = totalEpisodes > 0
+    ? `${totalEpisodes} episodios`
+    : (detail.episode_run_time?.[0] ? `${detail.episode_run_time[0]} min / ep` : 'Episodios desconocidos')
 
   const directorObj = detail?.created_by?.[0] ? { id: detail.created_by[0].id, name: detail.created_by.map(c => c.name).join(' & ') } : null;
 
@@ -493,19 +463,13 @@ export default function TVDetailPage() {
   return (
     <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: SANS }}>
       <Grain />
-      <Navbar
-        viewer={viewer}
-        onLogout={() => {
-          // TODO: conectar logout real al limpiar auth context
-          window.location.href = '/'
-        }}
-      />
+
       <Hero
         title={detail.name || 'Sin título'}
         originalTitle={detail.original_name || detail.name}
         releaseYear={detail.first_air_date ? new Date(detail.first_air_date).getFullYear() : '----'}
         country={detail.production_countries?.[0]?.name || 'País no disponible'}
-        runtime={detail.episode_run_time?.[0] ? `${detail.episode_run_time[0]} min / ep` : 'Duración desconocida'}
+        runtime={runtimeLabel}
         genresText={(detail.genres || []).slice(0, 2).map((genre) => genre.name).join(' · ') || 'Sin género'}
         director={directorObj}
         score={((detail.vote_average || 0) / 2).toFixed(1)}
@@ -542,10 +506,14 @@ export default function TVDetailPage() {
           {(detail.season_details?.some(s => s.season_number > 0 && (s.episode_count || 0) > 0)) && (
             <EpisodeTracker detail={detail} watchedIds={watchedIds} />
           )}
-          <SeasonsPanel detail={detail} watchedIds={watchedIds} setWatchedIds={setWatchedIds} />
+          <SeasonsPanel
+            detail={detail}
+            watchedIds={watchedIds}
+            setWatchedIds={setWatchedIds}
+            isAuthenticated={isAuthenticated}
+          />
           <Gallery detail={detail} />
-          <CastSection detail={detail} />
-          <CrewSection detail={detail} />
+          <CastCrew cast={detail.credits?.cast || []} crew={detail.credits?.crew || []} />
           <ReviewsSection
             reviews={reviews}
             userRating={userRating}

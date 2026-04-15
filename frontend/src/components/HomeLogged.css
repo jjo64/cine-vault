@@ -142,7 +142,7 @@
 }
 
 .hl-nav-offset {
-  padding-top: 60px;
+  padding-top: var(--nav-height, 64px);
 }
 
 /* Greeting Bar */

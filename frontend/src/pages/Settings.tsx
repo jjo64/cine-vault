@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import { ArrowLeft, Trash2, Upload } from 'lucide-react'
 import { GrainOverlay } from '../components/profile-v2/primitives'
-import { Navbar } from '../components/profile-v2/layout'
 import { C, SANS, SERIF } from '../components/profile-v2/theme'
 import {
   checkUsernameAvailability,
@@ -455,7 +454,7 @@ export default function SettingsPage() {
   return (
     <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: SANS }}>
       <GrainOverlay />
-      <Navbar onNavigateHome={() => navigate('/')} onSearch={(query) => navigate(`/search?q=${encodeURIComponent(query)}`)} />
+
 
       <main className="settings-main">
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 40, cursor: 'pointer' }} onClick={handleTryLeave}>

@@ -1,6 +1,10 @@
 import { toast } from 'sonner'
 
 export const notify = {
+  // Generic
+  success: (msg: string) => toast.success(msg),
+  error: (msg: string) => toast.error(msg),
+
   // Auth
   loginOk:         () => toast.success('Bienvenido de vuelta.'),
   loginError:      (msg: string) => toast.error(msg),

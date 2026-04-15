@@ -146,7 +146,7 @@ export function Reviews({
                   const value = review.dimensions[entry.key as keyof typeof review.dimensions]
                   return (
                     <div key={`${review.id}-${entry.key}`} style={{ fontFamily: SANS, fontSize: 11, color: C.textSoft }}>
-                      {entry.label}: {value ? value.toFixed(1) : '-'}
+                      {entry.label}: {value != null ? Number(value).toFixed(1) : '-'}
                     </div>
                   )
                 })}

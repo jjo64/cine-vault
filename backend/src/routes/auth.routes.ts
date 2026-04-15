@@ -1,5 +1,16 @@
 import { Request, Router } from "express"
+// Middlewares
 import { middlewareAutenticacion } from "../middlewares/auth.middlewares.js"
+import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
+import {
+  limitadorAuth,
+  limitadorEmail,
+} from "../middlewares/rateLimit.middleware.js"
+import {
+  validarBody,
+  validarParams,
+} from "../middlewares/validation.middleware.js"
+// Controladores de autenticación
 import {
   iniciarSesion,
   registrar,
@@ -23,12 +34,8 @@ import {
   recoveryCodesStatus,
   regenerarRecoveryCodes,
 } from "../controllers/AuthController.js"
-import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
-import {
-  limitadorAuth,
-  limitadorEmail,
-} from "../middlewares/rateLimit.middleware.js"
 import passport from "passport"
+// Esquemas de validación
 import {
   loginSchema,
   forgotPasswordSchema,
@@ -38,10 +45,7 @@ import {
   twoFAVerifySchema,
   revokeSessionParamsSchema,
 } from "../schemas/auth.js"
-import {
-  validarBody,
-  validarParams,
-} from "../middlewares/validation.middleware.js"
+
 
 const router = Router()
 

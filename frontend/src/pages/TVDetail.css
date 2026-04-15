@@ -258,6 +258,18 @@
   margin-bottom: 10px;
 }
 
+.md-cast-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 16px;
+  padding-bottom: 8px;
+}
+
+.md-cast-item {
+  width: 96px;
+  flex-shrink: 0;
+}
+
 .tv-action-row {
   display: flex;
   flex-wrap: wrap;
