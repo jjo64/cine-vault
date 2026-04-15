@@ -4,6 +4,8 @@ import SeoManager from './components/SeoManager'
 import { SocketProvider } from "./context/SocketContext"
 import { getStoredAccessToken, refreshAccessToken } from './services/authServices'
 import { BottomNav } from './components/BottomNav'
+import AuthenticatedNavbar from './components/AuthenticatedNavbar'
+import { getCurrentUser, type AuthUser } from './services/authServices'
 import './App.css'
 
 const Home = lazy(() => import('./pages/Home'))
@@ -34,6 +36,7 @@ const ReviewThreadPage = lazy(() => import('./pages/ReviewThread'))
 function App() {
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
     const [authMode, setAuthMode] = useState<'login' | 'register'>('login')
+    const [user, setUser] = useState<AuthUser | null>(null)
 
     useEffect(() => {
         const handler = (event: Event) => {
@@ -58,10 +61,31 @@ function App() {
             }, 12 * 60 * 1000)
         }
 
+        const fetchUser = async () => {
+            try {
+                const currentUser = await getCurrentUser()
+                setUser(currentUser)
+            } catch {
+                setUser(null)
+            }
+        }
+
+        const onAuthChange = (event: Event) => {
+            const authEvent = event as CustomEvent<{ authenticated?: boolean }>
+            if (authEvent.detail?.authenticated === false) {
+                setUser(null)
+                return
+            }
+            fetchUser()
+        }
+
+        window.addEventListener('auth-state-changed', onAuthChange)
+
         const bootstrapSession = async () => {
             const existing = getStoredAccessToken()
             if (existing) {
                 scheduleSilentRefresh()
+                await fetchUser()
                 return
             }
 
@@ -74,12 +98,15 @@ function App() {
                 window.clearInterval(refreshTimerId)
                 refreshTimerId = null
             }
+            
+            fetchUser()
         }
 
         bootstrapSession()
 
         return () => {
             active = false
+            window.removeEventListener('auth-state-changed', onAuthChange)
             if (refreshTimerId !== null) {
                 window.clearInterval(refreshTimerId)
             }
@@ -90,6 +117,7 @@ function App() {
         <SocketProvider>
             <Suspense fallback={<div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#080808', color: '#7A7A7A' }}>Cargando...</div>}>
                 <SeoManager />
+                <AuthenticatedNavbar user={user} />
                 <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/feed" element={<FeedPage />} />
@@ -128,16 +156,16 @@ function App() {
                 </Routes>
             </Suspense>
             <BottomNav />
-                <div className="bottom-nav-spacer" />
-                {isAuthModalOpen && (
-                    <Suspense fallback={null}>
-                        <AuthModal
-                            isOpen={isAuthModalOpen}
-                            onClose={() => setIsAuthModalOpen(false)}
-                            initialMode={authMode}
-                        />
-                    </Suspense>
-                )}
+            <div className="bottom-nav-spacer" />
+            {isAuthModalOpen && (
+                <Suspense fallback={null}>
+                    <AuthModal
+                        isOpen={isAuthModalOpen}
+                        onClose={() => setIsAuthModalOpen(false)}
+                        initialMode={authMode}
+                    />
+                </Suspense>
+            )}
         </SocketProvider>
     )
 }

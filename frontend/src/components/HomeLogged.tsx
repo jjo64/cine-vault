@@ -1111,27 +1111,6 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
     <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: SANS, textAlign: 'left' }}>
       <Grain />
 
-      <nav className="hl-navbar" aria-label="Navegación de CineVault">
-        <Link to="/" className="hl-nav-brand">
-          Cine<span style={{ color: C.accent }}>Vault</span>
-        </Link>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <button
-            onClick={() => navigate('/search')}
-            aria-label="Ir a búsqueda"
-            style={{ background: 'none', border: `1px solid ${C.border}`, cursor: 'pointer', color: C.textSoft, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          >
-            <SearchIcon size={14} />
-          </button>
-          <Link to="/feed" style={{ fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: C.textSoft, textDecoration: 'none', fontFamily: SANS }}>Feed</Link>
-          <Link to={`/${encodeURIComponent(username)}`} style={{ textDecoration: 'none' }}>
-            <div style={{ width: 32, height: 32, borderRadius: '50%', background: `linear-gradient(135deg, ${C.accentGlow}, ${C.elevated})`, border: `1.5px solid ${C.accentDim}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: SERIF, fontSize: 14, color: C.accent }}>
-              {initials(username)}
-            </div>
-          </Link>
-        </div>
-      </nav>
-
       <div className="hl-nav-offset">
         <div className="hl-greeting-bar">
           <div>

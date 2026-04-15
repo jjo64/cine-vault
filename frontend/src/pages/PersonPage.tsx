@@ -3,7 +3,6 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import { Award, Bell, Calendar, ChevronLeft, ChevronDown, ChevronUp, ExternalLink, Film, MapPin, Share2, Star, Users } from 'lucide-react'
 import { GrainOverlay, Img } from '../components/profile-v2/primitives'
-import { Navbar } from '../components/profile-v2/layout'
 import { createSlug } from '../utils/stringUtils'
 import './PersonPage.css'
 
@@ -358,7 +357,7 @@ export default function PersonPage() {
 
   const visibleBio = bioExpanded ? bioParagraphs : bioParagraphs.slice(0, 1)
 
-  const searchFromNavbar = (query: string) => navigate(`/search?q=${encodeURIComponent(query.trim())}`)
+
 
   if (loading) {
     return (
@@ -381,7 +380,7 @@ export default function PersonPage() {
   return (
     <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: SANS, overflowX: 'hidden' }}>
       <GrainOverlay />
-      <Navbar onNavigateHome={() => navigate('/')} onSearch={searchFromNavbar} />
+
 
       <div style={{ paddingTop: 'var(--nav-height, 64px)' }}>
         <section className="person-hero" style={{ position: 'relative', minHeight: 560, overflow: 'hidden' }}>
@@ -394,11 +393,11 @@ export default function PersonPage() {
             initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
-            style={{ position: 'absolute', right: '8%', top: 0, bottom: 0, width: '34%', overflow: 'hidden' }}
+            style={{ position: 'absolute', right: '10%', top: 0, bottom: 0, width: '26%', overflow: 'hidden' }}
             className="person-page-desktop-portrait person-photo"
           >
             <Img src={portrait} alt={person.name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', filter: 'saturate(0.6) brightness(0.85)' }} />
-            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to left, transparent 40%, rgba(8,8,8,0.9) 100%)' }} />
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to left, transparent 20%, rgba(8,8,8,0.9) 100%)' }} />
           </motion.div>
 
           <motion.div

@@ -123,10 +123,10 @@ export const actualizarGaleriaCuradaService = async (
   userId: number,
   data: ActualizarGaleriaCuradaDTO
 ) => {
-  const movieIds = data.items.map((item) => item.movie_id)
-  const found = await curatedGalleryRepository.existMovieIds(movieIds)
+  const uniqueMovieIds = [...new Set(data.items.map((item) => item.movie_id))]
+  const found = await curatedGalleryRepository.existMovieIds(uniqueMovieIds)
 
-  if (found.length !== movieIds.length) {
+  if (found.length !== uniqueMovieIds.length) {
     throw new ValidationError("Una o más películas no existen en movies_ref")
   }
 

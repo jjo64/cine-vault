@@ -74,7 +74,7 @@ export const eliminarEntradaDiarioService = async (
   await diaryRepository.delete(entradaId)
 }
 
-const diarioCacheKey = (userId: number) => `diary:feed:${userId}`
+const diarioCacheKey = (userId: number) => `diary:feed:v2:${userId}`
 const movieAggregateKey = (movieId: number) => `movie:agg:${movieId}`
 
 const invalidateCacheForDiary = async (userId: number, movieId: number) => {

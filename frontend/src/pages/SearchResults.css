@@ -10,11 +10,9 @@
 }
 
 .search-results-main {
-    max-width: 1260px;
-    margin: 0 auto;
     position: relative;
     z-index: 2;
-    padding: 98px 20px 56px;
+    padding: 64px 48px 56px;
 }
 
 .search-results-filter-bar {

@@ -4,7 +4,7 @@ import { motion, useScroll, useTransform } from 'motion/react'
 import { Search, ChevronRight, Star, Users, BookOpen, Layers, ArrowRight, Film, Sparkles, Lock, Clapperboard, Menu, X } from 'lucide-react'
 import InfiniteSlider from './InfiniteSlider'
 import { createSlug } from '../utils/stringUtils'
-import { getCurrentUser, logoutCurrentUser, notifyAuthStateChanged } from '../services/authServices'
+import { getCurrentUser} from '../services/authServices'
 import { resolveNavPathWithFallback } from '../lib/navigation'
 import './Landing.css'
 
@@ -573,7 +573,7 @@ function Hero() {
   const y = useTransform(scrollY, [0, 540], ['0%', '28%'])
   const scale = useTransform(scrollY, [0, 540], [1, 1.08])
 
-  const typewriterTexts = ['resenas.', 'obsesiones.', 'rituales.', 'descubrimientos.', 'opiniones.']
+  const typewriterTexts = ['reseñas.', 'obsesiones.', 'rituales.', 'descubrimientos.', 'opiniones.']
 
   return (
     <div style={{ position: 'relative', height: '100vh', minHeight: 640, overflow: 'hidden' }}>
@@ -1000,7 +1000,7 @@ function FinalCTA() {
 function Footer() {
   const cols = [
     { title: 'Explorar', links: ['Films', 'Directores', 'Listas', 'Journal', 'Miembros'] },
-    { title: 'Tu cuenta', links: ['Iniciar sesion', 'Crear cuenta', 'El Vault', 'Watchlist', 'Resenas'] },
+    { title: 'Tu cuenta', links: ['Iniciar sesion', 'Crear cuenta', 'El Vault', 'Watchlist', 'Reseñas'] },
     { title: 'CineVault', links: ['Quienes somos', 'Manifiesto', 'Prensa', 'Contacto', 'API'] },
   ]
 
@@ -1023,7 +1023,7 @@ function Footer() {
             <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
               {col.links.map((link) => (
                 <li key={link}>
-                  <a href="#" style={{ fontFamily: SANS, fontSize: 12, color: C.textSoft, textDecoration: 'none', letterSpacing: '0.06em' }}>
+                  <a href={`/${link.toLowerCase()}`} style={{ fontFamily: SANS, fontSize: 12, color: C.textSoft, textDecoration: 'none', letterSpacing: '0.06em' }}>
                     {link}
                   </a>
                 </li>

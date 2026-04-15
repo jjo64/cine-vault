@@ -520,13 +520,14 @@ export const verificar2FAService = async (
     )
   }
   const totp = crearTOTP(secretoReal)
-  const delta = totp.validate({ token: codigo, window: 1 })
+  const delta = totp.validate({ token: codigo, window: 2 })
   let usedRecoveryCode = false
   let remainingRecoveryCodes: number | null = null
 
   if (delta === null) {
     const recoveryResult = await consumeRecoveryCodeIfValid(usuario.id, codigo)
     if (!recoveryResult.consumed) {
+      console.warn(`[2FA] Fallo de verificación para usuario ${usuario.id}. Código: ${codigo}`)
       throw new UnauthorizedError("Código incorrecto")
     }
     usedRecoveryCode = true

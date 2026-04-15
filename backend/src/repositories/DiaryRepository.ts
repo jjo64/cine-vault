@@ -31,6 +31,7 @@ export interface IDiaryRepository {
 
 /** Tipo enriquecido con metadatos de TMDB y reseña del usuario */
 export interface RichDiaryEntry {
+  id: number
   movie_id: number
   watched_date: Date | null
   tmdb_id: number | null
@@ -95,7 +96,7 @@ export class DiaryRepository implements IDiaryRepository {
   async buildRichResponse(userId: number): Promise<RichDiaryEntry[] | null> {
     const entries = await prisma.diary_entries.findMany({
       where: { user_id: userId },
-      select: { movie_id: true, watched_date: true },
+      select: { id: true, movie_id: true, watched_date: true },
       orderBy: { watched_date: "desc" },
     })
 
@@ -151,6 +152,7 @@ export class DiaryRepository implements IDiaryRepository {
     }
 
     return entries.map((entry) => ({
+      id: entry.id,
       movie_id: entry.movie_id,
       watched_date: entry.watched_date,
       tmdb_id: movieMap.get(entry.movie_id) ?? null,

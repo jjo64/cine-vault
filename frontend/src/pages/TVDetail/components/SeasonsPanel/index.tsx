@@ -29,9 +29,10 @@ interface SeasonsPanelProps {
   detail: TVDetailApi
   watchedIds: Set<string>
   setWatchedIds: React.Dispatch<React.SetStateAction<Set<string>>>
+  isAuthenticated: boolean
 }
 
-export default function SeasonsPanel({ detail, watchedIds, setWatchedIds }: SeasonsPanelProps) {
+export default function SeasonsPanel({ detail, watchedIds, setWatchedIds, isAuthenticated }: SeasonsPanelProps) {
   const seasons = useMemo(
     () => (detail.season_details || []).filter(s => s.season_number > 0),
     [detail.season_details]
@@ -52,6 +53,7 @@ export default function SeasonsPanel({ detail, watchedIds, setWatchedIds }: Seas
   }
 
   const handleToggle = (episodeNumber: number) => {
+    if (!isAuthenticated) return
     setWatchedIds(prev => toggleEpisode(prev, activeSeason, episodeNumber))
   }
 
@@ -81,12 +83,28 @@ export default function SeasonsPanel({ detail, watchedIds, setWatchedIds }: Seas
             <SeasonHeader season={season} watched={watched} pct={pct} />
           )}
 
+          {!isAuthenticated && (
+            <div
+              style={{
+                fontFamily: SANS,
+                fontSize: 10,
+                letterSpacing: '0.13em',
+                textTransform: 'uppercase',
+                color: C.textMuted,
+                marginBottom: 14,
+              }}
+            >
+              Inicia sesión para marcar episodios como vistos
+            </div>
+          )}
+
           <div>
             {visible.map(ep => (
               <EpisodeRow
                 key={ep.id}
                 ep={ep}
                 watched={watchedIds.has(episodeKey(activeSeason, ep.episode_number ?? 0))}
+                canToggle={isAuthenticated}
                 onToggle={() => handleToggle(ep.episode_number ?? 0)}
               />
             ))}

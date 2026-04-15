@@ -6,7 +6,6 @@ import SeasonsPanel from './components/SeasonsPanel'
 import { useUserActions, type AppReview  } from './hooks/useUserActions'
 import { motion, useScroll, useTransform} from 'motion/react'
 import { ChevronLeft, Bookmark, Share2, List, Heart, ChevronRight,Tv, MessageSquare} from 'lucide-react'
-import Navbar, { useNavViewer } from '../../components/Navbar'
 import { type TVDetailApi } from '../../services/tvDetailServices'
 import { C, SANS, SERIF, TMDB_POSTER, TMDB_THUMB, TMDB_BASE, SIZES } from './constants'
 
@@ -580,7 +579,6 @@ export default function TVDetailPage() {
   const navigate = useNavigate()
 
   const { detail, loading, error } = useTVDetail(slugOrId)
-  const viewer = useNavViewer()
   const [watchedIds, setWatchedIds] = useState<Set<string>>(new Set())
 
   const {
@@ -625,15 +623,9 @@ export default function TVDetailPage() {
   const inVault = inDiary || isFavorite
 
   return (
-    <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: SANS }}>
+    <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: SANS, paddingTop: 'var(--nav-height, 64px)' }}>
       <Grain />
-      <Navbar
-        viewer={viewer}
-        onLogout={() => {
-          // TODO: conectar logout real al limpiar auth context
-          window.location.href = '/'
-        }}
-      />
+
       <Hero detail={detail} userRating={userRating} onRatingChange={setUserRating}
         inVault={inVault} onVaultToggle={() => handleVault()}
         inWatchlist={inWatchlist} onWatchlistToggle={() => handleWatchlist()}
@@ -655,7 +647,7 @@ export default function TVDetailPage() {
           {(detail.season_details?.some(s => s.season_number > 0 && (s.episode_count || 0) > 0)) && (
             <EpisodeTracker detail={detail} watchedIds={watchedIds} />
           )}
-          <SeasonsPanel detail={detail} watchedIds={watchedIds} setWatchedIds={setWatchedIds} />
+          <SeasonsPanel detail={detail} watchedIds={watchedIds} setWatchedIds={setWatchedIds} isAuthenticated={isAuthenticated} />
           <Gallery detail={detail} />
           <CastSection detail={detail} />
           <CrewSection detail={detail} />

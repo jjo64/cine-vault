@@ -8,7 +8,6 @@ import './MovieDetail.css';
 import { useMovieDetail } from '../features/movie-detail/hooks/useMovieDetail';
 
 // Componentes Refactorizados
-import { Navbar } from '../features/movie-detail/components/Navbar';
 import { Hero } from '../features/movie-detail/components/Hero/Hero';
 import { DirectorQuote } from '../features/movie-detail/components/DirectorQuote';
 import { Synopsis } from '../features/movie-detail/components/Synopsis';
@@ -69,7 +68,6 @@ export default function MovieDetailPage() {
     setSelectedListId,
     setNewListName,
     setNewListDescription,
-    handleLogout,
     handleRate,
     handleToggleVault,
     handleToggleWatchlist,
@@ -225,7 +223,7 @@ export default function MovieDetailPage() {
         onConfirm={handleConfirmAddToList}
       />
 
-      <Navbar viewer={viewer} onLogout={handleLogout} />
+
 
       <Hero
         title={movie.title || 'Sin título'}

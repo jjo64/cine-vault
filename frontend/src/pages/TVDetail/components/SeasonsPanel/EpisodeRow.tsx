@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Check, Clock } from 'lucide-react'
-import { C, SERIF, SANS } from '../../constants'
+import { C, SERIF, SANS, SIZES, tmdbImg } from '../../constants'
 import { type TVDetailApi } from '../../services/tvDetailServices'
 
 type Episode = NonNullable<NonNullable<TVDetailApi['season_details']>[number]['episodes']>[number]
@@ -15,12 +15,15 @@ function formatDate(value?: string | null) {
 interface EpisodeRowProps {
   ep: Episode
   watched: boolean
+  canToggle: boolean
   onToggle: () => void
 }
 
-export default function EpisodeRow({ ep, watched, onToggle }: EpisodeRowProps) {
+export default function EpisodeRow({ ep, watched, canToggle, onToggle }: EpisodeRowProps) {
   const [hov, setHov] = useState(false)
+  const [imgErr, setImgErr] = useState(false)
   const numStr = `E${String(ep.episode_number ?? 0).padStart(2, '0')}`
+  const stillSrc = !imgErr && ep.still_path ? tmdbImg(ep.still_path, SIZES.STILL) : ''
 
   return (
     <div
@@ -32,10 +35,27 @@ export default function EpisodeRow({ ep, watched, onToggle }: EpisodeRowProps) {
         transition: 'background 0.2s',
       }}
     >
-      <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr auto', gap: 16, padding: '16px 0', alignItems: 'flex-start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '48px minmax(110px, 150px) 1fr auto', gap: 16, padding: '16px 0', alignItems: 'flex-start' }}>
         <div style={{ fontFamily: SERIF, fontSize: 22, color: hov ? C.accentDim : C.textMuted, lineHeight: 1, paddingTop: 2, transition: 'color 0.2s' }}>
           {numStr}
         </div>
+
+        <div style={{ width: '100%', aspectRatio: '16/9', border: `1px solid ${C.border}`, overflow: 'hidden', background: C.elevated, flexShrink: 0 }}>
+          {stillSrc ? (
+            <img
+              src={stillSrc}
+              alt={`Still ${ep.name}`}
+              loading="lazy"
+              style={{ width: '100%', height: '100%', objectFit: 'cover', filter: watched ? 'saturate(0.55) brightness(0.8)' : 'saturate(0.65) brightness(0.9)' }}
+              onError={() => setImgErr(true)}
+            />
+          ) : (
+            <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: C.textMuted, fontFamily: SANS }}>
+              Sin imagen
+            </div>
+          )}
+        </div>
+
         <div>
           <div style={{ fontFamily: SERIF, fontSize: 18, color: watched ? C.textSoft : C.text, lineHeight: 1.3, marginBottom: 4 }}>
             {ep.name}
@@ -65,13 +85,15 @@ export default function EpisodeRow({ ep, watched, onToggle }: EpisodeRowProps) {
         </div>
         <button
           onClick={onToggle}
+          disabled={!canToggle}
+          title={canToggle ? 'Marcar episodio como visto' : 'Inicia sesión para marcar episodios como vistos'}
           style={{
             width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
             background: watched ? C.accentGlow : 'none',
-            border: `1px solid ${watched ? C.accentDim : C.border}`,
-            color: watched ? C.accent : C.textSoft,
-            cursor: 'pointer', transition: 'all 0.2s',
-            opacity: hov || watched ? 1 : 0.4,
+            border: `1px solid ${watched ? C.accentDim : (canToggle ? C.border : C.textMuted)}`,
+            color: watched ? C.accent : (canToggle ? C.textSoft : C.textMuted),
+            cursor: canToggle ? 'pointer' : 'not-allowed', transition: 'all 0.2s',
+            opacity: canToggle ? (hov || watched ? 1 : 0.4) : 0.5,
             flexShrink: 0,
           }}
         >

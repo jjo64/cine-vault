@@ -291,7 +291,11 @@ router.get(
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.get("/:id/following", manejadorAsincrono(obtenerSiguiendo)) // siguiendo
+router.get(
+  "/:id/following",
+  validarParams(idParamSchema),
+  manejadorAsincrono(obtenerSiguiendo)
+) // siguiendo
 
 //router.post('/block/:id', middlewareAutenticacion, manejadorAsincrono(blockUser))
 //router.delete('/unblock/:id', middlewareAutenticacion, manejadorAsincrono(unblockUser))

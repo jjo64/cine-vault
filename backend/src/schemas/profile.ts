@@ -2,14 +2,14 @@ import { z } from "zod"
 
 export const actualizarFirmaSchema = z
   .object({
-    pivotal_film: z.string().max(255).optional(),
-    pivotal_film_detail: z.string().max(255).optional(),
-    formative_director: z.string().max(255).optional(),
-    formative_director_detail: z.string().max(255).optional(),
-    unforgettable_scene: z.string().max(255).optional(),
-    unforgettable_scene_detail: z.string().max(255).optional(),
-    cinema_turning_year: z.string().max(255).optional(),
-    cinema_turning_year_detail: z.string().max(255).optional(),
+    pivotal_film: z.string().max(255).optional().nullable(),
+    pivotal_film_detail: z.string().max(255).optional().nullable(),
+    formative_director: z.string().max(255).optional().nullable(),
+    formative_director_detail: z.string().max(255).optional().nullable(),
+    unforgettable_scene: z.string().max(255).optional().nullable(),
+    unforgettable_scene_detail: z.string().max(255).optional().nullable(),
+    cinema_turning_year: z.string().max(255).optional().nullable(),
+    cinema_turning_year_detail: z.string().max(255).optional().nullable(),
   })
   .refine(
     (data) =>

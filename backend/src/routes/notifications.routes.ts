@@ -8,6 +8,8 @@ import {
   getUnreadCount,
   getPending,
 } from "../controllers/NotificationsController.js"
+import { validarParams } from "../middlewares/validation.middleware.js"
+import { idParamSchema } from "../schemas/common.js"
 
 /**
  * @swagger
@@ -135,6 +137,7 @@ router.patch(
 router.patch(
   "/:id/read",
   middlewareAutenticacion,
+  validarParams(idParamSchema),
   manejadorAsincrono(marcarComoLeida)
 )
 

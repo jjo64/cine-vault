@@ -19,6 +19,7 @@ export type ProfileUser = {
 }
 
 export type RichDiaryEntry = {
+  id: number
   movie_id: number
   watched_date: string | null
   tmdb_id: number | null
