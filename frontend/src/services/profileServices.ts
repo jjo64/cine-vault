@@ -44,6 +44,7 @@ export type ReviewEntry = {
   id: number
   user_id: number
   movie_id: number
+  media_type?: 'movie' | 'tv'
   tmdb_id?: number | null
   content: string | null
   rating: number | null

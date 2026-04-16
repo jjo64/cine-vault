@@ -6,7 +6,7 @@
  * de la red social de CineVault.
  */
 
-import { reviews, review_likes, reports, review_comments } from "@prisma/client"
+import { Prisma, reviews, review_likes, reports, review_comments } from "@prisma/client"
 import { prisma } from "../lib/prisma.js"
 import type { CrearResenaDTO, ActualizarResenaDTO } from "../schemas/reviews.js"
 
@@ -16,7 +16,7 @@ import type { CrearResenaDTO, ActualizarResenaDTO } from "../schemas/reviews.js"
  * Campos seleccionados por defecto para proteger datos sensibles y optimizar la carga 
  * de listas de reseñas.
  */
-const REVIEW_SELECT = {
+const REVIEW_SELECT_BASE = {
   id: true,
   user_id: true,
   movie_id: true,
@@ -43,6 +43,46 @@ const REVIEW_SELECT = {
     },
   },
 } as const
+
+const REVIEW_SELECT = {
+  ...REVIEW_SELECT_BASE,
+  media_type: true,
+} as const
+
+const REVIEW_THREAD_SELECT_BASE = {
+  ...REVIEW_SELECT_BASE,
+  users: {
+    select: { id: true, username: true, avatar_url: true },
+  },
+  movies_ref: {
+    select: { id: true, tmdb_id: true, slug: true },
+  },
+  review_comments: {
+    orderBy: { created_at: "asc" as const },
+    include: {
+      users: {
+        select: { id: true, username: true, avatar_url: true },
+      },
+    },
+  },
+} as const
+
+const REVIEW_THREAD_SELECT = {
+  ...REVIEW_THREAD_SELECT_BASE,
+  media_type: true,
+} as const
+
+const isMissingMediaTypeColumn = (error: unknown) => {
+  if (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2022"
+  ) {
+    return true
+  }
+
+  const msg = String((error as Error)?.message || "").toLowerCase()
+  return msg.includes("media_type") && msg.includes("column")
+}
 
 // --- Tipos de Agregación ---
 
@@ -115,22 +155,44 @@ export class ReviewsRepository implements IReviewsRepository {
    * Recupera las reseñas de un usuario ordenadas por fecha de creación.
    */
   async findByUserId(userId: number) {
-    return prisma.reviews.findMany({
-      where: { user_id: userId },
-      select: REVIEW_SELECT,
-      orderBy: { created_at: "desc" },
-    })
+    try {
+      return await prisma.reviews.findMany({
+        where: { user_id: userId },
+        select: REVIEW_SELECT,
+        orderBy: { created_at: "desc" },
+      })
+    } catch (error) {
+      if (!isMissingMediaTypeColumn(error)) throw error
+
+      const rows = await prisma.reviews.findMany({
+        where: { user_id: userId },
+        select: REVIEW_SELECT_BASE,
+        orderBy: { created_at: "desc" },
+      })
+      return rows.map((row) => ({ ...row, media_type: "movie" as const }))
+    }
   }
 
   /**
    * Recupera todas las reseñas asociadas a una película específica.
    */
   async findByMovieId(movieId: number) {
-    return prisma.reviews.findMany({
-      where: { movie_id: movieId },
-      select: REVIEW_SELECT,
-      orderBy: { created_at: "desc" },
-    })
+    try {
+      return await prisma.reviews.findMany({
+        where: { movie_id: movieId },
+        select: REVIEW_SELECT,
+        orderBy: { created_at: "desc" },
+      })
+    } catch (error) {
+      if (!isMissingMediaTypeColumn(error)) throw error
+
+      const rows = await prisma.reviews.findMany({
+        where: { movie_id: movieId },
+        select: REVIEW_SELECT_BASE,
+        orderBy: { created_at: "desc" },
+      })
+      return rows.map((row) => ({ ...row, media_type: "movie" as const }))
+    }
   }
 
   /**
@@ -153,29 +215,30 @@ export class ReviewsRepository implements IReviewsRepository {
    * Obtiene una vista detallada de una reseña incluyendo comentarios hidratados.
    */
   async findDetailedByUserAndMovie(userId: number, movieRefId: number) {
-    return prisma.reviews.findFirst({
-      where: {
-        user_id: userId,
-        movie_id: movieRefId,
-      },
-      orderBy: { created_at: "desc" },
-      include: {
-        users: {
-          select: { id: true, username: true, avatar_url: true },
+    try {
+      return await prisma.reviews.findFirst({
+        where: {
+          user_id: userId,
+          movie_id: movieRefId,
         },
-        movies_ref: {
-          select: { id: true, tmdb_id: true, slug: true },
+        orderBy: { created_at: "desc" },
+        select: REVIEW_THREAD_SELECT,
+      })
+    } catch (error) {
+      if (!isMissingMediaTypeColumn(error)) throw error
+
+      const review = await prisma.reviews.findFirst({
+        where: {
+          user_id: userId,
+          movie_id: movieRefId,
         },
-        review_comments: {
-          orderBy: { created_at: "asc" },
-          include: {
-            users: {
-              select: { id: true, username: true, avatar_url: true },
-            },
-          },
-        },
-      },
-    })
+        orderBy: { created_at: "desc" },
+        select: REVIEW_THREAD_SELECT_BASE,
+      })
+
+      if (!review) return null
+      return { ...review, media_type: "movie" as const }
+    }
   }
 
   /**
@@ -201,27 +264,54 @@ export class ReviewsRepository implements IReviewsRepository {
    * Registra una nueva reseña con todos sus campos técnicos opcionales.
    */
   async create(userId: number, data: ReviewCreateData) {
-    return prisma.reviews.create({
-      data: {
-        user_id: userId,
-        movie_id: data.movie_id,
-        content: data.content,
-        rating: data.rating,
-        mode: data.mode,
-        veredicto: data.veredicto,
-        rating_direccion: data.rating_direccion,
-        rating_guion: data.rating_guion,
-        rating_fotografia: data.rating_fotografia,
-        rating_actuaciones: data.rating_actuaciones,
-        rating_banda_sonora: data.rating_banda_sonora,
-        cita_dialogo: data.cita_dialogo,
-        cita_personaje: data.cita_personaje,
-        timestamps: data.timestamps,
-        contiene_spoilers: data.contiene_spoilers,
-        es_critica_larga: data.es_critica_larga,
-        tiempo_lectura_min: data.tiempo_lectura_min,
-      },
-    })
+    try {
+      return await prisma.reviews.create({
+        data: {
+          user_id: userId,
+          movie_id: data.movie_id,
+          media_type: data.media_type,
+          content: data.content,
+          rating: data.rating,
+          mode: data.mode,
+          veredicto: data.veredicto,
+          rating_direccion: data.rating_direccion,
+          rating_guion: data.rating_guion,
+          rating_fotografia: data.rating_fotografia,
+          rating_actuaciones: data.rating_actuaciones,
+          rating_banda_sonora: data.rating_banda_sonora,
+          cita_dialogo: data.cita_dialogo,
+          cita_personaje: data.cita_personaje,
+          timestamps: data.timestamps,
+          contiene_spoilers: data.contiene_spoilers,
+          es_critica_larga: data.es_critica_larga,
+          tiempo_lectura_min: data.tiempo_lectura_min,
+        },
+      })
+    } catch (error) {
+      if (!isMissingMediaTypeColumn(error)) throw error
+
+      return prisma.reviews.create({
+        data: {
+          user_id: userId,
+          movie_id: data.movie_id,
+          content: data.content,
+          rating: data.rating,
+          mode: data.mode,
+          veredicto: data.veredicto,
+          rating_direccion: data.rating_direccion,
+          rating_guion: data.rating_guion,
+          rating_fotografia: data.rating_fotografia,
+          rating_actuaciones: data.rating_actuaciones,
+          rating_banda_sonora: data.rating_banda_sonora,
+          cita_dialogo: data.cita_dialogo,
+          cita_personaje: data.cita_personaje,
+          timestamps: data.timestamps,
+          contiene_spoilers: data.contiene_spoilers,
+          es_critica_larga: data.es_critica_larga,
+          tiempo_lectura_min: data.tiempo_lectura_min,
+        },
+      })
+    }
   }
 
   /**
@@ -231,6 +321,7 @@ export class ReviewsRepository implements IReviewsRepository {
     return prisma.reviews.update({
       where: { id },
       data: {
+        ...(data.media_type !== undefined && { media_type: data.media_type }),
         ...(data.content !== undefined && { content: data.content }),
         ...(data.rating !== undefined && { rating: data.rating }),
         ...(data.mode !== undefined && { mode: data.mode }),

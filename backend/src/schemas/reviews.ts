@@ -16,6 +16,7 @@ const ratingStep = z.coerce
   })
 
 const reviewModeSchema = z.enum(["RAPIDO", "ESTANDAR", "CRITICO"])
+const reviewMediaTypeSchema = z.enum(["movie", "tv"])
 
 const timestampSchema = z.object({
   minuto: z
@@ -39,6 +40,7 @@ export const crearResenaSchema = z
       .number({ error: "movie_id debe ser un número" })
       .int("movie_id debe ser un entero")
       .positive("movie_id debe ser positivo"),
+    media_type: reviewMediaTypeSchema.default("movie"),
     content: z
       .string()
       .trim()
@@ -120,6 +122,7 @@ export const crearResenaSchema = z
 /** Actualizar una reseña existente (todos los campos opcionales, movie_id inmutable) */
 export const actualizarResenaSchema = z
   .object({
+    media_type: reviewMediaTypeSchema.optional(),
     content: z
       .string()
       .trim()

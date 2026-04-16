@@ -170,6 +170,7 @@ export const crearResenaService = async (userId: number, data: CrearResenaDTO) =
   const resena = await reviewsRepository.create(userId, {
     ...normalized,
     movie_id: movieId,
+    media_type: normalized.media_type ?? "movie",
   })
 
   await invalidateResenaCache(movieId)

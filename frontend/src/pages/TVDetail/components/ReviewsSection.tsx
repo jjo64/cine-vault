@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { motion } from 'motion/react'
-import { MessageSquare } from 'lucide-react'
+import { MessageSquare, Pencil, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { type AppReview } from '../hooks/useUserActions'
 import { C, SANS, SERIF } from '../constants'
@@ -10,15 +10,11 @@ interface ReviewsSectionProps {
   reviews: AppReview[]
   tvTitle?: string
   tvTmdbId?: number | null
-  userRating: number
-  reviewText: string
-  setReviewText: (v: string) => void
-  onRate: (n: number) => void
-  onSave: () => void
-  savingAction: boolean
-  actionMessage: string | null
-  isAuthenticated: boolean
+  viewerId: number | null
   myReviewId: number | null
+  onWriteReview: () => void
+  onEditReview: (review: AppReview) => void
+  onDeleteReview: () => void
 }
 
 // --- Helpers Internos ---
@@ -35,30 +31,17 @@ const formatDate = (dateStr?: string) => {
   return new Date(dateStr).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-// Reutilizamos el StarRating que deberías tener en TVDetail o lo definimos rápido
-const StarRating = ({ value, onChange }: { value: number; onChange: (n: number) => void }) => (
-  <div style={{ display: 'flex', gap: 6 }}>
-    {[1, 2, 3, 4, 5].map((star) => (
-      <button
-        key={star}
-        onClick={() => onChange(star)}
-        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-      >
-        <svg width="18" height="18" viewBox="0 0 12 12" fill={star <= value ? C.accent : C.textMuted}>
-          <path d="M6 1l1.3 2.6L10 4l-2 2 .5 2.8L6 7.5 3.5 8.8 4 6 2 4l2.7-.4z" />
-        </svg>
-      </button>
-    ))}
-  </div>
-)
-
 export default function ReviewsSection({
   tvTitle,
   tvTmdbId,
-  reviews, userRating, reviewText, setReviewText, onRate, onSave,
-  savingAction, actionMessage, isAuthenticated, myReviewId
+  reviews,
+  viewerId,
+  myReviewId,
+  onWriteReview,
+  onEditReview,
+  onDeleteReview,
 }: ReviewsSectionProps) {
-  const [writerOpen, setWriterOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const navigate = useNavigate()
 
   const buildReviewThreadHref = (review: AppReview) => {
@@ -156,6 +139,35 @@ export default function ReviewsSection({
               }}>
                 {review.content || 'Sin texto.'}
               </p>
+
+              {viewerId === review.user_id && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <button
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      onEditReview(review)
+                    }}
+                    style={{ background: 'none', border: 'none', color: C.textSoft, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, padding: 0 }}
+                  >
+                    <Pencil size={12} /> Editar
+                  </button>
+                  <button
+                    onClick={async (event) => {
+                      event.stopPropagation()
+                      if (deleting) return
+                      setDeleting(true)
+                      try {
+                        onDeleteReview()
+                      } finally {
+                        setDeleting(false)
+                      }
+                    }}
+                    style={{ background: 'none', border: 'none', color: '#d99898', cursor: deleting ? 'default' : 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, padding: 0, opacity: deleting ? 0.7 : 1 }}
+                  >
+                    <Trash2 size={12} /> {deleting ? 'Eliminando...' : 'Eliminar'}
+                  </button>
+                </div>
+              )}
             </div>
           </motion.div>
             )
@@ -163,75 +175,12 @@ export default function ReviewsSection({
         ))}
       </div>
 
-      {/* Editor de Reseña */}
-      <div style={{ marginTop: 32 }}>
-        {!writerOpen ? (
-          <button 
-            onClick={() => setWriterOpen(true)} 
-            style={{ 
-              padding: '12px 24px', background: 'transparent', color: C.accent, 
-              border: `1px solid ${C.accentDim}`, fontFamily: SANS, fontSize: 11, 
-              letterSpacing: '0.16em', textTransform: 'uppercase', cursor: 'pointer', 
-              display: 'flex', alignItems: 'center', gap: 8 
-            }}
-          >
-            <MessageSquare size={12} /> {myReviewId ? 'Editar reseña' : 'Escribir reseña'}
-          </button>
-        ) : (
-          <motion.div 
-            initial={{ opacity: 0, y: 8 }} 
-            animate={{ opacity: 1, y: 0 }} 
-            style={{ background: C.surface, border: `1px solid ${C.border}`, padding: '24px 28px' }}
-          >
-            <div style={{ marginBottom: 20 }}>
-              <StarRating value={userRating} onChange={onRate} />
-            </div>
-            
-            <textarea 
-              value={reviewText} 
-              onChange={e => setReviewText(e.target.value)} 
-              placeholder={isAuthenticated ? "Escribí tu reseña aquí..." : "Inicia sesión para escribir una reseña."}
-              disabled={!isAuthenticated}
-              style={{ 
-                width: '100%', minHeight: 120, background: C.bg, border: `1px solid ${C.border}`, 
-                color: C.text, fontFamily: SERIF, fontSize: 16, fontStyle: 'italic', 
-                padding: 16, resize: 'vertical', outline: 'none', lineHeight: 1.7, boxSizing: 'border-box' 
-              }} 
-            />
-
-            {actionMessage && (
-              <div style={{ fontSize: 12, color: C.accent, fontFamily: SANS, marginTop: 12 }}>
-                {actionMessage}
-              </div>
-            )}
-
-            <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-              <button 
-                onClick={onSave} 
-                disabled={savingAction || !isAuthenticated}
-                style={{ 
-                  padding: '10px 24px', background: C.accent, color: C.bg, border: 'none', 
-                  fontFamily: SANS, fontSize: 11, letterSpacing: '0.16em', 
-                  textTransform: 'uppercase', cursor: 'pointer', 
-                  opacity: savingAction || !isAuthenticated ? 0.5 : 1 
-                }}
-              >
-                {savingAction ? 'Guardando…' : 'Publicar'}
-              </button>
-              <button 
-                onClick={() => setWriterOpen(false)} 
-                style={{ 
-                  padding: '10px 18px', background: 'none', color: C.textSoft, 
-                  border: `1px solid ${C.border}`, fontFamily: SANS, fontSize: 11, 
-                  letterSpacing: '0.16em', textTransform: 'uppercase', cursor: 'pointer' 
-                }}
-              >
-                Cancelar
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </div>
+      <button
+        onClick={onWriteReview}
+        style={{ marginTop: 28, padding: '12px 28px', background: 'transparent', color: C.accent, border: `1px solid ${C.accentDim}`, fontFamily: SANS, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+      >
+        <MessageSquare size={12} /> {myReviewId ? 'Editar reseña' : 'Escribir reseña'}
+      </button>
     </motion.section>
   )
 }

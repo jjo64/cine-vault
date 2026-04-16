@@ -97,9 +97,12 @@ const isQuickRatingPlaceholder = (content: string | null) => {
   return normalized === 'rating rapido desde movie detail'
 }
 
+type ReviewMediaType = 'movie' | 'tv'
+
 type MovieMetaTarget = {
   movieId: number
   tmdbId: number | null
+  mediaType: ReviewMediaType
 }
 
 async function fetchMovieMetaMap(targets: MovieMetaTarget[]) {
@@ -107,25 +110,36 @@ async function fetchMovieMetaMap(targets: MovieMetaTarget[]) {
     new Map(
       targets
         .filter((item) => item.tmdbId !== null)
-        .map((item) => [item.movieId, item.tmdbId as number]),
+        .map((item) => [item.movieId, item]),
     ).entries(),
   )
 
   const entries = await Promise.allSettled(
-    normalized.map(async ([movieId, tmdbId]) => {
-      const res = await fetch(`${API_URL}/api/movies/${tmdbId}`)
+    normalized.map(async ([movieId, target]) => {
+      const tmdbId = target.tmdbId as number
+      const endpoint = target.mediaType === 'tv'
+        ? `${API_URL}/api/search/tv/${tmdbId}`
+        : `${API_URL}/api/movies/${tmdbId}`
+
+      const res = await fetch(endpoint)
       if (!res.ok) throw new Error('No se pudo obtener pelicula')
       const data = await res.json()
-      const director = (data.credits?.crew || []).find((person: { job?: string; name?: string }) => person.job === 'Director')?.name || 'Desconocido'
-      const year = data.release_date ? Number(String(data.release_date).split('-')[0]) : null
-      const runtimeMinutes = typeof data.runtime === 'number' ? data.runtime : null
+      const director = target.mediaType === 'tv'
+        ? data.created_by?.[0]?.name || (data.credits?.crew || []).find((person: { job?: string; name?: string }) => person.job === 'Director' || person.job === 'Creator')?.name || 'Desconocido'
+        : (data.credits?.crew || []).find((person: { job?: string; name?: string }) => person.job === 'Director')?.name || 'Desconocido'
+      const year = target.mediaType === 'tv'
+        ? (data.first_air_date ? Number(String(data.first_air_date).split('-')[0]) : null)
+        : (data.release_date ? Number(String(data.release_date).split('-')[0]) : null)
+      const runtimeMinutes = target.mediaType === 'tv'
+        ? (Array.isArray(data.episode_run_time) && typeof data.episode_run_time[0] === 'number' ? data.episode_run_time[0] : null)
+        : (typeof data.runtime === 'number' ? data.runtime : null)
       const primaryGenre = Array.isArray(data.genres) && data.genres.length > 0
         ? (data.genres[0]?.name ?? null)
         : null
       const meta: EnrichedMovie = {
         movieId,
         tmdbId,
-        title: data.title || `Pelicula ${tmdbId}`,
+        title: data.title || data.name || `Título ${tmdbId}`,
         year,
         director,
         posterUrl: moviePoster(data.poster_path, 'w500'),
@@ -319,9 +333,13 @@ export function useProfilePageData(userParam?: string) {
         })
 
         const ids: MovieMetaTarget[] = [
-          ...nextDiary.map((item) => ({ movieId: item.movie_id, tmdbId: item.tmdb_id })),
-          ...nextWatchlist.map((item) => ({ movieId: item.movie_id, tmdbId: item.tmdb_id })),
-          ...nextReviews.map((item) => ({ movieId: item.movie_id, tmdbId: item.tmdb_id ?? item.movies_ref?.tmdb_id ?? tmdbByMovieId.get(item.movie_id) ?? null })),
+          ...nextDiary.map((item) => ({ movieId: item.movie_id, tmdbId: item.tmdb_id, mediaType: 'movie' as const })),
+          ...nextWatchlist.map((item) => ({ movieId: item.movie_id, tmdbId: item.tmdb_id, mediaType: 'movie' as const })),
+          ...nextReviews.map((item) => ({
+            movieId: item.movie_id,
+            tmdbId: item.tmdb_id ?? item.movies_ref?.tmdb_id ?? tmdbByMovieId.get(item.movie_id) ?? null,
+            mediaType: item.media_type === 'tv' ? 'tv' as const : 'movie' as const,
+          })),
         ]
 
         const map = await fetchMovieMetaMap(ids)
@@ -441,12 +459,13 @@ export function useProfilePageData(userParam?: string) {
       const fromWatchlist = watchlist.find((watchlistEntry) => watchlistEntry.movie_id === entry.movie_id)
       return {
         id: entry.id,
+        mediaType: entry.media_type === 'tv' ? 'tv' as const : 'movie' as const,
         movieId: entry.movie_id,
         tmdbId: entry.tmdb_id ?? entry.movies_ref?.tmdb_id ?? fromMovieMap?.tmdbId ?? fromDiary?.tmdb_id ?? fromWatchlist?.tmdb_id ?? null,
         username: profile?.username || 'perfil',
         createdAtIso: entry.created_at,
         reviewSequence: reviewSequenceById.get(entry.id) || 1,
-        title: fromMovieMap?.title || fromDiary?.movie_info?.title || fromWatchlist?.movie_info?.title || `Pelicula ${entry.movie_id}`,
+        title: fromMovieMap?.title || fromDiary?.movie_info?.title || fromWatchlist?.movie_info?.title || `Título ${entry.movie_id}`,
         year: fromMovieMap?.year ?? null,
         director: fromMovieMap?.director || 'Desconocido',
         posterUrl: fromMovieMap?.posterUrl || (fromDiary?.movie_info?.poster_path || fromWatchlist?.movie_info?.poster_path ? moviePoster(fromDiary?.movie_info?.poster_path || fromWatchlist?.movie_info?.poster_path, 'w500') : IMG.grain),
