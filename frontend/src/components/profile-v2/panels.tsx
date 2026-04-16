@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import DOMPurify from 'dompurify'
 import { motion } from 'motion/react'
 import { useNavigate } from 'react-router-dom'
@@ -7,15 +7,19 @@ import {
   BookOpen,
   Check,
   Clock,
+  Ellipsis,
   Eye,
   Film,
   Filter,
   Globe,
   Lock,
+  Pin,
+  PinOff,
   Play,
   Plus,
   Pencil,
   SortDesc,
+  Trash2,
   Trophy,
   Upload,
 } from 'lucide-react'
@@ -24,6 +28,8 @@ import { Badge, Img, SectionHeader, Stars } from './primitives'
 import { vaultMockItems, IMG } from './assets'
 import type { DiaryTimelineItem, EnrichedMovie, ProfileStatsData, RecentlyWatchedItem, ReviewItem, UserListSummaryItem, WatchlistItem } from './models'
 import { createSlug } from '../../utils/stringUtils'
+import { deleteReview } from '../../services/movieDetailServices'
+import { getStoredAccessToken } from '../../services/authServices'
 
 const movieHref = (movieId: number, title: string, tmdbId: number | null) => `/movie/${tmdbId ?? movieId}-${createSlug(title)}`
 const reviewHref = (review: ReviewItem) => {
@@ -33,7 +39,7 @@ const reviewHref = (review: ReviewItem) => {
     ? `${review.tmdbId}-${titleSlug}`
     : titleSlug
   const suffix = review.reviewSequence > 1 ? `/${review.reviewSequence - 1}` : ''
-  return `/${username}/movie/${slugId}${suffix}`
+  return `/${username}/${review.mediaType}/${slugId}${suffix}`
 }
 
 const PROFILE_STAR_SIZES = {
@@ -367,7 +373,19 @@ function VaultCard({ item, delay = 0 }: { item: (typeof vaultMockItems)[number];
   )
 }
 
-function ReviewCard({ review, delay = 0, compact = false }: { review: ReviewItem; delay?: number; compact?: boolean }) {
+function ReviewCard({
+  review,
+  delay = 0,
+  compact = false,
+  pinned = false,
+  actionsSlot,
+}: {
+  review: ReviewItem
+  delay?: number
+  compact?: boolean
+  pinned?: boolean
+  actionsSlot?: ReactNode
+}) {
   const navigate = useNavigate()
   const openReviewThread = () => navigate(reviewHref(review))
   const richText = review.text
@@ -399,11 +417,18 @@ function ReviewCard({ review, delay = 0, compact = false }: { review: ReviewItem
         }}
         style={{
           borderBottom: `1px solid ${C.border}`,
+          borderTop: pinned ? `1px solid ${C.accentDim}` : 'none',
+          borderLeft: pinned ? `2px solid ${C.accent}` : 'none',
+          borderRight: pinned ? `1px solid ${C.accentDim}` : 'none',
+          borderBottomColor: pinned ? C.accentDim : C.border,
+          background: pinned ? 'rgba(212,175,122,0.05)' : 'transparent',
           padding: '16px 0',
           width: '100%',
           cursor: 'pointer',
+          position: 'relative',
         }}
       >
+        {actionsSlot ? <div style={{ position: 'absolute', right: 0, top: 10, zIndex: 4 }}>{actionsSlot}</div> : null}
         <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', marginBottom: 12 }}>
           {/* Póster */}
           <div style={{ width: 56, height: 84, flexShrink: 0, borderRadius: 2, overflow: 'hidden' }}>
@@ -491,8 +516,21 @@ function ReviewCard({ review, delay = 0, compact = false }: { review: ReviewItem
           openReviewThread()
         }
       }}
-      style={{ borderBottom: `1px solid ${C.border}`, padding: '24px 0', display: 'grid', gridTemplateColumns: '56px 1fr', gap: 20, cursor: 'pointer' }}
+      style={{
+        borderBottom: `1px solid ${pinned ? C.accentDim : C.border}`,
+        borderTop: pinned ? `1px solid ${C.accentDim}` : 'none',
+        borderLeft: pinned ? `2px solid ${C.accent}` : 'none',
+        borderRight: pinned ? `1px solid ${C.accentDim}` : 'none',
+        background: pinned ? 'rgba(212,175,122,0.05)' : 'transparent',
+        padding: '24px 0',
+        display: 'grid',
+        gridTemplateColumns: '56px 1fr',
+        gap: 20,
+        cursor: 'pointer',
+        position: 'relative',
+      }}
     >
+      {actionsSlot ? <div style={{ position: 'absolute', right: 0, top: 10, zIndex: 4 }}>{actionsSlot}</div> : null}
       <div style={{ aspectRatio: '2/3', borderRadius: 1, overflow: 'hidden' }}>
         <Img src={review.posterUrl} alt={review.title} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(0.6)' }} />
       </div>
@@ -769,13 +807,17 @@ export function OverviewPanel({
       </div>
 
 
-      <SectionHeader title="Última reseña" link="Ver todas" onLinkClick={() => onJumpToTab('Reseñas')} />
+      <SectionHeader title="Últimas reseñas" link="Ver todas" onLinkClick={() => onJumpToTab('Reseñas')} />
       <div style={{ marginBottom: 48 }}>
         <div className="profile-desktop-only">
-          {reviewItems[0] ? <ReviewCard review={reviewItems[0]} compact={false} /> : null}
+          {reviewItems.slice(0, 3).map((review, index) => (
+            <ReviewCard key={review.id} review={review} compact={false} delay={index * 0.05} />
+          ))}
         </div>
         <div className="profile-mobile-only">
-          {reviewItems[0] ? <ReviewCard review={reviewItems[0]} compact={true} /> : null}
+          {reviewItems.slice(0, 3).map((review, index) => (
+            <ReviewCard key={review.id} review={review} compact={true} delay={index * 0.05} />
+          ))}
         </div>
       </div>
 
@@ -1180,19 +1222,97 @@ export function DiaryPanel({ diaryTimeline }: { diaryTimeline: DiaryTimelineItem
   )
 }
 
-export function ReviewsPanel({ reviewItems }: { reviewItems: ReviewItem[] }) {
+export function ReviewsPanel({ reviewItems, canManageReviews = false }: { reviewItems: ReviewItem[]; canManageReviews?: boolean }) {
   const [sort, setSort] = useState('Reciente')
+  const [menuReviewId, setMenuReviewId] = useState<number | null>(null)
+  const [deletingReviewId, setDeletingReviewId] = useState<number | null>(null)
+  const [hiddenReviewIds, setHiddenReviewIds] = useState<Set<number>>(new Set())
+  const [pinnedReviewIds, setPinnedReviewIds] = useState<Set<number>>(new Set())
+
+  const storageKey = useMemo(() => {
+    const owner = (reviewItems[0]?.username || 'perfil').toLowerCase()
+    return `cinevault:pinned-reviews:${owner}`
+  }, [reviewItems])
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(storageKey)
+      if (!raw) {
+        setPinnedReviewIds(new Set())
+        return
+      }
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) {
+        const ids = parsed
+          .map((entry) => Number(entry))
+          .filter((entry) => Number.isFinite(entry))
+        setPinnedReviewIds(new Set(ids))
+      }
+    } catch {
+      setPinnedReviewIds(new Set())
+    }
+  }, [storageKey])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(Array.from(pinnedReviewIds)))
+    } catch {
+      // noop
+    }
+  }, [pinnedReviewIds, storageKey])
+
+  const visibleReviews = useMemo(
+    () => reviewItems.filter((entry) => !hiddenReviewIds.has(entry.id)),
+    [reviewItems, hiddenReviewIds],
+  )
+
   const sortedReviews = useMemo(() => {
-    if (sort === 'Rating') return [...reviewItems].sort((a, b) => b.rating - a.rating)
-    if (sort === 'Película') return [...reviewItems].sort((a, b) => a.title.localeCompare(b.title))
-    return reviewItems
-  }, [reviewItems, sort])
+    const base = [...visibleReviews]
+    if (sort === 'Rating') base.sort((a, b) => b.rating - a.rating)
+    else if (sort === 'Película') base.sort((a, b) => a.title.localeCompare(b.title))
+
+    base.sort((a, b) => Number(pinnedReviewIds.has(b.id)) - Number(pinnedReviewIds.has(a.id)))
+    return base
+  }, [visibleReviews, sort, pinnedReviewIds])
+
+  const handleDeleteReview = async (reviewId: number) => {
+    const token = getStoredAccessToken()
+    if (!token) return
+
+    setDeletingReviewId(reviewId)
+    try {
+      await deleteReview(token, reviewId)
+      setHiddenReviewIds((prev) => {
+        const next = new Set(prev)
+        next.add(reviewId)
+        return next
+      })
+      setPinnedReviewIds((prev) => {
+        const next = new Set(prev)
+        next.delete(reviewId)
+        return next
+      })
+      setMenuReviewId(null)
+    } finally {
+      setDeletingReviewId(null)
+    }
+  }
+
+  const togglePinReview = (reviewId: number) => {
+    setPinnedReviewIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(reviewId)) next.delete(reviewId)
+      else next.add(reviewId)
+      return next
+    })
+    setMenuReviewId(null)
+  }
 
   return (
     <div>
       <div className="profile-panel-actions-row">
         <div className="profile-panel-header" style={{ fontFamily: SERIF, color: C.text }}>
-          Reseñas <em className="profile-panel-header-em" style={{ fontStyle: 'italic', color: C.textSoft }}>— {reviewItems.length} escritas</em>
+          Reseñas <em className="profile-panel-header-em" style={{ fontStyle: 'italic', color: C.textSoft }}>— {visibleReviews.length} escritas</em>
         </div>
         <div className="profile-night-rec-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {['Reciente', 'Rating', 'Película'].map((sortName) => (
@@ -1220,12 +1340,102 @@ export function ReviewsPanel({ reviewItems }: { reviewItems: ReviewItem[] }) {
       <div>
         <div className="profile-desktop-only">
           {sortedReviews.map((review, index) => (
-            <ReviewCard key={review.id} review={review} delay={index * 0.07} compact={false} />
+            <ReviewCard
+              key={review.id}
+              review={review}
+              delay={index * 0.07}
+              compact={false}
+              pinned={pinnedReviewIds.has(review.id)}
+              actionsSlot={canManageReviews ? (
+                <div style={{ position: 'relative' }}>
+                  <button
+                    type="button"
+                    aria-label="Acciones de reseña"
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      setMenuReviewId((prev) => prev === review.id ? null : review.id)
+                    }}
+                    style={{ border: `1px solid ${C.border}`, background: C.bg, color: C.textSoft, width: 30, height: 30, display: 'grid', placeItems: 'center', cursor: 'pointer' }}
+                  >
+                    <Ellipsis size={14} />
+                  </button>
+                  {menuReviewId === review.id ? (
+                    <div
+                      onClick={(event) => event.stopPropagation()}
+                      style={{ position: 'absolute', top: 34, right: 0, minWidth: 170, border: `1px solid ${C.border}`, background: C.surface, zIndex: 20, boxShadow: '0 12px 24px rgba(0,0,0,0.35)' }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => togglePinReview(review.id)}
+                        style={{ width: '100%', border: 'none', background: 'transparent', color: C.text, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontFamily: SANS, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase' }}
+                      >
+                        {pinnedReviewIds.has(review.id) ? <PinOff size={13} /> : <Pin size={13} />}
+                        {pinnedReviewIds.has(review.id) ? 'Quitar anclado' : 'Anclar reseña'}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={deletingReviewId === review.id}
+                        onClick={() => void handleDeleteReview(review.id)}
+                        style={{ width: '100%', border: 'none', borderTop: `1px solid ${C.border}`, background: 'transparent', color: '#d99898', padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 8, cursor: deletingReviewId === review.id ? 'default' : 'pointer', fontFamily: SANS, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: deletingReviewId === review.id ? 0.7 : 1 }}
+                      >
+                        <Trash2 size={13} />
+                        {deletingReviewId === review.id ? 'Eliminando...' : 'Eliminar reseña'}
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+            />
           ))}
         </div>
         <div className="profile-mobile-only">
           {sortedReviews.map((review, index) => (
-            <ReviewCard key={review.id} review={review} delay={index * 0.07} compact={true} />
+            <ReviewCard
+              key={review.id}
+              review={review}
+              delay={index * 0.07}
+              compact={true}
+              pinned={pinnedReviewIds.has(review.id)}
+              actionsSlot={canManageReviews ? (
+                <div style={{ position: 'relative' }}>
+                  <button
+                    type="button"
+                    aria-label="Acciones de reseña"
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      setMenuReviewId((prev) => prev === review.id ? null : review.id)
+                    }}
+                    style={{ border: `1px solid ${C.border}`, background: C.bg, color: C.textSoft, width: 30, height: 30, display: 'grid', placeItems: 'center', cursor: 'pointer' }}
+                  >
+                    <Ellipsis size={14} />
+                  </button>
+                  {menuReviewId === review.id ? (
+                    <div
+                      onClick={(event) => event.stopPropagation()}
+                      style={{ position: 'absolute', top: 34, right: 0, minWidth: 170, border: `1px solid ${C.border}`, background: C.surface, zIndex: 20, boxShadow: '0 12px 24px rgba(0,0,0,0.35)' }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => togglePinReview(review.id)}
+                        style={{ width: '100%', border: 'none', background: 'transparent', color: C.text, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontFamily: SANS, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase' }}
+                      >
+                        {pinnedReviewIds.has(review.id) ? <PinOff size={13} /> : <Pin size={13} />}
+                        {pinnedReviewIds.has(review.id) ? 'Quitar anclado' : 'Anclar reseña'}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={deletingReviewId === review.id}
+                        onClick={() => void handleDeleteReview(review.id)}
+                        style={{ width: '100%', border: 'none', borderTop: `1px solid ${C.border}`, background: 'transparent', color: '#d99898', padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 8, cursor: deletingReviewId === review.id ? 'default' : 'pointer', fontFamily: SANS, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: deletingReviewId === review.id ? 0.7 : 1 }}
+                      >
+                        <Trash2 size={13} />
+                        {deletingReviewId === review.id ? 'Eliminando...' : 'Eliminar reseña'}
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+            />
           ))}
         </div>
       </div>

@@ -218,6 +218,25 @@ export function useMovieDetail() {
     setTimeout(() => setNotice(null), 3000);
   };
 
+  const openReviewLogWithData = (review?: AppReview | null) => {
+    setReviewLogForm({
+      text: review?.content || '',
+      rating: review?.rating || userRating || 0,
+      mode: review?.mode || 'RAPIDO',
+      veredicto: review?.veredicto || '',
+      contieneSpoilers: !!review?.contieneSpoilers,
+      citaDialogo: review?.quote?.dialogo || '',
+      citaPersonaje: review?.quote?.personaje || '',
+      timestamps: review?.timestamps || [],
+      dimensions: review?.dimensions || { direccion: null, guion: null, fotografia: null, actuaciones: null, bandaSonora: null },
+      liked,
+      seenDate: new Date().toISOString().slice(0, 10),
+      seenBefore: false,
+    });
+    setEditingReviewId(review?.id || null);
+    setReviewLogOpen(true);
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     setViewer(null);
@@ -236,9 +255,9 @@ export function useMovieDetail() {
     if (!movie || !token) { requireAuth(); return; }
     try {
       if (myReviewId) {
-        await updateReview(token, myReviewId, value);
+        await updateReview(token, myReviewId, value, 'movie');
       } else {
-        const created = await createReview(token, { movie_id: movie.id, mode: 'RAPIDO', rating: value, content: 'Rating rapido' });
+        const created = await createReview(token, { movie_id: movie.id, media_type: 'movie', mode: 'RAPIDO', rating: value, content: 'Rating rapido' });
         setMyReviewId(created.id);
       }
       setUserRating(value);
@@ -359,22 +378,7 @@ export function useMovieDetail() {
   const handleWriteReview = () => {
     if (!movie || !token) { requireAuth(); return; }
     const ownReview = reviews.find(r => r.userId === viewer?.id);
-    setReviewLogForm({
-      text: ownReview?.content || '',
-      rating: ownReview?.rating || userRating || 0,
-      mode: ownReview?.mode || 'RAPIDO',
-      veredicto: ownReview?.veredicto || '',
-      contieneSpoilers: !!ownReview?.contieneSpoilers,
-      citaDialogo: ownReview?.quote?.dialogo || '',
-      citaPersonaje: ownReview?.quote?.personaje || '',
-      timestamps: ownReview?.timestamps || [],
-      dimensions: ownReview?.dimensions || { direccion: null, guion: null, fotografia: null, actuaciones: null, bandaSonora: null },
-      liked: liked,
-      seenDate: new Date().toISOString().slice(0, 10),
-      seenBefore: false,
-    });
-    setEditingReviewId(ownReview?.id || null);
-    setReviewLogOpen(true);
+    openReviewLogWithData(ownReview || null);
   };
 
   const handleSaveReviewLog = async () => {
@@ -398,9 +402,9 @@ export function useMovieDetail() {
       };
 
       if (editingReviewId) {
-        await updateReviewContent(token, editingReviewId, payload);
+        await updateReviewContent(token, editingReviewId, { ...payload, media_type: 'movie' });
       } else {
-        const created = await createReview(token, { movie_id: movie.id, ...payload });
+        const created = await createReview(token, { movie_id: movie.id, media_type: 'movie', ...payload });
         setMyReviewId(created.id);
       }
       
@@ -443,7 +447,7 @@ export function useMovieDetail() {
        await commentOnReview(token, replyTargetId, text);
        showNotice('Comentario enviado', 'success');
     } else {
-       await createReview(token, { movie_id: movie.id, mode: 'ESTANDAR', content: text, rating: userRating || 4 });
+      await createReview(token, { movie_id: movie.id, media_type: 'movie', mode: 'ESTANDAR', content: text, rating: userRating || 4 });
        showNotice('Reseña publicada', 'success');
     }
     setComposerMode(null);
@@ -499,7 +503,7 @@ export function useMovieDetail() {
     handleSaveReviewLog,
     handleToggleReviewLike,
     handleSubmitComposer,
-    handleEditReview: (r: AppReview) => { setEditingReviewId(r.id); setComposerText(r.content || ''); setComposerMode('review'); },
+    handleEditReview: (r: AppReview) => { openReviewLogWithData(r); },
     handleDeleteReview: async (r: AppReview) => { if (token) { await deleteReview(token, r.id); setReviews(prev => prev.filter(i => i.id !== r.id)); showNotice('Reseña eliminada', 'success'); } },
     handleReplyReview: (id: number) => { setReplyTargetId(id); setComposerText(''); setComposerMode('reply'); },
   };

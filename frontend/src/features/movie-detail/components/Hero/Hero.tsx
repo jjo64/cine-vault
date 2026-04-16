@@ -149,13 +149,16 @@ export function Hero({
             width: '100%',
             height: '100%',
             objectFit: 'cover',
-            filter: 'brightness(0.24) saturate(0.65)',
+            filter: 'brightness(0.47) saturate(0.76)',
             zIndex: 0,
           }}
         />
       )}
 
-      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(8,8,8,0.92) 0%, rgba(8,8,8,0.8) 40%, rgba(8,8,8,0.45) 70%, rgba(8,8,8,0.78) 100%)' }} />
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(8,8,8,0.9) 0%, rgba(8,8,8,0.78) 28%, rgba(8,8,8,0.5) 46%, rgba(8,8,8,0.2) 68%, rgba(8,8,8,0.04) 100%)' }} />
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 58% 70% at 24% 52%, rgba(8,8,8,0.5) 0%, rgba(8,8,8,0.24) 52%, rgba(8,8,8,0.06) 78%, transparent 100%)' }} />
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 42% 56% at 80% 42%, rgba(8,8,8,0.52) 0%, rgba(8,8,8,0.3) 34%, rgba(8,8,8,0.1) 64%, transparent 100%)' }} />
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 36% 50% at 80% 42%, rgba(212,175,122,0.14) 0%, rgba(212,175,122,0.08) 34%, transparent 70%)', pointerEvents: 'none' }} />
       <div style={{ position: 'absolute', bottom: 0, left: 0, width: 500, height: 400, background: 'radial-gradient(ellipse at bottom left, rgba(212,175,122,0.10), transparent 70%)', pointerEvents: 'none' }} />
 
       {posterUrl && (
@@ -190,8 +193,8 @@ export function Hero({
       >
         <div className="md-meta-row" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 10, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#D4AF7A', padding: '4px 10px', border: '1px solid #9A7A48', fontFamily: 'Syne, sans-serif' }}>{genresText}</span>
-          <span style={{ color: '#B0B0B0', fontSize: 12 }}>·</span>
-          <span style={{ fontSize: 11, color: '#A1A1A1', letterSpacing: '0.08em', fontFamily: 'Syne, sans-serif' }}>
+          <span style={{ color: '#D0D0D0', fontSize: 12 }}>·</span>
+          <span style={{ fontSize: 11, color: '#D8D8D8', letterSpacing: '0.08em', fontFamily: 'Syne, sans-serif' }}>
             {releaseYear} · {country} · {runtime}
           </span>
         </div>
@@ -229,11 +232,11 @@ export function Hero({
           <div className="md-hero-score">
             <div className="md-score-number-group">
               <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 44, fontWeight: 300, color: '#C8A96E', lineHeight: 1 }}>{score}</span>
-              <span style={{ fontSize: 16, color: '#A1A1A1', fontFamily: 'Syne, sans-serif' }}>/5</span>
+              <span style={{ fontSize: 16, color: '#D2D2D2', fontFamily: 'Syne, sans-serif' }}>/5</span>
             </div>
             <div className="md-score-info-stack">
-              <span style={{ fontSize: 10, color: '#A1A1A1', fontFamily: 'Syne, sans-serif', textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: 600 }}>CINEVAULT</span>
-              <span style={{ fontSize: 11, color: '#B0B0B0', fontFamily: 'Syne, sans-serif' }}>{votes} ratings</span>
+              <span style={{ fontSize: 10, color: '#D2D2D2', fontFamily: 'Syne, sans-serif', textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: 600 }}>CINEVAULT</span>
+              <span style={{ fontSize: 11, color: '#CACACA', fontFamily: 'Syne, sans-serif' }}>{votes} ratings</span>
             </div>
           </div>
         </div>
@@ -250,7 +253,7 @@ export function Hero({
           <button
             onClick={onWriteReview}
             className="md-action-btn"
-            style={{ padding: '0 24px', background: 'transparent', color: '#A1A1A1', border: '1px solid #252525', gap: 8 }}
+            style={{ padding: '0 24px', background: 'transparent', color: '#D0D0D0', border: '1px solid #3A3A3A', gap: 8 }}
           >
             <MessageSquare size={13} strokeWidth={1.5} />
             Review o log
@@ -313,10 +316,10 @@ export function Hero({
       </motion.div>
 
       <motion.div className="md-hero-scroll-prompt" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2 }} style={{ position: 'absolute', bottom: 290, left: 52, alignItems: 'center', gap: 12, zIndex: 50 }}>
-        <div style={{ width: 32, height: 1, background: C.textMuted, position: 'relative', overflow: 'hidden' }}>
+        <div style={{ width: 32, height: 1, background: 'rgba(226,226,226,0.58)', position: 'relative', overflow: 'hidden' }}>
           <motion.div animate={{ x: ['-100%', '0%', '100%'] }} transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }} style={{ position: 'absolute', inset: 0, background: C.accent }} />
         </div>
-        <span style={{ fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.textMuted, fontFamily: SANS }}>Seguir leyendo</span>
+        <span style={{ fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#DADADA', fontFamily: SANS }}>Seguir leyendo</span>
       </motion.div>
     </div>
   )

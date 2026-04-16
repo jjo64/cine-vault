@@ -36,6 +36,7 @@ export type ReviewApi = {
   id: number
   user_id: number
   movie_id: number
+  media_type?: 'movie' | 'tv'
   tmdb_id?: number | null
   mode?: 'RAPIDO' | 'ESTANDAR' | 'CRITICO'
   content: string | null
@@ -60,6 +61,7 @@ export type ReviewMode = 'RAPIDO' | 'ESTANDAR' | 'CRITICO'
 
 export type ReviewPayload = {
   movie_id: number
+  media_type?: 'movie' | 'tv'
   mode: ReviewMode
   content?: string
   rating?: number
@@ -161,11 +163,16 @@ export const createReview = (token: string | null, payload: ReviewPayload) =>
     body: payload,
   })
 
-export const updateReview = (token: string | null, reviewId: number, rating: number) =>
+export const updateReview = (
+  token: string | null,
+  reviewId: number,
+  rating: number,
+  mediaType?: 'movie' | 'tv'
+) =>
   apiRequest<ReviewApi>(`/api/reviews/${reviewId}`, {
     token,
     method: 'PATCH',
-    body: { rating },
+    body: mediaType ? { rating, media_type: mediaType } : { rating },
   })
 
 export const updateReviewContent = (

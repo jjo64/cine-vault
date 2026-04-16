@@ -644,6 +644,8 @@
     line-height: 0.82; 
     letter-spacing: -0.04em;
     margin: 0;
+    color: #f0f0f0;
+    text-shadow: 0 6px 26px rgba(0,0,0,0.58);
     text-align: left; /* Asegura pegado a la izquierda */
 }
 
@@ -661,7 +663,8 @@
     letter-spacing: -0.01em;
     margin: 0;
     margin-top: 8px;
-    color: rgba(226,226,226,0.35);
+    color: rgba(236,236,236,0.62);
+    text-shadow: 0 4px 18px rgba(0,0,0,0.45);
     display: block;
     max-width: 100%;
     /* Permitimos que el subtítulo envuelva si es necesario */
@@ -675,7 +678,9 @@
     letter-spacing: 0.01em;
     margin-top: 20px;
     margin-bottom: 0;
-    opacity: 0.9;
+    opacity: 0.98;
+    color: #e2e2e2;
+    text-shadow: 0 4px 16px rgba(0,0,0,0.42);
     display: flex;
     align-items: baseline;
     gap: 6px;
@@ -1059,9 +1064,15 @@
 
 /* Director Quote */
 .md-quote {
-    padding: 48px 52px;
+    padding: 52px 52px 40px;
     position: relative;
     z-index: 20; /* Por encima del fondo del hero */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    min-height: 260px;
     
     /* Un margen superior negativo "tira" de la sección hacia arriba 
        dentro del área del 100vh del Hero sin cortar la imagen. */
@@ -1069,13 +1080,14 @@
     
     /* Añadimos un degradado al inicio de esta sección para que 
        se funda con el negro del final del backdrop */
-    background: linear-gradient(to bottom, transparent, #080808 20%);
-    padding-top: 100px;
+    background: linear-gradient(to bottom, rgba(8, 8, 8, 0.78), #080808 26%);
 }
 
 @media (max-width: 768px) {
     .md-quote {
-        padding: 32px 16px;
+        padding: 34px 16px;
+        min-height: 200px;
+        margin-top: -10vh;
     }
 }
 
@@ -1128,7 +1140,9 @@
 
 /* Main Layout Grid */
 .md-main-layout {
-    padding: 80px 52px;
+    padding: 40px 52px 80px;
+    background: var(--md-bg);
+    margin-top: 0;
     display: grid;
     grid-template-columns: minmax(0, 1fr) 320px;
     gap: 80px;
@@ -1160,7 +1174,8 @@
 
 @media (max-width: 1500px) {
     .md-main-layout {
-        padding: 72px 28px;
+        padding: 32px 28px 72px;
+        margin-top: 0;
         grid-template-columns: minmax(0, 1fr) 300px;
         gap: 32px;
     }
@@ -1170,7 +1185,8 @@
     .md-main-layout {
         display: flex;
         flex-direction: column;
-        padding: 40px 14px;
+        padding: 24px 14px 40px;
+        margin-top: 0;
         gap: 32px;
     }
 }

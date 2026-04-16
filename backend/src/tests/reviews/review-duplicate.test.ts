@@ -19,6 +19,7 @@ describe("crearResenaService unicidad user+movie", () => {
     reviewsRepository.findByUserAndMovie.mockResolvedValue(null)
     const res = await crearResenaService(1, {
       movie_id: 10,
+      media_type: "movie",
       content: "ok",
       rating: 4,
     })
@@ -29,7 +30,7 @@ describe("crearResenaService unicidad user+movie", () => {
   it("lanza ConflictError si ya existe", async () => {
     reviewsRepository.findByUserAndMovie.mockResolvedValue({ id: 99 })
     await expect(
-      crearResenaService(1, { movie_id: 10, content: "dup", rating: 4 })
+      crearResenaService(1, { movie_id: 10, media_type: "movie", content: "dup", rating: 4 })
     ).rejects.toThrow(ConflictError)
   })
 })

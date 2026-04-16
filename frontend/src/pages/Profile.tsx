@@ -544,7 +544,7 @@ export function Profile() {
     Diario: <DiaryPanel diaryTimeline={diaryTimeline} />,
     Vault: <VaultPanel />,
     Watchlist: <WatchlistPanel watchlistFilms={watchlistFilms} />,
-    Reseñas: <ReviewsPanel reviewItems={reviewItems} />,
+    Reseñas: <ReviewsPanel reviewItems={reviewItems} canManageReviews={canEditProfile} />,
     Listas: <ListsPanel userLists={userLists} />,
   }
 

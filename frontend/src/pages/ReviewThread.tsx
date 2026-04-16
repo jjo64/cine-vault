@@ -4,6 +4,7 @@ import { Heart, MessageSquare, Pencil, Trash2 } from 'lucide-react'
 import { SeoHead } from '../components/SeoHead'
 import {
   commentOnReview,
+  deleteReview,
   deleteReviewComment,
   fetchReviewComments,
   fetchReviewThread,
@@ -261,6 +262,26 @@ export default function ReviewThreadPage() {
     }
   }
 
+  const onDeleteOwnReview = async () => {
+    if (!thread) return
+    if (!token) {
+      requireAuth()
+      return
+    }
+
+    setSaving(true)
+    try {
+      await deleteReview(token, thread.id)
+      setError('La reseña fue eliminada correctamente.')
+      setThread(null)
+      setComments([])
+    } catch (err) {
+      setError((err as Error).message || 'No se pudo eliminar la reseña')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   if (loading) {
     return (
       <main style={{ minHeight: '100vh', background: C.bg, color: C.text, display: 'grid', placeItems: 'center' }}>
@@ -338,6 +359,15 @@ export default function ReviewThreadPage() {
           <span style={{ color: C.textSoft, fontFamily: SANS, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
             {comments.length} respuestas
           </span>
+          {viewerId !== null && thread.user_id === viewerId ? (
+            <button
+              onClick={() => void onDeleteOwnReview()}
+              disabled={saving}
+              style={{ marginLeft: 'auto', border: `1px solid #6a3e3e`, background: 'transparent', color: '#d99898', padding: '8px 12px', cursor: saving ? 'default' : 'pointer', fontFamily: SANS, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', display: 'inline-flex', alignItems: 'center', gap: 6, opacity: saving ? 0.7 : 1 }}
+            >
+              <Trash2 size={13} /> {saving ? 'Eliminando...' : 'Eliminar reseña'}
+            </button>
+          ) : null}
         </div>
 
         <div style={{ display: 'grid', gap: 10, marginBottom: 18 }}>

@@ -23,7 +23,6 @@ export function DirectorQuote({ director }: DirectorQuoteProps) {
         borderTop: `1px solid ${C.border}`, 
         borderBottom: `1px solid ${C.border}`, 
         background: C.surface, 
-        textAlign: 'center', 
         position: 'relative', 
         overflow: 'hidden' 
       }}

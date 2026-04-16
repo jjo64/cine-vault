@@ -94,6 +94,7 @@ describe("Invalidación de caché en mutaciones", () => {
 
     await crearResenaService(userId, {
       movie_id: movieId,
+      media_type: "movie",
       content: "Excelente",
       rating: 4.5,
     })
@@ -119,7 +120,7 @@ describe("Invalidación de caché en mutaciones", () => {
     })
 
     expect(invalidateKeys).toHaveBeenCalledWith([
-      `diary:feed:${userId}`,
+      `diary:feed:v2:${userId}`,
       `movie:agg:${movieId}`,
     ])
   })

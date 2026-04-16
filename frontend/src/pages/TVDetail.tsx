@@ -9,6 +9,7 @@ import ScoreCard from './TVDetail/components/ScoreCard'
 import TechnicalSheet from './TVDetail/components/TechnicalSheet'
 import { Hero } from '../features/movie-detail/components/Hero'
 import { CastCrew } from '../features/movie-detail/components/CastCrew'
+import { ReviewLogModal } from '../features/movie-detail/components/ReviewLogModal'
 import { useUserActions } from './TVDetail/hooks/useUserActions'
 import { motion } from 'motion/react'
 import {
@@ -400,18 +401,24 @@ export default function TVDetailPage() {
 
   const {
     userRating, setUserRating,
-    reviewText, setReviewText,
-    savingAction,
-    actionMessage,
     isFavorite,
     inWatchlist,
     inDiary,
     reviews,
     myReviewId,
     isAuthenticated,
+    viewer,
+    reviewLogOpen,
+    setReviewLogOpen,
+    reviewLogForm,
+    setReviewLogForm,
+    reviewLogSaving,
     handleVault,
     handleWatchlist,
-    handleSaveReview,
+    handleWriteReview,
+    handleEditReview,
+    handleDeleteReview,
+    handleSaveReviewLog,
   } = useUserActions(detail?.id)
 
   if (!slugOrId) return null
@@ -451,18 +458,58 @@ export default function TVDetailPage() {
   // TVDetail currently lacks full implementations for these:
   const handleToggleFavorite = () => { /* TODO */ }
   const handleAddToList = () => { /* TODO */ }
-  const handleWriteReview = () => { 
-    if (document.getElementById('reviews-section')) {
-      document.getElementById('reviews-section')?.scrollIntoView({ behavior: 'smooth' })
-    }
-  }
   const handleShare = () => { 
     navigator.clipboard?.writeText(window.location.href); 
+  }
+
+  const modalMovie = {
+    id: detail.id,
+    title: detail.name || 'Sin título',
+    poster_path: detail.poster_path || null,
   }
 
   return (
     <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: SANS }}>
       <Grain />
+
+      <ReviewLogModal
+        open={reviewLogOpen}
+        movie={modalMovie}
+        membership={viewer?.membership}
+        role={viewer?.role}
+        text={reviewLogForm.text}
+        rating={reviewLogForm.rating}
+        mode={reviewLogForm.mode}
+        veredicto={reviewLogForm.veredicto}
+        contieneSpoilers={reviewLogForm.contieneSpoilers}
+        citaDialogo={reviewLogForm.citaDialogo}
+        citaPersonaje={reviewLogForm.citaPersonaje}
+        timestamps={reviewLogForm.timestamps}
+        dimensions={reviewLogForm.dimensions}
+        liked={reviewLogForm.liked}
+        seenDate={reviewLogForm.seenDate}
+        seenBefore={reviewLogForm.seenBefore}
+        saving={reviewLogSaving}
+        onClose={() => setReviewLogOpen(false)}
+        onTextChange={(value) => setReviewLogForm(prev => ({ ...prev, text: value }))}
+        onRatingChange={(value) => setReviewLogForm(prev => ({ ...prev, rating: value }))}
+        onModeChange={(value) => setReviewLogForm(prev => ({ ...prev, mode: value }))}
+        onVeredictoChange={(value) => setReviewLogForm(prev => ({ ...prev, veredicto: value }))}
+        onContieneSpoilersChange={(value) => setReviewLogForm(prev => ({ ...prev, contieneSpoilers: value }))}
+        onCitaDialogoChange={(value) => setReviewLogForm(prev => ({ ...prev, citaDialogo: value }))}
+        onCitaPersonajeChange={(value) => setReviewLogForm(prev => ({ ...prev, citaPersonaje: value }))}
+        onDimensionsChange={(key, value) => setReviewLogForm(prev => ({ ...prev, dimensions: { ...prev.dimensions, [key]: value } }))}
+        onAddTimestamp={() => setReviewLogForm(prev => ({ ...prev, timestamps: [...prev.timestamps, { minuto: '', descripcion: '' }] }))}
+        onTimestampChange={(index, field, value) => setReviewLogForm(prev => ({
+          ...prev,
+          timestamps: prev.timestamps.map((stamp, stampIndex) => stampIndex === index ? { ...stamp, [field]: value } : stamp),
+        }))}
+        onRemoveTimestamp={(index) => setReviewLogForm(prev => ({ ...prev, timestamps: prev.timestamps.filter((_, stampIndex) => stampIndex !== index) }))}
+        onToggleLike={() => setReviewLogForm(prev => ({ ...prev, liked: !prev.liked }))}
+        onSeenDateChange={(value) => setReviewLogForm(prev => ({ ...prev, seenDate: value }))}
+        onSeenBeforeChange={(value) => setReviewLogForm(prev => ({ ...prev, seenBefore: value }))}
+        onSave={handleSaveReviewLog}
+      />
 
       <Hero
         title={detail.name || 'Sin título'}
@@ -492,7 +539,12 @@ export default function TVDetailPage() {
 
       {detail.tagline && (
         <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.9 }}
-          style={{ padding: '48px 52px', borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}`, background: C.surface, textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+          className="tv-detail-quote"
+          style={{ borderTop: `1px solid ${C.border}`, 
+                  borderBottom: `1px solid ${C.border}`, 
+                  background: C.surface, 
+                  position: 'relative', 
+                  overflow: 'hidden'  }}>
           <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 400, height: 200, background: `radial-gradient(ellipse, ${C.accentGlow}, transparent 70%)`, pointerEvents: 'none' }} />
           <div style={{ fontFamily: SERIF, fontSize: 'clamp(18px, 2.2vw, 26px)', fontStyle: 'italic', fontWeight: 300, lineHeight: 1.7, color: C.textSoft, maxWidth: 760, margin: '0 auto', position: 'relative' }}>
             <span style={{ color: C.accent, fontSize: '1.3em' }}>"</span>{detail.tagline}<span style={{ color: C.accent, fontSize: '1.3em' }}>"</span>
@@ -518,15 +570,11 @@ export default function TVDetailPage() {
             reviews={reviews}
             tvTitle={detail.name || ''}
             tvTmdbId={detail.id}
-            userRating={userRating}
-            reviewText={reviewText}
-            setReviewText={setReviewText}
-            onRate={setUserRating}
-            onSave={() => handleSaveReview()}
-            savingAction={savingAction}
-            actionMessage={actionMessage}
-            isAuthenticated={isAuthenticated}
+            viewerId={viewer?.id ?? null}
             myReviewId={myReviewId}
+            onWriteReview={handleWriteReview}
+            onEditReview={handleEditReview}
+            onDeleteReview={handleDeleteReview}
           />
           <SimilarSeries detail={detail} />
         </main>
