@@ -1,9 +1,17 @@
+/**
+ * @file arcos.routes.ts
+ * @description Definición de rutas para el sistema de "Arcos Narrativos".
+ * Gestiona la creación, moderación y seguimiento del progreso de colecciones 
+ * temáticas curadas (Story Arcs) por los usuarios.
+ */
+
 import { Router } from "express"
+import { PERMISOS } from "../config/permisos.js"
 import {
   createArcoDraft,
   getArcoById,
-  getArcosModeration,
   getArcos,
+  getArcosModeration,
   getMyArcoById,
   getMyArcos,
   marcarProgresoArco,
@@ -11,7 +19,6 @@ import {
   submitArcoReview,
   updateArcoDraft,
 } from "../controllers/ArcosController.js"
-import { PERMISOS } from "../config/permisos.js"
 import { middlewareAutenticacion } from "../middlewares/auth.middlewares.js"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
 import { verificarPermiso } from "../middlewares/rbac.middleware.js"
@@ -31,10 +38,30 @@ import {
 
 const router = Router()
 
+/**
+ * ---------------------------------------------------------------------------
+ * BLOQUE: EXPLORACIÓN PÚBLICA
+ * ---------------------------------------------------------------------------
+ */
+
+// Listado global de arcos publicados
 router.get("/", manejadorAsincrono(getArcos))
 
-router.get("/mine", middlewareAutenticacion, manejadorAsincrono(getMyArcos))
+// Detalle individual de un arco
+router.get(
+  "/:id",
+  validarParams(arcoIdParamsSchema),
+  manejadorAsincrono(getArcoById)
+)
 
+/**
+ * ---------------------------------------------------------------------------
+ * BLOQUE: GESTIÓN PERSONAL (Mis Arcos)
+ * ---------------------------------------------------------------------------
+ */
+
+// Listado y detalle de arcos propios
+router.get("/mine", middlewareAutenticacion, manejadorAsincrono(getMyArcos))
 router.get(
   "/mine/:id",
   middlewareAutenticacion,
@@ -42,21 +69,13 @@ router.get(
   manejadorAsincrono(getMyArcoById)
 )
 
-router.get(
-  "/moderation",
-  middlewareAutenticacion,
-  verificarPermiso(PERMISOS.GESTIONAR_ARCOS),
-  validarQuery(listArcosModeracionQuerySchema),
-  manejadorAsincrono(getArcosModeration)
-)
-
+// Creación y edición de borradores
 router.post(
   "/",
   middlewareAutenticacion,
   validarBody(crearArcoSchema),
   manejadorAsincrono(createArcoDraft)
 )
-
 router.patch(
   "/:id",
   middlewareAutenticacion,
@@ -65,11 +84,42 @@ router.patch(
   manejadorAsincrono(updateArcoDraft)
 )
 
+// Envío a revisión para publicación
 router.post(
   "/:id/submit",
   middlewareAutenticacion,
   validarParams(arcoIdParamsSchema),
   manejadorAsincrono(submitArcoReview)
+)
+
+/**
+ * ---------------------------------------------------------------------------
+ * BLOQUE: INTERACCIÓN Y PROGRESO
+ * ---------------------------------------------------------------------------
+ */
+
+// Seguimiento de avance en un arco específico
+router.post(
+  "/:id/progress",
+  middlewareAutenticacion,
+  validarParams(arcoIdParamsSchema),
+  validarBody(marcarProgresoArcoSchema),
+  manejadorAsincrono(marcarProgresoArco)
+)
+
+/**
+ * ---------------------------------------------------------------------------
+ * BLOQUE: MODERACIÓN (Solo Staff)
+ * ---------------------------------------------------------------------------
+ */
+
+// Panel de moderación y gestión de estatus de arcos
+router.get(
+  "/moderation",
+  middlewareAutenticacion,
+  verificarPermiso(PERMISOS.GESTIONAR_ARCOS),
+  validarQuery(listArcosModeracionQuerySchema),
+  manejadorAsincrono(getArcosModeration)
 )
 
 router.patch(
@@ -79,20 +129,6 @@ router.patch(
   validarParams(arcoIdParamsSchema),
   validarBody(moderarArcoSchema),
   manejadorAsincrono(moderateArco)
-)
-
-router.get(
-  "/:id",
-  validarParams(arcoIdParamsSchema),
-  manejadorAsincrono(getArcoById)
-)
-
-router.post(
-  "/:id/progress",
-  middlewareAutenticacion,
-  validarParams(arcoIdParamsSchema),
-  validarBody(marcarProgresoArcoSchema),
-  manejadorAsincrono(marcarProgresoArco)
 )
 
 export default router

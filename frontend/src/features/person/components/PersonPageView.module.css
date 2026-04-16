@@ -1,0 +1,668 @@
+.root {
+  --cv-bg: #080808;
+  --cv-surface: #111111;
+  --cv-elevated: #1a1a1a;
+  --cv-border: #252525;
+  --cv-accent: #d4af7a;
+  --cv-accent-dim: #9a7a48;
+  --cv-accent-glow: rgba(212, 175, 122, 0.12);
+  --cv-text: #e2e2e2;
+  --cv-text-soft: #7a7a7a;
+  --cv-text-muted: #3a3a3a;
+  --cv-gold: #c8a96e;
+  --cv-font-serif: 'Cormorant Garamond', serif;
+  --cv-font-sans: 'Syne', sans-serif;
+
+  background: var(--cv-bg);
+  min-height: 100vh;
+  color: var(--cv-text);
+  font-family: var(--cv-font-sans);
+  overflow-x: hidden;
+}
+
+.pagePadTop {
+  padding-top: var(--nav-height, 64px);
+}
+
+.stateScreen,
+.errorScreen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: var(--cv-bg);
+  color: var(--cv-text-soft);
+  font-family: var(--cv-font-sans);
+}
+
+.errorScreen {
+  color: #c97b7b;
+}
+
+.hero {
+  position: relative;
+  min-height: 560px;
+  overflow: hidden;
+}
+
+.heroBgImage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(0.35) brightness(0.4);
+  transform: scale(1.04);
+}
+
+.heroOverlayRight {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, rgba(8, 8, 8, 0.98) 0%, rgba(8, 8, 8, 0.82) 45%, rgba(8, 8, 8, 0.3) 70%, transparent 100%);
+}
+
+.heroOverlayBottom {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(8, 8, 8, 0.98) 0%, transparent 55%);
+}
+
+.heroGlow {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 500px;
+  height: 300px;
+  background: radial-gradient(ellipse at bottom left, var(--cv-accent-glow), transparent 70%);
+  pointer-events: none;
+}
+
+.desktopPortrait {
+  position: absolute;
+  right: 10%;
+  top: 0;
+  bottom: 0;
+  width: 26%;
+  overflow: hidden;
+}
+
+.personPhoto {
+  display: block;
+}
+
+.heroPortrait {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  filter: saturate(0.6) brightness(0.85);
+}
+
+.heroPortraitOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to left, transparent 20%, rgba(8, 8, 8, 0.9) 100%);
+}
+
+.heroContent {
+  position: relative;
+  z-index: 3;
+  max-width: 700px;
+  padding: 0 clamp(16px, 4vw, 52px) clamp(24px, 4vw, 56px);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 560px;
+}
+
+.backButton {
+  align-self: flex-start;
+  margin-bottom: 22px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cv-text-soft);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--cv-font-sans);
+}
+
+.departmentTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  border: 1px solid var(--cv-accent-dim);
+  margin-bottom: 18px;
+  font-family: var(--cv-font-sans);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--cv-accent);
+  width: fit-content;
+}
+
+.personName {
+  margin: 0 0 8px;
+  font-family: var(--cv-font-serif);
+  font-size: clamp(46px, 6vw, 72px);
+  font-weight: 300;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+}
+
+.heroMetaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.heroMetaItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--cv-text-soft);
+}
+
+.statsRow {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--cv-border);
+  flex-wrap: wrap;
+}
+
+.statValue {
+  font-family: var(--cv-font-serif);
+  font-size: 26px;
+  color: var(--cv-gold);
+}
+
+.statLabel {
+  font-family: var(--cv-font-sans);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cv-text-muted);
+}
+
+.actionsRow {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.followButton {
+  padding: 11px 26px;
+  background: var(--cv-accent);
+  color: var(--cv-bg);
+  border: none;
+  font-family: var(--cv-font-sans);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.iconButton {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--cv-text-soft);
+  border: 1px solid var(--cv-border);
+}
+
+.contentWrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 64px 52px 0;
+}
+
+.twoCols {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: clamp(32px, 6vw, 72px);
+}
+
+.sectionBlock {
+  margin-bottom: clamp(36px, 5vw, 64px);
+}
+
+.sectionLabel {
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--cv-accent);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-family: var(--cv-font-sans);
+}
+
+.sectionLine {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, var(--cv-border), transparent);
+}
+
+.biography {
+  font-family: var(--cv-font-serif);
+  font-size: clamp(16px, 2vw, 20px);
+  font-weight: 300;
+  line-height: 1.8;
+  color: var(--cv-text);
+  margin: 0 0 18px;
+}
+
+.toggleBioButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--cv-font-sans);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cv-accent);
+  padding: 0;
+}
+
+.knownForRow {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scrollbar-width: none;
+}
+
+.knownForLink {
+  text-decoration: none;
+  flex-shrink: 0;
+  width: 120px;
+}
+
+.knownForPosterWrap {
+  aspect-ratio: 2/3;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 10px;
+  border: 1px solid var(--cv-border);
+}
+
+.knownForPoster {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(0.6);
+}
+
+.knownForTitle {
+  font-size: 12px;
+  color: var(--cv-text);
+  font-family: var(--cv-font-sans);
+  line-height: 1.3;
+  margin-bottom: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.knownForYear {
+  font-size: 11px;
+  color: var(--cv-text-soft);
+  font-family: var(--cv-font-sans);
+}
+
+.roleTabs {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 22px;
+  border-bottom: 1px solid var(--cv-border);
+}
+
+.roleTabButton {
+  padding: 10px 24px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-family: var(--cv-font-sans);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cv-text-soft);
+  cursor: pointer;
+  margin-bottom: -1px;
+}
+
+.roleTabButtonActive {
+  color: var(--cv-text);
+  border-bottom-color: var(--cv-accent);
+}
+
+.filtersRowCrew {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.filtersRowActor {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pillRow,
+.decadeRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.decadeRow {
+  gap: 6px;
+}
+
+.pillButton {
+  padding: 6px 16px;
+  background: transparent;
+  color: var(--cv-text-soft);
+  border: 1px solid var(--cv-border);
+  font-family: var(--cv-font-sans);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.pillButtonActive {
+  background: var(--cv-accent-glow);
+  color: var(--cv-accent);
+  border-color: var(--cv-accent-dim);
+}
+
+.decadeButton {
+  padding: 4px 12px;
+  background: transparent;
+  color: var(--cv-text-muted);
+  border: 1px solid transparent;
+  font-family: var(--cv-font-sans);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+
+.decadeButtonActive {
+  background: var(--cv-elevated);
+  color: var(--cv-text);
+  border-color: var(--cv-border);
+}
+
+.emptyState {
+  padding: 40px 0;
+  text-align: center;
+  font-family: var(--cv-font-serif);
+  font-style: italic;
+  color: var(--cv-text-muted);
+  font-size: 18px;
+}
+
+.linkReset {
+  text-decoration: none;
+}
+
+.filmRow {
+  display: grid;
+  grid-template-columns: 48px 56px 1fr auto;
+  gap: 16px;
+  align-items: center;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--cv-border);
+  cursor: pointer;
+}
+
+.filmYear {
+  font-family: var(--cv-font-serif);
+  font-size: 16px;
+  color: var(--cv-text-muted);
+  text-align: right;
+}
+
+.filmPosterWrap {
+  aspect-ratio: 2/3;
+  border-radius: 1px;
+  overflow: hidden;
+  border: 1px solid var(--cv-border);
+}
+
+.filmPoster {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(0.55);
+}
+
+.filmTitle {
+  font-family: var(--cv-font-serif);
+  font-size: 20px;
+  color: var(--cv-text);
+  margin-bottom: 4px;
+  line-height: 1.2;
+}
+
+.filmBadges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.filmBadgePrimary,
+.filmBadgeSecondary {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  font-family: var(--cv-font-sans);
+}
+
+.filmBadgePrimary {
+  color: var(--cv-accent);
+  border: 1px solid var(--cv-accent-dim);
+}
+
+.filmBadgeSecondary {
+  color: var(--cv-text-soft);
+  border: 1px solid var(--cv-border);
+}
+
+.filmScoreCol {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.filmScore {
+  font-family: var(--cv-font-serif);
+  font-size: 22px;
+  color: var(--cv-gold);
+}
+
+.filmScoreLabel {
+  font-size: 10px;
+  color: var(--cv-text-muted);
+  font-family: var(--cv-font-sans);
+}
+
+.stickyAside {
+  position: sticky;
+  top: 80px;
+}
+
+.awardsSection {
+  margin-bottom: 28px;
+}
+
+.awardsList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.awardItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--cv-surface);
+  border-left: 2px solid var(--cv-accent-dim);
+}
+
+.awardIcon {
+  color: var(--cv-gold);
+}
+
+.awardText {
+  font-family: var(--cv-font-serif);
+  font-size: 15px;
+  color: var(--cv-text-soft);
+}
+
+.statsCard {
+  background: var(--cv-surface);
+  border: 1px solid var(--cv-border);
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.statsCardTitle {
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--cv-accent);
+  margin-bottom: 18px;
+  font-family: var(--cv-font-sans);
+}
+
+.statsCardRows {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.statsCardRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.statsCardLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--cv-text-soft);
+  font-size: 12px;
+  font-family: var(--cv-font-sans);
+}
+
+.statsCardValue {
+  font-family: var(--cv-font-serif);
+  font-size: 18px;
+  color: var(--cv-text);
+}
+
+.externalLink {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--cv-surface);
+  border: 1px solid var(--cv-border);
+  color: var(--cv-text-soft);
+  text-decoration: none;
+  font-family: var(--cv-font-sans);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 1024px) {
+  .twoCols {
+    grid-template-columns: 1fr;
+    gap: 38px;
+  }
+
+  .desktopPortrait {
+    position: relative;
+    right: auto;
+    width: 180px;
+    height: 260px;
+    top: unset;
+    bottom: unset;
+    margin-top: 20px;
+  }
+
+  .stickyAside {
+    position: static;
+    top: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero {
+    min-height: 500px;
+  }
+
+  .heroContent {
+    max-width: 100%;
+    min-height: 460px;
+    padding: 0 clamp(16px, 4vw, 52px) clamp(24px, 4vw, 64px);
+  }
+
+  .contentWrap {
+    padding: clamp(20px, 5vw, 48px) clamp(16px, 4vw, 40px) 0;
+  }
+
+  .filmRow {
+    grid-template-columns: 50px 1fr 36px;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 12px 16px;
+  }
+
+  .filmYear {
+    display: none;
+  }
+
+  .filmPosterWrap {
+    width: 50px;
+  }
+
+  .filmTitle {
+    font-size: 16px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}

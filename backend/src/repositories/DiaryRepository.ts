@@ -1,20 +1,17 @@
+/**
+ * @file DiaryRepository.ts
+ * @description Repositorio central para la gestión del diario de visionado (diary_entries).
+ * Encapsula la persistencia en base de datos y la agregación de metadatos externos de TMDB.
+ */
+
 import { diary_entries } from "@prisma/client"
 import { prisma } from "../lib/prisma.js"
-import type { CrearEntradaDiarioDTO } from "../schemas/diary.js"
 import { consultarTMDB } from "../helpers/fetchTMDB.js"
+import type { CrearEntradaDiarioDTO } from "../schemas/diary.js"
 
-/* ==========================================================================
-   DIARY REPOSITORY
-   --------------------------------------------------------------------------
-   Encapsula todas las queries de Prisma para el diario de visionado.
-   También contiene la lógica de enriquecimiento con datos TMDB, que antes
-   estaba en el helper DiaryHelper.ts con un try/catch silencioso.
-
-   ¿Por qué consolidar aquí y no en el helper?
-   El helper necesitaba importar tanto Prisma como TMDB; consolidar todo en
-   el repositorio elimina un intermediario y centraliza la persistencia.
-   ========================================================================== */
-
+/**
+ * Interfaz que define las operaciones permitidas sobre el repositorio del diario.
+ */
 export interface IDiaryRepository {
   findByUserId(userId: number): Promise<diary_entries[]>
   findById(id: number): Promise<diary_entries | null>
@@ -29,7 +26,9 @@ export interface IDiaryRepository {
   buildRichResponse(userId: number): Promise<RichDiaryEntry[] | null>
 }
 
-/** Tipo enriquecido con metadatos de TMDB y reseña del usuario */
+/** 
+ * Tipo enriquecido que combina datos de la base de datos local con info de TMDB y reseñas.
+ */
 export interface RichDiaryEntry {
   id: number
   movie_id: number
@@ -44,7 +43,14 @@ export interface RichDiaryEntry {
   } | null
 }
 
+/**
+ * Clase DiaryRepository
+ * Provee acceso unificado a las entradas del diario de los usuarios.
+ */
 export class DiaryRepository implements IDiaryRepository {
+  /**
+   * Obtiene todas las entradas del diario para un usuario, ordenadas por fecha reciente.
+   */
   async findByUserId(userId: number) {
     return prisma.diary_entries.findMany({
       where: { user_id: userId },
@@ -52,10 +58,16 @@ export class DiaryRepository implements IDiaryRepository {
     })
   }
 
+  /**
+   * Busca una entrada específica por su ID único.
+   */
   async findById(id: number) {
     return prisma.diary_entries.findUnique({ where: { id } })
   }
 
+  /**
+   * Registra una nueva película vista en el diario.
+   */
   async create(userId: number, data: CrearEntradaDiarioDTO) {
     return prisma.diary_entries.create({
       data: {
@@ -66,6 +78,9 @@ export class DiaryRepository implements IDiaryRepository {
     })
   }
 
+  /**
+   * Busca si ya existe una entrada para un usuario, película y fecha específica.
+   */
   async findByUserMovieDate(
     userId: number,
     movieId: number,
@@ -80,20 +95,27 @@ export class DiaryRepository implements IDiaryRepository {
     })
   }
 
+  /**
+   * Elimina una entrada del diario.
+   */
   async delete(id: number) {
     await prisma.diary_entries.delete({ where: { id } })
   }
 
+  /**
+   * Cuenta cuántas veces se ha registrado una película en los diarios globales.
+   */
   async countByMovie(movieId: number) {
     return prisma.diary_entries.count({ where: { movie_id: movieId } })
   }
 
   /**
-   * Construye la respuesta enriquecida del diario:
-   * entradas + metadatos de película (TMDB) + reseña del usuario.
-   * Usa Promise.allSettled para que un fallo de TMDB no derribe toda la respuesta.
+   * Construye una respuesta hidratada con metadatos de TMDB y reseñas cruzadas.
+   * Utiliza Promise.allSettled para tolerar fallos parciales en la API externa.
+   * @param userId - ID del usuario de quien se recupera el diario.
    */
   async buildRichResponse(userId: number): Promise<RichDiaryEntry[] | null> {
+    // 1. Obtención de entradas base
     const entries = await prisma.diary_entries.findMany({
       where: { user_id: userId },
       select: { id: true, movie_id: true, watched_date: true },
@@ -104,6 +126,7 @@ export class DiaryRepository implements IDiaryRepository {
 
     const movieIds = entries.map((d) => d.movie_id)
 
+    // 2. Carga paralela de referencias locales (TMDB ID) y reseñas
     const [movies, reviews] = await Promise.all([
       prisma.movies_ref.findMany({
         where: { id: { in: movieIds } },
@@ -121,6 +144,7 @@ export class DiaryRepository implements IDiaryRepository {
       }),
     ])
 
+    // 3. Hidratación con TMDB (concurrente)
     type TmdbMovie = { title: string; poster_path: string | null }
     const tmdbResults = await Promise.allSettled(
       movies.map((movie) =>
@@ -136,6 +160,7 @@ export class DiaryRepository implements IDiaryRepository {
       )
     )
 
+    // 4. Mapeo eficiente de resultados
     const tmdbMap = new Map(
       movies.map((movie, index) => {
         const result = tmdbResults[index]
@@ -143,7 +168,8 @@ export class DiaryRepository implements IDiaryRepository {
       })
     )
     const movieMap = new Map(movies.map((m) => [m.id, m.tmdb_id]))
-    // Keep only the latest review per movie.
+    
+    // Mantenemos solo la última reseña por película para evitar duplicados en el diario
     const reviewMap = new Map<number, (typeof reviews)[number]>()
     for (const review of reviews) {
       if (!reviewMap.has(review.movie_id)) {
@@ -151,6 +177,7 @@ export class DiaryRepository implements IDiaryRepository {
       }
     }
 
+    // 5. Ensamblaje final de la respuesta
     return entries.map((entry) => ({
       id: entry.id,
       movie_id: entry.movie_id,

@@ -1,3 +1,10 @@
+/**
+ * @file feed.routes.ts
+ * @description Rutas para el Feed Social de actividades.
+ * Permite a los usuarios interactuar con los eventos de su red social mediante
+ * likes, bookmarks, ocultación de contenido y compartición de eventos.
+ */
+
 import { Router } from "express"
 import {
   getFeed,
@@ -20,8 +27,30 @@ import {
   feedShareActionSchema,
 } from "../schemas/feed.js"
 
+/**
+ * @swagger
+ * tags:
+ *   name: Feed
+ *   description: Interacción con el flujo social de actividades
+ */
+
 const router = Router()
 
+/**
+ * ---------------------------------------------------------------------------
+ * BLOQUE: LECTURA DEL FLOW
+ * ---------------------------------------------------------------------------
+ */
+
+/**
+ * @swagger
+ * /feed:
+ *   get:
+ *     summary: Obtener el feed social personalizado
+ *     tags: [Feed]
+ *     security:
+ *       - bearerAuth: []
+ */
 router.get(
   "/",
   middlewareAutenticacion,
@@ -29,6 +58,15 @@ router.get(
   manejadorAsincrono(getFeed)
 )
 
+/**
+ * ---------------------------------------------------------------------------
+ * BLOQUE: ACCIONES SOCIALES
+ * ---------------------------------------------------------------------------
+ */
+
+/**
+ * Reaccionar con "Me gusta" a un evento del feed.
+ */
 router.post(
   "/actions/like",
   middlewareAutenticacion,
@@ -36,6 +74,9 @@ router.post(
   manejadorAsincrono(postFeedLike)
 )
 
+/**
+ * Guardar un evento en marcadores para consulta posterior.
+ */
 router.post(
   "/actions/bookmark",
   middlewareAutenticacion,
@@ -43,6 +84,9 @@ router.post(
   manejadorAsincrono(postFeedBookmark)
 )
 
+/**
+ * Ocultar un evento específico del feed del usuario.
+ */
 router.post(
   "/actions/hide",
   middlewareAutenticacion,
@@ -50,6 +94,9 @@ router.post(
   manejadorAsincrono(postFeedHide)
 )
 
+/**
+ * Compartir un evento del feed con otros usuarios o redes.
+ */
 router.post(
   "/actions/share",
   middlewareAutenticacion,

@@ -1,7 +1,27 @@
+/**
+ * @file auth.services.ts
+ * @description Servicio central de autenticación y seguridad de CineVault. 
+ * Gestiona el ciclo de vida de los usuarios (registro, verificación), la emisión y rotación 
+ * de tokens JWT, seguridad multi-factor (2FA/TOTP) y gestión de sesiones persistentes.
+ */
+
+import crypto from "crypto"
 import jwt from "jsonwebtoken"
 import * as OTPAuth from "otpauth"
 import QRCode from "qrcode"
-import crypto from "crypto"
+
+import {
+  compararContrasena,
+  crearTOTP,
+  desencriptarSecreto,
+  encriptarSecreto,
+  hashearContrasena,
+} from "../lib/crypto.js"
+import {
+  enviarCorreoResetPassword,
+  enviarCorreoVerificacion,
+} from "../lib/email.js"
+import { redis } from "../lib/redis.js"
 import {
   crearTokenAcceso,
   crearTokenRefresco,
@@ -9,58 +29,68 @@ import {
   verificarTokenRefresco,
 } from "../lib/tokens.js"
 import {
-  hashearContrasena,
-  compararContrasena,
-  encriptarSecreto,
-  desencriptarSecreto,
-  crearTOTP,
-} from "../lib/crypto.js"
-import {
-  enviarCorreoVerificacion,
-  enviarCorreoResetPassword,
-} from "../lib/email.js"
-import { validarUsuario } from "../schemas/user.js"
-import {
-  UnauthorizedError,
-  ForbiddenError,
-  NotFoundError,
   ConflictError,
-  ValidationError,
+  ForbiddenError,
   GoneError,
+  NotFoundError,
+  UnauthorizedError,
+  ValidationError,
 } from "../errors/AppErrors.js"
 import { PayloadRefresco } from "../middlewares/auth.middlewares.js"
-import { userRepository } from "../repositories/UserRepository.js"
 import { authTokenRepository } from "../repositories/AuthTokenRepository.js"
 import { sessionRepository } from "../repositories/SessionRepository.js"
+import { userRepository } from "../repositories/UserRepository.js"
+import { validarUsuario } from "../schemas/user.js"
 import { LoginResult } from "../types/auth.js"
-import { redis } from "../lib/redis.js"
 
-const TRUSTED_DEVICE_TTL_SECONDS = 30 * 24 * 60 * 60
-const RECOVERY_CODES_TTL_SECONDS = 180 * 24 * 60 * 60
+// --- Constantes de Configuración de Seguridad ---
+
+const TRUSTED_DEVICE_TTL_SECONDS = 30 * 24 * 60 * 60 // 30 días
+const RECOVERY_CODES_TTL_SECONDS = 180 * 24 * 60 * 60 // 180 días
 const RECOVERY_CODES_COUNT = 8
 
+// --- Funciones de Utilidad Interna (Seguridad) ---
+
+/**
+ * Genera una huella digital única para el dispositivo basada en el User Agent.
+ */
 const trustedDeviceFingerprint = (userAgent: string) =>
   crypto
     .createHash("sha256")
     .update(userAgent || "unknown")
     .digest("hex")
 
+/**
+ * Genera la clave de Redis para almacenar dispositivos de confianza.
+ */
 const trustedDeviceKey = (
   userId: number,
   fingerprint: string,
   tokenHash: string
 ) => `auth:trusted-device:${userId}:${fingerprint}:${tokenHash}`
 
+/**
+ * Genera la clave de Redis para los códigos de recuperación 2FA.
+ */
 const recoveryCodesKey = (userId: number) => `auth:2fa:recovery:${userId}`
 
+/**
+ * Normaliza un código de recuperación para comparaciones consistentes.
+ */
 const normalizeRecoveryCode = (code: string) =>
   code.replace(/[^a-zA-Z0-9]/g, "").toUpperCase()
 
+/**
+ * Genera un código de recuperación aleatorio con formato XXXX-XXXX.
+ */
 const generateRecoveryCode = () => {
   const bytes = crypto.randomBytes(4).toString("hex").toUpperCase()
   return `${bytes.slice(0, 4)}-${bytes.slice(4, 8)}`
 }
 
+/**
+ * Almacena los códigos de recuperación (hasheados) en Redis.
+ */
 const saveRecoveryCodes = async (userId: number, plainCodes: string[]) => {
   const hashedCodes = plainCodes.map((code) =>
     hashearToken(normalizeRecoveryCode(code))
@@ -74,6 +104,9 @@ const saveRecoveryCodes = async (userId: number, plainCodes: string[]) => {
   )
 }
 
+/**
+ * Crea un set de códigos de recuperación nuevos para el usuario.
+ */
 const createAndStoreRecoveryCodes = async (userId: number) => {
   const codes = Array.from({ length: RECOVERY_CODES_COUNT }, () =>
     generateRecoveryCode()
@@ -82,6 +115,9 @@ const createAndStoreRecoveryCodes = async (userId: number) => {
   return codes
 }
 
+/**
+ * Recupera los hashes de los códigos de recuperación desde Redis.
+ */
 const getRecoveryCodeHashes = async (userId: number): Promise<string[]> => {
   const raw = await redis.get(recoveryCodesKey(userId))
   if (!raw) return []
@@ -94,11 +130,17 @@ const getRecoveryCodeHashes = async (userId: number): Promise<string[]> => {
   }
 }
 
+/**
+ * Obtiene el número de códigos de recuperación restantes.
+ */
 const getRecoveryCodesRemaining = async (userId: number) => {
   const hashes = await getRecoveryCodeHashes(userId)
   return hashes.length
 }
 
+/**
+ * Valida y consume un código de recuperación si es correcto.
+ */
 const consumeRecoveryCodeIfValid = async (userId: number, code: string) => {
   const normalized = normalizeRecoveryCode(code)
   if (!normalized) return { consumed: false, remaining: 0 }
@@ -127,6 +169,9 @@ const consumeRecoveryCodeIfValid = async (userId: number, code: string) => {
   return { consumed: true, remaining: hashes.length }
 }
 
+/**
+ * Verifica si el dispositivo actual es de "confianza" para saltar el 2FA.
+ */
 const isTrustedDevice = async (
   userId: number,
   trustedDeviceToken: string | undefined,
@@ -141,6 +186,9 @@ const isTrustedDevice = async (
   return Boolean(raw)
 }
 
+/**
+ * Registra el dispositivo actual como de confianza en Redis.
+ */
 const registerTrustedDevice = async (userId: number, userAgent: string) => {
   const token = crypto.randomBytes(32).toString("hex")
   const fingerprint = trustedDeviceFingerprint(userAgent)
@@ -157,6 +205,9 @@ const registerTrustedDevice = async (userId: number, userAgent: string) => {
   return token
 }
 
+/**
+ * Revoca todos los dispositivos de confianza de un usuario.
+ */
 const clearTrustedDevices = async (userId: number) => {
   const keys = await redis.keys(`auth:trusted-device:${userId}:*`)
   if (keys.length) {
@@ -164,18 +215,12 @@ const clearTrustedDevices = async (userId: number) => {
   }
 }
 
-/* ==========================================================================
-   AUTH SERVICE
-   --------------------------------------------------------------------------
-   Contiene TODA la lógica de negocio de autenticación.
-   Los controladores solo llaman a estas funciones y devuelven el resultado.
-   Si algo falla, se lanza un error personalizado que el manejadorErrores
-   global captura automáticamente.
-   ========================================================================== */
+// --- Servicios de Autenticación ---
 
-// ---------------------------------------------------------------------------
-// INICIAR SESIÓN
-// ---------------------------------------------------------------------------
+/**
+ * Procesa el inicio de sesión convencional con credenciales.
+ * Implementa el flujo de 2FA si el usuario lo tiene activo.
+ */
 export const iniciarSesionService = async (
   username: string,
   password: string,
@@ -202,7 +247,7 @@ export const iniciarSesionService = async (
   const contrasenaValida = await compararContrasena(password, usuario.password)
   if (!contrasenaValida) throw new UnauthorizedError("Credenciales incorrectas")
 
-  // Flujo 2FA: devolver token temporal en vez de tokens reales
+  // Control de Segundo Factor (2FA)
   if (usuario.two_factor_enabled) {
     const trusted = await isTrustedDevice(
       usuario.id,
@@ -238,9 +283,10 @@ export const iniciarSesionService = async (
   return { type: "OK", tokenAcceso, tokenRefresco }
 }
 
-// ---------------------------------------------------------------------------
-// REGISTRAR USUARIO
-// ---------------------------------------------------------------------------
+/**
+ * Gestiona el registro de nuevos usuarios, incluyendo la validación de datos 
+ * y la emisión del correo de verificación.
+ */
 export const registrarService = async (body: unknown) => {
   const validacion = validarUsuario(body)
   if (!validacion.success || !validacion.data) {
@@ -251,6 +297,9 @@ export const registrarService = async (body: unknown) => {
 
   const { email, username, password } = validacion.data
 
+  /**
+   * Genera y envía un token de verificación de correo.
+   */
   const emitirVerificacion = async (userId: number, userEmail: string) => {
     await authTokenRepository.deleteMany({
       user_id: userId,
@@ -301,9 +350,9 @@ export const registrarService = async (body: unknown) => {
   return { userId: nuevoUsuario.id }
 }
 
-// ---------------------------------------------------------------------------
-// VERIFICAR EMAIL
-// ---------------------------------------------------------------------------
+/**
+ * Valida el token de verificación de email y activa la cuenta del usuario.
+ */
 export const verificarEmailService = async (token: string) => {
   type PayloadVerificacion = { user_id: number }
 
@@ -333,15 +382,14 @@ export const verificarEmailService = async (token: string) => {
   })
 }
 
-// ---------------------------------------------------------------------------
-// REENVIAR VERIFICACIÓN
-// ---------------------------------------------------------------------------
+/**
+ * Reenvía el correo de verificación si el usuario no lo ha recibido o el anterior expiró.
+ */
 export const reenviarVerificacionService = async (email: string) => {
   if (!email) throw new ValidationError("Email requerido")
 
   const usuario = await userRepository.findByEmail(email)
 
-  // Respuesta genérica para no revelar si el email existe
   if (!usuario || usuario.is_verified) return
 
   await authTokenRepository.deleteMany({
@@ -366,16 +414,16 @@ export const reenviarVerificacionService = async (email: string) => {
   await enviarCorreoVerificacion(usuario.email, tokenVerificacion)
 }
 
-// ---------------------------------------------------------------------------
-// RENOVAR TOKEN
-// ---------------------------------------------------------------------------
+/**
+ * Realiza la renovación de tokens (Token Rotation).
+ * Invalida la sesión anterior y emite un nuevo par de tokens.
+ */
 export const renovarTokenService = async (refreshToken: string) => {
   const payload = await verificarTokenRefresco(refreshToken)
 
   const usuario = await userRepository.findById(payload.user_id)
   if (!usuario) throw new NotFoundError("Usuario no encontrado")
 
-  // Rotation: invalidar refresh anterior y emitir uno nuevo
   await sessionRepository.deleteById(payload.id_session)
 
   const accessToken = crearTokenAcceso(
@@ -389,9 +437,9 @@ export const renovarTokenService = async (refreshToken: string) => {
   return { accessToken, refreshToken: nuevoRefresh, sessionId: idSesion }
 }
 
-// ---------------------------------------------------------------------------
-// CERRAR SESIÓN
-// ---------------------------------------------------------------------------
+/**
+ * Cierra la sesión activa invalidando el token de refresco en la persistencia.
+ */
 export const cerrarSesionService = async (refreshToken: string | undefined) => {
   if (!refreshToken) return
 
@@ -403,13 +451,13 @@ export const cerrarSesionService = async (refreshToken: string | undefined) => {
 
     await sessionRepository.deleteById(payload.id_session)
   } catch {
-    // Token inválido: igual limpiamos la cookie desde el controller
+    // Error silencioso en el servicio: el controlador gestionará la limpieza de cookies.
   }
 }
 
-// ---------------------------------------------------------------------------
-// VERIFICAR TOKEN (persistir login en el frontend)
-// ---------------------------------------------------------------------------
+/**
+ * Verifica la validez de una sesión y retorna el perfil seguro del usuario.
+ */
 export const verificarTokenService = async (userId: number) => {
   const usuario = await userRepository.getSafeProfile(userId)
 
@@ -417,9 +465,9 @@ export const verificarTokenService = async (userId: number) => {
   return usuario
 }
 
-// ---------------------------------------------------------------------------
-// GOOGLE CALLBACK
-// ---------------------------------------------------------------------------
+/**
+ * Procesa la redirección exitosa de Google OAuth para emitir tokens locales de CineVault.
+ */
 export const googleCallbackService = async (usuarioPassport: {
   id: number
   role: string
@@ -434,9 +482,9 @@ export const googleCallbackService = async (usuarioPassport: {
   return { tokenAcceso, tokenRefresco }
 }
 
-// ---------------------------------------------------------------------------
-// ACTIVAR 2FA (generar QR)
-// ---------------------------------------------------------------------------
+/**
+ * Inicia el proceso de activación de 2FA generando un secreto y un código QR.
+ */
 export const activar2FAService = async (userId: number) => {
   const totp = new OTPAuth.TOTP({
     issuer: "CineVault",
@@ -458,9 +506,10 @@ export const activar2FAService = async (userId: number) => {
   return { qr, secreto }
 }
 
-// ---------------------------------------------------------------------------
-// CONFIRMAR 2FA (activar definitivamente)
-// ---------------------------------------------------------------------------
+/**
+ * Confirma la activación definitiva de 2FA verificando el primer código generado por el usuario.
+ * Emite los códigos de recuperación iniciales.
+ */
 export const confirmar2FAService = async (userId: number, codigo: string) => {
   if (!codigo) throw new ValidationError("Código requerido")
 
@@ -474,7 +523,7 @@ export const confirmar2FAService = async (userId: number, codigo: string) => {
     secretoReal = desencriptarSecreto(usuario.two_factor_secret)
   } catch {
     throw new ValidationError(
-      "No se pudo leer tu configuracion 2FA. Reactivala desde ajustes."
+      "No se pudo leer tu configuración 2FA. Reactívala desde ajustes."
     )
   }
   const totp = crearTOTP(secretoReal)
@@ -488,9 +537,10 @@ export const confirmar2FAService = async (userId: number, codigo: string) => {
   return { recoveryCodes }
 }
 
-// ---------------------------------------------------------------------------
-// VERIFICAR 2FA (login paso 2)
-// ---------------------------------------------------------------------------
+/**
+ * Segundo paso del login cuando el 2FA está activo.
+ * Soporta autenticación mediante TOTP o códigos de recuperación.
+ */
 export const verificar2FAService = async (
   codigo: string,
   tokenTemporal: string,
@@ -516,7 +566,7 @@ export const verificar2FAService = async (
     secretoReal = desencriptarSecreto(usuario.two_factor_secret)
   } catch {
     throw new ValidationError(
-      "No se pudo leer tu configuracion 2FA. Reactivala desde ajustes."
+      "No se pudo leer tu configuración 2FA. Reactívala desde ajustes."
     )
   }
   const totp = crearTOTP(secretoReal)
@@ -558,15 +608,14 @@ export const verificar2FAService = async (
   }
 }
 
-// ---------------------------------------------------------------------------
-// OLVIDAR CONTRASEÑA
-// ---------------------------------------------------------------------------
+/**
+ * Inicia el flujo de recuperación de contraseña enviando un enlace al email.
+ */
 export const olvidarContrasenaService = async (email: string) => {
   if (!email) throw new ValidationError("Email requerido")
 
   const usuario = await userRepository.findByEmail(email)
 
-  // Respuesta genérica para no revelar si el email existe
   if (!usuario || usuario.google_id) return
 
   await authTokenRepository.deleteMany({
@@ -591,9 +640,10 @@ export const olvidarContrasenaService = async (email: string) => {
   await enviarCorreoResetPassword(usuario.email, token)
 }
 
-// ---------------------------------------------------------------------------
-// RESETEAR CONTRASEÑA
-// ---------------------------------------------------------------------------
+/**
+ * Procesa la nueva contraseña tras validar el token de recuperación.
+ * Invalida todas las sesiones activas por seguridad.
+ */
 export const resetearContrasenaService = async (
   token: string,
   password: string
@@ -627,9 +677,9 @@ export const resetearContrasenaService = async (
   await sessionRepository.deleteManyByUser(payload.user_id)
 }
 
-// ---------------------------------------------------------------------------
-// DESACTIVAR 2FA
-// ---------------------------------------------------------------------------
+/**
+ * Desactiva el 2FA del usuario previa verificación de código.
+ */
 export const desactivar2FAService = async (userId: number, codigo: string) => {
   if (!codigo) throw new ValidationError("Código requerido")
 
@@ -644,7 +694,7 @@ export const desactivar2FAService = async (userId: number, codigo: string) => {
     secretoReal = desencriptarSecreto(usuario.two_factor_secret!)
   } catch {
     throw new ValidationError(
-      "No se pudo leer tu configuracion 2FA. Reactivala desde ajustes."
+      "No se pudo leer tu configuración 2FA. Reactívala desde ajustes."
     )
   }
   const totp = crearTOTP(secretoReal)
@@ -661,14 +711,17 @@ export const desactivar2FAService = async (userId: number, codigo: string) => {
   await clearTrustedDevices(userId)
 }
 
-// ---------------------------------------------------------------------------
-// RECOVERY CODES 2FA
-// ---------------------------------------------------------------------------
+/**
+ * Obtiene el estado actual de los códigos de recuperación de un usuario.
+ */
 export const recoveryCodesStatusService = async (userId: number) => {
   const remaining = await getRecoveryCodesRemaining(userId)
   return { remaining }
 }
 
+/**
+ * Regenera un set nuevo de códigos de recuperación tras validar el acceso 2FA.
+ */
 export const regenerarRecoveryCodesService = async (
   userId: number,
   codigo: string
@@ -685,7 +738,7 @@ export const regenerarRecoveryCodesService = async (
     secretoReal = desencriptarSecreto(usuario.two_factor_secret)
   } catch {
     throw new ValidationError(
-      "No se pudo leer tu configuracion 2FA. Reactivala desde ajustes."
+      "No se pudo leer tu configuración 2FA. Reactívala desde ajustes."
     )
   }
 
@@ -697,9 +750,10 @@ export const regenerarRecoveryCodesService = async (
   return { recoveryCodes }
 }
 
-// ---------------------------------------------------------------------------
-// CAMBIAR CONTRASEÑA
-// ---------------------------------------------------------------------------
+/**
+ * Gestiona el cambio de contraseña desde el perfil de usuario.
+ * Cierra todas las sesiones en otros dispositivos por seguridad.
+ */
 export const cambiarContrasenaService = async (
   userId: number,
   contrasenaActual: string,
@@ -738,7 +792,6 @@ export const cambiarContrasenaService = async (
 
   await userRepository.update(userId, { password: contrasenaHasheada })
 
-  // Cerrar todas las sesiones menos la actual
   if (refreshToken) {
     const payload = jwt.verify(
       refreshToken,
@@ -748,23 +801,23 @@ export const cambiarContrasenaService = async (
   }
 }
 
-// ---------------------------------------------------------------------------
-// REVOCAR TODAS LAS SESIONES
-// ---------------------------------------------------------------------------
+/**
+ * Revoca de forma inmediata todas las sesiones activas de un usuario.
+ */
 export const revocarSesionesService = async (userId: number) => {
   await sessionRepository.deleteManyByUser(userId)
 }
 
-// ---------------------------------------------------------------------------
-// LISTAR SESIONES DEL USUARIO
-// ---------------------------------------------------------------------------
+/**
+ * Lista la información básica de las sesiones activas de un usuario.
+ */
 export const listarSesionesService = async (userId: number) => {
   return sessionRepository.findByUser(userId)
 }
 
-// ---------------------------------------------------------------------------
-// REVOCAR UNA SESIÓN ESPECÍFICA
-// ---------------------------------------------------------------------------
+/**
+ * Revoca una sesión específica identificada por su ID único.
+ */
 export const revocarSesionService = async (
   userId: number,
   sessionId: string

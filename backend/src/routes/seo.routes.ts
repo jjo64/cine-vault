@@ -1,18 +1,35 @@
+/**
+ * @file seo.routes.ts
+ * @description Rutas para la gestión de SEO y visibilidad en motores de búsqueda.
+ * Responsable de generar dinámicamente el Sitemap XML y el archivo Robots.txt.
+ * Incluye lógica de redirección para normalizar URLs de películas con slugs.
+ * 
+ * @note Este archivo contiene lógica de generación síncrona/asíncrona masiva
+ * que será extraída a SeoController y SeoService en la Fase 5.
+ */
+
 import { Router } from "express"
-import { prisma } from "../lib/prisma.js"
 import { getOSet } from "../config/redis.js"
 import { consultarTMDB } from "../helpers/fetchTMDB.js"
 import { generateSlug } from "../helpers/generateSlug.js"
+import { prisma } from "../lib/prisma.js"
 
 const router = Router()
 
+/**
+ * Configuración de tiempos de vida y límites.
+ */
 const SITEMAP_TTL_SECONDS = 60 * 60
 const ROBOTS_TTL_SECONDS = 60 * 60 * 6
 const SITEMAP_MAX_URLS = 50_000
 
-const SITE_URL = (
-  process.env.PUBLIC_SITE_URL || "https://cinevault.art"
-).replace(/\/$/, "")
+const SITE_URL = (process.env.PUBLIC_SITE_URL || "https://cinevault.art").replace(/\/$/, "")
+
+/**
+ * ---------------------------------------------------------------------------
+ * HELPERS DE GENERACIÓN XML (Serán movidos a un Service en Fase 5)
+ * ---------------------------------------------------------------------------
+ */
 
 const toIsoDate = (value: Date | string | null | undefined) => {
   if (!value) return new Date().toISOString().slice(0, 10)
@@ -29,10 +46,7 @@ const escapeXml = (value: string) =>
     .replace(/\"/g, "&quot;")
     .replace(/'/g, "&apos;")
 
-type SitemapEntry = {
-  loc: string
-  lastmod: string
-}
+type SitemapEntry = { loc: string; lastmod: string }
 
 const buildUrlEntry = ({ loc, lastmod }: SitemapEntry) =>
   `  <url>\n    <loc>${escapeXml(loc)}</loc>\n    <lastmod>${lastmod}</lastmod>\n  </url>`
@@ -50,9 +64,7 @@ const buildSitemapIndexXml = (locs: string[]) => {
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-    ...locs.map(
-      (loc) => `  <sitemap>\n    <loc>${escapeXml(loc)}</loc>\n  </sitemap>`
-    ),
+    ...locs.map((loc) => `  <sitemap>\n    <loc>${escapeXml(loc)}</loc>\n  </sitemap>`),
     "</sitemapindex>",
   ].join("\n")
 }
@@ -66,208 +78,80 @@ const buildMoviePath = (tmdbId: number, slug: string | null) => {
     : `/movie/${tmdbId}-${normalizedSlug}`
 }
 
+/**
+ * Recupera todas las entidades públicas de la plataforma.
+ */
 const getSitemapEntries = async () => {
   const [movies, users, news] = await Promise.all([
     prisma.movies_ref.findMany({
       where: { is_public: true },
-      select: {
-        tmdb_id: true,
-        slug: true,
-        updated_at: true,
-      },
+      select: { tmdb_id: true, slug: true, updated_at: true },
       orderBy: { updated_at: "desc" },
     }),
     prisma.users.findMany({
       where: { is_verified: true, is_public: true },
-      select: {
-        username: true,
-        updated_at: true,
-      },
+      select: { username: true, updated_at: true },
       orderBy: { updated_at: "desc" },
     }),
     prisma.news.findMany({
-      select: {
-        id: true,
-        created_at: true,
-      },
+      select: { id: true, created_at: true },
       orderBy: { created_at: "desc" },
     }),
   ])
 
   const nowIso = toIsoDate(new Date())
 
-  const staticEntries: SitemapEntry[] = [
-    {
-      loc: `${SITE_URL}/`,
-      lastmod: nowIso,
-    },
-    {
-      loc: `${SITE_URL}/discover`,
-      lastmod: nowIso,
-    },
-    {
-      loc: `${SITE_URL}/lists`,
-      lastmod: nowIso,
-    },
-    {
-      loc: `${SITE_URL}/search`,
-      lastmod: nowIso,
-    },
-    {
-      loc: `${SITE_URL}/news`,
-      lastmod: toIsoDate(news[0]?.created_at),
-    },
-  ]
-
-  const movieEntries: SitemapEntry[] = movies.map((movie) => ({
-    loc: `${SITE_URL}${buildMoviePath(movie.tmdb_id, movie.slug)}`,
-    lastmod: toIsoDate(movie.updated_at),
-  }))
-
-  const profileEntries: SitemapEntry[] = users.map((user) => ({
-    loc: `${SITE_URL}/${encodeURIComponent(user.username)}`,
-    lastmod: toIsoDate(user.updated_at),
-  }))
-
-  const newsEntries: SitemapEntry[] = news.map((item) => ({
-    loc: `${SITE_URL}/news/${item.id}`,
-    lastmod: toIsoDate(item.created_at),
-  }))
-
   return {
-    staticEntries,
-    movieEntries,
-    profileEntries,
-    newsEntries,
+    staticEntries: [
+      { loc: `${SITE_URL}/`, lastmod: nowIso },
+      { loc: `${SITE_URL}/discover`, lastmod: nowIso },
+      { loc: `${SITE_URL}/lists`, lastmod: nowIso },
+      { loc: `${SITE_URL}/search`, lastmod: nowIso },
+      { loc: `${SITE_URL}/news`, lastmod: toIsoDate(news[0]?.created_at) },
+    ],
+    movieEntries: movies.map((movie) => ({
+      loc: `${SITE_URL}${buildMoviePath(movie.tmdb_id, movie.slug)}`,
+      lastmod: toIsoDate(movie.updated_at),
+    })),
+    profileEntries: users.map((user) => ({
+      loc: `${SITE_URL}/${encodeURIComponent(user.username)}`,
+      lastmod: toIsoDate(user.updated_at),
+    })),
+    newsEntries: news.map((item) => ({
+      loc: `${SITE_URL}/news/${item.id}`,
+      lastmod: toIsoDate(item.created_at),
+    })),
   }
 }
 
-const chunkEntries = (entries: SitemapEntry[], size: number) => {
-  const chunks: SitemapEntry[][] = []
-  for (let i = 0; i < entries.length; i += size) {
-    chunks.push(entries.slice(i, i + size))
-  }
-  return chunks
-}
+/**
+ * ---------------------------------------------------------------------------
+ * BLOQUE: GENERACIÓN DE SITEMAPS
+ * ---------------------------------------------------------------------------
+ */
 
-const buildRootSitemapXml = async () => {
-  const { staticEntries, movieEntries, profileEntries, newsEntries } =
-    await getSitemapEntries()
-  const allEntries = [
-    ...staticEntries,
-    ...movieEntries,
-    ...profileEntries,
-    ...newsEntries,
-  ]
-
-  if (allEntries.length <= SITEMAP_MAX_URLS) {
-    return buildUrlSetXml(allEntries)
-  }
-
-  return buildSitemapIndexXml([
-    `${SITE_URL}/sitemaps/pages.xml`,
-    `${SITE_URL}/sitemaps/movies.xml`,
-    `${SITE_URL}/sitemaps/profiles.xml`,
-    `${SITE_URL}/sitemaps/news.xml`,
-  ])
-}
-
-const buildChildSitemapXml = async (
-  type: "pages" | "movies" | "profiles" | "news"
-) => {
-  const { staticEntries, movieEntries, profileEntries, newsEntries } =
-    await getSitemapEntries()
-
-  const sourceMap = {
-    pages: staticEntries,
-    movies: movieEntries,
-    profiles: profileEntries,
-    news: newsEntries,
-  }
-
-  const source = sourceMap[type]
-  if (source.length <= SITEMAP_MAX_URLS) {
-    return buildUrlSetXml(source)
-  }
-
-  const chunks = chunkEntries(source, SITEMAP_MAX_URLS)
-  const childLocs = chunks.map(
-    (_, index) => `${SITE_URL}/sitemaps/${type}-${index + 1}.xml`
-  )
-
-  return buildSitemapIndexXml(childLocs)
-}
-
-const buildChildChunkSitemapXml = async (
-  type: "movies" | "profiles" | "news" | "pages",
-  chunkIndex: number
-) => {
-  const { staticEntries, movieEntries, profileEntries, newsEntries } =
-    await getSitemapEntries()
-  const sourceMap = {
-    pages: staticEntries,
-    movies: movieEntries,
-    profiles: profileEntries,
-    news: newsEntries,
-  }
-
-  const chunks = chunkEntries(sourceMap[type], SITEMAP_MAX_URLS)
-  const chunk = chunks[chunkIndex]
-  if (!chunk) {
-    return null
-  }
-
-  return buildUrlSetXml(chunk)
-}
-
-const buildRobotsTxt = () => {
-  return [
-    "User-agent: *",
-    "Allow: /",
-    "Disallow: /settings",
-    "Disallow: /admin",
-    "Disallow: /dashboard",
-    "Disallow: /profile",
-    "Disallow: /verify-email",
-    "Disallow: /reset-password",
-    "Disallow: /api/",
-    "",
-    "Content-Signal: search=yes,ai-train=no",
-    "",
-    "User-agent: ClaudeBot",
-    "Disallow: /",
-    "",
-    "User-agent: GPTBot",
-    "Disallow: /",
-    "",
-    "User-agent: Google-Extended",
-    "Disallow: /",
-    "",
-    "User-agent: Amazonbot",
-    "Disallow: /",
-    "",
-    "User-agent: Applebot-Extended",
-    "Disallow: /",
-    "",
-    "User-agent: Bytespider",
-    "Disallow: /",
-    "",
-    "User-agent: CCBot",
-    "Disallow: /",
-    "",
-    "User-agent: meta-externalagent",
-    "Disallow: /",
-    "",
-    `Sitemap: ${SITE_URL}/sitemap.xml`,
-    "",
-  ].join("\n")
-}
-
+/**
+ * Sitemap principal e índice.
+ */
 router.get("/sitemap.xml", async (_req, res) => {
   try {
     const xml = await getOSet(
       "seo:sitemap:xml",
-      () => buildRootSitemapXml(),
+      async () => {
+        const { staticEntries, movieEntries, profileEntries, newsEntries } = await getSitemapEntries()
+        const allEntries = [...staticEntries, ...movieEntries, ...profileEntries, ...newsEntries]
+
+        if (allEntries.length <= SITEMAP_MAX_URLS) {
+          return buildUrlSetXml(allEntries)
+        }
+
+        return buildSitemapIndexXml([
+          `${SITE_URL}/sitemaps/pages.xml`,
+          `${SITE_URL}/sitemaps/movies.xml`,
+          `${SITE_URL}/sitemaps/profiles.xml`,
+          `${SITE_URL}/sitemaps/news.xml`,
+        ])
+      },
       SITEMAP_TTL_SECONDS
     )
     res.setHeader("Content-Type", "application/xml; charset=utf-8")
@@ -275,108 +159,102 @@ router.get("/sitemap.xml", async (_req, res) => {
     res.status(200).send(xml)
   } catch (error) {
     console.error("Error generating sitemap.xml", error)
-    res.status(500).json({ message: "No se pudo generar el sitemap" })
+    res.status(500).json({ message: "Error interno en generación SEO" })
   }
 })
 
+/**
+ * Sitemaps específicos por categoría.
+ */
 router.get("/sitemaps/:type.xml", async (req, res) => {
   try {
     const type = req.params.type as "pages" | "movies" | "profiles" | "news"
     if (!["pages", "movies", "profiles", "news"].includes(type)) {
-      res.status(404).json({ message: "Sitemap no encontrada" })
-      return
+      return res.status(404).json({ message: "Sitemap no encontrada" })
     }
 
     const xml = await getOSet(
       `seo:sitemap:${type}:xml`,
-      () => buildChildSitemapXml(type),
+      async () => {
+        const entries = await getSitemapEntries()
+        const sourceMap = {
+          pages: entries.staticEntries,
+          movies: entries.movieEntries,
+          profiles: entries.profileEntries,
+          news: entries.newsEntries,
+        }
+        return buildUrlSetXml(sourceMap[type])
+      },
       SITEMAP_TTL_SECONDS
     )
     res.setHeader("Content-Type", "application/xml; charset=utf-8")
-    res.setHeader("Cache-Control", "public, max-age=3600")
     res.status(200).send(xml)
   } catch (error) {
-    console.error("Error generating child sitemap", error)
-    res.status(500).json({ message: "No se pudo generar el sitemap hijo" })
+    res.status(500).json({ message: "Error en sitemap hija" })
   }
 })
 
-router.get("/sitemaps/:type-:chunk.xml", async (req, res) => {
-  try {
-    const type = req.params.type as "pages" | "movies" | "profiles" | "news"
-    const chunk = Number(req.params.chunk)
-    if (
-      !["pages", "movies", "profiles", "news"].includes(type) ||
-      !Number.isInteger(chunk) ||
-      chunk < 1
-    ) {
-      res.status(404).json({ message: "Sitemap no encontrada" })
-      return
-    }
+/**
+ * ---------------------------------------------------------------------------
+ * BLOQUE: CONFIGURACIÓN ROBOTS Y REDIRECCIONES
+ * ---------------------------------------------------------------------------
+ */
 
-    const cacheKey = `seo:sitemap:${type}:${chunk}:xml`
-    const xml = await getOSet(
-      cacheKey,
-      () => buildChildChunkSitemapXml(type, chunk - 1),
-      SITEMAP_TTL_SECONDS
-    )
-
-    if (!xml) {
-      res.status(404).json({ message: "Sitemap no encontrada" })
-      return
-    }
-
-    res.setHeader("Content-Type", "application/xml; charset=utf-8")
-    res.setHeader("Cache-Control", "public, max-age=3600")
-    res.status(200).send(xml)
-  } catch (error) {
-    console.error("Error generating paged sitemap", error)
-    res.status(500).json({ message: "No se pudo generar el sitemap paginado" })
-  }
-})
-
+/**
+ * robots.txt estandarizado.
+ */
 router.get("/robots.txt", async (_req, res) => {
   try {
     const text = await getOSet(
       "seo:robots:txt",
-      async () => buildRobotsTxt(),
+      async () => [
+        "User-agent: *",
+        "Allow: /",
+        "Disallow: /settings",
+        "Disallow: /admin",
+        "Disallow: /profile",
+        "Disallow: /reset-password",
+        "Disallow: /api/",
+        "",
+        "Content-Signal: search=yes,ai-train=no",
+        "",
+        "User-agent: ClaudeBot",
+        "Disallow: /",
+        "",
+        "User-agent: GPTBot",
+        "Disallow: /",
+        "",
+        `Sitemap: ${SITE_URL}/sitemap.xml`,
+      ].join("\n"),
       ROBOTS_TTL_SECONDS
     )
     res.setHeader("Content-Type", "text/plain; charset=utf-8")
-    res.setHeader("Cache-Control", "public, max-age=3600")
     res.status(200).send(text)
   } catch (error) {
-    console.error("Error generating robots.txt", error)
-    res.status(500).json({ message: "No se pudo generar robots.txt" })
+    res.status(500).send("Error generating robots.txt")
   }
 })
 
+/**
+ * Normalización de URLs de películas (Redirección 301).
+ */
 router.get(["/film/:id", "/movie/:id"], async (req, res, next) => {
   try {
     const movieId = Number(req.params.id)
-    if (!Number.isInteger(movieId) || movieId <= 0) {
-      next()
-      return
-    }
+    if (!Number.isInteger(movieId) || movieId <= 0) return next()
 
     const detail = (await getOSet(
       `tmdb:movie:slug:${movieId}`,
-      async () => consultarTMDB(`movie/${movieId}`),
+      () => consultarTMDB(`movie/${movieId}`),
       SITEMAP_TTL_SECONDS
     )) as { title?: string; release_date?: string }
 
-    if (!detail?.title) {
-      next()
-      return
-    }
+    if (!detail?.title) return next()
 
-    const year = detail.release_date
-      ? new Date(detail.release_date).getFullYear()
-      : new Date().getFullYear()
+    const year = detail.release_date ? new Date(detail.release_date).getFullYear() : new Date().getFullYear()
     const slug = generateSlug(detail.title, year)
-    const target = req.path.startsWith("/film/")
-      ? `/film/${slug}`
-      : `/movie/${movieId}-${slug}`
+    const target = req.path.startsWith("/film/") ? `/film/${slug}` : `/movie/${movieId}-${slug}`
+    
     res.redirect(301, target)
   } catch (error) {
     next(error)

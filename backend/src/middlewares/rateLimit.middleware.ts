@@ -1,6 +1,8 @@
 import rateLimit from "express-rate-limit"
 import { RateLimiterRedis } from "rate-limiter-flexible"
 import { redis } from "../config/redis.js"
+import { checkIPSpike } from "../services/security.services.js"
+import { TooManyRequestsError } from "../errors/AppErrors.js"
 
 const isProduction = process.env.NODE_ENV === "production"
 
@@ -101,5 +103,29 @@ export const limitadorEmail = async (
         message: "Demasiadas solicitudes de email. Intentá de nuevo en 1 hora.",
       },
     })
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 4. LIMITADOR ANTI-SPIKE (Seguridad contra scripts rápidos/autoclickers)
+// ---------------------------------------------------------------------------
+/**
+ * CineVault: Middleware para la detección genérica de picos de requests
+ * Extraído desde los controladores para cumplir con DRY.
+ */
+export const limitarSpikesIP = async (
+  req: import("express").Request,
+  res: import("express").Response,
+  next: import("express").NextFunction
+) => {
+  try {
+    if (await checkIPSpike(req.ip!)) {
+      throw new TooManyRequestsError(
+        "Demasiadas acciones, intenta en unos segundos"
+      )
+    }
+    next()
+  } catch (error) {
+    next(error)
   }
 }

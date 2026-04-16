@@ -1,3 +1,10 @@
+/**
+ * @file reports.services.ts
+ * @description Capa de servicios para el sistema de moderación y reportes de CineVault.
+ * Permite a la administración listar incidentes, consultar detalles de infracciones 
+ * y ejecutar acciones de moderación (resolución de reportes) sobre el contenido.
+ */
+
 import { NotFoundError, ValidationError } from "../errors/AppErrors.js"
 import {
   ReportRow,
@@ -5,6 +12,12 @@ import {
 } from "../repositories/ReportsRepository.js"
 import { ListReportsQueryDTO, ModerateReportDTO } from "../schemas/reports.js"
 
+// --- Funciones de Utilidad Interna ---
+
+/**
+ * Transforma una fila cruda de reporte de la base de datos a un objeto de dominio 
+ * estructurado con metadatos de reportero y reseña.
+ */
 const mapReport = (row: ReportRow) => ({
   id: row.id,
   reporter_id: row.reporter_id,
@@ -32,6 +45,12 @@ const mapReport = (row: ReportRow) => ({
     : null,
 })
 
+// --- Servicios Principales ---
+
+/**
+ * Recupera un listado paginado y filtrado de reportes para el panel de administración.
+ * Incluye estadísticas generales de moderación.
+ */
 export const listReportsService = async (query: ListReportsQueryDTO) => {
   const status = query.status || "pending"
   const page = Number(query.page || 1)
@@ -51,12 +70,24 @@ export const listReportsService = async (query: ListReportsQueryDTO) => {
   }
 }
 
+/**
+ * Obtiene la información detallada de un reporte específico.
+ */
 export const getReportDetailService = async (reportId: number) => {
   const report = await reportsRepository.getReportById(reportId)
   if (!report) throw new NotFoundError("Reporte no encontrado")
   return mapReport(report)
 }
 
+/**
+ * Ejecuta una acción de moderación sobre un reporte pendiente.
+ * Valida que el reporte esté en estado 'pending' antes de aplicar la resolución.
+ * 
+ * @param reviewerId ID del moderador que resuelve el reporte.
+ * @param reportId ID del reporte a moderar.
+ * @param data Datos de la resolución (estado, nota explicativa).
+ * @returns El reporte actualizado tras la moderación.
+ */
 export const moderateReportService = async (
   reviewerId: number,
   reportId: number,
@@ -67,7 +98,7 @@ export const moderateReportService = async (
 
   if (report.status !== "pending") {
     throw new ValidationError(
-      "Solo se pueden moderar reportes en estado pending"
+      "Solo se pueden moderar reportes en estado pendiente"
     )
   }
 

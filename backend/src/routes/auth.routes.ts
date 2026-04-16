@@ -1,5 +1,12 @@
-import { Request, Router } from "express"
-// Middlewares
+/**
+ * @file auth.routes.ts
+ * @description Definición de rutas para el sistema de Autenticación y Seguridad (IAM).
+ * Incluye gestión de sesiones, registro, verificación de email, OAuth con Google,
+ * autenticación multifactor (2FA) y recuperación de cuentas.
+ */
+
+import { Router } from "express"
+// Middlewares de seguridad y validación
 import { middlewareAutenticacion } from "../middlewares/auth.middlewares.js"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
 import {
@@ -10,120 +17,62 @@ import {
   validarBody,
   validarParams,
 } from "../middlewares/validation.middleware.js"
-// Controladores de autenticación
+// Controladores de identidad
 import {
+  activar2FA,
+  cambiarContrasena,
+  cerrarSesion,
+  confirmar2FA,
+  controladorCallback,
+  desactivar2FA,
+  iniciarOAuthGoogle,
   iniciarSesion,
+  listarSesiones,
+  olvidarContrasena,
+  recoveryCodesStatus,
+  reenviarVerificacion,
+  regenerarRecoveryCodes,
   registrar,
   renovarToken,
-  cerrarSesion,
-  verificarToken,
+  resetearContrasena,
+  revocarSesion,
+  revocarSesiones,
+  verificar2FA,
+  verificarCallbackGoogle,
   verificarEmail,
   verificarEmailDesdeQuery,
-  reenviarVerificacion,
-  controladorCallback,
-  activar2FA,
-  confirmar2FA,
-  verificar2FA,
-  olvidarContrasena,
-  resetearContrasena,
-  desactivar2FA,
-  cambiarContrasena,
-  revocarSesiones,
-  listarSesiones,
-  revocarSesion,
-  recoveryCodesStatus,
-  regenerarRecoveryCodes,
+  verificarToken,
 } from "../controllers/AuthController.js"
-import passport from "passport"
-// Esquemas de validación
+// Esquemas de integridad de datos
 import {
-  loginSchema,
-  forgotPasswordSchema,
-  resetPasswordSchema,
   changePasswordSchema,
+  forgotPasswordSchema,
+  loginSchema,
+  resetPasswordSchema,
+  revokeSessionParamsSchema,
   twoFAConfirmSchema,
   twoFAVerifySchema,
-  revokeSessionParamsSchema,
 } from "../schemas/auth.js"
-
 
 const router = Router()
 
-const DEFAULT_LOCAL_GOOGLE_CALLBACK =
-  "http://localhost:4000/api/auth/google/callback"
-const GOOGLE_STATE_PREFIX = "cv_google_cb:"
+/**
+ * ---------------------------------------------------------------------------
+ * BLOQUE: RUTAS PÚBLICAS CON PROTECCIÓN ANTI-BRUTEFORCE
+ * ---------------------------------------------------------------------------
+ * Implementan limitadores de tasa estritos para mitigar ataques de fuerza bruta.
+ */
 
-const normalizeUrl = (value: string) => value.trim().replace(/\/+$/, "")
-
-const getDefaultGoogleCallback = () => {
-  const explicit = String(process.env.GOOGLE_REDIRECT_URI || "").trim()
-  if (explicit) return explicit
-
-  const backendUrl = String(process.env.BACKEND_URL || "").trim()
-  if (backendUrl) return `${normalizeUrl(backendUrl)}/api/auth/google/callback`
-
-  return DEFAULT_LOCAL_GOOGLE_CALLBACK
-}
-
-const getAllowedGoogleCallbacks = () => {
-  const configured = String(process.env.GOOGLE_REDIRECT_URI_ALLOWLIST || "")
-    .split(",")
-    .map((entry) => entry.trim())
-    .filter(Boolean)
-
-  return new Set([getDefaultGoogleCallback(), ...configured].map(normalizeUrl))
-}
-
-const buildGoogleState = (callbackUrl: string) => {
-  const encoded = Buffer.from(callbackUrl, "utf8").toString("base64url")
-  return `${GOOGLE_STATE_PREFIX}${encoded}`
-}
-
-const readCallbackFromState = (state: unknown) => {
-  if (typeof state !== "string" || !state.startsWith(GOOGLE_STATE_PREFIX)) {
-    return null
-  }
-
-  const encoded = state.slice(GOOGLE_STATE_PREFIX.length)
-  if (!encoded) return null
-
-  try {
-    const decoded = Buffer.from(encoded, "base64url").toString("utf8").trim()
-    return decoded || null
-  } catch {
-    return null
-  }
-}
-
-const resolveGoogleCallback = (req: Request) => {
-  const fromState = readCallbackFromState(req.query.state)
-  const fromQuery =
-    typeof req.query.redirect_uri === "string"
-      ? req.query.redirect_uri.trim()
-      : ""
-
-  const candidate = normalizeUrl(
-    fromState || fromQuery || getDefaultGoogleCallback()
-  )
-  const allowlist = getAllowedGoogleCallbacks()
-  if (allowlist.has(candidate)) return candidate
-
-  return getDefaultGoogleCallback()
-}
-
-// ---------------------------------------------------------------------------
-// RUTAS PÚBLICAS CON RATE LIMIT ESTRICTO (brute force protection)
-// ---------------------------------------------------------------------------
-// Login → máximo 5 intentos por IP cada 15 minutos
+// Autenticación estándar: Login y Registro
 router.post(
   "/login",
   limitadorAuth,
   validarBody(loginSchema),
   manejadorAsincrono(iniciarSesion)
 )
-// Registro → mismo límite para evitar creación masiva de cuentas
 router.post("/register", limitadorAuth, manejadorAsincrono(registrar))
-// 2FA paso 2 → límite estricto igual que login
+
+// Segundo paso de verificación MFA
 router.post(
   "/2fa/verificar",
   limitadorAuth,
@@ -131,7 +80,7 @@ router.post(
   manejadorAsincrono(verificar2FA)
 )
 
-// Emails → máximo 3 por hora para evitar spam
+// Gestión de correos sensibles (Reenvío y Recuperación)
 router.post(
   "/resend-verification",
   limitadorEmail,
@@ -145,11 +94,17 @@ router.post(
   manejadorAsincrono(olvidarContrasena)
 )
 
-// ---------------------------------------------------------------------------
-// RUTAS PÚBLICAS SIN LIMIT ESTRICTO
-// ---------------------------------------------------------------------------
+/**
+ * ---------------------------------------------------------------------------
+ * BLOQUE: RUTAS PÚBLICAS RECURSIVAS Y OAuth
+ * ---------------------------------------------------------------------------
+ */
+
+// Verificación de email mediante tokens
 router.post("/verify-email/:token", manejadorAsincrono(verificarEmail))
 router.get("/verify-email", manejadorAsincrono(verificarEmailDesdeQuery))
+
+// Ciclo de vida de tokens y contraseñas
 router.post(
   "/reset-password",
   validarBody(resetPasswordSchema),
@@ -157,58 +112,46 @@ router.post(
 )
 router.post("/refresh", manejadorAsincrono(renovarToken))
 
-// ---------------------------------------------------------------------------
-// GOOGLE OAuth
-// ---------------------------------------------------------------------------
-router.get("/google", (req, res, next) => {
-  const callbackURL = resolveGoogleCallback(req)
-  const state = buildGoogleState(callbackURL)
-  const authOptions = {
-    scope: ["profile", "email"],
-    callbackURL,
-    state,
-  } as unknown as Parameters<typeof passport.authenticate>[1]
-
-  passport.authenticate("google", authOptions)(req, res, next)
-})
+// Pasarelas de autenticación externa (Google)
+router.get("/google", iniciarOAuthGoogle)
 router.get(
   "/google/callback",
-  (req, res, next) => {
-    const callbackURL = resolveGoogleCallback(req)
-    const authOptions = {
-      failureRedirect: "/api/auth/google",
-      callbackURL,
-    } as unknown as Parameters<typeof passport.authenticate>[1]
-
-    passport.authenticate("google", authOptions)(req, res, next)
-  },
-  controladorCallback
+  verificarCallbackGoogle,
+  manejadorAsincrono(controladorCallback)
 )
 
-// ---------------------------------------------------------------------------
-// RUTAS PROTEGIDAS (requieren token)
-// ---------------------------------------------------------------------------
+/**
+ * ---------------------------------------------------------------------------
+ * BLOQUE: RUTAS PROTEGIDAS (Requieren Token de Sesión Activo)
+ * ---------------------------------------------------------------------------
+ */
+
+// Gestión de Sesión
 router.post("/logout", manejadorAsincrono(cerrarSesion))
 router.get(
   "/verify",
   middlewareAutenticacion,
   manejadorAsincrono(verificarToken)
 )
+
+// Seguridad de Cuenta
 router.post(
   "/cambiar-contrasena",
   middlewareAutenticacion,
   validarBody(changePasswordSchema),
   manejadorAsincrono(cambiarContrasena)
 )
-router.post(
-  "/revocar-sesiones",
-  middlewareAutenticacion,
-  manejadorAsincrono(revocarSesiones)
-)
+
+// Auditoría y Revocación de Sesiones
 router.get(
   "/sessions",
   middlewareAutenticacion,
   manejadorAsincrono(listarSesiones)
+)
+router.post(
+  "/revocar-sesiones",
+  middlewareAutenticacion,
+  manejadorAsincrono(revocarSesiones)
 )
 router.delete(
   "/sessions/:id",
@@ -216,6 +159,8 @@ router.delete(
   validarParams(revokeSessionParamsSchema),
   manejadorAsincrono(revocarSesion)
 )
+
+// Gestión de Segundo Factor (2FA/MFA)
 router.post(
   "/2fa/activar",
   middlewareAutenticacion,
@@ -232,6 +177,8 @@ router.post(
   validarBody(twoFAConfirmSchema),
   manejadorAsincrono(confirmar2FA)
 )
+
+// Códigos de Recuperación de Emergencia
 router.get(
   "/2fa/recovery-codes/status",
   middlewareAutenticacion,

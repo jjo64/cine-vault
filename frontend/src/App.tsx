@@ -151,6 +151,8 @@ function App() {
                     <Route path="/search-results" element={<SearchResults />} />
                     <Route path="/:username/movie/:slugId" element={<ReviewThreadPage />} />
                     <Route path="/:username/movie/:slugId/:index" element={<ReviewThreadPage />} />
+                    <Route path="/:username/tv/:slugId" element={<ReviewThreadPage />} />
+                    <Route path="/:username/tv/:slugId/:index" element={<ReviewThreadPage />} />
                     <Route path="/:username" element={<Profile />} />
                     <Route path="*" element={<NotFoundPage />} />
                 </Routes>

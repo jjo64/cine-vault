@@ -1,3 +1,10 @@
+/**
+ * @file lists.services.ts
+ * @description Capa de servicios para la gestión de "Colecciones" o Listas de Usuario.
+ * Permite la creación de listas públicas y privadas, gestión de contenido (películas) 
+ * y validación de reglas de integridad (nombres únicos por usuario, evitar duplicados).
+ */
+
 import { ConflictError, NotFoundError } from "../errors/AppErrors.js"
 import { listsRepository } from "../repositories/ListsRepository.js"
 import {
@@ -11,10 +18,18 @@ import {
   findMovieRefIdByCandidate,
 } from "./movieRef.services.js"
 
+// --- Servicios de Gestión de Listas Propias ---
+
+/**
+ * Recupera todas las listas (públicas y privadas) pertenecientes al usuario.
+ */
 export const getMyListsService = async (userId: number) => {
   return listsRepository.listByUser(userId)
 }
 
+/**
+ * Obtiene el detalle completo de una lista propia, incluyendo sus películas.
+ */
 export const getMyListDetailService = async (
   userId: number,
   listId: number
@@ -24,6 +39,9 @@ export const getMyListDetailService = async (
   return list
 }
 
+/**
+ * Crea una nueva lista validando que el nombre sea único para el usuario actual.
+ */
 export const createListService = async (
   userId: number,
   data: CreateListDTO
@@ -45,6 +63,9 @@ export const createListService = async (
   })
 }
 
+/**
+ * Actualiza los metadatos de una lista propia.
+ */
 export const updateListService = async (
   userId: number,
   listId: number,
@@ -70,6 +91,9 @@ export const updateListService = async (
   })
 }
 
+/**
+ * Elimina una lista y todas sus asociaciones de películas.
+ */
 export const deleteListService = async (userId: number, listId: number) => {
   const list = await listsRepository.findByIdForUser(listId, userId)
   if (!list) throw new NotFoundError("Lista no encontrada")
@@ -77,6 +101,11 @@ export const deleteListService = async (userId: number, listId: number) => {
   await listsRepository.delete(listId)
 }
 
+// --- Servicios de Gestión de Contenido de Listas ---
+
+/**
+ * Añade una película a una lista, garantizando que no exista previamente en ella.
+ */
 export const addMovieToListService = async (
   userId: number,
   listId: number,
@@ -97,6 +126,9 @@ export const addMovieToListService = async (
   await listsRepository.addMovie(listId, movieRefId)
 }
 
+/**
+ * Elimina una película de una lista propia.
+ */
 export const removeMovieFromListService = async (
   userId: number,
   listId: number,
@@ -111,10 +143,18 @@ export const removeMovieFromListService = async (
   await listsRepository.removeMovie(listId, movieRefId)
 }
 
+// --- Servicios de Acceso Público ---
+
+/**
+ * Recupera un listado paginado de todas las listas marcadas como públicas por la comunidad.
+ */
 export const getPublicListsService = async (query: ListPublicListsQueryDTO) => {
   return listsRepository.listPublic(query.page, query.limit)
 }
 
+/**
+ * Obtiene el detalle de una lista pública para visualización general.
+ */
 export const getPublicListDetailService = async (listId: number) => {
   const list = await listsRepository.getPublicDetail(listId)
   if (!list) throw new NotFoundError("Lista pública no encontrada")

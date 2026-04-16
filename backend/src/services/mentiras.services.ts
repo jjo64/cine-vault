@@ -1,23 +1,40 @@
+/**
+ * @file mentiras.services.ts
+ * @description Capa de servicios para la sección lúdica "Mentiras Cinematográficas".
+ * Gestiona rankings de películas que los usuarios suelen "fingir" haber visto (shame) 
+ * o aquellas que, pese a su dificultad, tienen un índice de finalización sorprendente.
+ */
+
+// --- Definición de Tipos de Dominio ---
+
+/**
+ * Representa una película en el ranking de "La Gran Mentira" (films no terminados).
+ */
 type ShameFilm = {
   id: number
   title: string
   director: string
   year: number
   poster: string
-  shamePct: number
-  confession: string
+  shamePct: number // Porcentaje estimado de abandono/mentira
+  confession: string // Cita representativa de un usuario
   voterCount: number
 }
 
+/**
+ * Representa una película en el ranking de "Sorprendentemente Completadas".
+ */
 type SurprisingFilm = {
   id: number
   title: string
   director: string
   year: number
   poster: string
-  finishRate: number
+  finishRate: number // Índice de finalización real en la plataforma
   note: string
 }
+
+// --- Almacenamiento Estático (Mockups para TFG) ---
 
 const SHAME_FILMS: ShameFilm[] = [
   {
@@ -29,7 +46,7 @@ const SHAME_FILMS: ShameFilm[] = [
       "https://images.unsplash.com/photo-1769121803735-59cde1085231?w=300&q=80",
     shamePct: 78,
     confession:
-      '"La deje en la parte del monolito. Volvi dos veces. Ambas quede dormida en el mismo lugar."',
+      '"La dejé en la parte del monolito. Volví dos veces. Ambas quedé dormida en el mismo lugar."',
     voterCount: 4820,
   },
   {
@@ -52,7 +69,7 @@ const SHAME_FILMS: ShameFilm[] = [
     poster:
       "https://images.unsplash.com/photo-1670782128814-c5a55b68f50d?w=300&q=80",
     shamePct: 84,
-    confession: '"La vi completa. No entendi nada. Eso cuenta?"',
+    confession: '"La vi completa. No entendí nada. ¿Eso cuenta?"',
     voterCount: 3780,
   },
 ]
@@ -66,7 +83,7 @@ const SURPRISING_FILMS: SurprisingFilm[] = [
     poster:
       "https://images.unsplash.com/photo-1742695760180-92c9a73ffdf2?w=300&q=80",
     finishRate: 98,
-    note: "La mas terminada de la plataforma.",
+    note: "La más terminada de la plataforma.",
   },
   {
     id: 2,
@@ -80,6 +97,12 @@ const SURPRISING_FILMS: SurprisingFilm[] = [
   },
 ]
 
+// --- Servicios Principales ---
+
+/**
+ * Obtiene los rankings globales de "Mentiras" y "Finalizaciones" de la comunidad.
+ * Actualmente alimentado por datos estáticos para demostración de criterios editoriales.
+ */
 export const obtenerRankingMentirasService = async () => ({
   shame: SHAME_FILMS,
   completed: SURPRISING_FILMS,

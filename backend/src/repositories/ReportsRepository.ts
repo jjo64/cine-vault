@@ -1,8 +1,21 @@
+/**
+ * @file ReportsRepository.ts
+ * @description Repositorio para la gestión de reportes de moderación (denuncias de contenido).
+ * Utiliza SQL Raw para realizar JOINS complejos con usuarios y reseñas, permitiendo 
+ * una administración ágil desde el panel de moderación.
+ */
+
 import { Prisma } from "@prisma/client"
 import { prisma } from "../lib/prisma.js"
 
+/**
+ * Estados posibles de un reporte.
+ */
 export type ReportStatus = "pending" | "resolved" | "rejected"
 
+/**
+ * Representación de una fila de reporte con datos agregados de emisor y dueño de contenido.
+ */
 export type ReportRow = {
   id: number
   reporter_id: number | null
@@ -20,6 +33,9 @@ export type ReportRow = {
   review_content: string | null
 }
 
+/**
+ * Fragmento SQL base para consultas de reportes con sus JOINS correspondientes.
+ */
 const REPORTS_BASE_SELECT = Prisma.sql`
   SELECT
     r.id,
@@ -42,7 +58,14 @@ const REPORTS_BASE_SELECT = Prisma.sql`
   LEFT JOIN users review_owner ON review_owner.id = rv.user_id
 `
 
+/**
+ * Clase ReportsRepository
+ * Centraliza la lógica de acceso a datos para el sistema de moderación.
+ */
 export class ReportsRepository {
+  /**
+   * Construye dinámicamente la cláusula WHERE basada en los filtros activos.
+   */
   private buildWhere(status: ReportStatus | "all", reviewId?: number) {
     const filters: Prisma.Sql[] = []
 
@@ -58,6 +81,9 @@ export class ReportsRepository {
     return Prisma.sql`WHERE ${Prisma.join(filters, " AND ")}`
   }
 
+  /**
+   * Lista y pagina los reportes del sistema con filtros opcionales.
+   */
   async listReports(params: {
     status: ReportStatus | "all"
     page: number
@@ -92,6 +118,9 @@ export class ReportsRepository {
     }
   }
 
+  /**
+   * Recupera el detalle completo de un reporte específico.
+   */
   async getReportById(reportId: number) {
     const rows = await prisma.$queryRaw<ReportRow[]>(Prisma.sql`
       ${REPORTS_BASE_SELECT}
@@ -102,6 +131,9 @@ export class ReportsRepository {
     return rows[0] ?? null
   }
 
+  /**
+   * Actualiza el estado de un reporte tras la moderación activa.
+   */
   async moderateReport(input: {
     reportId: number
     status: Exclude<ReportStatus, "pending">
@@ -119,6 +151,9 @@ export class ReportsRepository {
     `)
   }
 
+  /**
+   * Obtiene estadísticas agregadas globales sobre el estado de los reportes.
+   */
   async getReportsStats() {
     const rows = await prisma.$queryRaw<
       Array<{ status: ReportStatus; total: bigint }>

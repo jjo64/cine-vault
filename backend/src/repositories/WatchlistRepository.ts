@@ -1,22 +1,27 @@
+/**
+ * @file WatchlistRepository.ts
+ * @description Repositorio central para la gestión de la lista de seguimiento (Watchlist).
+ * Permite a los usuarios organizar películas que desean ver, enriqueciendo los datos 
+ * locales con metadatos visuales de TMDB.
+ */
+
 import { watchlist } from "@prisma/client"
 import { prisma } from "../lib/prisma.js"
 import { consultarTMDB } from "../helpers/fetchTMDB.js"
 
-/* ==========================================================================
-   WATCHLIST REPOSITORY
-   --------------------------------------------------------------------------
-   Encapsula queries de Prisma para la lista de seguimiento.
-   Igual que DiaryRepository, consolida el enriquecimiento con TMDB
-   (antes en WatchlistHelper.ts con try/catch silencioso).
-   ========================================================================== */
+// --- Tipos y Estructuras de Datos ---
 
-/** Tipo enriquecido con metadatos de TMDB */
-
+/**
+ * Estructura de respuesta de la API de TMDB para películas básicas.
+ */
 type TMDBMovieResponse = {
   title: string
   poster_path: string
 }
 
+/**
+ * Representación de una entrada de watchlist con metadatos hidratados.
+ */
 export interface RichWatchlistEntry {
   movie_id: number
   tmdb_id: number | null
@@ -24,6 +29,10 @@ export interface RichWatchlistEntry {
   added_at: Date | null
 }
 
+/**
+ * Interfaz IWatchlistRepository
+ * Define las operaciones permitidas sobre la lista de seguimiento.
+ */
 export interface IWatchlistRepository {
   findByUserId(userId: number): Promise<watchlist[]>
   exists(userId: number, movieId: number): Promise<boolean>
@@ -32,7 +41,14 @@ export interface IWatchlistRepository {
   buildRichResponse(userId: number): Promise<RichWatchlistEntry[]>
 }
 
+/**
+ * Clase WatchlistRepository
+ * Implementa la gestión de la watchlist integrando Prisma y TMDB.
+ */
 export class WatchlistRepository implements IWatchlistRepository {
+  /**
+   * Recupera las entradas crudas de la watchlist para un usuario.
+   */
   async findByUserId(userId: number) {
     return prisma.watchlist.findMany({
       where: { user_id: userId },
@@ -40,6 +56,9 @@ export class WatchlistRepository implements IWatchlistRepository {
     })
   }
 
+  /**
+   * Verifica la existencia de una película en la lista de un usuario.
+   */
   async exists(userId: number, movieId: number) {
     const item = await prisma.watchlist.findFirst({
       where: { user_id: userId, movie_id: movieId },
@@ -47,12 +66,18 @@ export class WatchlistRepository implements IWatchlistRepository {
     return item !== null
   }
 
+  /**
+   * Registra una nueva película en la lista de seguimiento.
+   */
   async create(userId: number, movieId: number) {
     return prisma.watchlist.create({
       data: { user_id: userId, movie_id: movieId },
     })
   }
 
+  /**
+   * Elimina una película específica de la lista.
+   */
   async deleteByMovieId(userId: number, movieId: number) {
     await prisma.watchlist.deleteMany({
       where: { user_id: userId, movie_id: movieId },
@@ -60,8 +85,8 @@ export class WatchlistRepository implements IWatchlistRepository {
   }
 
   /**
-   * Construye la respuesta enriquecida de watchlist con datos de TMDB.
-   * Mismo patrón que DiaryRepository.buildRichResponse.
+   * Construye una respuesta hidratada consultando TMDB para obtener póster y título.
+   * Utiliza consultas paralelas para optimizar el rendimiento.
    */
   async buildRichResponse(userId: number): Promise<RichWatchlistEntry[]> {
     const entries = await prisma.watchlist.findMany({

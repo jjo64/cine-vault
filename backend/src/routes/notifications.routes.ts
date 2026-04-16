@@ -1,13 +1,20 @@
+/**
+ * @file notifications.routes.ts
+ * @description Definición de rutas para el sistema de Notificaciones.
+ * Permite gestionar el flujo de alertas sociales (likes, follows, comentarios) 
+ * y mantener al usuario actualizado sobre la actividad de su red.
+ */
+
 import { Router } from "express"
-import { middlewareAutenticacion } from "../middlewares/auth.middlewares.js"
-import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
 import {
   getNotifications,
+  getPending,
+  getUnreadCount,
   marcarComoLeida,
   marcarTodasComoLeidas,
-  getUnreadCount,
-  getPending,
 } from "../controllers/NotificationsController.js"
+import { middlewareAutenticacion } from "../middlewares/auth.middlewares.js"
+import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
 import { validarParams } from "../middlewares/validation.middleware.js"
 import { idParamSchema } from "../schemas/common.js"
 
@@ -15,41 +22,25 @@ import { idParamSchema } from "../schemas/common.js"
  * @swagger
  * tags:
  *   name: Notificaciones
- *   description: Gestión de notificaciones en tiempo real
+ *   description: Gestión de alertas sociales en tiempo real
  */
 
 const router = Router()
 
 /**
+ * ---------------------------------------------------------------------------
+ * BLOQUE: CONSULTA DE ALERTAS
+ * ---------------------------------------------------------------------------
+ */
+
+/**
  * @swagger
  * /notifications:
  *   get:
- *     summary: Obtener mis notificaciones
+ *     summary: Obtener listado histórico de notificaciones
  *     tags: [Notificaciones]
  *     security:
  *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Lista de notificaciones
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Notificacion'
- *             example:
- *               - id: 1
- *                 user_id: 1
- *                 sender_id: 2
- *                 type: "like"
- *                 read: false
- *                 created_at: "2026-03-04T10:00:00.000Z"
- *                 sender:
- *                   id: 2
- *                   username: "maria"
- *                   avatar_url: "https://res.cloudinary.com/cinevault/avatars/user_2.webp"
- *       401:
- *         $ref: '#/components/responses/Unauthorized'
  */
 router.get("/", middlewareAutenticacion, manejadorAsincrono(getNotifications))
 
@@ -57,19 +48,10 @@ router.get("/", middlewareAutenticacion, manejadorAsincrono(getNotifications))
  * @swagger
  * /notifications/unread:
  *   get:
- *     summary: Obtener número de notificaciones no leídas
+ *     summary: Obtener contador de notificaciones pendientes de lectura
  *     tags: [Notificaciones]
  *     security:
  *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Contador de no leídas
- *         content:
- *           application/json:
- *             example:
- *               count: 3
- *       401:
- *         $ref: '#/components/responses/Unauthorized'
  */
 router.get(
   "/unread",
@@ -77,27 +59,25 @@ router.get(
   manejadorAsincrono(getUnreadCount)
 )
 
+/**
+ * Recupera notificaciones críticas pendientes de procesamiento.
+ */
 router.get("/pending", middlewareAutenticacion, manejadorAsincrono(getPending))
+
+/**
+ * ---------------------------------------------------------------------------
+ * BLOQUE: GESTIÓN DE ESTADOS (Lectura)
+ * ---------------------------------------------------------------------------
+ */
 
 /**
  * @swagger
  * /notifications/read-all:
  *   patch:
- *     summary: Marcar todas las notificaciones como leídas
+ *     summary: Marcar todo el historial como leído
  *     tags: [Notificaciones]
  *     security:
  *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Todas marcadas como leídas
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/MensajeResponse'
- *             example:
- *               message: "Todas las notificaciones marcadas como leídas"
- *       401:
- *         $ref: '#/components/responses/Unauthorized'
  */
 router.patch(
   "/read-all",
@@ -109,30 +89,10 @@ router.patch(
  * @swagger
  * /notifications/{id}/read:
  *   patch:
- *     summary: Marcar una notificación como leída
+ *     summary: Marcar una notificación específica como leída
  *     tags: [Notificaciones]
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         example: 1
- *     responses:
- *       200:
- *         description: Notificación marcada como leída
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/MensajeResponse'
- *             example:
- *               message: "Notificación marcada como leída"
- *       401:
- *         $ref: '#/components/responses/Unauthorized'
- *       404:
- *         $ref: '#/components/responses/NotFound'
  */
 router.patch(
   "/:id/read",

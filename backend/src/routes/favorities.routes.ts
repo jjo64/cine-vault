@@ -1,65 +1,56 @@
+/**
+ * @file favorities.routes.ts
+ * @description Gestión de la lista de Películas Favoritas (Top 4).
+ * Permite a los usuarios destacar sus títulos predilectos en su perfil público,
+ * gestionando posiciones de ranking y visibilidad social.
+ */
+
 import { Router } from "express"
 import {
+  addMovieToFavorites,
   getFavorites,
   getFavoritesByUserId,
-  addMovieToFavorites,
   removeMovieFromFavorites,
 } from "../controllers/FavoritiesController.js"
-import {
-  userIdParamsFavSchema,
-  movieIdParamsFavSchema,
-} from "../schemas/favorites.js"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
 import { middlewareAutenticacion } from "../middlewares/auth.middlewares.js"
 import { validarParams } from "../middlewares/validation.middleware.js"
+import {
+  movieIdParamsFavSchema,
+  userIdParamsFavSchema,
+} from "../schemas/favorites.js"
 
 /**
  * @swagger
  * tags:
  *   name: Favoritos
- *   description: Gestión de películas favoritas
+ *   description: Selección personal de títulos destacados
  */
 
 const router = Router()
 
 /**
+ * ---------------------------------------------------------------------------
+ * BLOQUE: CONSULTA DE FAVORITOS
+ * ---------------------------------------------------------------------------
+ */
+
+/**
  * @swagger
  * /favorites:
  *   get:
- *     summary: Obtener mis favoritos
+ *     summary: Recuperar mi lista personal de películas favoritas
  *     tags: [Favoritos]
  *     security:
  *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Lista de favoritos
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Favorito'
- *             example:
- *               - movie_id: 1
- *                 rank_position: 1
- *               - movie_id: 102
- *                 rank_position: 2
- *       401:
- *         $ref: '#/components/responses/Unauthorized'
- *       404:
- *         description: No tienes favoritos
- *         content:
- *           application/json:
- *             example:
- *               error: "No tienes favoritos"
  */
-router.get("/", middlewareAutenticacion, manejadorAsincrono(getFavorites)) // Obtener mis favoritos
+router.get("/", middlewareAutenticacion, manejadorAsincrono(getFavorites))
 
 /**
  * @swagger
  * /favorites/user/{userId}:
  *   get:
- *     summary: Obtener los favoritos de un usuario
+ *     summary: Consultar los favoritos de un usuario específico
  *     tags: [Favoritos]
  *     parameters:
  *       - in: path
@@ -67,97 +58,49 @@ router.get("/", middlewareAutenticacion, manejadorAsincrono(getFavorites)) // Ob
  *         required: true
  *         schema:
  *           type: integer
- *         example: 1
- *     responses:
- *       200:
- *         description: Favoritos del usuario
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Favorito'
- *             example:
- *               - movie_id: 1
- *                 rank_position: 1
- *               - movie_id: 102
- *                 rank_position: 2
- *       404:
- *         $ref: '#/components/responses/NotFound'
  */
 router.get(
   "/user/:userId",
   validarParams(userIdParamsFavSchema),
   manejadorAsincrono(getFavoritesByUserId)
-) // Obtener los favoritos de un usuario
+)
+
+/**
+ * ---------------------------------------------------------------------------
+ * BLOQUE: GESTIÓN DE FAVORITOS
+ * ---------------------------------------------------------------------------
+ */
 
 /**
  * @swagger
  * /favorites/{movieId}:
  *   post:
- *     summary: Añadir una película a favoritos
+ *     summary: Añadir una película al ranking de favoritos
  *     tags: [Favoritos]
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: movieId
- *         required: true
- *         schema:
- *           type: integer
- *         example: 1
- *     requestBody:
- *       content:
- *         application/json:
- *           example:
- *             rank_position: 1
- *     responses:
- *       201:
- *         description: Película añadida a favoritos
- *         content:
- *           application/json:
- *             example:
- *               id: 1
- *               user_id: 1
- *               movie_id: 1
- *               rank_position: 1
- *       401:
- *         $ref: '#/components/responses/Unauthorized'
- *   delete:
- *     summary: Eliminar una película de favoritos
- *     tags: [Favoritos]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: movieId
- *         required: true
- *         schema:
- *           type: integer
- *         example: 1
- *     responses:
- *       200:
- *         description: Película eliminada de favoritos
- *         content:
- *           application/json:
- *             example:
- *               message: "Eliminado de favoritos"
- *       401:
- *         $ref: '#/components/responses/Unauthorized'
- *       404:
- *         $ref: '#/components/responses/NotFound'
  */
 router.post(
   "/:movieId",
   middlewareAutenticacion,
   validarParams(movieIdParamsFavSchema),
   manejadorAsincrono(addMovieToFavorites)
-) // Añadir una película a favoritos
+)
+
+/**
+ * @swagger
+ * /favorites/{movieId}:
+ *   delete:
+ *     summary: Eliminar una película de la selección de favoritos
+ *     tags: [Favoritos]
+ *     security:
+ *       - bearerAuth: []
+ */
 router.delete(
   "/:movieId",
   middlewareAutenticacion,
   validarParams(movieIdParamsFavSchema),
   manejadorAsincrono(removeMovieFromFavorites)
-)// Eliminar una película de favoritos
+)
 
 export default router
