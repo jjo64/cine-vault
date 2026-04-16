@@ -1,3 +1,11 @@
+/**
+ * @file feed.services.ts
+ * @description Capa de servicios para el motor del Feed Social de CineVault.
+ * Orquestas la agregación de actividad entre amigos (reseñas, bóvedas, watchlists), 
+ * gestiona las interacciones de usuario (likes, marcadores, ocultación) y provee 
+ * una respuesta paginada y enriquecida para la interfaz.
+ */
+
 import { NotFoundError, ValidationError } from "../errors/AppErrors.js"
 import { feedRepository } from "../repositories/FeedRepository.js"
 import {
@@ -9,6 +17,11 @@ import {
   FeedShareActionDTO,
 } from "../schemas/feed.js"
 
+// --- Tipos de Datos de Soporte ---
+
+/**
+ * Tipos de elementos que pueden aparecer y ser gestionados en el feed social.
+ */
 type FeedItemType =
   | "review"
   | "vault"
@@ -18,6 +31,12 @@ type FeedItemType =
   | "list"
   | "quote"
 
+// --- Funciones de Utilidad Interna ---
+
+/**
+ * Procesa la referencia de un ítem (ej. 'review-123') para extraer su tipo e ID único.
+ * Soporta retrocompatibilidad con campos separados.
+ */
 const parseFeedItemRef = (
   payload: FeedActionDTO
 ): { itemType: FeedItemType; itemId: number } => {
@@ -43,6 +62,12 @@ const parseFeedItemRef = (
   }
 }
 
+// --- Servicios Principales ---
+
+/**
+ * Recupera el feed de actividad de los amigos/seguidos del usuario actual.
+ * Realiza una agregación polimórfica de diferentes tipos de actividad y aplica filtros de visibilidad.
+ */
 export const getFriendsFeedService = async (
   viewerId: number,
   query: FeedQueryDTO
@@ -50,10 +75,14 @@ export const getFriendsFeedService = async (
   const page = Math.max(1, Number(query.page || 1))
   const limit = Math.min(30, Math.max(1, Number(query.limit || 10)))
 
+  // 1. Obtener los IDs de los usuarios seguidos
   const sourceUserIds = await feedRepository.listSourceUserIds(viewerId)
+  
+  // 2. Recuperar registros de actividad crudos de diversas fuentes
   const { reviews, vaultEntries, watchlistEntries } =
     await feedRepository.listFeedRows(sourceUserIds)
 
+  // 3. Preparar referencias para verificar estados de interacción (likes, bookmarks, etc)
   const refs: Array<{ item_type: FeedItemType; item_id: number }> = [
     ...reviews.map((entry) => ({
       item_type: "review" as const,
@@ -69,6 +98,7 @@ export const getFriendsFeedService = async (
     })),
   ]
 
+  // 4. Consultar estados de interacción del visor actual en paralelo para mejorar rendimiento
   const [likedReviewIds, bookmarkedRefs, hiddenRefs] = await Promise.all([
     feedRepository.listLikedReviewIds(
       viewerId,
@@ -86,6 +116,7 @@ export const getFriendsFeedService = async (
     hiddenRefs.map((item) => `${item.item_type}-${item.item_id}`)
   )
 
+  // 5. Normalizar y mezclar todos los ítems en una estructura única de feed
   const items = [
     ...reviews.map((entry) => ({
       id: `review-${entry.id}`,
@@ -146,8 +177,8 @@ export const getFriendsFeedService = async (
       },
     })),
   ]
-    .filter((item) => !item.hidden)
-    .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))
+    .filter((item) => !item.hidden) // Filtrar ítems ocultados por el usuario
+    .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at)) // Orden cronológico descendente
 
   const start = (page - 1) * limit
   const paginated = items.slice(start, start + limit)
@@ -161,6 +192,9 @@ export const getFriendsFeedService = async (
   }
 }
 
+/**
+ * Registra o elimina un "Like" sobre una reseña del feed.
+ */
 export const setFeedLikeService = async (
   viewerId: number,
   payload: FeedLikeActionDTO
@@ -187,6 +221,9 @@ export const setFeedLikeService = async (
   }
 }
 
+/**
+ * Marca o desmarca un ítem del feed como "Guardado" (Marcador).
+ */
 export const setFeedBookmarkService = async (
   viewerId: number,
   payload: FeedBookmarkActionDTO
@@ -201,6 +238,9 @@ export const setFeedBookmarkService = async (
   }
 }
 
+/**
+ * Oculta un ítem del feed para el usuario actual.
+ */
 export const setFeedHideService = async (
   viewerId: number,
   payload: FeedHideActionDTO
@@ -215,6 +255,9 @@ export const setFeedHideService = async (
   }
 }
 
+/**
+ * Registra eventos de compartición externa de ítems del feed para analítica.
+ */
 export const trackFeedShareService = async (
   viewerId: number,
   payload: FeedShareActionDTO

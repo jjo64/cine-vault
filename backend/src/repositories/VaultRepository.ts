@@ -1,7 +1,19 @@
+/**
+ * @file VaultRepository.ts
+ * @description Repositorio encargado de gestionar la "Bóveda" (Vault) de películas 
+ * y las entradas sociales (reflexiones, críticas, recomendaciones). 
+ * Combina persistencia local de Prisma con hidratación de metadatos externos de TMDB.
+ */
+
 import { Prisma } from "@prisma/client"
 import { prisma } from "../lib/prisma.js"
 import { consultarTMDB } from "../helpers/fetchTMDB.js"
 
+// --- Tipos de Datos y Estructuras ---
+
+/**
+ * Representa una entrada de la bóveda enriquecida con metadatos de TMDB.
+ */
 export interface RichVaultEntry {
   movie_id: number
   tmdb_id: number | null
@@ -13,12 +25,18 @@ export interface RichVaultEntry {
   added_at: Date | null
 }
 
+/**
+ * Tipos de contenido social que el usuario puede publicar en su bóveda.
+ */
 export type VaultSocialEntryType =
   | "reflexion"
   | "edit"
   | "critica"
   | "recomendacion"
 
+/**
+ * Fila de entrada social recuperada por SQL Raw con JOINS de referencias.
+ */
 export type VaultSocialEntryRow = {
   id: number
   user_id: number
@@ -36,6 +54,10 @@ export type VaultSocialEntryRow = {
   updated_at: Date
 }
 
+/**
+ * Interfaz IVaultRepository
+ * Define las capacidades de gestión de colecciones y publicaciones del usuario en la bóveda.
+ */
 export interface IVaultRepository {
   exists(userId: number, movieId: number): Promise<boolean>
   create(userId: number, movieId: number): Promise<void>
@@ -75,7 +97,14 @@ export interface IVaultRepository {
   deleteSocialEntry(id: number, userId: number): Promise<void>
 }
 
+/**
+ * Clase VaultRepository
+ * Implementa la persistencia de la bóveda de películas y el sistema de publicaciones sociales.
+ */
 export class VaultRepository implements IVaultRepository {
+  /**
+   * Verifica si una película ya forma parte de la bóveda de un usuario.
+   */
   async exists(userId: number, movieId: number) {
     const item = await prisma.vault.findFirst({
       where: { user_id: userId, movie_id: movieId },
@@ -84,18 +113,28 @@ export class VaultRepository implements IVaultRepository {
     return item !== null
   }
 
+  /**
+   * Añade una película a la bóveda privada.
+   */
   async create(userId: number, movieId: number) {
     await prisma.vault.create({
       data: { user_id: userId, movie_id: movieId },
     })
   }
 
+  /**
+   * Elimina una película de la bóveda.
+   */
   async deleteByMovieId(userId: number, movieId: number) {
     await prisma.vault.deleteMany({
       where: { user_id: userId, movie_id: movieId },
     })
   }
 
+  /**
+   * Genera una lista hidratada de la bóveda consultando la API de TMDB para metadatos visuales.
+   * Utiliza concurrencia para minimizar el tiempo de espera en la red externa.
+   */
   async buildRichResponse(userId: number): Promise<RichVaultEntry[]> {
     const entries = await prisma.vault.findMany({
       where: { user_id: userId },
@@ -147,6 +186,10 @@ export class VaultRepository implements IVaultRepository {
     }))
   }
 
+  /**
+   * Lista las publicaciones sociales (reflexiones, etc) del usuario.
+   * Utiliza SQL Raw para gestionar la unión con referencias externas de películas.
+   */
   async listSocialEntries(params: {
     userId: number
     page: number
@@ -197,6 +240,9 @@ export class VaultRepository implements IVaultRepository {
     }
   }
 
+  /**
+   * Crea una nueva entrada en la sección social de la bóveda.
+   */
   async createSocialEntry(input: {
     userId: number
     movieId: number | null
@@ -241,6 +287,9 @@ export class VaultRepository implements IVaultRepository {
     return rows[0]?.id ?? null
   }
 
+  /**
+   * Actualiza dinámicamente campos específicos de una entrada social.
+   */
   async updateSocialEntry(input: {
     id: number
     userId: number
@@ -267,6 +316,9 @@ export class VaultRepository implements IVaultRepository {
     `)
   }
 
+  /**
+   * Recupera una entrada social por su ID para el propietario.
+   */
   async getSocialEntryByIdForOwner(id: number, userId: number) {
     const rows = await prisma.$queryRaw<VaultSocialEntryRow[]>(Prisma.sql`
       SELECT
@@ -293,6 +345,9 @@ export class VaultRepository implements IVaultRepository {
     return rows[0] ?? null
   }
 
+  /**
+   * Elimina un registro social (asegurando propiedad del usuario).
+   */
   async deleteSocialEntry(id: number, userId: number) {
     await prisma.$executeRaw(Prisma.sql`
       DELETE FROM vault_social_entries

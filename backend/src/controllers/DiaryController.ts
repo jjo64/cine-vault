@@ -1,18 +1,18 @@
+/**
+ * @file DiaryController.ts
+ * @description Controlador para la gestión del Diario de Visionado.
+ * Maneja las peticiones HTTP relacionadas con el registro cronológico de películas 
+ * consumidas por el usuario, permitiendo crear, consultar y eliminar entradas.
+ */
+
 import { Request, Response } from "express"
+import type { DiaryIdParamsDTO, DiaryUserParamsDTO } from "../schemas/diary.js"
 import * as diaryService from "../services/diary.services.js"
-import { checkIPSpike } from "../services/security.services.js"
-import { TooManyRequestsError } from "../errors/AppErrors.js"
-import type { DiaryUserParamsDTO, DiaryIdParamsDTO } from "../schemas/diary.js"
 
-/* ==========================================================================
-   CONTROLADOR DE DIARIO
-   --------------------------------------------------------------------------
-   Responsabilidad ÚNICA: extraer datos del request, llamar al servicio y
-   devolver res. Sin try/catch manuales — el manejadorErrores global se ocupa.
-   ========================================================================== */
-
+/**
+ * Registra una nueva entrada en el diario de visionado del usuario autenticado.
+ */
 export const createDiary = async (req: Request, res: Response) => {
-  await assertNotRateLimited(req.ip!)
   const entry = await diaryService.crearEntradaDiarioService(
     req.user!.user_id,
     req.body
@@ -20,28 +20,29 @@ export const createDiary = async (req: Request, res: Response) => {
   res.status(201).json(entry)
 }
 
+/**
+ * Recupera el diario completo del usuario autenticado.
+ */
 export const getMyDiary = async (req: Request, res: Response) => {
   const diario = await diaryService.obtenerDiarioService(req.user!.user_id)
   res.json({ diary: diario })
 }
 
+/**
+ * Consulta el diario público de un usuario específico identificado por su ID.
+ */
 export const getDiaryUser = async (req: Request, res: Response) => {
   const { id_user } = req.params as unknown as DiaryUserParamsDTO
   const diario = await diaryService.obtenerDiarioService(id_user)
   res.json({ diary: diario })
 }
 
+/**
+ * Elimina de forma permanente una entrada del diario del usuario.
+ */
 export const removeDiary = async (req: Request, res: Response) => {
-  await assertNotRateLimited(req.ip!)
   const { id } = req.params as unknown as DiaryIdParamsDTO
   await diaryService.eliminarEntradaDiarioService(req.user!.user_id, id)
-  res.json({ message: "Eliminada exitosamente" })
+  res.json({ message: "La entrada del diario ha sido eliminada con éxito" })
 }
-
-const assertNotRateLimited = async (ip: string) => {
-  if (await checkIPSpike(ip)) {
-    throw new TooManyRequestsError(
-      "Demasiadas acciones, intenta en unos segundos"
-    )
-  }
-}
+

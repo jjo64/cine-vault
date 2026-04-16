@@ -1,77 +1,58 @@
+/**
+ * @file diary.routes.ts
+ * @description Gestión del Diario de Visionado (Letterboxd-style).
+ * Permite a los usuarios registrar las películas que ven, con fecha específica,
+ * permitiendo construir un historial cronológico de su experiencia cinematográfica.
+ */
+
 import { Router } from "express"
 import {
   createDiary,
   getDiaryUser,
-  removeDiary,
   getMyDiary,
+  removeDiary,
 } from "../controllers/DiaryController.js"
 import { middlewareAutenticacion } from "../middlewares/auth.middlewares.js"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
+import { limitarSpikesIP } from "../middlewares/rateLimit.middleware.js"
 import { validarBody, validarParams } from "../middlewares/validation.middleware.js"
 import {
   crearEntradaDiarioSchema,
-  diaryUserParamsSchema,
   diaryIdParamsSchema,
+  diaryUserParamsSchema,
 } from "../schemas/diary.js"
 
 /**
  * @swagger
  * tags:
  *   name: Diario
- *   description: Gestión del diario de visionado
+ *   description: Registro cronológico de visionado
  */
 
 const router = Router()
 
 /**
- * Rutas del Diario protegidas con autenticación y centralizadas con manejadorAsincrono.
+ * ---------------------------------------------------------------------------
+ * BLOQUE: LECTURA DE ENTTRADAS
+ * ---------------------------------------------------------------------------
  */
 
 /**
  * @swagger
  * /diary:
  *   get:
- *     summary: Obtener mi diario
+ *     summary: Recuperar el historial de visionado del usuario autenticado
  *     tags: [Diario]
  *     security:
  *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Lista de entradas del diario
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 diary:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/EntradaDiario'
- *             example:
- *               diary:
- *                 - movie_id: 1
- *                   watched_date: "2026-01-28"
- *                   tmdb_id: 550
- *                   movie_info:
- *                     title: "El club de la lucha"
- *                     poster_path: "/sgTAWJFaB2kBvdQxRGabYFiQqEK.jpg"
- *                   review:
- *                     movie_id: 1
- *                     rating: 4.5
- *                     content: "Una obra maestra"
- *                     created_at: "2026-03-03T11:06:11.000Z"
- *       401:
- *         $ref: '#/components/responses/Unauthorized'
- *       404:
- *         $ref: '#/components/responses/NotFound'
  */
-router.get("/", middlewareAutenticacion, manejadorAsincrono(getMyDiary)) // obtener diario del usuario
+router.get("/", middlewareAutenticacion, manejadorAsincrono(getMyDiary))
 
 /**
  * @swagger
  * /diary/{id_user}:
  *   get:
- *     summary: Obtener el diario de otro usuario
+ *     summary: Consultar el diario público de otro usuario
  *     tags: [Diario]
  *     parameters:
  *       - in: path
@@ -79,86 +60,51 @@ router.get("/", middlewareAutenticacion, manejadorAsincrono(getMyDiary)) // obte
  *         required: true
  *         schema:
  *           type: integer
- *         example: 1
- *     responses:
- *       200:
- *         description: Diario del usuario
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 diary:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/EntradaDiario'
- *             example:
- *               diary:
- *                 - movie_id: 1
- *                   watched_date: "2026-01-28"
- *                   tmdb_id: 550
- *                   movie_info:
- *                     title: "El club de la lucha"
- *                     poster_path: "/sgTAWJFaB2kBvdQxRGabYFiQqEK.jpg"
- *                   review: null
- *       404:
- *         $ref: '#/components/responses/NotFound'
  */
 router.get(
   "/:id_user",
   validarParams(diaryUserParamsSchema),
   manejadorAsincrono(getDiaryUser)
-)// obtener diario de otro usuario
+)
+
+/**
+ * ---------------------------------------------------------------------------
+ * BLOQUE: GESTIÓN DE ENTRADAS
+ * ---------------------------------------------------------------------------
+ */
 
 /**
  * @swagger
  * /diary:
  *   post:
- *     summary: Crear entrada en el diario
+ *     summary: Registrar una nueva película vista en el historial
  *     tags: [Diario]
  *     security:
  *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [movie_id]
- *             properties:
- *               movie_id:
- *                 type: integer
- *               watched_date:
- *                 type: string
- *                 format: date
- *           example:
- *             movie_id: 1
- *             watched_date: "2026-03-04"
- *     responses:
- *       200:
- *         description: Entrada creada
- *         content:
- *           application/json:
- *             example:
- *               id: 1
- *               user_id: 1
- *               movie_id: 1
- *               watched_date: "2026-03-04"
- *       401:
- *         $ref: '#/components/responses/Unauthorized'
  */
 router.post(
   "/",
   middlewareAutenticacion,
+  limitarSpikesIP,
   validarBody(crearEntradaDiarioSchema),
   manejadorAsincrono(createDiary)
-) // crear diario
+)
 
+/**
+ * @swagger
+ * /diary/{id}:
+ *   delete:
+ *     summary: Eliminar una entrada específica del diario
+ *     tags: [Diario]
+ *     security:
+ *       - bearerAuth: []
+ */
 router.delete(
   "/:id",
   middlewareAutenticacion,
+  limitarSpikesIP,
   validarParams(diaryIdParamsSchema),
   manejadorAsincrono(removeDiary)
-) // eliminar entrada por id
+)
 
 export default router

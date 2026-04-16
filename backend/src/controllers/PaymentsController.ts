@@ -1,3 +1,10 @@
+/**
+ * @file PaymentsController.ts
+ * @description Controlador para la gestión de suscripciones y transacciones comerciales.
+ * Maneja el flujo de pagos mediante Stripe, incluyendo la creación de sesiones de 
+ * checkout, portales de autoservicio y la recepción de webhooks de red.
+ */
+
 import { Request, Response } from "express"
 import {
   createCheckoutSessionService,
@@ -5,13 +12,9 @@ import {
   processWebhookEventService,
 } from "../services/payments.services.js"
 
-/* ==========================================================================
-   CONTROLADOR DE PAGOS
-   --------------------------------------------------------------------------
-   Responsabilidad ÚNICA: extraer datos del request, llamar al servicio y
-   devolver res. Sin Stripe, Prisma ni lógica inline.
-   ========================================================================== */
-
+/**
+ * Inicia una nueva sesión de pago para la adquisición de planes premium.
+ */
 export const createCheckoutSession = async (req: Request, res: Response) => {
   const userId = req.user!.user_id
   const { plan } = req.body
@@ -19,12 +22,18 @@ export const createCheckoutSession = async (req: Request, res: Response) => {
   res.json({ url })
 }
 
+/**
+ * Genera un enlace al portal de gestión de suscripciones del usuario.
+ */
 export const createPortalSession = async (req: Request, res: Response) => {
   const userId = req.user!.user_id
   const url = await createPortalSessionService(Number(userId))
   res.json({ url })
 }
 
+/**
+ * Punto de entrada para los eventos asíncronos (Webhooks) de Stripe.
+ */
 export const stripeWebhook = async (req: Request, res: Response) => {
   const sig = req.headers["stripe-signature"] as string
   await processWebhookEventService(req.body as unknown as Buffer, sig)

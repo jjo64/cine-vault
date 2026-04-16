@@ -1,39 +1,48 @@
+/**
+ * @file reviews.routes.ts
+ * @description Motor de gestión de críticas y comentarios.
+ * Permite a los usuarios publicar reseñas sobre películas, interactuar con ellas
+ * mediante likes y comentarios, y reportar contenido inapropiado.
+ * Es uno de los componentes más extensos del sistema social de CineVault.
+ */
+
+import { Router } from "express"
 import {
-  getReviews,
-  addReview,
-  removeReview,
-  getReviewsByMovieId,
-  getReviewByUsernameAndMovieSlug,
-  removeLikeReview,
-  likeReview,
-  getReviewsByUserId,
-  updateReview,
-  reportReview,
-} from "../controllers/ReviewsController.js"
-import {
-  getCommentsByReviewId,
   addComment,
+  getCommentsByReviewId,
   removeComment,
   updateComment,
 } from "../controllers/ReviewCommentsController.js"
-import { Router } from "express"
+import {
+  addReview,
+  getReviewByUsernameAndMovieSlug,
+  getReviews,
+  getReviewsByMovieId,
+  getReviewsByUserId,
+  likeReview,
+  removeLikeReview,
+  removeReview,
+  reportReview,
+  updateReview,
+} from "../controllers/ReviewsController.js"
 import { middlewareAutenticacion } from "../middlewares/auth.middlewares.js"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
+import { limitarSpikesIP } from "../middlewares/rateLimit.middleware.js"
 import {
   validarBody,
   validarParams,
 } from "../middlewares/validation.middleware.js"
 import {
-  crearResenaSchema,
-  actualizarResenaSchema,
-  reportarResenaSchema,
-  crearComentarioSchema,
   actualizarComentarioSchema,
-  reviewIdParamsSchema,
-  movieIdParamsSchema,
-  userIdParamsSchema,
-  commentParamsSchema,
+  actualizarResenaSchema,
   commentIdParamsSchema,
+  commentParamsSchema,
+  crearComentarioSchema,
+  crearResenaSchema,
+  movieIdParamsSchema,
+  reportarResenaSchema,
+  reviewIdParamsSchema,
+  userIdParamsSchema,
   usernameMovieSlugParamsSchema,
 } from "../schemas/reviews.js"
 
@@ -41,467 +50,187 @@ import {
  * @swagger
  * tags:
  *   name: Reseñas
- *   description: Gestión de reseñas de películas
+ *   description: Críticas cinematográficas y flujo de debate
  */
 
 const router = Router()
 
-// Rutas públicas
+/**
+ * ---------------------------------------------------------------------------
+ * BLOQUE: CONSULTA DE RESEÑAS
+ * ---------------------------------------------------------------------------
+ */
+
 /**
  * @swagger
  * /reviews:
  *   get:
- *     summary: Obtener todas mis reseñas
+ *     summary: Obtener todas las reseñas del usuario autenticado
  *     tags: [Reseñas]
  *     security:
  *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Lista de reseñas
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Resena'
- *             example:
- *               - user_id: 1
- *                 movie_id: 1
- *                 content: "Una obra maestra del cine"
- *                 rating: 4.5
- *                 likes: 12
- *                 created_at: "2026-03-03T11:06:11.000Z"
- *       401:
- *         $ref: '#/components/responses/Unauthorized'
  */
-router.get("/", middlewareAutenticacion, manejadorAsincrono(getReviews)) // Obtener todas mis reseñas
+router.get("/", middlewareAutenticacion, manejadorAsincrono(getReviews))
 
 /**
  * @swagger
  * /reviews/user/{userId}:
  *   get:
- *     summary: Obtener las reseñas de un usuario
+ *     summary: Consultar las reseñas publicadas por un usuario específico
  *     tags: [Reseñas]
- *     parameters:
- *       - in: path
- *         name: userId
- *         required: true
- *         schema:
- *           type: integer
- *         example: 1
- *     responses:
- *       200:
- *         description: Lista de reseñas del usuario
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Resena'
- *             example:
- *               - user_id: 1
- *                 movie_id: 1
- *                 content: "Una obra maestra del cine"
- *                 rating: 4.5
- *                 likes: 12
- *                 created_at: "2026-03-03T11:06:11.000Z"
- *       404:
- *         $ref: '#/components/responses/NotFound'
  */
 router.get(
   "/user/:userId",
   validarParams(userIdParamsSchema),
   manejadorAsincrono(getReviewsByUserId)
-) // Obtener las reseñas de un usuario
+)
 
 /**
  * @swagger
  * /reviews/movie/{movieId}:
  *   get:
- *     summary: Obtener las reseñas de una película
+ *     summary: Listar todas las reseñas críticas de una película
  *     tags: [Reseñas]
- *     parameters:
- *       - in: path
- *         name: movieId
- *         required: true
- *         schema:
- *           type: integer
- *         example: 550
- *     responses:
- *       200:
- *         description: Lista de reseñas de la película
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Resena'
- *             example:
- *               - user_id: 1
- *                 movie_id: 550
- *                 content: "Una obra maestra del cine"
- *                 rating: 4.5
- *                 likes: 12
- *                 created_at: "2026-03-03T11:06:11.000Z"
- *       404:
- *         $ref: '#/components/responses/NotFound'
  */
 router.get(
   "/movie/:movieId",
   validarParams(movieIdParamsSchema),
   manejadorAsincrono(getReviewsByMovieId)
-) // Obtener las reseñas de una pelicula
+)
 
-// Reseñas (privadas)
+/**
+ * Buscar una reseña específica mediante el slug de la película y el username.
+ */
+router.get(
+  "/:username/:movieSlug",
+  validarParams(usernameMovieSlugParamsSchema),
+  manejadorAsincrono(getReviewByUsernameAndMovieSlug)
+)
+
+/**
+ * ---------------------------------------------------------------------------
+ * BLOQUE: GESTIÓN DE CRÍTICAS (CRUD)
+ * ---------------------------------------------------------------------------
+ */
+
 /**
  * @swagger
  * /reviews:
  *   post:
- *     summary: Crear una review
+ *     summary: Publicar una nueva crítica cinematográfica
  *     tags: [Reseñas]
  *     security:
  *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [movie_id, rating]
- *             properties:
- *               movie_id:
- *                 type: integer
- *               rating:
- *                 type: number
- *               content:
- *                 type: string
- *           example:
- *             movie_id: 1
- *             rating: 4.5
- *             content: "Una obra maestra del cine"
- *     responses:
- *       201:
- *         description: Reseña creada
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Resena'
- *             example:
- *               id: 1
- *               user_id: 1
- *               movie_id: 1
- *               content: "Una obra maestra del cine"
- *               rating: 4.5
- *               likes: 0
- *               created_at: "2026-03-04T10:00:00.000Z"
- *       401:
- *         $ref: '#/components/responses/Unauthorized'
  */
 router.post(
   "/",
   middlewareAutenticacion,
+  limitarSpikesIP,
   validarBody(crearResenaSchema),
   manejadorAsincrono(addReview)
-) // Crear una review
+)
 
 /**
  * @swagger
  * /reviews/{reviewId}:
  *   patch:
- *     summary: Actualizar una review
+ *     summary: Editar el contenido o puntuación de una reseña existente
  *     tags: [Reseñas]
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: reviewId
- *         required: true
- *         schema:
- *           type: integer
- *         example: 1
- *     requestBody:
- *       content:
- *         application/json:
- *           example:
- *             rating: 5
- *             content: "Después de verla de nuevo, es perfecta"
- *     responses:
- *       200:
- *         description: Reseña actualizada
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Resena'
- *             example:
- *               id: 1
- *               user_id: 1
- *               movie_id: 1
- *               content: "Después de verla de nuevo, es perfecta"
- *               rating: 5
- *               likes: 12
- *               created_at: "2026-03-04T10:00:00.000Z"
- *       401:
- *         $ref: '#/components/responses/Unauthorized'
- *       403:
- *         $ref: '#/components/responses/Forbidden'
- *       404:
- *         $ref: '#/components/responses/NotFound'
- *   delete:
- *     summary: Eliminar una review
- *     tags: [Reseñas]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: reviewId
- *         required: true
- *         schema:
- *           type: integer
- *         example: 1
- *     responses:
- *       200:
- *         description: Reseña eliminada
- *         content:
- *           application/json:
- *             example:
- *               id: 1
- *               user_id: 1
- *               movie_id: 1
- *               content: "Una obra maestra del cine"
- *               rating: 4.5
- *               likes: 12
- *               created_at: "2026-03-04T10:00:00.000Z"
- *       401:
- *         $ref: '#/components/responses/Unauthorized'
- *       403:
- *         $ref: '#/components/responses/Forbidden'
- *       404:
- *         $ref: '#/components/responses/NotFound'
  */
 router.patch(
   "/:reviewId",
   middlewareAutenticacion,
+  limitarSpikesIP,
   validarParams(reviewIdParamsSchema),
   validarBody(actualizarResenaSchema),
   manejadorAsincrono(updateReview)
-) // Actualizar una review
+)
+
+/**
+ * @swagger
+ * /reviews/{reviewId}:
+ *   delete:
+ *     summary: Eliminar permanentemente una crítica
+ *     tags: [Reseñas]
+ *     security:
+ *       - bearerAuth: []
+ */
 router.delete(
   "/:reviewId",
   middlewareAutenticacion,
+  limitarSpikesIP,
   validarParams(reviewIdParamsSchema),
   manejadorAsincrono(removeReview)
-) // Eliminar una review
+)
 
-// Likes (privadas)
 /**
- * @swagger
- * /reviews/{reviewId}/like:
- *   post:
- *     summary: Dar like a una review
- *     tags: [Reseñas]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: reviewId
- *         required: true
- *         schema:
- *           type: integer
- *         example: 1
- *     responses:
- *       201:
- *         description: Like añadido
- *         content:
- *           application/json:
- *             example:
- *               review:
- *                 id: 1
- *                 likes: 13
- *               like:
- *                 id: 1
- *                 user_id: 1
- *                 review_id: 1
- *                 created_at: "2026-03-04T10:00:00.000Z"
- *       400:
- *         description: Ya has dado like a esta reseña
- *         content:
- *           application/json:
- *             example:
- *               message: "Ya has dado like a esta reseña"
- *       401:
- *         $ref: '#/components/responses/Unauthorized'
- *   delete:
- *     summary: Quitar like a una review
- *     tags: [Reseñas]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: reviewId
- *         required: true
- *         schema:
- *           type: integer
- *         example: 1
- *     responses:
- *       200:
- *         description: Like eliminado
- *         content:
- *           application/json:
- *             example:
- *               review:
- *                 id: 1
- *                 likes: 12
- *               like:
- *                 id: 1
- *                 user_id: 1
- *                 review_id: 1
- *       400:
- *         description: No has dado like a esta reseña
- *         content:
- *           application/json:
- *             example:
- *               message: "No has dado like a esta reseña"
- *       401:
- *         $ref: '#/components/responses/Unauthorized'
+ * ---------------------------------------------------------------------------
+ * BLOQUE: INTERACCIÓN SOCIAL (Likes y Reportes)
+ * ---------------------------------------------------------------------------
+ */
+
+/**
+ * Añadir "Me gusta" a una crítica de otro usuario.
  */
 router.post(
   "/:reviewId/like",
   middlewareAutenticacion,
+  limitarSpikesIP,
   validarParams(reviewIdParamsSchema),
   manejadorAsincrono(likeReview)
-) // Dar like a una review
+)
+
+/**
+ * Retirar "Me gusta" de una crítica.
+ */
 router.delete(
   "/:reviewId/like",
   middlewareAutenticacion,
+  limitarSpikesIP,
   validarParams(reviewIdParamsSchema),
   manejadorAsincrono(removeLikeReview)
-) // Quitar like a una review
+)
 
-// Reportes (privadas)
 /**
  * @swagger
  * /reviews/{reviewId}/report:
  *   post:
- *     summary: Reportar una review
+ *     summary: Denunciar una reseña por violar las normas de la comunidad
  *     tags: [Reseñas]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: reviewId
- *         required: true
- *         schema:
- *           type: integer
- *         example: 1
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           example:
- *             reason: "Contenido inapropiado"
- *     responses:
- *       200:
- *         description: Reseña reportada
- *         content:
- *           application/json:
- *             example:
- *               id: 1
- *               reporter_id: 1
- *               review_id: 1
- *               reason: "Contenido inapropiado"
- *               status: "pending"
- *               created_at: "2026-03-04T10:00:00.000Z"
- *       401:
- *         $ref: '#/components/responses/Unauthorized'
- *       404:
- *         $ref: '#/components/responses/NotFound'
  */
 router.post(
   "/:reviewId/report",
   middlewareAutenticacion,
+  limitarSpikesIP,
   validarParams(reviewIdParamsSchema),
   validarBody(reportarResenaSchema),
   manejadorAsincrono(reportReview)
-) // Reportar una review
+)
 
-// Comentarios
+/**
+ * ---------------------------------------------------------------------------
+ * BLOQUE: SISTEMA DE COMENTARIOS
+ * ---------------------------------------------------------------------------
+ */
+
 /**
  * @swagger
  * /reviews/{reviewId}/comments:
  *   get:
- *     summary: Obtener comentarios de una reseña
+ *     summary: Listar todos los comentarios de una reseña
  *     tags: [Reseñas]
- *     parameters:
- *       - in: path
- *         name: reviewId
- *         required: true
- *         schema:
- *           type: integer
- *         example: 1
- *     responses:
- *       200:
- *         description: Lista de comentarios
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Comentario'
- *             example:
- *               - id: 1
- *                 review_id: 1
- *                 content: "Totalmente de acuerdo con tu reseña"
- *                 created_at: "2026-03-04T10:00:00.000Z"
- *                 users:
- *                   id: 2
- *                   username: "maria"
- *                   avatar_url: null
- *       404:
- *         $ref: '#/components/responses/NotFound'
  *   post:
- *     summary: Añadir comentario a una reseña
+ *     summary: Añadir un nuevo comentario al hilo de debate
  *     tags: [Reseñas]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: reviewId
- *         required: true
- *         schema:
- *           type: integer
- *         example: 1
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           example:
- *             content: "Totalmente de acuerdo con tu reseña"
- *     responses:
- *       201:
- *         description: Comentario creado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Comentario'
- *             example:
- *               id: 1
- *               review_id: 1
- *               content: "Totalmente de acuerdo con tu reseña"
- *               created_at: "2026-03-04T10:00:00.000Z"
- *               users:
- *                 id: 1
- *                 username: "josue"
- *                 avatar_url: null
- *       401:
- *         $ref: '#/components/responses/Unauthorized'
- *       404:
- *         $ref: '#/components/responses/NotFound'
  */
 router.get(
   "/:reviewId/comments",
   validarParams(reviewIdParamsSchema),
   manejadorAsincrono(getCommentsByReviewId)
 )
+
 router.post(
   "/:reviewId/comments",
   middlewareAutenticacion,
@@ -511,83 +240,7 @@ router.post(
 )
 
 /**
- * @swagger
- * /reviews/{reviewId}/comments/{commentId}:
- *   patch:
- *     summary: Editar un comentario
- *     tags: [Reseñas]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: reviewId
- *         required: true
- *         schema:
- *           type: integer
- *       - in: path
- *         name: commentId
- *         required: true
- *         schema:
- *           type: integer
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           example:
- *             content: "Editando mi comentario"
- *     responses:
- *       200:
- *         description: Comentario actualizado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Comentario'
- *             example:
- *               id: 1
- *               review_id: 1
- *               content: "Editando mi comentario"
- *               created_at: "2026-03-04T10:00:00.000Z"
- *               users:
- *                 id: 1
- *                 username: "josue"
- *                 avatar_url: null
- *       401:
- *         $ref: '#/components/responses/Unauthorized'
- *       403:
- *         $ref: '#/components/responses/Forbidden'
- *       404:
- *         $ref: '#/components/responses/NotFound'
- *   delete:
- *     summary: Eliminar un comentario
- *     tags: [Reseñas]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: reviewId
- *         required: true
- *         schema:
- *           type: integer
- *       - in: path
- *         name: commentId
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Comentario eliminado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/MensajeResponse'
- *             example:
- *               message: "Comentario eliminado correctamente"
- *       401:
- *         $ref: '#/components/responses/Unauthorized'
- *       403:
- *         $ref: '#/components/responses/Forbidden'
- *       404:
- *         $ref: '#/components/responses/NotFound'
+ * Editar un comentario propio.
  */
 router.patch(
   "/:reviewId/comments/:commentId",
@@ -597,8 +250,19 @@ router.patch(
   manejadorAsincrono(updateComment)
 )
 
-// Alias de compatibilidad para clientes que actualizan/eliminan comentarios
-// sin incluir reviewId en la URL.
+/**
+ * Eliminar un comentario propio.
+ */
+router.delete(
+  "/:reviewId/comments/:commentId",
+  middlewareAutenticacion,
+  validarParams(commentParamsSchema),
+  manejadorAsincrono(removeComment)
+)
+
+/**
+ * Alias de compatibilidad para gestión de comentarios por ID único.
+ */
 router.put(
   "/comments/:commentId",
   middlewareAutenticacion,
@@ -608,23 +272,10 @@ router.put(
 )
 
 router.delete(
-  "/:reviewId/comments/:commentId",
-  middlewareAutenticacion,
-  validarParams(commentParamsSchema),
-  manejadorAsincrono(removeComment)
-)
-
-router.delete(
   "/comments/:commentId",
   middlewareAutenticacion,
   validarParams(commentIdParamsSchema),
   manejadorAsincrono(removeComment)
-)
-
-router.get(
-  "/:username/:movieSlug",
-  validarParams(usernameMovieSlugParamsSchema),
-  manejadorAsincrono(getReviewByUsernameAndMovieSlug)
 )
 
 export default router

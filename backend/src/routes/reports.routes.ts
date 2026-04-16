@@ -1,3 +1,10 @@
+/**
+ * @file reports.routes.ts
+ * @description Panel de control para la moderación de contenido.
+ * Permite a los administradores y moderadores visualizar denuncias de usuarios
+ * y aplicar acciones correctivas (moderación) sobre el contenido reportado.
+ */
+
 import { Router } from "express"
 import { PERMISOS } from "../config/permisos.js"
 import {
@@ -19,8 +26,30 @@ import {
   reportIdParamsSchema,
 } from "../schemas/reports.js"
 
+/**
+ * @swagger
+ * tags:
+ *   name: Reportes
+ *   description: Herramientas de moderación administrativa
+ */
+
 const router = Router()
 
+/**
+ * ---------------------------------------------------------------------------
+ * BLOQUE: ADMINISTRACIÓN (Consulta)
+ * ---------------------------------------------------------------------------
+ */
+
+/**
+ * @swagger
+ * /reports:
+ *   get:
+ *     summary: Listar todas las denuncias pendientes o resueltas
+ *     tags: [Reportes]
+ *     security:
+ *       - bearerAuth: []
+ */
 router.get(
   "/",
   middlewareAutenticacion,
@@ -29,6 +58,9 @@ router.get(
   manejadorAsincrono(getReports)
 )
 
+/**
+ * Obtener detalle de una denuncia específica mediante su ID.
+ */
 router.get(
   "/:id",
   middlewareAutenticacion,
@@ -37,6 +69,15 @@ router.get(
   manejadorAsincrono(getReportById)
 )
 
+/**
+ * ---------------------------------------------------------------------------
+ * BLOQUE: MODERACIÓN (Acción)
+ * ---------------------------------------------------------------------------
+ */
+
+/**
+ * Aplicar acciones de moderación (Aprobar, Rechazar, Banear) sobre un reporte.
+ */
 router.patch(
   "/:id/moderation",
   middlewareAutenticacion,

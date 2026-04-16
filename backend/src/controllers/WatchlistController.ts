@@ -1,38 +1,49 @@
+/**
+ * @file WatchlistController.ts
+ * @description Controlador para la gestión de la lista de seguimiento (Watchlist).
+ * Permite a los usuarios organizar las películas que desean ver en el futuro, 
+ * facilitando la planificación de su consumo cinematográfico.
+ */
+
 import { Request, Response } from "express"
 import * as watchlistService from "../services/watchlist.services.js"
 
-/* ==========================================================================
-   CONTROLADOR DE WATCHLIST
-   --------------------------------------------------------------------------
-   Responsabilidad ÚNICA: extraer datos del request, llamar al servicio y
-   devolver res. Sin try/catch manuales — el manejadorErrores global se ocupa.
-   ========================================================================== */
-
+/**
+ * Recupera la lista de seguimiento del usuario actualmente autenticado.
+ */
 export const getMyWatchlist = async (req: Request, res: Response) => {
-  const result = await watchlistService.obtenerWatchlistService(
+  const watchlist = await watchlistService.obtenerWatchlistService(
     req.user!.user_id
   )
-  res.json(result)
+  res.json(watchlist)
 }
 
+/**
+ * Obtiene la lista de seguimiento pública de un usuario específico.
+ */
 export const getWatchlistByUser = async (req: Request, res: Response) => {
-  const result = await watchlistService.obtenerWatchlistService(
-    Number(req.params.id_user)
-  )
-  res.json(result)
+  const idUser = Number(req.params.id_user)
+  const watchlist = await watchlistService.obtenerWatchlistService(idUser)
+  res.json(watchlist)
 }
 
+/**
+ * Añade una película a la lista de seguimiento del usuario.
+ */
 export const addMovieToWatchlist = async (req: Request, res: Response) => {
   await watchlistService.agregarAWatchlistService(req.user!.user_id, req.body)
   res.status(201).json({
-    message: `Película ${req.body.movie_id} añadida a la watchlist`,
+    message: "Película añadida con éxito a la watchlist",
   })
 }
 
+/**
+ * Elimina una película de la lista de seguimiento del usuario.
+ */
 export const removeMovieFromWatchlist = async (req: Request, res: Response) => {
   const { movie_id } = req.params
   await watchlistService.eliminarDeWatchlistService(req.user!.user_id, {
     movie_id: Number(movie_id),
   })
-  res.json({ message: "Película eliminada de la watchlist" })
+  res.json({ message: "Película eliminada de la watchlist con éxito" })
 }

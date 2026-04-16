@@ -1,4 +1,13 @@
+/**
+ * @file ListsRepository.ts
+ * @description Repositorio para la gestión de listas personalizadas de usuarios.
+ * Permite crear, editar, eliminar y consultar listas públicas y privadas, incluyendo 
+ * el conteo de ítems y metadatos de TMDB.
+ */
+
 import { prisma } from "../lib/prisma.js"
+
+// --- Tipos y Estructuras de Datos ---
 
 type ListEntity = {
   id: number
@@ -36,7 +45,14 @@ export type ListDetail = ListSummary & {
   items: ListItem[]
 }
 
+/**
+ * Clase ListsRepository
+ * Encapsula la persistencia para el sistema de listas de CineVault.
+ */
 export class ListsRepository {
+  /**
+   * Crea una nueva lista para un usuario.
+   */
   async create(
     userId: number,
     data: { name: string; description?: string | null; is_public?: boolean }
@@ -51,12 +67,18 @@ export class ListsRepository {
     }) as Promise<ListEntity>
   }
 
+  /**
+   * Busca una lista específica que pertenezca al usuario indicado.
+   */
   async findByIdForUser(listId: number, userId: number) {
     return prisma.user_lists.findFirst({
       where: { id: listId, user_id: userId },
     }) as Promise<ListEntity | null>
   }
 
+  /**
+   * Obtiene un resumen de todas las listas creadas por un usuario con conteo de películas.
+   */
   async listByUser(userId: number): Promise<ListSummary[]> {
     const lists = await prisma.user_lists.findMany({
       where: { user_id: userId },
@@ -80,6 +102,9 @@ export class ListsRepository {
     }))
   }
 
+  /**
+   * Obtiene el detalle completo de una lista para su propietario, incluyendo ítems hidratados.
+   */
   async getDetailForUser(
     listId: number,
     userId: number
@@ -120,6 +145,9 @@ export class ListsRepository {
     }
   }
 
+  /**
+   * Pagina todas las listas marcadas como públicas para el descubrimiento global.
+   */
   async listPublic(page: number, limit: number) {
     const skip = (page - 1) * limit
 
@@ -168,6 +196,9 @@ export class ListsRepository {
     }
   }
 
+  /**
+   * Obtiene el detalle de una lista pública para cualquier espectador.
+   */
   async getPublicDetail(listId: number): Promise<ListDetail | null> {
     const list = await prisma.user_lists.findFirst({
       where: { id: listId, is_public: true },
@@ -217,6 +248,9 @@ export class ListsRepository {
     }
   }
 
+  /**
+   * Actualiza metadatos de la lista (nombre, privacidad, descripción).
+   */
   async update(
     listId: number,
     data: { name?: string; description?: string | null; is_public?: boolean }
@@ -227,10 +261,16 @@ export class ListsRepository {
     }) as Promise<ListEntity>
   }
 
+  /**
+   * Elimina una lista y de forma implícita todos sus ítems asociados.
+   */
   async delete(listId: number) {
     await prisma.user_lists.delete({ where: { id: listId } })
   }
 
+  /**
+   * Añade una película individual a una lista de usuario.
+   */
   async addMovie(listId: number, movieRefId: number) {
     return prisma.user_list_items.create({
       data: {
@@ -240,6 +280,9 @@ export class ListsRepository {
     })
   }
 
+  /**
+   * Elimina una película de una lista específica.
+   */
   async removeMovie(listId: number, movieRefId: number) {
     await prisma.user_list_items.deleteMany({
       where: {

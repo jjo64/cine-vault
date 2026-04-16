@@ -1,5 +1,17 @@
+/**
+ * @file directors.services.ts
+ * @description Capa de servicios para la analítica avanzada de directores ("Autopsia de Director").
+ * Procesa créditos de TMDB para generar estadísticas de carrera, cronologías de producción 
+ * y métricas de desempeño crítico a lo largo del tiempo.
+ */
+
 import { consultarTMDB } from "../helpers/fetchTMDB.js"
 
+// --- Tipos de Datos de Soporte ---
+
+/**
+ * Representación simplificada de un crédito de película desde TMDB.
+ */
 type TmdbMovieCredit = {
   id: number
   title?: string
@@ -12,12 +24,22 @@ type TmdbMovieCredit = {
   department?: string
 }
 
+/**
+ * Punto de datos individual para la línea de tiempo de la carrera de un director.
+ */
 type DirectorTimelineItem = {
   year: number
   count: number
   avg_rating: number
 }
 
+/**
+ * Ejecuta una "Autopsia de Director": un análisis exhaustivo de la filmografía 
+ * de una personalidad de TMDB, calculando medias, hitos y actividad anual.
+ * 
+ * @param tmdbPersonId ID único de la persona en TMDB.
+ * @returns Perfil detallado con estadísticas agregadas y cronología de carrera.
+ */
 export const obtenerDirectorAutopsyService = async (tmdbPersonId: number) => {
   const [personRaw, creditsRaw] = await Promise.all([
     consultarTMDB(`person/${tmdbPersonId}`, { language: "es-ES" }),
@@ -40,6 +62,7 @@ export const obtenerDirectorAutopsyService = async (tmdbPersonId: number) => {
     crew?: TmdbMovieCredit[]
   }
 
+  // Filtrar créditos de dirección excluyendo otros roles técnicos o de producción.
   const directedMovies = (credits.crew || [])
     .filter((credit) => credit.media_type === "movie")
     .filter(
@@ -49,7 +72,7 @@ export const obtenerDirectorAutopsyService = async (tmdbPersonId: number) => {
     )
     .map((credit) => ({
       id: credit.id,
-      title: credit.title || "Sin titulo",
+      title: credit.title || "Sin título",
       release_date: credit.release_date || "",
       vote_average: Number(credit.vote_average || 0),
       vote_count: Number(credit.vote_count || 0),
@@ -57,6 +80,7 @@ export const obtenerDirectorAutopsyService = async (tmdbPersonId: number) => {
     }))
     .sort((a, b) => (a.release_date || "").localeCompare(b.release_date || ""))
 
+  // Cálculos de Medias y Rankings
   const totalMovies = directedMovies.length
   const avgRating =
     totalMovies > 0
@@ -74,6 +98,7 @@ export const obtenerDirectorAutopsyService = async (tmdbPersonId: number) => {
       ? [...directedMovies].sort((a, b) => b.vote_count - a.vote_count)[0]
       : null
 
+  // Agrupación de actividad por año para la línea de tiempo
   const moviesByYear = directedMovies.reduce<Record<number, TmdbMovieCredit[]>>(
     (acc, movie) => {
       const year = Number((movie.release_date || "").slice(0, 4))
@@ -109,6 +134,7 @@ export const obtenerDirectorAutopsyService = async (tmdbPersonId: number) => {
   const lastYear =
     timeline.length > 0 ? timeline[timeline.length - 1].year : null
 
+  // Construcción del objeto de respuesta final enriquecido
   return {
     person_id: person.id,
     name: person.name || "Sin nombre",
@@ -139,3 +165,17 @@ export const obtenerDirectorAutopsyService = async (tmdbPersonId: number) => {
     timeline,
   }
 }
+
+/**
+ * Obtiene la información biográfica y básica de una persona desde TMDB.
+ */
+export const obtenerPersonaService = (tmdbPersonId: number) =>
+  consultarTMDB(`person/${tmdbPersonId}`, { language: "es-ES" })
+
+/**
+ * Recupera los créditos combinados (cine y TV) de una persona.
+ */
+export const obtenerCreditosCombinadosPersonaService = (tmdbPersonId: number) =>
+  consultarTMDB(`person/${tmdbPersonId}/combined_credits`, {
+    language: "es-ES",
+  })

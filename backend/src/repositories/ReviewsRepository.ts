@@ -1,16 +1,21 @@
+/**
+ * @file ReviewsRepository.ts
+ * @description Repositorio central para la gestión de reseñas, críticas largas, 
+ * reacciones (likes), comentarios y reportes de contenido. 
+ * Implementa una abstracción completa sobre Prisma para garantizar la integridad 
+ * de la red social de CineVault.
+ */
+
 import { reviews, review_likes, reports, review_comments } from "@prisma/client"
 import { prisma } from "../lib/prisma.js"
 import type { CrearResenaDTO, ActualizarResenaDTO } from "../schemas/reviews.js"
 
-/* ==========================================================================
-   REVIEWS REPOSITORY
-   --------------------------------------------------------------------------
-   Abstrae todas las queries de Prisma relacionadas con reseñas, likes,
-   comentarios y reportes. Los servicios consumen esta interfaz sin saber
-   nada de Prisma, lo que permite testeabilidad y sustitución de ORM.
-   ========================================================================== */
+// --- Configuración de Proyección ---
 
-/** Campos seguros que se devuelven por defecto en listas de reseñas */
+/**
+ * Campos seleccionados por defecto para proteger datos sensibles y optimizar la carga 
+ * de listas de reseñas.
+ */
 const REVIEW_SELECT = {
   id: true,
   user_id: true,
@@ -39,6 +44,8 @@ const REVIEW_SELECT = {
   },
 } as const
 
+// --- Tipos de Agregación ---
+
 export interface MovieReviewsAggregate {
   movie_id: number
   review_count: number
@@ -46,6 +53,9 @@ export interface MovieReviewsAggregate {
   likes_total: number
 }
 
+/**
+ * Interfaz que define el contrato de datos para el sistema de reseñas.
+ */
 export interface IReviewsRepository {
   findByUserId(userId: number): Promise<Partial<reviews>[]>
   findByMovieId(movieId: number): Promise<Partial<reviews>[]>
@@ -55,7 +65,8 @@ export interface IReviewsRepository {
   create(userId: number, data: ReviewCreateData): Promise<reviews>
   update(id: number, data: ReviewUpdateData): Promise<reviews>
   delete(id: number): Promise<void>
-  // Likes
+  
+  // Interacciones (Likes)
   findLike(userId: number, reviewId: number): Promise<review_likes | null>
   addLikeTransaction(
     userId: number,
@@ -65,13 +76,15 @@ export interface IReviewsRepository {
     userId: number,
     reviewId: number
   ): Promise<{ like: review_likes; review: reviews }>
-  // Reportes
+  
+  // Moderación (Reportes)
   createReport(
     reporterId: number,
     reviewId: number,
     reason: string
   ): Promise<reports>
-  // Comentarios
+  
+  // Social (Comentarios)
   findCommentsByReviewId(reviewId: number): Promise<review_comments[]>
   findCommentById(id: number): Promise<review_comments | null>
   createComment(
@@ -93,7 +106,14 @@ type ReviewUpdateData = ActualizarResenaDTO & {
   tiempo_lectura_min?: number | null
 }
 
+/**
+ * Clase ReviewsRepository
+ * Implementa la persistencia para el sistema de críticas y comunidad.
+ */
 export class ReviewsRepository implements IReviewsRepository {
+  /**
+   * Recupera las reseñas de un usuario ordenadas por fecha de creación.
+   */
   async findByUserId(userId: number) {
     return prisma.reviews.findMany({
       where: { user_id: userId },
@@ -102,6 +122,9 @@ export class ReviewsRepository implements IReviewsRepository {
     })
   }
 
+  /**
+   * Recupera todas las reseñas asociadas a una película específica.
+   */
   async findByMovieId(movieId: number) {
     return prisma.reviews.findMany({
       where: { movie_id: movieId },
@@ -110,16 +133,25 @@ export class ReviewsRepository implements IReviewsRepository {
     })
   }
 
+  /**
+   * Busca la reseña de un usuario para una película (para validación de duplicados).
+   */
   async findByUserAndMovie(userId: number, movieId: number) {
     return prisma.reviews.findFirst({
       where: { user_id: userId, movie_id: movieId },
     })
   }
 
+  /**
+   * Busca una reseña por su ID interno.
+   */
   async findById(id: number) {
     return prisma.reviews.findUnique({ where: { id } })
   }
 
+  /**
+   * Obtiene una vista detallada de una reseña incluyendo comentarios hidratados.
+   */
   async findDetailedByUserAndMovie(userId: number, movieRefId: number) {
     return prisma.reviews.findFirst({
       where: {
@@ -146,6 +178,9 @@ export class ReviewsRepository implements IReviewsRepository {
     })
   }
 
+  /**
+   * Calcula estadísticas agregadas (conteo, nota media, likes) para una película.
+   */
   async aggregateByMovie(movieId: number) {
     const aggregate = await prisma.reviews.aggregate({
       where: { movie_id: movieId },
@@ -162,6 +197,9 @@ export class ReviewsRepository implements IReviewsRepository {
     }
   }
 
+  /**
+   * Registra una nueva reseña con todos sus campos técnicos opcionales.
+   */
   async create(userId: number, data: ReviewCreateData) {
     return prisma.reviews.create({
       data: {
@@ -186,6 +224,9 @@ export class ReviewsRepository implements IReviewsRepository {
     })
   }
 
+  /**
+   * Actualiza parcialmente los campos de una reseña existente.
+   */
   async update(id: number, data: ReviewUpdateData) {
     return prisma.reviews.update({
       where: { id },
@@ -229,18 +270,27 @@ export class ReviewsRepository implements IReviewsRepository {
     })
   }
 
+  /**
+   * Elimina una reseña físicamente del sistema.
+   */
   async delete(id: number) {
     await prisma.reviews.delete({ where: { id } })
   }
 
-  // ---- Likes ----
+  // ---- Gestión de Interacciones (Likes) ----
 
+  /**
+   * Verifica si un usuario ha dado like a una reseña.
+   */
   async findLike(userId: number, reviewId: number) {
     return prisma.review_likes.findUnique({
       where: { user_id_review_id: { user_id: userId, review_id: reviewId } },
     })
   }
 
+  /**
+   * Ejecuta una transacción para registrar un like e incrementar el contador denormalizado.
+   */
   async addLikeTransaction(userId: number, reviewId: number) {
     const [like, review] = await prisma.$transaction([
       prisma.review_likes.create({
@@ -254,6 +304,9 @@ export class ReviewsRepository implements IReviewsRepository {
     return { like, review }
   }
 
+  /**
+   * Ejecuta una transacción para eliminar un like y decrementar el contador denormalizado.
+   */
   async removeLikeTransaction(userId: number, reviewId: number) {
     const [like, review] = await prisma.$transaction([
       prisma.review_likes.delete({
@@ -269,8 +322,11 @@ export class ReviewsRepository implements IReviewsRepository {
     return { like, review }
   }
 
-  // ---- Reportes ----
+  // ---- Sistema de Reportes ----
 
+  /**
+   * Crea una denuncia sobre una reseña para que sea revisada por moderadores.
+   */
   async createReport(reporterId: number, reviewId: number, reason: string) {
     return prisma.reports.create({
       data: {
@@ -282,8 +338,11 @@ export class ReviewsRepository implements IReviewsRepository {
     })
   }
 
-  // ---- Comentarios ----
+  // ---- Sistema de Comentarios ----
 
+  /**
+   * Lista cronológicamente todos los comentarios de una reseña.
+   */
   async findCommentsByReviewId(reviewId: number) {
     return prisma.review_comments.findMany({
       where: { review_id: reviewId },
@@ -294,10 +353,16 @@ export class ReviewsRepository implements IReviewsRepository {
     })
   }
 
+  /**
+   * Recupera un comentario específico por su ID.
+   */
   async findCommentById(id: number) {
     return prisma.review_comments.findUnique({ where: { id } })
   }
 
+  /**
+   * Crea un nuevo comentario en una reseña hidratando los datos del autor.
+   */
   async createComment(reviewId: number, userId: number, content: string) {
     return prisma.review_comments.create({
       data: { review_id: reviewId, user_id: userId, content },
@@ -307,6 +372,9 @@ export class ReviewsRepository implements IReviewsRepository {
     })
   }
 
+  /**
+   * Actualiza el contenido de un comentario.
+   */
   async updateComment(id: number, content: string) {
     return prisma.review_comments.update({
       where: { id },
@@ -314,6 +382,9 @@ export class ReviewsRepository implements IReviewsRepository {
     })
   }
 
+  /**
+   * Elimina un comentario de forma permanente.
+   */
   async deleteComment(id: number) {
     await prisma.review_comments.delete({ where: { id } })
   }

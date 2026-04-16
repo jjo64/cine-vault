@@ -1,14 +1,15 @@
-import { Prisma } from "@prisma/client"
+/**
+ * @file CinematographicSignatureRepository.ts
+ * @description Repositorio para la gestión de la "Firma Cinematográfica" del usuario (películas clave, directores formativos, etc.).
+ * Utiliza operaciones de upsert para mantener la integridad del perfil único por usuario.
+ */
+
 import { prisma } from "../lib/prisma.js"
 import type { ActualizarFirmaDTO } from "../schemas/profile.js"
 
-/* ==========================================================================
-   CINEMATOGRAPHIC SIGNATURE REPOSITORY
-   --------------------------------------------------------------------------
-   Queries raw justificadas: MariaDB ON DUPLICATE KEY UPDATE no tiene
-   equivalente en Prisma sin dos roundtrips. El SELECT es un JOIN futuro-proof.
-   ========================================================================== */
-
+/**
+ * Estructura de datos que representa una fila de la firma cinematográfica.
+ */
 export interface FirmaRow {
   user_id: number
   pivotal_film: string | null
@@ -23,6 +24,9 @@ export interface FirmaRow {
   updated_at?: Date | null
 }
 
+/**
+ * Helper para generar un objeto de firma vacío (valores nulos) para nuevos perfiles.
+ */
 const FIRMA_VACIA = (userId: number): FirmaRow => ({
   user_id: userId,
   pivotal_film: null,
@@ -35,7 +39,14 @@ const FIRMA_VACIA = (userId: number): FirmaRow => ({
   cinema_turning_year_detail: null,
 })
 
+/**
+ * Objeto cinematographicSignatureRepository
+ * Provee métodos para leer y actualizar la firma de identidad del usuario.
+ */
 export const cinematographicSignatureRepository = {
+  /**
+   * Obtiene la firma de un usuario por su ID. Si no existe, devuelve una estructura vacía.
+   */
   async findByUserId(userId: number): Promise<FirmaRow> {
     const record = await prisma.cinematographic_signature.findUnique({
       where: { user_id: userId },
@@ -43,6 +54,11 @@ export const cinematographicSignatureRepository = {
     return record ?? FIRMA_VACIA(userId)
   },
 
+  /**
+   * Crea o actualiza la firma del usuario (Upsert).
+   * @param userId - ID del usuario propietario.
+   * @param data - Datos de la firma provenientes del DTO.
+   */
   async upsert(userId: number, data: ActualizarFirmaDTO): Promise<void> {
     await prisma.cinematographic_signature.upsert({
       where: { user_id: userId },

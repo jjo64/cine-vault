@@ -1,36 +1,48 @@
-import { Router, Request, Response } from "express"
-import { consultarTMDB } from "../helpers/fetchTMDB.js"
-import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
+/**
+ * @file movies.routes.ts
+ * @description Rutas para la consulta de información de películas.
+ * Integra la API de TMDB con una capa de caché Redis para optimizar el rendimiento.
+ * Gestiona el descubrimiento de estrenos, rankings y el detalle profundo de títulos.
+ */
+
+import { Request, Response, Router } from "express"
 import { getOSet } from "../config/redis.js"
+import { consultarTMDB } from "../helpers/fetchTMDB.js"
 import {
   mergeEnglishAndSpanishResults,
   rankMovieByQuery,
 } from "../helpers/titleRanking.js"
+import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
 
 /**
  * @swagger
  * tags:
  *   name: Películas
- *   description: Consulta de películas desde TMDB con caché Redis
+ *   description: Consulta de películas y metadatos desde TMDB
  */
 
 const router = Router()
 
-// TTLs específicos para datos de TMDB
+/**
+ * Tiempos de vida (TTL) para la caché de Redis.
+ */
 const TTL = {
-  listas: 60 * 60, // 1 hora — upcoming, top-rated, popular
-  detalle: 60 * 60 * 6, // 6 horas — detalle de película (datos estáticos)
+  LISTAS: 60 * 60, // 1 hora
+  DETALLE: 60 * 60 * 6, // 6 horas
 }
+
+/**
+ * ---------------------------------------------------------------------------
+ * BLOQUE: DESCUBRIMIENTO (Listas Globales)
+ * ---------------------------------------------------------------------------
+ */
 
 /**
  * @swagger
  * /movies/upcoming:
  *   get:
- *     summary: Próximos estrenos
+ *     summary: Obtener próximos estrenos cinematográficos
  *     tags: [Películas]
- *     responses:
- *       200:
- *         description: Lista de próximos estrenos
  */
 router.get(
   "/upcoming",
@@ -38,9 +50,9 @@ router.get(
     const data = await getOSet(
       "tmdb:movies:upcoming",
       () => consultarTMDB("movie/upcoming", { region: "es" }),
-      TTL.listas
+      TTL.LISTAS
     )
-    res.status(200).json(data)
+    res.json(data)
   })
 )
 
@@ -48,11 +60,8 @@ router.get(
  * @swagger
  * /movies/top-rated:
  *   get:
- *     summary: Películas más valoradas
+ *     summary: Listar películas con mayor valoración de la historia
  *     tags: [Películas]
- *     responses:
- *       200:
- *         description: Lista de películas más valoradas
  */
 router.get(
   "/top-rated",
@@ -60,9 +69,9 @@ router.get(
     const data = await getOSet(
       "tmdb:movies:top-rated",
       () => consultarTMDB("movie/top_rated", { region: "es" }),
-      TTL.listas
+      TTL.LISTAS
     )
-    res.status(200).json(data)
+    res.json(data)
   })
 )
 
@@ -70,11 +79,8 @@ router.get(
  * @swagger
  * /movies/popular:
  *   get:
- *     summary: Películas populares
+ *     summary: Consultar tendencias mundiales actuales
  *     tags: [Películas]
- *     responses:
- *       200:
- *         description: Lista de películas populares
  */
 router.get(
   "/popular",
@@ -82,12 +88,21 @@ router.get(
     const data = await getOSet(
       "tmdb:movies:popular",
       () => consultarTMDB("movie/popular", { region: "es" }),
-      TTL.listas
+      TTL.LISTAS
     )
-    res.status(200).json(data)
+    res.json(data)
   })
 )
 
+/**
+ * ---------------------------------------------------------------------------
+ * BLOQUE: BÚSQUEDA Y DETALLE
+ * ---------------------------------------------------------------------------
+ */
+
+/**
+ * Búsqueda optimizada por título.
+ */
 router.get(
   "/search",
   manejadorAsincrono(async (req: Request, res: Response) => {
@@ -95,18 +110,16 @@ router.get(
     const page = String(req.query.page || "1").trim()
 
     if (!query) {
-      return res
-        .status(400)
-        .json({ message: "Debe proporcionar un término de búsqueda." })
+      return res.status(400).json({ message: "Se requiere un término de búsqueda." })
     }
 
     const data = await getOSet(
       `tmdb:movies:search:${query.toLowerCase()}:p${page}`,
       () => consultarTMDB("search/movie", { query, page }),
-      TTL.listas
+      TTL.LISTAS
     )
 
-    res.status(200).json(data)
+    res.json(data)
   })
 )
 
@@ -114,7 +127,7 @@ router.get(
  * @swagger
  * /movies/{idOrSlug}:
  *   get:
- *     summary: Detalle completo de una película
+ *     summary: Detalle profundo de una película (incluye créditos e imágenes)
  *     tags: [Películas]
  *     parameters:
  *       - in: path
@@ -122,29 +135,21 @@ router.get(
  *         required: true
  *         schema:
  *           type: string
- *         description: ID numérico o slug de la película
- *     responses:
- *       200:
- *         description: Detalle de la película con créditos, proveedores e imágenes
- *       404:
- *         description: Película no encontrada
+ *         description: ID numérico o slug amigable de la película
  */
 router.get(
   "/:idOrSlug",
   manejadorAsincrono(async (req: Request, res: Response) => {
     const idOSlug = req.params.idOrSlug as string
-
     let idPelicula: number = parseInt(idOSlug)
 
-    // Si no es número, resolver el slug a un ID primero
+    // Resolución de Slug a ID TMDB
     if (isNaN(idPelicula)) {
       const nombreLimpio = idOSlug.replace(/-/g, " ")
 
-      // Cachear también la resolución slug → id
       const datosBusqueda = (await getOSet(
         `tmdb:slug:${idOSlug}`,
         async () => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const [enData, esData]: any[] = await Promise.all([
             consultarTMDB(
               "search/movie",
@@ -163,59 +168,36 @@ router.get(
             Array.isArray(esData?.results) ? esData.results : []
           )
 
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const ranked = (merged as any[])
             .map((movie) => ({
               ...movie,
               _title_rank: rankMovieByQuery(movie, nombreLimpio),
             }))
-            .sort(
-              (a, b) => Number(b._title_rank || 0) - Number(a._title_rank || 0)
-            )
+            .sort((a, b) => Number(b._title_rank || 0) - Number(a._title_rank || 0))
 
-          return {
-            results: ranked,
-          }
+          return { results: ranked }
         },
-        TTL.detalle
+        TTL.DETALLE
       )) as { results: { id: number }[] }
 
-      if (!datosBusqueda.results || datosBusqueda.results.length === 0) {
-        return res
-          .status(404)
-          .json({ message: "Película no encontrada por slug" })
+      if (!datosBusqueda.results?.length) {
+        return res.status(404).json({ message: "Referencia no encontrada." })
       }
 
       idPelicula = datosBusqueda.results[0].id
     }
 
-    // Cachear el detalle completo (incluye credits, providers, etc.)
+    // Recuperación de metadatos expandidos
     const detalle = await getOSet(
       `tmdb:movie:${idPelicula}`,
       async () => {
-        const [detalles, creditos, proveedores, titulos, imagenes] =
-          (await Promise.all([
-            consultarTMDB(`movie/${idPelicula}`),
-            consultarTMDB(`movie/${idPelicula}/credits`),
-            consultarTMDB(`movie/${idPelicula}/watch/providers`, {
-              language: "es-ES",
-            }),
-            consultarTMDB(
-              `movie/${idPelicula}/alternative_titles`,
-              {
-                language: "",
-              },
-              { includeDefaultLanguage: false }
-            ),
-            consultarTMDB(
-              `movie/${idPelicula}/images`,
-              {
-                include_image_language: "en,null",
-              },
-              { includeDefaultLanguage: false }
-            ),
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ])) as [any, any, any, any, any]
+        const [detalles, creditos, proveedores, titulos, imagenes] = (await Promise.all([
+          consultarTMDB(`movie/${idPelicula}`),
+          consultarTMDB(`movie/${idPelicula}/credits`),
+          consultarTMDB(`movie/${idPelicula}/watch/providers`, { language: "es-ES" }),
+          consultarTMDB(`movie/${idPelicula}/alternative_titles`, { language: "" }, { includeDefaultLanguage: false }),
+          consultarTMDB(`movie/${idPelicula}/images`, { include_image_language: "en,null" }, { includeDefaultLanguage: false }),
+        ])) as [any, any, any, any, any]
 
         return {
           ...detalles,
@@ -232,10 +214,10 @@ router.get(
           },
         }
       },
-      TTL.detalle
+      TTL.DETALLE
     )
 
-    res.status(200).json(detalle)
+    res.json(detalle)
   })
 )
 

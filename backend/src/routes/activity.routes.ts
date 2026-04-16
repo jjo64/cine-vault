@@ -1,8 +1,21 @@
+/**
+ * @file activity.routes.ts
+ * @description Definición de rutas para el sistema de Actividad y Social Feed.
+ * Permite a los usuarios visualizar un flujo de eventos (reseñas, entradas de diario, 
+ * adiciones al vault) de sus amigos o de su propia actividad.
+ * 
+ * @note Este archivo contiene actualmente lógica de negocio pesada que será 
+ * delegada a un servicio dedicado en la Fase 5 para cumplir con SOLID.
+ */
+
 import { Router } from "express"
+import { prisma } from "../lib/prisma.js"
 import { middlewareAutenticacion } from "../middlewares/auth.middlewares.js"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
-import { prisma } from "../lib/prisma.js"
 
+/**
+ * Kind descriptivos de los eventos que pueden aparecer en el feed.
+ */
 type ActivityKind =
   | "review_published"
   | "diary_entry"
@@ -11,6 +24,9 @@ type ActivityKind =
   | "review_liked"
   | "follow"
 
+/**
+ * Estructura de un evento de actividad para el frontend.
+ */
 type ActivityEvent = {
   id: string
   type: ActivityKind
@@ -38,12 +54,24 @@ type ActivityEvent = {
 
 const router = Router()
 
+/**
+ * Helper para normalización de valores numéricos en query strings.
+ */
 const toNumber = (value: unknown, fallback: number) => {
   const parsed = Number(value)
   if (!Number.isFinite(parsed)) return fallback
   return parsed
 }
 
+/**
+ * @swagger
+ * /activity/feed:
+ *   get:
+ *     summary: Obtener el feed de actividad social
+ *     tags: [Activity]
+ *     security:
+ *       - bearerAuth: []
+ */
 router.get(
   "/feed",
   middlewareAutenticacion,
@@ -52,6 +80,8 @@ router.get(
     const type = String(req.query.type || "friends").toLowerCase()
     const page = Math.max(1, toNumber(req.query.page, 1))
     const limit = Math.min(50, Math.max(1, toNumber(req.query.limit, 20)))
+
+    // --- Lógica de recuperación (Será movida a ActivityService en Fase 5) ---
 
     const followingIds =
       type === "friends"

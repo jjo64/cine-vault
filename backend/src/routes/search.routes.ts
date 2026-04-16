@@ -1,212 +1,93 @@
+/**
+ * @file search.routes.ts
+ * @description Rutas para el motor de búsqueda universal de CineVault.
+ * Permite buscar películas, series y personas utilizando el ecosistema TMDB.
+ * Incluye técnicas de ranking de relevancia y límites de tasa para proteger la API.
+ */
+
 import { Router } from "express"
-import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
 import {
+  getMovieGenres,
+  getMovieSearch,
+  getMultiSearch,
+  getPersonSearch,
   getSearch,
   getSearchDebug,
-  getMultiSearch,
-  getMovieSearch,
-  getMovieGenres,
-  getPersonSearch,
   getTVDetail,
   getTVSearch,
 } from "../controllers/SearchController.js"
+import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
+import { limitarSpikesIP } from "../middlewares/rateLimit.middleware.js"
 
 /**
  * @swagger
  * tags:
  *   name: Búsqueda
- *   description: Búsqueda de contenido en TMDB con caché Redis
+ *   description: Consultas avanzadas de contenido multimedia
  */
 
 const router = Router()
 
 /**
+ * ---------------------------------------------------------------------------
+ * BLOQUE: BÚSQUEDA UNIVERSAL (Recomendado)
+ * ---------------------------------------------------------------------------
+ */
+
+/**
  * @swagger
  * /search:
  *   get:
- *     summary: Búsqueda general de películas con director y títulos alternativos
+ *     summary: Búsqueda general con ranking de relevancia
  *     tags: [Búsqueda]
- *     parameters:
- *       - in: query
- *         name: q
- *         required: true
- *         schema:
- *           type: string
- *         example: "Fight Club"
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *         example: 1
- *     responses:
- *       200:
- *         description: Resultados de búsqueda
- *         content:
- *           application/json:
- *             example:
- *               results:
- *                 - id: 550
- *                   title: "Fight Club"
- *                   poster_path: "/sgTAWJFaB2kBvdQxRGabYFiQqEK.jpg"
- *                   overview: "Un hombre consumido por el insomnio..."
- *                   release_date: "1999-10-15"
- *                   vote_average: 8.4
- *                   director: "David Fincher"
- *                   alternative_titles:
- *                     - title: "El club de la lucha"
- *                       iso_3166_1: "ES"
- *               total_pages: 1
- *               total_results: 1
- *               page: 1
- *       400:
- *         description: Término de búsqueda requerido
- *         content:
- *           application/json:
- *             example:
- *               error: "Debe proporcionar un término de búsqueda."
  */
-router.get("/", manejadorAsincrono(getSearch)) // busqueda general
-router.get("/debug", manejadorAsincrono(getSearchDebug)) // debug de ranking
+router.get("/", limitarSpikesIP, manejadorAsincrono(getSearch))
 
 /**
- * @swagger
- * /search/multi:
- *   get:
- *     summary: Búsqueda múltiple (películas, series, personas)
- *     tags: [Búsqueda]
- *     parameters:
- *       - in: query
- *         name: q
- *         required: true
- *         schema:
- *           type: string
- *         example: "Inception"
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *         example: 1
- *     responses:
- *       200:
- *         description: Resultados combinados de películas, series y personas
- *         content:
- *           application/json:
- *             example:
- *               results:
- *                 - id: 27205
- *                   media_type: "movie"
- *                   title: "Inception"
- *                   poster_path: "/oYuLEt3zVCKq57qu2F8dT7NIa6f.jpg"
- *               total_pages: 1
- *               total_results: 1
+ * Búsqueda combinada de películas, series y personas en un solo flujo.
  */
-router.get("/multi", manejadorAsincrono(getMultiSearch)) // busqueda general
+router.get("/multi", limitarSpikesIP, manejadorAsincrono(getMultiSearch))
 
 /**
- * @swagger
- * /search/movie:
- *   get:
- *     summary: Búsqueda solo de películas
- *     tags: [Búsqueda]
- *     parameters:
- *       - in: query
- *         name: q
- *         required: true
- *         schema:
- *           type: string
- *         example: "The Godfather"
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *         example: 1
- *     responses:
- *       200:
- *         description: Películas encontradas
- *         content:
- *           application/json:
- *             example:
- *               results:
- *                 - id: 238
- *                   title: "The Godfather"
- *                   poster_path: "/3bhkrj58Vtu7enYsLegHnDmni3b.jpg"
- *                   release_date: "1972-03-14"
- *                   vote_average: 8.7
- *               total_pages: 1
- *               total_results: 1
+ * Endpoint de diagnóstico para validar pesos de ranking.
  */
-router.get("/movie", manejadorAsincrono(getMovieSearch)) // busqueda películas
-
-router.get("/genres/movie", manejadorAsincrono(getMovieGenres))
+router.get("/debug", limitarSpikesIP, manejadorAsincrono(getSearchDebug))
 
 /**
- * @swagger
- * /search/person:
- *   get:
- *     summary: Búsqueda solo de personas
- *     tags: [Búsqueda]
- *     parameters:
- *       - in: query
- *         name: q
- *         required: true
- *         schema:
- *           type: string
- *         example: "Christopher Nolan"
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *         example: 1
- *     responses:
- *       200:
- *         description: Personas encontradas
- *         content:
- *           application/json:
- *             example:
- *               results:
- *                 - id: 525
- *                   name: "Christopher Nolan"
- *                   profile_path: "/xuAIuYSmsUzKlUMBFGVZaWsY3DZ.jpg"
- *                   known_for_department: "Directing"
- *               total_pages: 1
- *               total_results: 1
+ * ---------------------------------------------------------------------------
+ * BLOQUE: BÚSQUEDA POR CATEGORÍA
+ * ---------------------------------------------------------------------------
  */
-router.get("/person", manejadorAsincrono(getPersonSearch)) // busqueda personas
 
 /**
- * @swagger
- * /search/tv:
- *   get:
- *     summary: Búsqueda solo de series
- *     tags: [Búsqueda]
- *     parameters:
- *       - in: query
- *         name: q
- *         required: true
- *         schema:
- *           type: string
- *         example: "Breaking Bad"
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *         example: 1
- *     responses:
- *       200:
- *         description: Series encontradas
- *         content:
- *           application/json:
- *             example:
- *               results:
- *                 - id: 1396
- *                   name: "Breaking Bad"
- *                   poster_path: "/ggFHVNu6YYI5L9pCfOacjizRGt.jpg"
- *                   first_air_date: "2008-01-20"
- *                   vote_average: 8.9
- *               total_pages: 1
- *               total_results: 1
+ * Búsqueda específica de películas.
  */
-router.get("/tv", manejadorAsincrono(getTVSearch)) // busqueda series
-router.get("/tv/:id", manejadorAsincrono(getTVDetail)) // detalle serie
+router.get("/movie", limitarSpikesIP, manejadorAsincrono(getMovieSearch))
+
+/**
+ * Listado de géneros disponibles en TMDB.
+ */
+router.get("/genres/movie", limitarSpikesIP, manejadorAsincrono(getMovieGenres))
+
+/**
+ * Búsqueda de personas (Directores, Actores).
+ */
+router.get("/person", limitarSpikesIP, manejadorAsincrono(getPersonSearch))
+
+/**
+ * ---------------------------------------------------------------------------
+ * BLOQUE: SERIES DE TELEVISIÓN
+ * ---------------------------------------------------------------------------
+ */
+
+/**
+ * Búsqueda específica de series de TV.
+ */
+router.get("/tv", limitarSpikesIP, manejadorAsincrono(getTVSearch))
+
+/**
+ * Detalle profundo de una serie de TV por ID.
+ */
+router.get("/tv/:id", limitarSpikesIP, manejadorAsincrono(getTVDetail))
 
 export default router

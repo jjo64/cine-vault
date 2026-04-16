@@ -1,14 +1,22 @@
+/**
+ * @file movieRef.services.ts
+ * @description Capa de servicios para la resolución y gestión de referencias locales de películas.
+ * Actúa como puente entre los identificadores externos (TMDB) y las llaves primarias 
+ * locales, gestionando la persistencia perezosa y la integridad ante peticiones concurrentes.
+ */
+
 import { Prisma } from "@prisma/client"
 import { movieRefRepository } from "../repositories/MovieRefRepository.js"
 
-/* ==========================================================================
-   MOVIE REF SERVICE
-   --------------------------------------------------------------------------
-   Lógica de negocio para resolución y creación de referencias locales a TMDB.
-   Las queries están en MovieRefRepository; aquí vive la estrategia de
-   fallback y el manejo de race condition en inserciones concurrentes.
-   ========================================================================== */
+// --- Servicios Principales ---
 
+/**
+ * Intenta resolver una referencia de película a partir de un candidato.
+ * El candidato puede ser tanto el ID interno del sistema como el ID de TMDB.
+ * 
+ * @param candidate ID a verificar (Local o TMDB).
+ * @returns El ID local de la película o null si no existe.
+ */
 export const findMovieRefIdByCandidate = async (
   candidate: number
 ): Promise<number | null> => {
@@ -19,6 +27,14 @@ export const findMovieRefIdByCandidate = async (
   return byTmdb?.id ?? null
 }
 
+/**
+ * Garantiza la existencia de una referencia local para una película de TMDB.
+ * Si no existe, la crea. Implementa una estrategia de "Race Condition Recovery" 
+ * mediante el manejo de errores de unicidad de Prisma (P2002).
+ * 
+ * @param candidate ID de TMDB para asegurar en la base de datos local.
+ * @returns El ID local único y persistente.
+ */
 export const ensureMovieRefId = async (candidate: number): Promise<number> => {
   const existing = await findMovieRefIdByCandidate(candidate)
   if (existing) return existing
@@ -27,7 +43,11 @@ export const ensureMovieRefId = async (candidate: number): Promise<number> => {
     const created = await movieRefRepository.create(candidate)
     return created.id
   } catch (error) {
-    // Race condition: otro request insertó el mismo tmdb_id entre el find y el create
+    /**
+     * Condición de carrera: otro proceso pudo insertar el mismo tmdb_id entre la 
+     * comprobación inicial y la inserción. Capturamos el error de restricción única
+     * y realizamos un lookup final para retornar el ID existente.
+     */
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"

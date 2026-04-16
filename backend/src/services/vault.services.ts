@@ -1,3 +1,11 @@
+/**
+ * @file vault.services.ts
+ * @description Capa de servicios para la gestión del "Vault" (videoteca personal) y 
+ * el ecosistema de micro-blogging social de CineVault.
+ * Coordina la persistencia de colecciones, la creación de contenido enriquecido (reviews, 
+ * edits, listas) y la integración con metadatos externos de TMDB.
+ */
+
 import {
   ConflictError,
   NotFoundError,
@@ -5,20 +13,53 @@ import {
 } from "../errors/AppErrors.js"
 import { consultarTMDB } from "../helpers/fetchTMDB.js"
 import { vaultRepository } from "../repositories/VaultRepository.js"
-import {
-  ensureMovieRefId,
-  findMovieRefIdByCandidate,
-} from "./movieRef.services.js"
 import type {
   AgregarVaultDTO,
   CreateVaultSocialEntryDTO,
   ListVaultSocialQueryDTO,
   UpdateVaultSocialEntryDTO,
 } from "../schemas/vault.js"
+import {
+  ensureMovieRefId,
+  findMovieRefIdByCandidate,
+} from "./movieRef.services.js"
 
+// --- Utilidades del Servicio ---
+
+/**
+ * Normaliza y valida números de página.
+ */
+const parsePage = (value: unknown, fallback: number) => {
+  const parsed = Number(value)
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback
+  return Math.floor(parsed)
+}
+
+/**
+ * Mapea el tipo de entrada de negocio a una categoría visual de componente (Social Cards).
+ */
+const mapSocialCardType = (
+  entryType: "reflexion" | "edit" | "critica" | "recomendacion"
+) => {
+  if (entryType === "edit") return "video"
+  if (entryType === "recomendacion") return "list"
+  return "review"
+}
+
+// --- Servicios de Colección (Vault Core) ---
+
+/**
+ * Recupera la colección completa del usuario, inyectando metadatos para visualización rica.
+ */
 export const obtenerVaultService = (userId: number) =>
   vaultRepository.buildRichResponse(userId)
 
+/**
+ * Añade una película a la videoteca personal del usuario.
+ * Garantiza la integridad referencial mediante el uso de movie_ref.
+ * 
+ * @throws ConflictError si la película ya reside en el vault del usuario.
+ */
 export const agregarVaultService = async (
   userId: number,
   data: AgregarVaultDTO
@@ -27,12 +68,15 @@ export const agregarVaultService = async (
   const yaExiste = await vaultRepository.exists(userId, movieId)
 
   if (yaExiste) {
-    throw new ConflictError(`La pelicula ${data.movie_id} ya esta en tu vault`)
+    throw new ConflictError(`La película ${data.movie_id} ya se encuentra en su videoteca personal`)
   }
 
   await vaultRepository.create(userId, movieId)
 }
 
+/**
+ * Elimina una referencia del vault del usuario.
+ */
 export const eliminarVaultService = async (
   userId: number,
   movieIdCandidate: number
@@ -42,20 +86,12 @@ export const eliminarVaultService = async (
   await vaultRepository.deleteByMovieId(userId, resolvedMovieId)
 }
 
-const parsePage = (value: unknown, fallback: number) => {
-  const parsed = Number(value)
-  if (!Number.isFinite(parsed) || parsed <= 0) return fallback
-  return Math.floor(parsed)
-}
+// --- Servicios de Contenido Social (Vault Social) ---
 
-const mapSocialCardType = (
-  entryType: "reflexion" | "edit" | "critica" | "recomendacion"
-) => {
-  if (entryType === "edit") return "video"
-  if (entryType === "recomendacion") return "list"
-  return "review"
-}
-
+/**
+ * Obtiene el feed social de un usuario (reflexiones, edits, etc.) con paginación 
+ * y enriquecimiento de metadatos desde TMDB.
+ */
 export const obtenerVaultSocialService = async (
   targetUserId: number,
   viewerUserId: number | null,
@@ -72,6 +108,7 @@ export const obtenerVaultSocialService = async (
     includePrivate,
   })
 
+  // Enriquecemos cada entrada con datos básicos de TMDB (poster/título) para la UI
   const tmdbPayloads = await Promise.allSettled(
     items.map((item) => {
       if (!item.tmdb_id) return Promise.resolve(null)
@@ -118,6 +155,9 @@ export const obtenerVaultSocialService = async (
   }
 }
 
+/**
+ * Crea una nueva entrada de contenido social en el perfil del usuario.
+ */
 export const crearVaultSocialEntryService = async (
   userId: number,
   data: CreateVaultSocialEntryDTO
@@ -134,10 +174,10 @@ export const crearVaultSocialEntryService = async (
     isPublic: Boolean(data.is_public),
   })
 
-  if (!id) throw new ValidationError("No se pudo crear la entrada del vault")
+  if (!id) throw new ValidationError("Error de infraestructura al crear el registro social")
 
   const created = await vaultRepository.getSocialEntryByIdForOwner(id, userId)
-  if (!created) throw new NotFoundError("Entrada de vault no encontrada")
+  if (!created) throw new NotFoundError("La entrada recién creada no pudo ser verificada")
 
   return {
     id: created.id,
@@ -152,6 +192,9 @@ export const crearVaultSocialEntryService = async (
   }
 }
 
+/**
+ * Modifica una entrada social existente, verificando la propiedad del recurso.
+ */
 export const actualizarVaultSocialEntryService = async (
   userId: number,
   entryId: number,
@@ -161,7 +204,7 @@ export const actualizarVaultSocialEntryService = async (
     entryId,
     userId
   )
-  if (!current) throw new NotFoundError("Entrada de vault no encontrada")
+  if (!current) throw new NotFoundError("Contenido no encontrado o sin permisos de edición")
 
   const movieId = data.movie_id ? await ensureMovieRefId(data.movie_id) : null
 
@@ -181,7 +224,7 @@ export const actualizarVaultSocialEntryService = async (
     entryId,
     userId
   )
-  if (!updated) throw new NotFoundError("Entrada de vault no encontrada")
+  if (!updated) throw new NotFoundError("No se pudo recuperar el registro actualizado")
 
   return {
     id: updated.id,
@@ -196,6 +239,9 @@ export const actualizarVaultSocialEntryService = async (
   }
 }
 
+/**
+ * Elimina de forma permanente una entrada de la red social de CineVault.
+ */
 export const eliminarVaultSocialEntryService = async (
   userId: number,
   entryId: number
@@ -204,6 +250,7 @@ export const eliminarVaultSocialEntryService = async (
     entryId,
     userId
   )
-  if (!current) throw new NotFoundError("Entrada de vault no encontrada")
+  if (!current) throw new NotFoundError("Registro no encontrado o permisos insuficientes")
+  
   await vaultRepository.deleteSocialEntry(entryId, userId)
 }

@@ -1,3 +1,10 @@
+/**
+ * @file arcos.services.ts
+ * @description Capa de servicios para la gestión de "Arcos" (Rutas de aprendizaje/visionado).
+ * Coordina la lógica de negocio entre la persistencia (ArcosRepository), el enriquecimiento 
+ * de metadatos (TMDB) y la validación de integridad de colecciones.
+ */
+
 import { NotFoundError, ValidationError } from "../errors/AppErrors.js"
 import { consultarTMDB } from "../helpers/fetchTMDB.js"
 import { arcosRepository } from "../repositories/ArcosRepository.js"
@@ -8,6 +15,11 @@ import {
 } from "../schemas/arcos.js"
 import { ensureMovieRefId } from "./movieRef.services.js"
 
+// --- Tipos e Interfaces de Soporte ---
+
+/**
+ * Estructura de respaldo para arcos básicos en caso de fallo de persistencia.
+ */
 type ArcoFallback = {
   id: number
   created_by_user_id: number
@@ -28,6 +40,17 @@ type ArcoFallback = {
   usersCompleted: number
 }
 
+/**
+ * Estados permitidos en el flujo de moderación de un arco.
+ */
+type ArcoModerationStatus =
+  | "pending_review"
+  | "approved"
+  | "rejected"
+  | "archived"
+
+// --- Datos de Respaldo (Fallbacks) ---
+
 const ARCOS_FALLBACK: ArcoFallback[] = [
   {
     id: 1,
@@ -36,7 +59,7 @@ const ARCOS_FALLBACK: ArcoFallback[] = [
     slug: "tarkovsky-tiempo-materia",
     title: "Tarkovsky: el tiempo como materia",
     description:
-      "Ruta de formacion centrada en la filmografia de Tarkovsky y su evolucion estetica.",
+      "Ruta de formación centrada en la filmografía de Tarkovsky y su evolución estética.",
     poster_url: null,
     level: "AVANZADO",
     moderation_status: "approved",
@@ -51,15 +74,17 @@ const ARCOS_FALLBACK: ArcoFallback[] = [
   },
 ]
 
+// --- Funciones de Utilidad y Transformación ---
+
+/**
+ * Sanitiza y convierte valores numéricos o bigints a Number.
+ */
 const parseCount = (value: bigint | number | null | undefined) =>
   Number(value ?? 0)
 
-type ArcoModerationStatus =
-  | "pending_review"
-  | "approved"
-  | "rejected"
-  | "archived"
-
+/**
+ * Mapea una fila de base de datos al objeto de respuesta de arco (DTO de salida).
+ */
 const mapArcoSummary = (row: {
   id: number
   created_by_user_id: number
@@ -103,6 +128,9 @@ const mapArcoSummary = (row: {
   usersCompleted: parseCount(row.engaged_users),
 })
 
+/**
+ * Normaliza partes de un texto para la generación de slugs amigables (SEO/URL).
+ */
 const normalizeSlugPart = (value: string) =>
   value
     .normalize("NFD")
@@ -114,18 +142,23 @@ const normalizeSlugPart = (value: string) =>
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "")
 
+/**
+ * Genera una base determinista para el slug del arco.
+ */
 const generateArcoSlugBase = (title: string) => {
   const base = normalizeSlugPart(title)
   if (!base) return `arco-${Date.now()}`
   return base.slice(0, 100)
 }
 
+/**
+ * Construye un slug único verificando la existencia en la base de datos y añadiendo sufijos si es necesario.
+ */
 const buildUniqueArcoSlug = async (title: string) => {
   const base = generateArcoSlugBase(title)
   let candidate = base
   let attempt = 1
 
-  // Avoid collisions with deterministic suffixes.
   while (await arcosRepository.existsSlug(candidate)) {
     candidate = `${base}-${attempt}`.slice(0, 120)
     attempt += 1
@@ -134,6 +167,9 @@ const buildUniqueArcoSlug = async (title: string) => {
   return candidate
 }
 
+/**
+ * Normaliza y valida la lista de películas para un arco, garantizando unicidad e integridad.
+ */
 const normalizeMovies = async (
   movies: Array<{ movie_id: number; note?: string; is_optional: boolean }>
 ) => {
@@ -149,7 +185,7 @@ const normalizeMovies = async (
     const movieRefId = await ensureMovieRefId(movie.movie_id)
     if (seenMovieIds.has(movieRefId)) {
       throw new ValidationError(
-        "No se permiten peliculas repetidas dentro del mismo arco"
+        "No se permiten películas repetidas dentro del mismo arco"
       )
     }
 
@@ -163,12 +199,15 @@ const normalizeMovies = async (
   }
 
   if (normalized.length < 2) {
-    throw new ValidationError("Un arco debe tener al menos 2 peliculas")
+    throw new ValidationError("Un arco debe tener al menos 2 películas")
   }
 
   return normalized
 }
 
+/**
+ * Parsea el estado de moderación garantizando un valor por defecto seguro.
+ */
 const parseModerationStatus = (status?: string): ArcoModerationStatus => {
   if (status === "approved" || status === "rejected" || status === "archived") {
     return status
@@ -176,6 +215,11 @@ const parseModerationStatus = (status?: string): ArcoModerationStatus => {
   return "pending_review"
 }
 
+// --- Servicios Principales ---
+
+/**
+ * Obtiene todos los arcos públicos aprobados por moderación.
+ */
 export const obtenerArcosService = async () => {
   try {
     const rows = await arcosRepository.listPublicArcos()
@@ -185,6 +229,9 @@ export const obtenerArcosService = async () => {
   }
 }
 
+/**
+ * Construye el detalle de un arco (películas + progreso del usuario) hidratando con TMDB.
+ */
 const buildArcoDetail = async (arcoId: number, userId?: number) => {
   const movies = await arcosRepository.listArcoMovies(arcoId)
   const progressIds = userId
@@ -223,7 +270,7 @@ const buildArcoDetail = async (arcoId: number, userId?: number) => {
           note: movie.note,
           watched: watchedSet.has(movie.movie_id),
           movie_info: {
-            title: data.title || "Sin titulo",
+            title: data.title || "Sin título",
             poster_path: data.poster_path || "",
             release_date: data.release_date || "",
           },
@@ -256,6 +303,9 @@ const buildArcoDetail = async (arcoId: number, userId?: number) => {
   }
 }
 
+/**
+ * Obtiene el detalle de un arco público, incluyendo el progreso si el usuario está autenticado.
+ */
 export const obtenerArcoByIdService = async (
   arcoId: number,
   userId?: number
@@ -286,6 +336,9 @@ export const obtenerArcoByIdService = async (
   }
 }
 
+/**
+ * Marca una película dentro de un arco como "completada" por el usuario.
+ */
 export const marcarProgresoArcoService = async (
   userId: number,
   arcoId: number,
@@ -298,7 +351,7 @@ export const marcarProgresoArcoService = async (
 
   const belongs = await arcosRepository.hasMovieInArco(arcoId, movieId)
   if (!belongs) {
-    throw new NotFoundError("La pelicula no pertenece a este arco")
+    throw new NotFoundError("La película no pertenece a este arco")
   }
 
   await arcosRepository.createProgress(userId, arcoId, movieId)
@@ -310,11 +363,17 @@ export const marcarProgresoArcoService = async (
   }
 }
 
+/**
+ * Recupera la lista de arcos creados por el usuario (borradores y aprobados).
+ */
 export const obtenerMisArcosService = async (userId: number) => {
   const rows = await arcosRepository.listArcosByOwner(userId)
   return rows.map(mapArcoSummary)
 }
 
+/**
+ * Obtiene el detalle de un arco específico del que el usuario es propietario.
+ */
 export const obtenerMiArcoByIdService = async (
   userId: number,
   arcoId: number
@@ -330,6 +389,9 @@ export const obtenerMiArcoByIdService = async (
   }
 }
 
+/**
+ * Crea un nuevo arco en estado borrador.
+ */
 export const crearArcoBorradorService = async (
   userId: number,
   data: CrearArcoDTO
@@ -354,6 +416,9 @@ export const crearArcoBorradorService = async (
   return obtenerMiArcoByIdService(userId, arcoId)
 }
 
+/**
+ * Actualiza los datos o películas de un arco en estado borrador o rechazado.
+ */
 export const actualizarArcoBorradorService = async (
   userId: number,
   arcoId: number,
@@ -386,6 +451,9 @@ export const actualizarArcoBorradorService = async (
   return obtenerMiArcoByIdService(userId, arcoId)
 }
 
+/**
+ * Envía un arco a revisión para su aprobación por parte de los moderadores.
+ */
 export const enviarArcoRevisionService = async (
   userId: number,
   arcoId: number
@@ -398,14 +466,14 @@ export const enviarArcoRevisionService = async (
     arco.moderation_status !== "rejected"
   ) {
     throw new ValidationError(
-      "Solo se pueden enviar a revision arcos en estado draft o rejected"
+      "Solo se pueden enviar a revisión arcos en estado draft o rejected"
     )
   }
 
   const totalMovies = await arcosRepository.countArcoMovies(arcoId)
   if (totalMovies < 2) {
     throw new ValidationError(
-      "Un arco debe tener al menos 2 peliculas para enviarse a revision"
+      "Un arco debe tener al menos 2 películas para enviarse a revisión"
     )
   }
 
@@ -413,12 +481,18 @@ export const enviarArcoRevisionService = async (
   return obtenerMiArcoByIdService(userId, arcoId)
 }
 
+/**
+ * Obtiene la lista de arcos filtrada por estado de moderación (para administradores).
+ */
 export const obtenerArcosModeracionService = async (status?: string) => {
   const parsedStatus = parseModerationStatus(status)
   const rows = await arcosRepository.listArcosByModerationStatus(parsedStatus)
   return rows.map(mapArcoSummary)
 }
 
+/**
+ * Ejecuta la acción de moderar un arco (aprobar o rechazar).
+ */
 export const moderarArcoService = async (
   reviewerId: number,
   arcoId: number,

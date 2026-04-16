@@ -1,26 +1,55 @@
+/**
+ * @file payments.services.ts
+ * @description Capa de servicios para la gestión de monetización y suscripciones mediante Stripe.
+ * Implementa el flujo de pagos (Checkout), gestión de suscripciones (Billing Portal), 
+ * procesamiento de orquestación de webhooks para sincronización de estados y 
+ * lógica de idempotencia mediante Redis.
+ */
+
 import "dotenv/config"
 import Stripe from "stripe"
-import { paymentsRepository } from "../repositories/PaymentsRepository.js"
 import { NotFoundError, ValidationError } from "../errors/AppErrors.js"
 import { redis } from "../lib/redis.js"
+import { paymentsRepository } from "../repositories/PaymentsRepository.js"
 
-/* ==========================================================================
-   PAYMENTS SERVICE
-   --------------------------------------------------------------------------
-   Toda la lógica de negocio de pagos: Stripe + operaciones de base de datos
-   delegadas al PaymentsRepository.
-   ========================================================================== */
+// --- Configuración e Inicialización de Stripe ---
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string)
 
+/**
+ * Tabla de equivalencia de planes comerciales con identificadores de Stripe.
+ */
 const IDS_PRECIOS = {
   vip: process.env.STRIPE_PRICE_VIP as string,
   pro: process.env.STRIPE_PRICE_PRO as string,
 }
 
+// --- Funciones de Utilidad Interna ---
+
 /**
- * Crea una sesión de checkout en Stripe para el plan indicado.
- * @returns URL de la sesión de Stripe Checkout
+ * Mapea los estados de suscripción de Stripe a los estados internos del dominio de CineVault.
+ */
+const mapStripeStatus = (
+  status: Stripe.Subscription.Status
+): "active" | "cancelled" | "expired" => {
+  if (status === "canceled") return "cancelled"
+  if (
+    status === "unpaid" ||
+    status === "past_due" ||
+    status === "incomplete_expired"
+  )
+    return "expired"
+  return "active"
+}
+
+// --- Servicios Principales ---
+
+/**
+ * Genera una sesión de Stripe Checkout para iniciar una nueva suscripción.
+ * 
+ * @param userId ID del usuario que realiza la compra.
+ * @param plan Identificador del nivel de suscripción deseado ('pro' o 'vip').
+ * @returns URL de redirección a la pasarela segura de Stripe.
  */
 export async function createCheckoutSessionService(
   userId: number,
@@ -60,6 +89,10 @@ export async function createCheckoutSessionService(
   return sesion.url!
 }
 
+/**
+ * Crea una sesión para el portal de autoservicio (Billing Portal) de Stripe.
+ * Permite a los usuarios gestionar sus métodos de pago y cancelar suscripciones.
+ */
 export async function createPortalSessionService(
   userId: number
 ): Promise<string> {
@@ -81,8 +114,12 @@ export async function createPortalSessionService(
 }
 
 /**
- * Valida la firma del webhook y procesa el evento de Stripe.
- * Lanza ValidationError (→ 400) si la firma es inválida.
+ * Procesa eventos asíncronos enviados por los Webhooks de Stripe.
+ * Implementa una capa de idempotencia mediante Redis para evitar el procesamiento 
+ * doble de eventos (event_id check durante 24h).
+ * 
+ * @param rawBody Cuerpo crudo de la petición (necesario para validación de firma).
+ * @param signature Firma digital de Stripe recibida en los encabezados.
  */
 export async function processWebhookEventService(
   rawBody: Buffer,
@@ -100,7 +137,7 @@ export async function processWebhookEventService(
     throw new ValidationError("Webhook inválido")
   }
 
-  // Idempotencia básica por event_id (24h)
+  // Idempotencia básica: garantizar que procesamos cada evento una única vez.
   const seen = await redis.set(
     `stripe:event:${event.id}`,
     "1",
@@ -111,7 +148,9 @@ export async function processWebhookEventService(
   if (seen !== "OK") return
 
   switch (event.type) {
-    // Pago inicial completado → crear suscripción y pago
+    /**
+     * Pago inicial satisfactorio: activamos la suscripción y registramos la transacción.
+     */
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session
       const userId = Number(session.metadata?.userId)
@@ -134,7 +173,9 @@ export async function processWebhookEventService(
       break
     }
 
-    // Renovación mensual → actualizar end_date
+    /**
+     * Ciclo de facturación recurrente completado con éxito.
+     */
     case "invoice.payment_succeeded": {
       const invoice = event.data.object as Stripe.Invoice & {
         subscription?: string
@@ -142,7 +183,7 @@ export async function processWebhookEventService(
       }
       const stripeSubId = invoice.subscription as string
 
-      // Solo procesar renovaciones, no el pago inicial
+      // Evitar procesar el pago inicial en este handler (ya manejado por checkout.session.completed)
       if (invoice.billing_reason === "subscription_create") break
 
       const nuevaFechaFin = new Date()
@@ -163,6 +204,9 @@ export async function processWebhookEventService(
       break
     }
 
+    /**
+     * Fallo en el cobro de la mensualidad: expiramos temporalmente la suscripción.
+     */
     case "invoice.payment_failed": {
       const invoice = event.data.object as Stripe.Invoice & {
         subscription?: string
@@ -188,6 +232,9 @@ export async function processWebhookEventService(
       break
     }
 
+    /**
+     * Cambios generales en el estado de la suscripción dictados por Stripe.
+     */
     case "customer.subscription.updated": {
       const subscription = event.data.object as Stripe.Subscription & {
         current_period_end?: number
@@ -204,7 +251,9 @@ export async function processWebhookEventService(
       break
     }
 
-    // Cancelación → bajar a free
+    /**
+     * Cancelación definitiva de la suscripción: degradamos al usuario al plan gratuito.
+     */
     case "customer.subscription.deleted": {
       const subscription = event.data.object as Stripe.Subscription
       await paymentsRepository.cancelSubscription(subscription.id)
@@ -214,17 +263,4 @@ export async function processWebhookEventService(
     default:
       console.log(`Evento Stripe no manejado: ${event.type}`)
   }
-}
-
-const mapStripeStatus = (
-  status: Stripe.Subscription.Status
-): "active" | "cancelled" | "expired" => {
-  if (status === "canceled") return "cancelled"
-  if (
-    status === "unpaid" ||
-    status === "past_due" ||
-    status === "incomplete_expired"
-  )
-    return "expired"
-  return "active"
 }

@@ -1,5 +1,13 @@
+/**
+ * @file ArcosRepository.ts
+ * @description Repositorio encargado de la persistencia y consulta de "Arcos" (colecciones curadas de películas con progresión).
+ * Maneja operaciones complejas de lectura con SQL Raw para optimización de reportes y agregaciones.
+ */
+
 import { Prisma } from "@prisma/client"
 import { prisma } from "../lib/prisma.js"
+
+// --- Tipos de Datos y DTOs Internos ---
 
 export type ArcoSummaryRow = {
   id: number
@@ -66,6 +74,7 @@ type ModerateArcoInput = {
   is_official: boolean
 }
 
+// Fragmento SQL reutilizable para obtener el resumen de un Arco incluyendo conteos agregados.
 const ARCO_SUMMARY_SELECT = Prisma.sql`
   SELECT
     a.id,
@@ -91,7 +100,14 @@ const ARCO_SUMMARY_SELECT = Prisma.sql`
   LEFT JOIN user_arco_progress uap ON uap.arco_id = a.id
 `
 
+/**
+ * Clase ArcosRepository
+ * Centraliza las consultas a la base de datos relacionadas con el sistema de Arcos de CineVault.
+ */
 export class ArcosRepository {
+  /**
+   * Obtiene la lista de arcos aprobados por moderación para el feed público.
+   */
   listPublicArcos() {
     return prisma.$queryRaw<ArcoSummaryRow[]>(Prisma.sql`
       ${ARCO_SUMMARY_SELECT}
@@ -101,6 +117,9 @@ export class ArcosRepository {
     `)
   }
 
+  /**
+   * Lista los arcos creados por un usuario específico (incluyendo borradores).
+   */
   listArcosByOwner(userId: number) {
     return prisma.$queryRaw<ArcoSummaryRow[]>(Prisma.sql`
       ${ARCO_SUMMARY_SELECT}
@@ -110,6 +129,9 @@ export class ArcosRepository {
     `)
   }
 
+  /**
+   * Filtra arcos por su estado de moderación (uso administrativo).
+   */
   listArcosByModerationStatus(
     status: "pending_review" | "approved" | "rejected" | "archived"
   ) {
@@ -121,6 +143,9 @@ export class ArcosRepository {
     `)
   }
 
+  /**
+   * Busca un arco público por su ID único.
+   */
   async findPublicArcoById(arcoId: number) {
     const rows = await prisma.$queryRaw<ArcoSummaryRow[]>(Prisma.sql`
       ${ARCO_SUMMARY_SELECT}
@@ -132,6 +157,9 @@ export class ArcosRepository {
     return rows[0] ?? null
   }
 
+  /**
+   * Recupera un arco para su dueño, permitiendo ver estados no públicos.
+   */
   async findArcoByIdForOwner(arcoId: number, userId: number) {
     const rows = await prisma.$queryRaw<ArcoSummaryRow[]>(Prisma.sql`
       ${ARCO_SUMMARY_SELECT}
@@ -143,6 +171,9 @@ export class ArcosRepository {
     return rows[0] ?? null
   }
 
+  /**
+   * Recupera cualquier arco para el panel de moderación.
+   */
   async findArcoByIdForModeration(arcoId: number) {
     const rows = await prisma.$queryRaw<ArcoSummaryRow[]>(Prisma.sql`
       ${ARCO_SUMMARY_SELECT}
@@ -154,6 +185,9 @@ export class ArcosRepository {
     return rows[0] ?? null
   }
 
+  /**
+   * Comprueba si un slug ya está en uso.
+   */
   async existsSlug(slug: string) {
     const rows = await prisma.$queryRaw<{ id: number }[]>(Prisma.sql`
       SELECT id
@@ -165,6 +199,9 @@ export class ArcosRepository {
     return rows.length > 0
   }
 
+  /**
+   * Crea un nuevo registro de Arco en estado borrador.
+   */
   async createArcoDraft(data: CreateArcoInput) {
     await prisma.$executeRaw(Prisma.sql`
       INSERT INTO arcos (
@@ -200,6 +237,9 @@ export class ArcosRepository {
     return rows[0]?.id ?? null
   }
 
+  /**
+   * Actualiza los metadatos de un arco en estado borrador o rechazado.
+   */
   async updateArcoDraft(arcoId: number, userId: number, data: UpdateArcoInput) {
     await prisma.$executeRaw(Prisma.sql`
       UPDATE arcos
@@ -215,6 +255,9 @@ export class ArcosRepository {
     `)
   }
 
+  /**
+   * Reemplaza atómicamente la lista de películas asociadas a un arco.
+   */
   async replaceArcoMovies(arcoId: number, movies: ArcoMovieInsertInput[]) {
     await prisma.$transaction(async (tx) => {
       await tx.$executeRaw(Prisma.sql`
@@ -236,6 +279,9 @@ export class ArcosRepository {
     })
   }
 
+  /**
+   * Cuenta cuántas películas tiene asignadas un arco.
+   */
   async countArcoMovies(arcoId: number) {
     const rows = await prisma.$queryRaw<{ total: bigint }[]>(Prisma.sql`
       SELECT COUNT(*) AS total
@@ -246,6 +292,9 @@ export class ArcosRepository {
     return Number(rows[0]?.total ?? 0)
   }
 
+  /**
+   * Cambia el estado de un arco a revisión por parte del staff.
+   */
   async sendArcoToReview(arcoId: number, userId: number) {
     await prisma.$executeRaw(Prisma.sql`
       UPDATE arcos
@@ -263,6 +312,9 @@ export class ArcosRepository {
     `)
   }
 
+  /**
+   * Aplica una decisión de moderación sobre un arco.
+   */
   async moderateArco(arcoId: number, input: ModerateArcoInput) {
     await prisma.$executeRaw(Prisma.sql`
       UPDATE arcos
@@ -278,6 +330,9 @@ export class ArcosRepository {
     `)
   }
 
+  /**
+   * Lista las películas contenidas en un arco junto con su TMDB ID.
+   */
   listArcoMovies(arcoId: number) {
     return prisma.$queryRaw<ArcoMovieRow[]>(Prisma.sql`
       SELECT
@@ -293,6 +348,9 @@ export class ArcosRepository {
     `)
   }
 
+  /**
+   * Obtiene la progresión de un usuario para un arco determinado.
+   */
   listUserProgressMovieIds(userId: number, arcoId: number) {
     return prisma.$queryRaw<{ movie_id: number }[]>(Prisma.sql`
       SELECT movie_id
@@ -301,6 +359,9 @@ export class ArcosRepository {
     `)
   }
 
+  /**
+   * Verifica si una película pertenece a un arco concreto.
+   */
   async hasMovieInArco(arcoId: number, movieId: number) {
     const rows = await prisma.$queryRaw<{ id: number }[]>(Prisma.sql`
       SELECT id
@@ -312,6 +373,9 @@ export class ArcosRepository {
     return rows.length > 0
   }
 
+  /**
+   * Registra el progreso de un usuario en una película dentro de un arco.
+   */
   async createProgress(userId: number, arcoId: number, movieId: number) {
     await prisma.$executeRaw(Prisma.sql`
       INSERT INTO user_arco_progress (user_id, arco_id, movie_id)

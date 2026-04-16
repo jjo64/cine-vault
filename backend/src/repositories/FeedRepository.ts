@@ -1,6 +1,16 @@
+/**
+ * @file FeedRepository.ts
+ * @description Repositorio encargado de la orquestación recursiva del Feed social. 
+ * Recupera actividades de usuarios seguidos (reseñas, bóveda, watchlist) y gestiona interacciones 
+ * sociales como "likes", "bookmarks" y eventos de compartir.
+ */
+
 import { Prisma } from "@prisma/client"
 import { prisma } from "../lib/prisma.js"
 
+/**
+ * Tipos de actividades que pueden aparecer en el Feed.
+ */
 type FeedItemType =
   | "review"
   | "vault"
@@ -10,7 +20,15 @@ type FeedItemType =
   | "list"
   | "quote"
 
+/**
+ * Clase FeedRepository
+ * Gestiona la agregación de eventos sociales para construir la línea de tiempo del usuario.
+ */
 export class FeedRepository {
+  /**
+   * Obtiene la lista de IDs de usuarios que el espectador sigue, incluyendo el suyo propio.
+   * @param viewerId - ID del usuario que solicita el feed.
+   */
   async listSourceUserIds(viewerId: number) {
     const following = await prisma.follows.findMany({
       where: { follower_id: viewerId },
@@ -20,6 +38,10 @@ export class FeedRepository {
     return [viewerId, ...following.map((entry) => entry.following_id)]
   }
 
+  /**
+   * Recupera las filas crudas de diversas tablas de actividad para los usuarios origen.
+   * Limitado a 160 entradas por tipo para optimizar rendimiento previo al filtrado de negocio.
+   */
   async listFeedRows(sourceUserIds: number[]) {
     const [reviews, vaultEntries, watchlistEntries] = await Promise.all([
       prisma.reviews.findMany({
@@ -54,6 +76,9 @@ export class FeedRepository {
     return { reviews, vaultEntries, watchlistEntries }
   }
 
+  /**
+   * Determina qué reseñas de una lista han sido marcadas con "like" por el espectador.
+   */
   async listLikedReviewIds(viewerId: number, reviewIds: number[]) {
     if (reviewIds.length === 0) return []
 
@@ -68,6 +93,9 @@ export class FeedRepository {
     return likes.map((item) => item.review_id)
   }
 
+  /**
+   * Recupera los favoritos (bookmarks) guardados por el usuario para una lista de referencias.
+   */
   async listBookmarkedRefs(
     viewerId: number,
     refs: Array<{ item_type: FeedItemType; item_id: number }>
@@ -98,6 +126,9 @@ export class FeedRepository {
     `)
   }
 
+  /**
+   * Recupera los elementos que el usuario ha decidido ocultar de su feed.
+   */
   async listHiddenRefs(
     viewerId: number,
     refs: Array<{ item_type: FeedItemType; item_id: number }>
@@ -128,6 +159,9 @@ export class FeedRepository {
     `)
   }
 
+  /**
+   * Verifica la existencia de una reseña por ID.
+   */
   async existsReview(reviewId: number) {
     const review = await prisma.reviews.findUnique({
       where: { id: reviewId },
@@ -136,6 +170,10 @@ export class FeedRepository {
     return Boolean(review)
   }
 
+  /**
+   * Alterna el estado de "like" en una reseña de forma atómica.
+   * Actualiza el contador denormalizado en la tabla de reseñas para optimización de lectura.
+   */
   async setReviewLike(viewerId: number, reviewId: number, active: boolean) {
     return prisma.$transaction(async (tx) => {
       if (active) {
@@ -168,6 +206,9 @@ export class FeedRepository {
     })
   }
 
+  /**
+   * Guarda o elimina un bookmark sobre un elemento del feed.
+   */
   async setBookmark(
     viewerId: number,
     itemType: FeedItemType,
@@ -188,6 +229,9 @@ export class FeedRepository {
     `)
   }
 
+  /**
+   * Registra o elimina la ocultación de un elemento para un usuario.
+   */
   async setHidden(
     viewerId: number,
     itemType: FeedItemType,
@@ -208,6 +252,9 @@ export class FeedRepository {
     `)
   }
 
+  /**
+   * Registra un evento de compartición para analíticas o efectos secundarios.
+   */
   async createShareEvent(
     viewerId: number,
     itemType: FeedItemType,

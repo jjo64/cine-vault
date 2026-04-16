@@ -1,3 +1,10 @@
+/**
+ * @file payments.routes.ts
+ * @description Pasarela de pagos e integración con Stripe.
+ * Gestiona la creación de sesiones de pago (Checkout), el portal de autoservicio
+ * para el cliente y el procesamiento de notificaciones asíncronas vía Webhooks.
+ */
+
 import { Router } from "express"
 import {
   createCheckoutSession,
@@ -11,54 +18,25 @@ import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
  * @swagger
  * tags:
  *   name: Pagos
- *   description: Gestión de suscripciones y pagos con Stripe
+ *   description: Facturación y suscripciones PRO/VIP a través de Stripe
  */
 
 const router = Router()
 
-// Rutas de pagos (protegidas con autenticación)
+/**
+ * ---------------------------------------------------------------------------
+ * BLOQUE: FLUJO DE SUSCRIPCIÓN (Privado)
+ * ---------------------------------------------------------------------------
+ */
+
 /**
  * @swagger
  * /payments/create-checkout-session:
  *   post:
- *     summary: Crear sesión de pago en Stripe
+ *     summary: Iniciar proceso de pago para un plan específico
  *     tags: [Pagos]
  *     security:
  *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [plan]
- *             properties:
- *               plan:
- *                 type: string
- *                 enum: [vip, pro]
- *           example:
- *             plan: "pro"
- *     responses:
- *       200:
- *         description: URL de la sesión de pago de Stripe
- *         content:
- *           application/json:
- *             example:
- *               url: "https://checkout.stripe.com/pay/cs_test_a1b2c3d4e5f6..."
- *       400:
- *         description: Plan inválido
- *         content:
- *           application/json:
- *             example:
- *               error: "Plan inválido"
- *       401:
- *         $ref: '#/components/responses/Unauthorized'
- *       404:
- *         description: Usuario no encontrado
- *         content:
- *           application/json:
- *             example:
- *               error: "Usuario no encontrado"
  */
 router.post(
   "/create-checkout-session",
@@ -66,6 +44,9 @@ router.post(
   manejadorAsincrono(createCheckoutSession)
 )
 
+/**
+ * Acceso al portal de facturación de Stripe para gestionar suscripciones activas.
+ */
 router.post(
   "/portal-session",
   middlewareAutenticacion,
@@ -73,30 +54,17 @@ router.post(
 )
 
 /**
+ * ---------------------------------------------------------------------------
+ * BLOQUE: SISTEMA (Webhooks)
+ * ---------------------------------------------------------------------------
+ */
+
+/**
  * @swagger
  * /payments/webhook:
  *   post:
- *     summary: Webhook de Stripe (uso interno)
+ *     summary: Receptor de eventos asíncronos de Stripe
  *     tags: [Pagos]
- *     description: |
- *       Endpoint llamado automáticamente por Stripe cuando ocurre un evento.
- *       Maneja los siguientes eventos:
- *       - `checkout.session.completed` → crea suscripción y pago
- *       - `invoice.payment_succeeded` → renueva end_date mensualmente
- *       - `customer.subscription.deleted` → cancela suscripción y baja a free
- *     responses:
- *       200:
- *         description: Evento procesado correctamente
- *         content:
- *           application/json:
- *             example:
- *               received: true
- *       400:
- *         description: Webhook inválido (firma no verificada)
- *         content:
- *           application/json:
- *             example:
- *               error: "Webhook inválido"
  */
 router.post("/webhook", manejadorAsincrono(stripeWebhook))
 

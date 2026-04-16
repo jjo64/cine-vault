@@ -1,15 +1,20 @@
+/**
+ * @file SettingsRepository.ts
+ * @description Repositorio central para la gestión de preferencias y perfil de usuario. 
+ * Encapsula las operaciones de actualización de identidad, biografía, credenciales (contraseñas) 
+ * y activos visuales (avatares).
+ */
+
 import { users } from "@prisma/client"
 import { prisma } from "../lib/prisma.js"
 import type { ActualizarPerfilDTO } from "../schemas/settings.js"
 
-/* ==========================================================================
-   SETTINGS REPOSITORY
-   --------------------------------------------------------------------------
-   Encapsula las queries de Prisma para operaciones de configuración de cuenta:
-   actualizar perfil, contraseña y avatar. SettingsController tenía estas
-   queries inline junto con la lógica de negocio (bcrypt, validaciones).
-   ========================================================================== */
+// --- Interfaces de Contrato ---
 
+/**
+ * Interfaz ISettingsRepository
+ * Define las operaciones de configuración de cuenta y perfil.
+ */
 export interface ISettingsRepository {
   findById(id: number): Promise<users | null>
   updateProfile(id: number, data: Partial<ActualizarPerfilDTO>): Promise<users>
@@ -17,11 +22,21 @@ export interface ISettingsRepository {
   updateAvatar(id: number, avatarUrl: string): Promise<void>
 }
 
+/**
+ * Clase SettingsRepository
+ * Implementa la persistencia para el módulo de ajustes de usuario.
+ */
 export class SettingsRepository implements ISettingsRepository {
+  /**
+   * Recupera el perfil completo del usuario por su ID.
+   */
   async findById(id: number) {
     return prisma.users.findUnique({ where: { id } })
   }
 
+  /**
+   * Actualiza la información pública del perfil (nombre de usuario, email, biografía).
+   */
   async updateProfile(id: number, data: Partial<ActualizarPerfilDTO>) {
     return prisma.users.update({
       where: { id },
@@ -33,6 +48,9 @@ export class SettingsRepository implements ISettingsRepository {
     })
   }
 
+  /**
+   * Actualiza la contraseña hasheada del usuario.
+   */
   async updatePassword(id: number, hashedPassword: string) {
     await prisma.users.update({
       where: { id },
@@ -40,6 +58,9 @@ export class SettingsRepository implements ISettingsRepository {
     })
   }
 
+  /**
+   * Actualiza la URL del avatar del usuario.
+   */
   async updateAvatar(id: number, avatarUrl: string) {
     await prisma.users.update({
       where: { id },
