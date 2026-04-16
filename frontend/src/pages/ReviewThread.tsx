@@ -26,8 +26,39 @@ const C = {
 const SERIF = "'Cormorant Garamond', serif"
 const SANS = "'Syne', sans-serif"
 
+const uniqueValues = (values: Array<string | null | undefined>) => {
+  const seen = new Set<string>()
+  const result: string[] = []
+
+  for (const value of values) {
+    const normalized = String(value || '').trim()
+    if (!normalized) continue
+    if (seen.has(normalized)) continue
+    seen.add(normalized)
+    result.push(normalized)
+  }
+
+  return result
+}
+
+const extractErrorMessage = (input: unknown) => {
+  const fallback = 'No se pudo cargar el hilo de reseña'
+  const raw = input instanceof Error ? input.message : String(input || '')
+  if (!raw) return fallback
+
+  try {
+    const parsed = JSON.parse(raw) as {
+      error?: { message?: string }
+      message?: string
+    }
+    return parsed?.error?.message || parsed?.message || raw
+  } catch {
+    return raw
+  }
+}
+
 export default function ReviewThreadPage() {
-  const { username = 'usuario', slugId = 'pelicula' } = useParams()
+  const { username: routeUsername, slugId: routeSlugId } = useParams()
   const token = getStoredAccessToken()
 
   const [viewerId, setViewerId] = useState<number | null>(null)
@@ -45,17 +76,73 @@ export default function ReviewThreadPage() {
     window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: { mode: 'login' } }))
   }, [])
 
+  const normalizedUsername = useMemo(() => {
+    const raw = decodeURIComponent(String(routeUsername || '')).trim()
+    if (!raw) return ''
+    return raw.replace(/^@+/, '')
+  }, [routeUsername])
+
   const mappedSlug = useMemo(() => {
-    const raw = String(slugId || '').trim()
+    const raw = decodeURIComponent(String(routeSlugId || '')).trim()
     if (!raw) return raw
-    return raw
-  }, [slugId])
+    return raw.replace(/^\/+/, '').replace(/\/+$/, '')
+  }, [routeSlugId])
 
   const loadThread = useCallback(async () => {
+    if (!normalizedUsername || !mappedSlug) {
+      setThread(null)
+      setComments([])
+      setError('URL de reseña inválida')
+      setLoading(false)
+      return
+    }
+
     setLoading(true)
     setError(null)
     try {
-      const response = await fetchReviewThread(username, mappedSlug)
+      const usernameCandidates = uniqueValues([
+        normalizedUsername,
+        normalizedUsername.toLowerCase(),
+      ])
+
+      if (token) {
+        try {
+          const current = await getCurrentUser()
+          usernameCandidates.push(...uniqueValues([
+            current.username,
+            current.username?.toLowerCase(),
+          ]))
+        } catch {
+          // Si no se puede resolver el usuario autenticado, continuamos con los candidatos de la URL.
+        }
+      }
+
+      const slugCandidates = uniqueValues([
+        mappedSlug,
+        mappedSlug.toLowerCase(),
+        mappedSlug.replace(/^\d+-/, ''),
+      ])
+
+      let response: Awaited<ReturnType<typeof fetchReviewThread>> | null = null
+      let lastError: unknown = null
+
+      for (const candidateUsername of usernameCandidates) {
+        for (const candidateSlug of slugCandidates) {
+          try {
+            response = await fetchReviewThread(candidateUsername, candidateSlug)
+            break
+          } catch (candidateError) {
+            lastError = candidateError
+          }
+        }
+
+        if (response) break
+      }
+
+      if (!response) {
+        throw lastError || new Error('No se pudo cargar el hilo de reseña')
+      }
+
       setThread(response)
       setLikes(Number(response.likes || 0))
       setLiked(Boolean((response as any).is_liked))
@@ -63,11 +150,11 @@ export default function ReviewThreadPage() {
       const loadedComments = await fetchReviewComments(response.id)
       setComments(Array.isArray(loadedComments) ? loadedComments : [])
     } catch (err) {
-      setError((err as Error).message || 'No se pudo cargar el hilo de reseña')
+      setError(extractErrorMessage(err))
     } finally {
       setLoading(false)
     }
-  }, [mappedSlug, username])
+  }, [mappedSlug, normalizedUsername, token])
 
   useEffect(() => {
     void loadThread()
@@ -209,9 +296,9 @@ export default function ReviewThreadPage() {
       }}
     >
       <SeoHead.Page
-        title={`${thread.users?.username || username} | Hilo de reseña`}
+        title={`${thread.users?.username || normalizedUsername} | Hilo de reseña`}
         description="Reseña completa con respuestas y participación de la comunidad de CineVault."
-        canonical={`https://cinevault.art/reviews/${username}/${mappedSlug}`}
+        canonical={`https://cinevault.art/reviews/${normalizedUsername}/${mappedSlug}`}
       />
 
       <section
@@ -229,7 +316,7 @@ export default function ReviewThreadPage() {
           Hilo de reseña
         </div>
         <h1 style={{ margin: '0 0 4px', fontFamily: SERIF, fontSize: 'clamp(30px, 6vw, 46px)', fontWeight: 400 }}>
-          {thread.users?.username || username}
+          {thread.users?.username || normalizedUsername}
         </h1>
         <p style={{ margin: '0 0 18px', fontFamily: SERIF, fontSize: 20, fontStyle: 'italic', color: C.textSoft }}>
           {thread.content || 'Sin contenido de reseña'}
@@ -308,7 +395,7 @@ export default function ReviewThreadPage() {
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
           <Link
-            to={`/${encodeURIComponent(username)}`}
+            to={`/${encodeURIComponent(normalizedUsername || routeUsername || 'perfil')}`}
             style={{
               display: 'inline-flex',
               alignItems: 'center',

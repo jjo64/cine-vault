@@ -7,6 +7,40 @@
 
 import { consultarTMDB } from "../helpers/fetchTMDB.js"
 
+type TmdbPersonTranslation = {
+  iso_639_1?: string
+  data?: {
+    biography?: string | null
+  }
+}
+
+type TmdbPersonResponse = Record<string, unknown> & {
+  biography?: string | null
+  translations?: {
+    translations?: TmdbPersonTranslation[]
+  }
+}
+
+const biografiaValida = (biography?: string | null) => {
+  const limpia = (biography || "").trim()
+  return limpia.length > 0 ? limpia : null
+}
+
+const buscarBiografiaPorIdioma = (
+  translations: TmdbPersonTranslation[] | undefined,
+  languageCode: string
+) => {
+  if (!translations || translations.length === 0) return null
+
+  for (const translation of translations) {
+    if ((translation.iso_639_1 || "").toLowerCase() !== languageCode) continue
+    const biography = biografiaValida(translation.data?.biography)
+    if (biography) return biography
+  }
+
+  return null
+}
+
 // --- Tipos de Datos de Soporte ---
 
 /**
@@ -169,8 +203,22 @@ export const obtenerDirectorAutopsyService = async (tmdbPersonId: number) => {
 /**
  * Obtiene la información biográfica y básica de una persona desde TMDB.
  */
-export const obtenerPersonaService = (tmdbPersonId: number) =>
-  consultarTMDB(`person/${tmdbPersonId}`, { language: "es-ES" })
+export const obtenerPersonaService = async (tmdbPersonId: number) => {
+  const person = await consultarTMDB<TmdbPersonResponse>(`person/${tmdbPersonId}`, {
+    language: "es-ES",
+    append_to_response: "translations",
+  })
+
+  const translations = person.translations?.translations
+  const biographyEs =
+    biografiaValida(person.biography) || buscarBiografiaPorIdioma(translations, "es")
+  const biographyEn = buscarBiografiaPorIdioma(translations, "en")
+
+  return {
+    ...person,
+    biography: biographyEs || biographyEn || "",
+  }
+}
 
 /**
  * Recupera los créditos combinados (cine y TV) de una persona.

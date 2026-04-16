@@ -1,11 +1,15 @@
 import React, { useState } from 'react'
 import { motion } from 'motion/react'
 import { MessageSquare } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { type AppReview } from '../hooks/useUserActions'
 import { C, SANS, SERIF } from '../constants'
+import { createSlug } from '../../../utils/stringUtils'
 
 interface ReviewsSectionProps {
   reviews: AppReview[]
+  tvTitle?: string
+  tvTmdbId?: number | null
   userRating: number
   reviewText: string
   setReviewText: (v: string) => void
@@ -49,10 +53,33 @@ const StarRating = ({ value, onChange }: { value: number; onChange: (n: number) 
 )
 
 export default function ReviewsSection({
+  tvTitle,
+  tvTmdbId,
   reviews, userRating, reviewText, setReviewText, onRate, onSave,
   savingAction, actionMessage, isAuthenticated, myReviewId
 }: ReviewsSectionProps) {
   const [writerOpen, setWriterOpen] = useState(false)
+  const navigate = useNavigate()
+
+  const buildReviewThreadHref = (review: AppReview) => {
+    const username = encodeURIComponent((review.username || '').trim())
+    const safeTitle = String(tvTitle || '').trim()
+    const titleSlug = safeTitle ? createSlug(safeTitle) : ''
+    const preferredId = (tvTmdbId != null && Number.isFinite(tvTmdbId))
+      ? tvTmdbId
+      : ((review.tmdb_id != null && Number.isFinite(review.tmdb_id)) ? review.tmdb_id : null)
+
+    if (preferredId != null) {
+      const suffix = titleSlug ? `-${titleSlug}` : ''
+      return `/${username}/tv/${preferredId}${suffix}`
+    }
+
+    if (titleSlug) {
+      return `/${username}/tv/${review.movie_id}-${titleSlug}`
+    }
+
+    return `/${username}/tv/${review.movie_id}`
+  }
 
   return (
     <motion.section 
@@ -77,13 +104,26 @@ export default function ReviewsSection({
 
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         {reviews.map((review, i) => (
+          (() => {
+            const threadHref = buildReviewThreadHref(review)
+            return (
           <motion.div 
             key={review.id} 
             initial={{ opacity: 0, y: 12 }} 
             whileInView={{ opacity: 1, y: 0 }} 
             viewport={{ once: true }} 
             transition={{ delay: i * 0.08 }}
-            style={{ borderBottom: `1px solid ${C.border}`, padding: '24px 0', display: 'grid', gridTemplateColumns: '40px 1fr', gap: 18 }}
+            onClick={() => navigate(threadHref)}
+            role="link"
+            tabIndex={0}
+            aria-label={`Ver hilo de reseña de ${review.username}`}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                navigate(threadHref)
+              }
+            }}
+            style={{ borderBottom: `1px solid ${C.border}`, padding: '24px 0', display: 'grid', gridTemplateColumns: '40px 1fr', gap: 18, cursor: 'pointer' }}
           >
             {/* Avatar */}
             <div style={{ 
@@ -118,6 +158,8 @@ export default function ReviewsSection({
               </p>
             </div>
           </motion.div>
+            )
+          })()
         ))}
       </div>
 

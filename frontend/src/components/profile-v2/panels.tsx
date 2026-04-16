@@ -28,7 +28,10 @@ import { createSlug } from '../../utils/stringUtils'
 const movieHref = (movieId: number, title: string, tmdbId: number | null) => `/movie/${tmdbId ?? movieId}-${createSlug(title)}`
 const reviewHref = (review: ReviewItem) => {
   const username = encodeURIComponent((review.username || 'perfil').trim())
-  const slugId = `${review.tmdbId ?? review.movieId}-${createSlug(review.title)}`
+  const titleSlug = createSlug(review.title)
+  const slugId = review.tmdbId && Number.isFinite(review.tmdbId)
+    ? `${review.tmdbId}-${titleSlug}`
+    : titleSlug
   const suffix = review.reviewSequence > 1 ? `/${review.reviewSequence - 1}` : ''
   return `/${username}/movie/${slugId}${suffix}`
 }
@@ -384,10 +387,21 @@ function ReviewCard({ review, delay = 0, compact = false }: { review: ReviewItem
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay }}
+        onClick={openReviewThread}
+        role="link"
+        tabIndex={0}
+        aria-label={`Ver reseña completa de ${review.title}`}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault()
+            openReviewThread()
+          }
+        }}
         style={{
           borderBottom: `1px solid ${C.border}`,
           padding: '16px 0',
           width: '100%',
+          cursor: 'pointer',
         }}
       >
         <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', marginBottom: 12 }}>
@@ -397,19 +411,12 @@ function ReviewCard({ review, delay = 0, compact = false }: { review: ReviewItem
           </div>
 
           <div style={{ flex: 1, minWidth: 0 }}>
-            <button
-              type="button"
-              onClick={openReviewThread}
+            <div
               style={{
-                border: 'none',
-                background: 'none',
-                padding: 0,
-                margin: 0,
                 fontFamily: SERIF,
                 fontSize: 18,
                 fontWeight: 400,
                 color: C.text,
-                cursor: 'pointer',
                 textAlign: 'left',
                 display: 'block',
                 marginBottom: 4,
@@ -418,7 +425,7 @@ function ReviewCard({ review, delay = 0, compact = false }: { review: ReviewItem
               }}
             >
               {review.title}
-            </button>
+            </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <Stars rating={review.rating} size={11} />
@@ -474,20 +481,28 @@ function ReviewCard({ review, delay = 0, compact = false }: { review: ReviewItem
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay }}
-      style={{ borderBottom: `1px solid ${C.border}`, padding: '24px 0', display: 'grid', gridTemplateColumns: '56px 1fr', gap: 20 }}
+      onClick={openReviewThread}
+      role="link"
+      tabIndex={0}
+      aria-label={`Ver reseña completa de ${review.title}`}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          openReviewThread()
+        }
+      }}
+      style={{ borderBottom: `1px solid ${C.border}`, padding: '24px 0', display: 'grid', gridTemplateColumns: '56px 1fr', gap: 20, cursor: 'pointer' }}
     >
       <div style={{ aspectRatio: '2/3', borderRadius: 1, overflow: 'hidden' }}>
         <Img src={review.posterUrl} alt={review.title} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(0.6)' }} />
       </div>
       <div>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
-          <button
-            type="button"
-            onClick={openReviewThread}
-            style={{ border: 'none', background: 'none', padding: 0, margin: 0, fontFamily: SERIF, fontSize: 20, fontWeight: 400, color: C.text, cursor: 'pointer' }}
+          <div
+            style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 400, color: C.text }}
           >
             {review.title}
-          </button>
+          </div>
           <Stars rating={review.rating} size={PROFILE_STAR_SIZES.reviewDesktop} />
           <span style={{ fontSize: 11, color: C.textMuted, marginLeft: 'auto', fontFamily: SANS }}>{review.createdAtLabel}</span>
         </div>

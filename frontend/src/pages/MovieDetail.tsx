@@ -261,6 +261,8 @@ export default function MovieDetailPage() {
           <CastCrew cast={movie.credits?.cast || []} crew={movie.credits?.crew || []} />
           <Reviews
             reviews={reviews}
+            movieTmdbId={movie.id}
+            movieTitle={movie.title || ''}
             likedReviewIds={likedReviewIds}
             viewerId={viewer?.id ?? null}
             onToggleLike={handleToggleReviewLike}

@@ -99,15 +99,6 @@ router.get(
 )
 
 /**
- * Buscar una reseña específica mediante el slug de la película y el username.
- */
-router.get(
-  "/:username/:movieSlug",
-  validarParams(usernameMovieSlugParamsSchema),
-  manejadorAsincrono(getReviewByUsernameAndMovieSlug)
-)
-
-/**
  * ---------------------------------------------------------------------------
  * BLOQUE: GESTIÓN DE CRÍTICAS (CRUD)
  * ---------------------------------------------------------------------------
@@ -276,6 +267,16 @@ router.delete(
   middlewareAutenticacion,
   validarParams(commentIdParamsSchema),
   manejadorAsincrono(removeComment)
+)
+
+/**
+ * Buscar una reseña específica mediante el slug de la película y el username.
+ * Debe declararse al final para no interferir con rutas más específicas.
+ */
+router.get(
+  "/:username/:movieSlug",
+  validarParams(usernameMovieSlugParamsSchema),
+  manejadorAsincrono(getReviewByUsernameAndMovieSlug)
 )
 
 export default router

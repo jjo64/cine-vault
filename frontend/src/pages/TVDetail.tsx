@@ -516,6 +516,8 @@ export default function TVDetailPage() {
           <CastCrew cast={detail.credits?.cast || []} crew={detail.credits?.crew || []} />
           <ReviewsSection
             reviews={reviews}
+            tvTitle={detail.name || ''}
+            tvTmdbId={detail.id}
             userRating={userRating}
             reviewText={reviewText}
             setReviewText={setReviewText}
