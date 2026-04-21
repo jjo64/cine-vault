@@ -7,6 +7,7 @@
  */
 
 import { reviewsRepository } from "../repositories/ReviewsRepository.js"
+import { ReviewMediaType } from "@prisma/client"
 import { emitirNotificacionService } from "./notifications.services.js"
 import {
   ConflictError,
@@ -69,14 +70,15 @@ const canUseCriticalMode = (
  * Resuelve una película a partir de un slug (ej: "123-interstellar") o identificador.
  */
 const resolverMovieRefIdPorSlug = async (
-  movieSlug: string
+  movieSlug: string,
+  mediaType: ReviewMediaType = "movie"
 ): Promise<number | null> => {
   const slug = movieSlug.trim().toLowerCase()
   const tmdbCandidate = Number(slug.split("-")[0])
 
   // 1. Priorizar resolución por ID de TMDB si el slug lo contiene
   if (Number.isFinite(tmdbCandidate)) {
-    const byTmdb = await movieRefRepository.findByTmdbId(tmdbCandidate)
+    const byTmdb = await movieRefRepository.findByTmdbId(tmdbCandidate, mediaType)
     if (byTmdb) return byTmdb.id
   }
 
@@ -86,7 +88,7 @@ const resolverMovieRefIdPorSlug = async (
 
   // 3. Fallback: creación/recuperación perezosa vía TMDB API
   if (Number.isFinite(tmdbCandidate)) {
-    return findMovieRefIdByCandidate(tmdbCandidate)
+    return findMovieRefIdByCandidate(tmdbCandidate, mediaType)
   }
 
   return null
@@ -128,8 +130,11 @@ export const obtenerResenasPorUsuarioService = async (userId: number) => {
 /**
  * Recupera las reseñas de una película, empleando una capa de caché de Redis.
  */
-export const obtenerResenasPorPeliculaService = async (movieId: number) => {
-  const resolvedMovieId = await findMovieRefIdByCandidate(movieId)
+export const obtenerResenasPorPeliculaService = async (
+  movieId: number,
+  mediaType: ReviewMediaType = "movie"
+) => {
+  const resolvedMovieId = await findMovieRefIdByCandidate(movieId, mediaType)
   if (!resolvedMovieId) return []
 
   const cacheKey = movieReviewsKey(resolvedMovieId)
@@ -160,7 +165,8 @@ export const crearResenaService = async (userId: number, data: CrearResenaDTO) =
   }
 
   const normalized = normalizeReviewPayload(data)
-  const movieId = await ensureMovieRefId(data.movie_id)
+  const mediaType = (normalized.media_type as ReviewMediaType) || "movie"
+  const movieId = await ensureMovieRefId(data.movie_id, mediaType)
   
   const existente = await reviewsRepository.findByUserAndMovie(userId, movieId)
   if (existente) {

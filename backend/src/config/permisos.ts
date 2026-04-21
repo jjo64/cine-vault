@@ -1,43 +1,47 @@
-/* ==========================================================================
-   SISTEMA DE PERMISOS (RBAC)
-   --------------------------------------------------------------------------
-   Relaciona roles y membresías con permisos específicos.
-   Para agregar un permiso nuevo: definirlo en PERMISOS y asignarlo al rol
-   correspondiente en PERMISOS_POR_ROL o PERMISOS_POR_MEMBRESIA.
-   No hay que tocar ningún middleware ni controlador.
-   ========================================================================== */
+/**
+ * @file permisos.ts
+ * @description Definición centralizada del sistema de Control de Acceso Basado en Roles (RBAC).
+ * Este archivo orquestra la relación entre los roles de usuario (admin, editor, user)
+ * y los niveles de membresía (free, vip, pro) con permisos granulares.
+ * 
+ * @note La arquitectura permite la coexistencia de roles administrativos con 
+ * niveles de suscripción Premium sin conflictos de lógica.
+ */
 
+/**
+ * Constantes de permisos disponibles en la plataforma.
+ */
 export const PERMISOS = {
-  // Reviews
+  // Moderación de Reseñas
   BORRAR_REVIEWS_AJENAS: "borrar_reviews_ajenas",
 
-  // Reportes
-  GESTIONAR_REPORTES: "gestionar_reportes", // resolver/rechazar
-  VER_REPORTES: "ver_reportes", // solo lectura
+  // Gestión de Reportes (Comunidad)
+  GESTIONAR_REPORTES: "gestionar_reportes", // Resolver o rechazar reportes activos
+  VER_REPORTES: "ver_reportes",           // Acceso de solo lectura a la cola de reportes
 
-  // Noticias
-  GESTIONAR_NOTICIAS: "gestionar_noticias", // crear/editar/borrar
+  // Contenido Editorial
+  GESTIONAR_NOTICIAS: "gestionar_noticias", // Creación, edición y borrado de noticias oficiales
 
-  // Usuarios
+  // Administración de Usuarios
   CAMBIAR_ROL_USUARIOS: "cambiar_rol_usuarios",
-  VER_ACTIVIDAD_USUARIOS: "ver_actividad_usuarios",
+  VER_ACTIVIDAD_USUARIOS: "ver_actividad_usuarios", // Acceso a logs de auditoría
 
-  // Arcos
-  GESTIONAR_ARCOS: "gestionar_arcos",
+  // Curaduría de Contenido
+  GESTIONAR_ARCOS: "gestionar_arcos", // Gestión de Arcos Cinematográficos oficiales
 
-  // Pagos
+  // Auditoría Financiera
   VER_PAGOS: "ver_pagos",
 
-  // Membresía — funcionalidades futuras
-  EXHIBIR_PELICULAS: "exhibir_peliculas",
+  // Funcionalidades Premium (Membresía)
+  EXHIBIR_PELICULAS: "exhibir_peliculas", // Capacidad de destacar películas en el perfil
 } as const
 
+/** Tipo que representa uno de los valores de la constante PERMISOS */
 export type Permiso = (typeof PERMISOS)[keyof typeof PERMISOS]
 
-/* ==========================================================================
-   PERMISOS POR ROL
-   ========================================================================== */
-
+/**
+ * Mapeo estático de permisos asignados a cada rol del sistema.
+ */
 const PERMISOS_POR_ROL: Record<string, Permiso[]> = {
   admin: [
     PERMISOS.BORRAR_REVIEWS_AJENAS,
@@ -54,32 +58,27 @@ const PERMISOS_POR_ROL: Record<string, Permiso[]> = {
     PERMISOS.VER_REPORTES,
     PERMISOS.GESTIONAR_ARCOS,
   ],
-  user: [],
+  user: [], // El rol básico no otorga permisos administrativos
 }
 
-/* ==========================================================================
-   PERMISOS POR MEMBRESÍA
-   --------------------------------------------------------------------------
-   Separados del rol para que puedan combinarse independientemente.
-   Un usuario puede ser role=user y membership=vip al mismo tiempo.
-   ========================================================================== */
-
+/**
+ * Mapeo de permisos otorgados por el nivel de membresía.
+ * Separar la membresía del rol permite que un usuario básico tenga funciones Premium.
+ */
 const PERMISOS_POR_MEMBRESIA: Record<string, Permiso[]> = {
   free: [],
   vip: [
-    PERMISOS.EXHIBIR_PELICULAS, // hasta 2 películas (validado en el servicio)
+    PERMISOS.EXHIBIR_PELICULAS,
   ],
   pro: [
-    PERMISOS.EXHIBIR_PELICULAS, // hasta 4 películas (validado en el servicio)
+    PERMISOS.EXHIBIR_PELICULAS,
   ],
 }
 
-/* ==========================================================================
-   LÍMITES POR MEMBRESÍA
-   --------------------------------------------------------------------------
-   Centraliza los límites numéricos para no hardcodearlos en los servicios.
-   ========================================================================== */
-
+/**
+ * Centralización de límites cuantitativos por nivel de membresía.
+ * Evita la dispersión de valores "mágicos" en la lógica de negocio.
+ */
 export const LIMITES_MEMBRESIA: Record<string, Record<string, number>> = {
   free: {
     peliculas_exhibicion: 0,
@@ -92,13 +91,13 @@ export const LIMITES_MEMBRESIA: Record<string, Record<string, number>> = {
   },
 }
 
-/* ==========================================================================
-   FUNCIÓN PRINCIPAL — verificar si un usuario tiene un permiso
-   ========================================================================== */
-
 /**
- * Verifica si un rol/membresía tiene un permiso específico.
- * Combina permisos de rol + permisos de membresía.
+ * Determina si un usuario posee un permiso específico basándose en su rol y membresía.
+ * 
+ * @param rol - El rol administrativo del usuario (admin, editor, user).
+ * @param permiso - El permiso que se desea validar.
+ * @param membresia - (Opcional) El nivel de suscripción del usuario.
+ * @returns true si el usuario tiene autorización, false en caso contrario.
  */
 export const tienePermiso = (
   rol: string,
@@ -110,5 +109,6 @@ export const tienePermiso = (
     ? (PERMISOS_POR_MEMBRESIA[membresia] ?? [])
     : []
 
+  // Se realiza la unión de ambos conjuntos de permisos para la validación final.
   return [...permisosRol, ...permisosMembresia].includes(permiso)
 }

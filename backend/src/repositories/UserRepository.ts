@@ -1,73 +1,80 @@
 /**
  * @file UserRepository.ts
- * @description Repositorio central para la gestión de identidades de usuario.
- * Maneja la persistencia de perfiles, credenciales, roles y estados de verificación, 
- * asegurando la segregación de datos sensibles (como contraseñas) mediante proyecciones seguras.
+ * @description Repositorio maestro para la gestión de identidades y perfiles de usuario.
+ * Centraliza la persistencia de credenciales, roles, membresías y estados de seguridad. 
+ * Implementa proyecciones seguras para garantizar que secretos críticos (como contraseñas 
+ * y semillas 2FA) nunca abandonen la capa de persistencia en consultas ordinarias, 
+ * salvaguardando la integridad de la base de usuarios.
  */
 
 import { users, Prisma } from "@prisma/client"
 import { prisma } from "../lib/prisma.js"
 
-// --- Tipos de Utilidad ---
+// --- Definiciones de Tipado de Seguridad ---
 
-/**
- * Representa un usuario excluyendo campos críticos de seguridad (contraseñas y secretos 2FA).
+/** 
+ * Representación segurizada de la entidad de usuario. 
+ * Excluye explícitamente cualquier campo que pueda comprometer la cuenta si se expone.
  */
 export type UserWithoutPassword = Omit<users, "password" | "two_factor_secret">
 
-/**
- * Tipo base para la creación de nuevos usuarios según el esquema de Prisma.
- */
+/** Alias para el contrato de creación de Prisma */
 export type CreateUserInput = Prisma.usersCreateInput
 
 /**
  * Interfaz IUserRepository
- * Define el contrato de acceso a datos para la gestión de usuarios.
+ * Define el contrato de servicios de datos para el motor de identidad.
  */
 export interface IUserRepository {
+  /** Localiza un usuario por su identificador primario */
   findById(id: number): Promise<users | null>
+  /** Resuelve la identidad mediante el correo electrónico único */
   findByEmail(email: string): Promise<users | null>
+  /** Localiza un perfil por su nombre de usuario único */
   findByUsername(username: string): Promise<users | null>
+  /** Elimina un perfil y sus dependencias asociadas */
   deleteById(id: number): Promise<void>
+  /** Persiste una nueva identidad en el sistema */
   create(data: CreateUserInput): Promise<users>
+  /** Actualiza parcialmente los metadatos de un usuario */
   update(id: number, data: Partial<CreateUserInput>): Promise<users>
 }
 
 /**
- * Clase UserRepository
- * Implementación de la persistencia de usuarios siguiendo el patrón Singleton.
+ * Repositorio de Usuarios
+ * Implementación centralizada sobre Prisma para la gestión de usuarios.
  */
 export class UserRepository implements IUserRepository {
   /**
-   * Busca un usuario por su clave primaria.
+   * Recupera la entidad íntegra por ID (incluye credenciales para validación interna).
    */
   async findById(id: number): Promise<users | null> {
     return prisma.users.findUnique({ where: { id } })
   }
 
   /**
-   * Localiza un usuario por su dirección de correo electrónico única.
+   * Resuelve la identidad por email. Utilizado principalmente en flujos de login.
    */
   async findByEmail(email: string): Promise<users | null> {
     return prisma.users.findUnique({ where: { email } })
   }
 
   /**
-   * Localiza un usuario por su nombre de usuario único.
+   * Localiza un perfil por username. Utilizado para resolución de perfiles sociales.
    */
   async findByUsername(username: string): Promise<users | null> {
     return prisma.users.findUnique({ where: { username } })
   }
 
   /**
-   * Registra un nuevo perfil de usuario en el sistema.
+   * Registra un nuevo hito de identidad en la plataforma.
    */
   async create(data: CreateUserInput): Promise<users> {
     return prisma.users.create({ data })
   }
 
   /**
-   * Actualiza parcialmente la información de un perfil existente.
+   * Actualiza el estado de un usuario de forma parcial.
    */
   async update(id: number, data: Partial<CreateUserInput>): Promise<users> {
     return prisma.users.update({
@@ -77,7 +84,8 @@ export class UserRepository implements IUserRepository {
   }
 
   /**
-   * Obtiene un perfil segurizado (sin contraseñas) para su exposición en el frontend.
+   * Genera una proyección segurizada para su transmisión a clientes o servicios externos.
+   * Filtra campos de bajo nivel para cumplir con las políticas de privacidad y seguridad.
    */
   async getSafeProfile(id: number): Promise<UserWithoutPassword | null> {
     const user = await prisma.users.findUnique({
@@ -96,7 +104,8 @@ export class UserRepository implements IUserRepository {
   }
 
   /**
-   * Lista todos los usuarios del sistema (proyección limitada de campos).
+   * Recupera el catálogo global de usuarios para tareas administrativas.
+   * Aplica una proyección limitada para optimizar el ancho de banda.
    */
   async findAll(): Promise<UserWithoutPassword[]> {
     return prisma.users.findMany({
@@ -111,11 +120,12 @@ export class UserRepository implements IUserRepository {
   }
 
   /**
-   * Elimina un usuario por su ID de forma permanente.
+   * Ejecuta la eliminación física del registro de usuario.
    */
   async deleteById(id: number): Promise<void> {
     await prisma.users.delete({ where: { id } })
   }
 }
 
+/** Instancia única exportada del repositorio de identidad */
 export const userRepository = new UserRepository()

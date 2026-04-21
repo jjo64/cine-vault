@@ -14,6 +14,8 @@ import { getCache, invalidateKeys, setCache } from "../lib/cache.js"
 import { diaryRepository } from "../repositories/DiaryRepository.js"
 import type { CrearEntradaDiarioDTO } from "../schemas/diary.js"
 import { ensureMovieRefId } from "./movieRef.services.js"
+import { ReviewMediaType } from "@prisma/client"
+import { standardizeToMidnight } from "../utils/date.utils.js"
 
 // --- Constantes de Caché ---
 
@@ -25,10 +27,7 @@ const movieAggregateKey = (movieId: number) => `movie:agg:${movieId}`
 /**
  * Normaliza una fecha ISO o retorna la fecha actual sin componentes de tiempo.
  */
-const normalizarFecha = (iso?: string) => {
-  if (!iso) return new Date(new Date().toDateString())
-  return new Date(iso)
-}
+const normalizarFecha = (iso?: string) => standardizeToMidnight(iso)
 
 /**
  * Gestiona la invalidación de claves de caché ante mutaciones en el diario.
@@ -45,7 +44,8 @@ const crearDiarioUnicoPorDia = async (
   userId: number,
   data: CrearEntradaDiarioDTO
 ) => {
-  const movieId = await ensureMovieRefId(data.movie_id)
+  const mediaType = (data.media_type as ReviewMediaType) || ReviewMediaType.movie
+  const movieId = await ensureMovieRefId(data.movie_id, mediaType)
   const watchedDate = normalizarFecha(data.watched_date)
   
   const existente = await diaryRepository.findByUserMovieDate(
@@ -61,6 +61,7 @@ const crearDiarioUnicoPorDia = async (
   const entry = await diaryRepository.create(userId, {
     ...data,
     movie_id: movieId,
+    media_type: mediaType,
     watched_date: watchedDate.toISOString().slice(0, 10),
   })
 

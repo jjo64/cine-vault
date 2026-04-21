@@ -1,3 +1,11 @@
+/**
+ * @file rateLimit.middleware.ts
+ * @description Capa de protección contra abusos de red y ataques de fuerza bruta.
+ * Implementa una jerarquía de limitación de tasa (Rate Limiting) con cuatro niveles 
+ * de severidad, integrando Redis como almacenamiento distribuido para garantizar 
+ * que los contadores de bloqueo sean persistentes y precisos.
+ */
+
 import rateLimit from "express-rate-limit"
 import { RateLimiterRedis } from "rate-limiter-flexible"
 import { redis } from "../config/redis.js"
@@ -6,50 +14,43 @@ import { TooManyRequestsError } from "../errors/AppErrors.js"
 
 const isProduction = process.env.NODE_ENV === "production"
 
-/* ==========================================================================
-   RATE LIMITING
-   --------------------------------------------------------------------------
-   Dos niveles de protección:
-
-   1. GLOBAL → aplica a toda la app (evita abuso general)
-   2. ESTRICTO → solo en rutas de auth (evita brute force de contraseñas)
-
-   Instalación requerida:
-     npm install express-rate-limit rate-limiter-flexible
-   ========================================================================== */
-
-// ---------------------------------------------------------------------------
-// 1. LIMITADOR GLOBAL
-// Aplica a todos los endpoints. Límite generoso para no molestar usuarios normales.
-// ---------------------------------------------------------------------------
+/**
+ * 1. LIMITADOR GLOBAL
+ * Aplica una restricción generosa a todos los endpoints para prevenir 
+ * el consumo excesivo de recursos por bots o rastreadores agresivos.
+ */
 export const limitadorGlobal = rateLimit({
-  windowMs: 15 * 60 * 1000, // ventana de 15 minutos
-  max: 200, // máximo 200 requests por IP en esa ventana
-  standardHeaders: true, // devuelve info en headers RateLimit-*
+  windowMs: 15 * 60 * 1000, // Ventana de observación: 15 minutos
+  max: 200, // Umbral máximo de peticiones por IP
+  standardHeaders: true, // Expone cabeceras informativas RateLimit-*
   legacyHeaders: false,
+  // Bypass en desarrollo para facilitar el testing
   skip: (req) =>
     !isProduction || ["GET", "HEAD", "OPTIONS"].includes(req.method),
   message: {
     error: {
       code: "RATE_LIMIT",
-      message: "Demasiadas peticiones. Intentá de nuevo en 15 minutos.",
+      message: "Se ha detectado un volumen inusual de peticiones. Inténtelo de nuevo en 15 minutos.",
     },
   },
 })
 
-// ---------------------------------------------------------------------------
-// 2. LIMITADOR ESTRICTO — Rutas de autenticación
-// Protege /login, /register, /2fa/verificar contra brute force.
-// Usa Redis para que los contadores persistan aunque el servidor se reinicie.
-// ---------------------------------------------------------------------------
+/** 
+ * 2. LIMITADOR ESTRICTO (Autenticación)
+ * Diseñado específicamente para proteger rutas críticas (Login, 2FA, Registro)
+ * contra ataques de fuerza bruta y diccionarios.
+ */
 const limiterRedis = new RateLimiterRedis({
   storeClient: redis,
-  keyPrefix: "rl:auth", // prefijo en Redis para identificar estas keys
-  points: 5, // 5 intentos permitidos
-  duration: 15 * 60, // por cada 15 minutos
-  blockDuration: 15 * 60, // si supera el límite, bloquear 15 minutos
+  keyPrefix: "rl:auth", // Espacio de nombres en Redis
+  points: 5, // Límite de 5 intentos fallidos
+  duration: 15 * 60, // Reinicio de contador tras 15 minutos
+  blockDuration: 15 * 60, // Duración del bloqueo tras exceder el límite
 })
 
+/**
+ * Middleware que consume puntos de cuota para acciones de autenticación.
+ */
 export const limitadorAuth = async (
   req: import("express").Request,
   res: import("express").Response,
@@ -58,31 +59,30 @@ export const limitadorAuth = async (
   if (!isProduction) return next()
 
   try {
-    // La key combina IP + ruta para que /login y /2fa/verificar tengan contadores separados
+    // Clave compuesta por IP y ruta para granularidad máxima
     const key = `${req.ip}:${req.path}`
     await limiterRedis.consume(key)
     next()
   } catch {
-    // RateLimiterRedis lanza cuando se supera el límite
     res.status(429).json({
       error: {
         code: "BRUTE_FORCE_BLOCKED",
         message:
-          "Demasiados intentos fallidos. Tu IP fue bloqueada por 15 minutos.",
+          "Se han detectado demasiados intentos de acceso fallidos. Su IP ha sido bloqueada temporalmente.",
       },
     })
   }
 }
 
-// ---------------------------------------------------------------------------
-// 3. LIMITADOR PARA EMAILS
-// Evita spam de correos de verificación o reset de contraseña.
-// ---------------------------------------------------------------------------
+/** 
+ * 3. LIMITADOR DE ENVÍO DE CORREOS
+ * Previene el abuso de los servicios de notificaciones (Spam de verificación de email).
+ */
 const limiterEmail = new RateLimiterRedis({
   storeClient: redis,
   keyPrefix: "rl:email",
-  points: 3, // 3 emails permitidos
-  duration: 60 * 60, // por hora
+  points: 3, // Máximo 3 emails por hora
+  duration: 60 * 60,
   blockDuration: 60 * 60,
 })
 
@@ -100,18 +100,16 @@ export const limitadorEmail = async (
     res.status(429).json({
       error: {
         code: "EMAIL_LIMIT",
-        message: "Demasiadas solicitudes de email. Intentá de nuevo en 1 hora.",
+        message: "Límite de envío de correos alcanzado. Por favor, espere una hora.",
       },
     })
   }
 }
 
-// ---------------------------------------------------------------------------
-// 4. LIMITADOR ANTI-SPIKE (Seguridad contra scripts rápidos/autoclickers)
-// ---------------------------------------------------------------------------
 /**
- * CineVault: Middleware para la detección genérica de picos de requests
- * Extraído desde los controladores para cumplir con DRY.
+ * 4. LIMITADOR ANTI-SPIKE
+ * Protege contra ráfagas rápidas de peticiones de escritura (scripts automatizados).
+ * Utiliza una heurística de monitoreo en tiempo real sobre la IP.
  */
 export const limitarSpikesIP = async (
   req: import("express").Request,
@@ -119,9 +117,10 @@ export const limitarSpikesIP = async (
   next: import("express").NextFunction
 ) => {
   try {
+    // Si se detecta un pico sospechoso en la ventana de segundos actual
     if (await checkIPSpike(req.ip!)) {
       throw new TooManyRequestsError(
-        "Demasiadas acciones, intenta en unos segundos"
+        "Se detectó una actividad inusualmente rápida. Por favor, reduzca la velocidad."
       )
     }
     next()

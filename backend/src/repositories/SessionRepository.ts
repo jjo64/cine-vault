@@ -1,25 +1,32 @@
 /**
  * @file SessionRepository.ts
- * @description Repositorio para la gestión de sesiones de usuario persistentes. 
- * Implementa el control de dispositivos conectados, validación de hashes de sesión 
- * y mecanismos de cierre de sesión remoto (único o masivo).
+ * @description Repositorio encargado de la gestión de persistencia de sesiones activas.
+ * Implementa el control de acceso basado en dispositivos, permitiendo la monitorización 
+ * de metadatos (User Agent, IP) y la invalidación granular o masiva de tokens. 
+ * Es el núcleo de la seguridad de sesiones persistentes en la plataforma.
  */
 
 import { sessions, Prisma } from "@prisma/client"
 import { prisma } from "../lib/prisma.js"
 
-// --- Interfaces de Contrato ---
+// --- Definición de Contrato de Seguridad ---
 
 /**
  * Interfaz ISessionRepository
- * Define las operaciones críticas para la seguridad de sesión.
+ * Define las operaciones críticas para salvaguardar la identidad del usuario.
  */
 export interface ISessionRepository {
+  /** Registra una nueva sesión tras una autenticación exitosa */
   create(data: Prisma.sessionsCreateInput): Promise<sessions>
+  /** Valida la integridad de una sesión mediante su ID y el hash del secreto */
   findByHashAndId(id: string, tokenHash: string): Promise<sessions | null>
+  /** Elimina una sesión específica (Logout) */
   deleteById(id: string): Promise<void>
+  /** Invalida todas las sesiones de un usuario (Emergencia/Cambio Password) */
   deleteManyByUser(userId: number): Promise<number>
+  /** Invalida sesiones en otros dispositivos manteniendo la actual */
   deleteManyByUserExcept(userId: number, keepSessionId: string): Promise<number>
+  /** Lista el parque de dispositivos conectados para auditoría del usuario */
   findByUser(
     userId: number
   ): Promise<
@@ -28,24 +35,28 @@ export interface ISessionRepository {
       "id" | "user_agent" | "ip_address" | "created_at" | "expires_at"
     >[]
   >
+  /** Localiza metadatos de una sesión por ID */
   findById(id: string): Promise<sessions | null>
 }
 
 /**
- * Clase SessionRepository
- * Gestiona el ciclo de vida de las sesiones en la base de datos.
+ * Repositorio de Sesiones
+ * Implementación robusta sobre Prisma para el ciclo de vida de tokens de acceso.
  */
 export class SessionRepository implements ISessionRepository {
   /**
-   * Registra una nueva sesión vinculada a un usuario, agente de usuario e IP.
+   * Persiste una nueva sesión con metadatos de dispositivo.
    */
   async create(data: Prisma.sessionsCreateInput): Promise<sessions> {
     return prisma.sessions.create({ data })
   }
 
   /**
-   * Verifica la validez de una sesión comparando el ID y el hash del token.
-   * Punto crítico para la seguridad de autenticación.
+   * Punto de verificación de seguridad.
+   * Compara el identificador de sesión con el hash del token persistido.
+   * 
+   * @param id - UUID de la sesión extraído del token o cookie.
+   * @param tokenHash - Hash criptográfico del token secreto.
    */
   async findByHashAndId(
     id: string,
@@ -55,15 +66,15 @@ export class SessionRepository implements ISessionRepository {
   }
 
   /**
-   * Elimina una sesión específica.
+   * Finaliza una sesión individual.
    */
   async deleteById(id: string): Promise<void> {
     await prisma.sessions.delete({ where: { id } }).catch(() => null)
   }
 
   /**
-   * Cierra todas las sesiones abiertas de un usuario (ej. tras cambio de contraseña).
-   * @returns El número de sesiones eliminadas.
+   * Realiza una purga completa de sesiones para un usuario.
+   * Método fundamental para la seguridad proactiva tras eventos de riesgo.
    */
   async deleteManyByUser(userId: number): Promise<number> {
     const result = await prisma.sessions.deleteMany({
@@ -73,7 +84,8 @@ export class SessionRepository implements ISessionRepository {
   }
 
   /**
-   * Cierra todas las sesiones de un usuario excepto la sesión actual indicada.
+   * Permite al usuario cerrar sesión en todos sus dispositivos menos en el actual.
+   * Útil para limpieza de dispositivos antiguos o desconocidos.
    */
   async deleteManyByUserExcept(
     userId: number,
@@ -86,14 +98,17 @@ export class SessionRepository implements ISessionRepository {
   }
 
   /**
-   * Lista las sesiones activas de un usuario para la gestión de dispositivos.
+   * Recupera el historial de conexiones activas.
+   * Proyecta campos limitados para evitar la exposición de secretos técnicos (hashes).
    */
   async findByUser(userId: number) {
     return prisma.sessions.findMany({
       where: { user_id: userId },
       select: {
         id: true,
+        /** Identificación del navegador/dispositivo */
         user_agent: true,
+        /** Origen geográfico de la conexión */
         ip_address: true,
         created_at: true,
         expires_at: true,
@@ -103,11 +118,12 @@ export class SessionRepository implements ISessionRepository {
   }
 
   /**
-   * Recupera una sesión por su ID único.
+   * Localiza una sesión por su identificador primario.
    */
   async findById(id: string): Promise<sessions | null> {
     return prisma.sessions.findUnique({ where: { id } })
   }
 }
 
+/** Instancia maestra del repositorio de sesiones */
 export const sessionRepository = new SessionRepository()

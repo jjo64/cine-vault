@@ -107,9 +107,10 @@ async function cleanDatabase() {
   await prisma.auth_tokens.deleteMany({ where: { user_id: { in: seedUserIds } } })
   await prisma.sessions.deleteMany({ where: { user_id: { in: seedUserIds } } })
   await prisma.users.deleteMany({ where: { id: { in: seedUserIds } } })
-  // Estas tablas no tienen dueño directo — se limpian enteras
-  await prisma.movies_ref.deleteMany()
-  await prisma.news.deleteMany()
+  await prisma.user_followed_persons.deleteMany({ where: { user_id: { in: seedUserIds } } })
+  await prisma.user_badges.deleteMany({ where: { user_id: { in: seedUserIds } } })
+  await prisma.badges.deleteMany()
+  await prisma.persons_ref.deleteMany()
 
   console.log(`✅ Eliminados ${seedUserIds.length} usuarios de seed y sus datos asociados.`)
 }
@@ -122,7 +123,19 @@ async function seedMovies() {
   console.log(`🎬 Creando ${REAL_TMDB_IDS.length} películas...`)
 
   await prisma.movies_ref.createMany({
-    data: REAL_TMDB_IDS.map(tmdb_id => ({ tmdb_id })),
+    data: REAL_TMDB_IDS.map(tmdb_id => ({ 
+      tmdb_id,
+      media_type: 'movie'
+    })),
+    skipDuplicates: true,
+  })
+
+  // Añadir un par de series para testing
+  await prisma.movies_ref.createMany({
+    data: [
+      { tmdb_id: 1396, media_type: 'tv' }, // Breaking Bad
+      { tmdb_id: 1399, media_type: 'tv' }, // Game of Thrones
+    ],
     skipDuplicates: true,
   })
 
@@ -417,20 +430,42 @@ async function seedUserActivity(users: { id: number }[]) {
 
   await prisma.user_activity.createMany({ data })
 }
-
 async function seedNews() {
   console.log('📰 Creando noticias...')
-
   const categories: news_category[] = ['estrenos', 'premios', 'actores', 'directores', 'streaming']
-
   const data = Array.from({ length: CONFIG.NEWS_ITEMS }, () => ({
     title: faker.lorem.sentence().slice(0, 254),
     content: faker.lorem.paragraphs(3),
     category: faker.helpers.arrayElement(categories),
     created_at: faker.date.past({ years: 1 }),
   }))
-
   await prisma.news.createMany({ data })
+}
+
+async function seedBadges() {
+  console.log('🏅 Creando insignias de ejemplo...')
+  const badges = [
+    {
+      name: 'Cinéfilo Novato',
+      description: 'Has registrado tus primeras 5 películas',
+      icon_url: 'https://cdn-icons-png.flaticon.com/512/3163/3163478.png',
+      criteria: 'DIARY_COUNT:5'
+    },
+    {
+      name: 'Crítico de Hierro',
+      description: 'Has escrito 10 reseñas en modo crítico',
+      icon_url: 'https://cdn-icons-png.flaticon.com/512/10629/10629607.png',
+      criteria: 'CRITICAL_REVIEWS:10'
+    },
+    {
+      name: 'Explorador de Series',
+      description: 'Has completado 3 series de TV',
+      icon_url: 'https://cdn-icons-png.flaticon.com/512/2324/2324137.png',
+      criteria: 'TV_COUNT:3'
+    }
+  ]
+
+  await prisma.badges.createMany({ data: badges })
 }
 
 // ─────────────────────────────────────────────
@@ -456,6 +491,7 @@ async function main() {
   await seedNotifications(users)
   await seedUserActivity(users)
   await seedNews()
+  await seedBadges()
 
   const counts = await Promise.all([
     prisma.users.count(),

@@ -1,31 +1,39 @@
 /**
  * @file ReportsRepository.ts
- * @description Repositorio para la gestión de reportes de moderación (denuncias de contenido).
- * Utiliza SQL Raw para realizar JOINS complejos con usuarios y reseñas, permitiendo 
- * una administración ágil desde el panel de moderación.
+ * @description Capa de persistencia para el sistema de moderación y auditoría de contenidos.
+ * Gestiona el flujo de denuncias (Report/Abuse) sobre reseñas y comentarios. 
+ * Utiliza SQL nativo (Prisma.sql) para realizar proyecciones complejas que integran 
+ * metadatos de denunciantes, sujetos denunciados y moderadores en una sola operación de lectura.
  */
 
 import { Prisma } from "@prisma/client"
 import { prisma } from "../lib/prisma.js"
 
-/**
- * Estados posibles de un reporte.
- */
+/** Ciclo de vida administrativo de una denuncia */
 export type ReportStatus = "pending" | "resolved" | "rejected"
 
-/**
- * Representación de una fila de reporte con datos agregados de emisor y dueño de contenido.
+/** 
+ * Estructura enriquecida de un reporte para el Panel de Moderación. 
+ * Combina la traza de la denuncia con identidades de usuario y contenido sujeto a revisión.
  */
 export type ReportRow = {
   id: number
+  /** Usuario que emite la queja */
   reporter_id: number | null
+  /** Referencia a la reseña denunciada */
   review_id: number | null
+  /** Explicación detallada del motivo de la denuncia */
   reason: string | null
   status: ReportStatus
   created_at: Date
+  /** Marca temporal de la resolución administrativa */
   resolved_at: Date | null
+  /** Moderador que tomó la decisión final */
   resolved_by_user_id: number | null
+  /** Nota justificativa de la resolución */
   resolution_note: string | null
+  
+  // Metadatos de Red (JOINS)
   reporter_username: string | null
   reporter_avatar_url: string | null
   review_owner_id: number | null
@@ -33,8 +41,9 @@ export type ReportRow = {
   review_content: string | null
 }
 
-/**
- * Fragmento SQL base para consultas de reportes con sus JOINS correspondientes.
+/** 
+ * Fragmento SQL base para las consultas de supervisión. 
+ * Optimiza la recuperación de identidades cruzadas mediante un triple JOIN.
  */
 const REPORTS_BASE_SELECT = Prisma.sql`
   SELECT
@@ -59,12 +68,15 @@ const REPORTS_BASE_SELECT = Prisma.sql`
 `
 
 /**
- * Clase ReportsRepository
- * Centraliza la lógica de acceso a datos para el sistema de moderación.
+ * Repositorio de Reportes
+ * Orquestra el motor de auditoría técnica y social de la plataforma.
  */
 export class ReportsRepository {
   /**
-   * Construye dinámicamente la cláusula WHERE basada en los filtros activos.
+   * Genera dinámicamente predicados SQL basados en los filtros de moderación activos.
+   * 
+   * @param status - Estado del flujo deseado o 'all' para vista global.
+   * @param reviewId - Filtro opcional para agrupar denuncias sobre una misma obra.
    */
   private buildWhere(status: ReportStatus | "all", reviewId?: number) {
     const filters: Prisma.Sql[] = []
@@ -82,7 +94,9 @@ export class ReportsRepository {
   }
 
   /**
-   * Lista y pagina los reportes del sistema con filtros opcionales.
+   * Lista y pagina las incidencias reportadas.
+   * Proporciona los metadatos necesarios para que el staff de CineVault pueda 
+   * tomar decisiones de moderación informadas.
    */
   async listReports(params: {
     status: ReportStatus | "all"
@@ -119,7 +133,7 @@ export class ReportsRepository {
   }
 
   /**
-   * Recupera el detalle completo de un reporte específico.
+   * Recupera la trazabilidad completa de un reporte individual.
    */
   async getReportById(reportId: number) {
     const rows = await prisma.$queryRaw<ReportRow[]>(Prisma.sql`
@@ -132,7 +146,9 @@ export class ReportsRepository {
   }
 
   /**
-   * Actualiza el estado de un reporte tras la moderación activa.
+   * Registra una resolución administrativa.
+   * 
+   * @param input - Datos de la resolución, incluyendo el moderador y la nota técnica.
    */
   async moderateReport(input: {
     reportId: number
@@ -152,7 +168,8 @@ export class ReportsRepository {
   }
 
   /**
-   * Obtiene estadísticas agregadas globales sobre el estado de los reportes.
+   * Obtiene la distribución estadística del estado de la moderación global.
+   * Útil para KPIs de salud de la comunidad.
    */
   async getReportsStats() {
     const rows = await prisma.$queryRaw<
@@ -177,4 +194,5 @@ export class ReportsRepository {
   }
 }
 
+/** Instancia exportada del repositorio de moderación */
 export const reportsRepository = new ReportsRepository()

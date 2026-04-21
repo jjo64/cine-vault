@@ -1,29 +1,38 @@
 /**
  * @file PaymentsRepository.ts
- * @description Repositorio especializado en la gestión de transacciones económicas y suscripciones.
- * Interactúa con Stripe para la persistencia de pagos, cambios de membresía y estados 
- * de suscripciones (PRO/VIP) en una arquitectura transaccional.
+ * @description Repositorio crítico para la gestión financiera y de suscripciones.
+ * Administra el ciclo de vida de los planes CineVault (PRO/VIP), encargándose de la 
+ * persistencia de pagos, renovaciones automáticas y la sincronización de estados 
+ * con el proveedor externo de pagos (Stripe). Garantiza la integridad de la 
+ * membresía del usuario mediante operaciones transaccionales.
  */
 
 import { users_membership, subscriptions_plan } from "@prisma/client"
 import { prisma } from "../lib/prisma.js"
 
-/**
- * Datos requeridos tras completar un flujo de checkout con éxito.
+/** 
+ * Payload consolidado tras una operación exitosa en la pasarela de pagos.
  */
 export interface ICheckoutCompletedData {
   userId: number
+  /** Identificador técnico del plan adquirido */
   plan: "vip" | "pro"
+  /** Fecha de inicio de la vigencia */
   startDate: Date
+  /** Fecha de expiración (habitualmente 1 mes o 1 año después) */
   endDate: Date
+  /** ID de relación en la plataforma de Stripe */
   stripeSubscriptionId: string
+  /** Importe total de la transacción en céntimos/subunidades */
   amountTotal: number
+  /** Código de divisa (ISO 4217) */
   currency: string
+  /** Referencia del cobro individual del proveedor */
   providerPaymentId: string
 }
 
-/**
- * Estructura interna para el registro de pagos individuales.
+/** 
+ * Estructura de auditoría interna para el registro histórico de cobros.
  */
 interface PaymentRecord {
   userId: number
@@ -35,19 +44,21 @@ interface PaymentRecord {
 }
 
 /**
- * Clase PaymentsRepository
- * Gestiona la integridad de los datos financieros y niveles de acceso (membership) de los usuarios.
+ * Repositorio de Pagos
+ * Centraliza la lógica de negocio económica, asegurando que los privilegios 
+ * premium estén siempre sincronizados con el estado real de los cobros.
  */
 class PaymentsRepository {
   /**
-   * Busca un usuario por ID para verificar su estado actual antes de un cobro.
+   * Verifica la identidad y estado del usuario previo al procesamiento del pago.
    */
   async findUserById(userId: number) {
     return prisma.users.findUnique({ where: { id: userId } })
   }
 
   /**
-   * Localiza una suscripción mediante el identificador externo del proveedor (ej: Stripe).
+   * Localiza una suscripción activa mediante su referencia externa.
+   * Utilizado para procesar webhooks de actualización de Stripe.
    */
   async findSubscriptionByProviderId(stripeSubId: string) {
     return prisma.subscriptions.findFirst({
@@ -56,7 +67,7 @@ class PaymentsRepository {
   }
 
   /**
-   * Recupera la suscripción más reciente de un usuario.
+   * Recupera el estado de membresía actual del usuario.
    */
   async findSubscriptionByUser(userId: number) {
     return prisma.subscriptions.findFirst({
@@ -66,18 +77,23 @@ class PaymentsRepository {
   }
 
   /** 
-   * Registra la finalización de un proceso de compra de forma atómica.
-   * Crea la suscripción, registra el pago inicial y eleva el rango del usuario.
+   * Orquestador de finalización de compra.
+   * Ejecuta una serie de operaciones atómicas:
+   * 1. Eleva el rango del usuario al plan correspondiente.
+   * 2. Inicializa la entidad de suscripción persistente.
+   * 3. Registra el asiento contable del pago inicial.
+   * 
+   * @param data - Resultados validados de la pasarela Stripe.
    */
   async checkoutCompleted(data: ICheckoutCompletedData) {
     return prisma.$transaction(async (tx) => {
-      // 1. Elevar membresía del usuario
+      // Sincronización de privilegios de acceso
       await tx.users.update({
         where: { id: data.userId },
         data: { membership: data.plan as users_membership },
       })
 
-      // 2. Crear registro de suscripción
+      // Registro del contrato de servicio (Suscripción)
       const suscripcion = await tx.subscriptions.create({
         data: {
           user_id: data.userId,
@@ -90,7 +106,7 @@ class PaymentsRepository {
         },
       })
 
-      // 3. Registrar el pago realizado
+      // Registro de la transacción monetaria para auditoría
       await tx.payments.create({
         data: {
           user_id: data.userId,
@@ -108,8 +124,10 @@ class PaymentsRepository {
   }
 
   /** 
-   * Renueva la vigencia de una suscripción activa.
-   * Se ejecuta habitualmente tras el cobro de una factura mensual (webhook invoice.paid).
+   * Extiende la validez de una membresía activa.
+   * 
+   * @param stripeSubId - Referencia de la suscripción a renovar.
+   * @param newEndDate - Próxima fecha de vencimiento.
    */
   async renewSubscription(stripeSubId: string, newEndDate: Date) {
     return prisma.subscriptions.updateMany({
@@ -119,7 +137,7 @@ class PaymentsRepository {
   }
 
   /**
-   * Actualiza el estado vital de una suscripción.
+   * Actualiza el estado vitalicio de la suscripción (ej: expirado por falta de pago).
    */
   async updateSubscriptionStatus(
     stripeSubId: string,
@@ -136,7 +154,9 @@ class PaymentsRepository {
   }
 
   /**
-   * Persiste un registro de pago, actualizando si ya existe (upsert manual para evitar duplicados).
+   * Persiste o actualiza un registro de pago individual.
+   * Implementa una lógica de 'Idempotencia' manual para evitar duplicar asientos 
+   * contables en caso de recepciones múltiples de webhooks.
    */
   async recordPayment(data: PaymentRecord) {
     const existing = await prisma.payments.findFirst({
@@ -164,8 +184,9 @@ class PaymentsRepository {
   }
 
   /** 
-   * Procesa la cancelación de una suscripción.
-   * Marca la suscripción como cancelada y degrada al usuario a la membresía "free" atómicamente.
+   * Ejecuta la baja del servicio para un usuario.
+   * Transacción atómica que asegura que el usuario pierda los privilegios PRO 
+   * en el momento exacto en que la suscripción se marca como cancelada.
    */
   async cancelSubscription(stripeSubId: string) {
     const sub = await prisma.subscriptions.findFirst({
@@ -187,4 +208,5 @@ class PaymentsRepository {
   }
 }
 
+/** Instancia exportada para la gestión financiera de la plataforma */
 export const paymentsRepository = new PaymentsRepository()

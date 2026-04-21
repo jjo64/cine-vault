@@ -1,3 +1,11 @@
+/**
+ * @file server.ts
+ * @description Punto de entrada principal para el backend de CineVault.
+ * Configura el servidor Express, orquestra los middlewares de seguridad y 
+ * optimización, establece la conexión de WebSockets (Socket.io), 
+ * define la arquitectura de rutas de la API y arranca las tareas programadas.
+ */
+
 import "dotenv/config"
 import express from "express"
 import cors from "cors"
@@ -11,7 +19,7 @@ import { createServer } from "http"
 import "./config/passport.config.js"
 import passport from "passport"
 
-// Importación de rutas
+// --- Importación de Rutas de la API ---
 import rutasAuth from "./routes/auth.routes.js"
 import rutasUsuarios from "./routes/users.routes.js"
 import rutasPeliculas from "./routes/movies.routes.js"
@@ -36,47 +44,60 @@ import rutasFeed from "./routes/feed.routes.js"
 import rutasRecommendations from "./routes/recommendations.routes.js"
 import rutasReports from "./routes/reports.routes.js"
 
-// Middlewares
+// --- Middlewares de Soporte ---
 import { manejadorErrores } from "./middlewares/error.middlewares.js"
 import { limitadorGlobal } from "./middlewares/rateLimit.middleware.js"
 import { seoHeaders } from "./middlewares/seoHeaders.js"
 
-// Importación de helpers
+// --- Librerías y Utilidades ---
 import { limpiarUsuariosNoVerificados } from "./lib/jobs.js"
 import { initSocketIO } from "./config/socketio.config.js"
 
-// Swagger & Documentación
+// --- Documentación Swagger ---
 import swaggerUi from "swagger-ui-express"
 import { swaggerSpec } from "../docs/swagger.js"
 
-// Helpers para rutas en ES Modules
+// Configuración de rutas para ES Modules (sustituto de __dirname)
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const publicPath = path.resolve(__dirname, "../../frontend/dist")
 
-// Configuración inicial
+// Inicialización de la aplicación y el servidor HTTP
 const app = express()
 const httpServer = createServer(app)
 initSocketIO(httpServer)
-app.set("trust proxy", 1)
-const PUERTO = process.env.PORT || 3000
-if (!process.env.JWT_SECRET)
-  throw new Error("JWT_SECRET no definido. Detén la app.")
-if (!process.env.API_KEY_TMDB) throw new Error("API_KEY_TMDB no definido")
 
-app.use(compression())
+// Configuración de proxy para despliegues tras balanceadores de carga
+app.set("trust proxy", 1)
+
+const PUERTO = process.env.PORT || 3000
+
+// Validaciones críticas de entorno antes del arranque
+if (!process.env.JWT_SECRET)
+  throw new Error("CRÍTICO: JWT_SECRET no definido en el entorno.")
+if (!process.env.API_KEY_TMDB) 
+  throw new Error("CRÍTICO: API_KEY_TMDB no definido en el entorno.")
+
+/**
+ * 1. Middlewares de Optimización y Seguridad Base
+ */
+app.use(compression()) // Comprime las respuestas HTTP para mejorar el rendimiento
 app.use(
   express.static(publicPath, {
-    maxAge: "1y",
+    maxAge: "1y", // Cache agresiva para archivos estáticos del frontend
     etag: true,
     index: false,
   })
 )
 app.use(
   helmet({
-    contentSecurityPolicy: false,
+    contentSecurityPolicy: false, // Se configura manualmente abajo para mayor granularidad
   })
 )
+
+/**
+ * 2. Políticas de Seguridad (CSP y Frame Options)
+ */
 app.use((req, res, next) => {
   res.setHeader("X-Frame-Options", "SAMEORIGIN")
   res.setHeader(
@@ -94,9 +115,10 @@ app.use((req, res, next) => {
   next()
 })
 
-// Configuración de CORS robusta
+/**
+ * 3. Configuración Robusta de CORS
+ */
 const normalizeOrigin = (value: string) => value.trim().replace(/\/+$/, "")
-
 const configuredOrigins = String(process.env.FRONTEND_URLS || "")
   .split(",")
   .map((url) => url.trim())
@@ -121,50 +143,52 @@ const allowedOrigins = new Set(
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Permitir solicitudes sin origen (ej: Postman, scripts) o desde URLs permitidas
-      if (!origin) return callback(null, true)
+      if (!origin) return callback(null, true) // Permite herramientas de test como Postman
 
       if (allowedOrigins.has(normalizeOrigin(origin))) {
         return callback(null, true)
       }
 
-      console.warn("Bloqueo CORS para origen:", origin)
-      return callback(new Error("No permitido por CORS"))
+      console.warn("Seguridad: Intento de acceso bloqueado por CORS desde:", origin)
+      return callback(new Error("Acceso no permitido por la política CORS"))
     },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-    credentials: true,
+    credentials: true, // Permite el intercambio de cookies de sesión
   })
 )
-app.use(seoHeaders)
 
-app.use(limitadorGlobal)
-// Stripe Webhook necesita el cuerpo raw para verificar la firma
+/**
+ * 4. Middlewares de Utilidad y Parsing
+ */
+app.use(seoHeaders) // Inyecta headers optimizados para rastreadores
+app.use(limitadorGlobal) // Prevención de ataques de fuerza bruta (Rate-limit)
+
+// Stripe Webhook requiere el cuerpo en formato raw para validar firmas criptográficas
 app.use("/api/payments/webhook", express.raw({ type: "application/json" }))
-app.use(express.json({ limit: "10mb" })) // Parseo de JSON body con límite
-app.use(cookieParser()) // Parseo de cookies
-app.disable("x-powered-by") // Ocultar tecnología del servidor por seguridad
-cron.schedule("0 * * * *", limpiarUsuariosNoVerificados)
+
+app.use(express.json({ limit: "10mb" })) // Soporte para JSON con límite de carga
+app.use(cookieParser()) // Habilita la lectura de cookies firmadas
+app.disable("x-powered-by") // Oculta la cabecera Express por seguridad
+
+/**
+ * 5. Tareas Programadas y Autenticación
+ */
+cron.schedule("0 * * * *", limpiarUsuariosNoVerificados) // Mantenimiento cada hora
 app.use(passport.initialize())
 
-/* ==========================================================================
-   RUTA RAÍZ DE PRUEBA (ANTES del manejador de errores)
-   ========================================================================== */
+/**
+ * 6. Definición de Rutas de la API
+ */
 
-app.get("/", (req, res) => {
-  res.json({
-    message: "API CineVault funcionando correctamente",
-    status: "OK",
-  })
+// Healthcheck básico
+app.get("/api/health", (req, res) => {
+  res.json({ message: "API CineVault operacional", status: "OK" })
 })
 
-/* ==========================================================================
-   RUTAS DE LA API
-   ========================================================================== */
-
-/* ==========================================================================   
-   DOCUMENTACIÓN API (OpenAPI)
-   ========================================================================== */
+// Documentación interactiva (Swagger)
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec))
+
+// Mapeo de routers por módulo funcional
 app.use("/", rutasSeo)
 app.use("/api/auth", rutasAuth)
 app.use("/api/users", rutasUsuarios)
@@ -188,21 +212,18 @@ app.use("/api/activity", rutasActivity)
 app.use("/api/feed", rutasFeed)
 app.use("/api/recommendations", rutasRecommendations)
 app.use("/api/reports", rutasReports)
-app.use("/api", rutasSeo)
 
-/* ==========================================================================
-   MIDDLEWARE DE MANEJO DE ERRORES (SIEMPRE AL FINAL)
-   ========================================================================== */
-
+/**
+ * 7. Middleware Centralizado de Manejo de Errores (SIEMPRE AL FINAL)
+ */
 app.use(manejadorErrores)
 
-/* ==========================================================================
-   INICIO DEL SERVIDOR
-   ========================================================================== */
-
+/**
+ * Arranque del Servidor
+ */
 httpServer.listen(PUERTO, () => {
-  console.log(`\nServidor corriendo en: http://localhost:${PUERTO}`)
-  console.log(
-    `Frontend permitido: ${process.env.FRONTEND_URL || "No definido"}\n`
-  )
+  console.log(`\n-----------------------------------------------------------`)
+  console.log(`Bóveda Cinematográfica Abierta: http://localhost:${PUERTO}`)
+  console.log(`Entorno: ${process.env.NODE_ENV || "development"}`)
+  console.log(`-----------------------------------------------------------\n`)
 })
