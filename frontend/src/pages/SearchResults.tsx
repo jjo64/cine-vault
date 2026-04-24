@@ -13,7 +13,16 @@ import {
   Bookmark,
 } from 'lucide-react'
 import { createSlug } from '../utils/stringUtils'
-import { fetchMovieDetail } from '../services/movieDetailServices'
+import { 
+  fetchMovieDetail, 
+  addToWatchlist, 
+  removeFromWatchlist, 
+  addToDiary, 
+  removeFromDiary, 
+  fetchMyWatchlist, 
+  fetchMyDiary 
+} from '../services/movieDetailServices'
+import { getCurrentUser, getStoredAccessToken, type AuthUser } from '../services/authServices'
 import { searchMovies, searchUsers, type SearchMovieResult, type SearchPersonPanel, type SearchUserResult } from '../services/searchServices'
 import './SearchResults.css'
 
@@ -347,11 +356,17 @@ function SkeletonPill({ width = 64 }: { width?: number }) {
   )
 }
 
-function FilmResultItem({ item, delay, isDetailsLoading }: { item: FilmResult; delay: number; isDetailsLoading: boolean }) {
+function FilmResultItem({ item, delay, isDetailsLoading, user, initialVaulted, initialWatchlisted }: { item: FilmResult; delay: number; isDetailsLoading: boolean; user: AuthUser | null; initialVaulted: boolean; initialWatchlisted: boolean }) {
   const [hov, setHov] = useState(false)
-  const [vaulted, setVaulted] = useState(false)
-  const [bookmarked, setBookmarked] = useState(false)
-  const href = item.mediaType === 'tv' ? `/tv/${item.id}` : `/movie/${item.id}-${createSlug(item.title)}`
+  const [vaulted, setVaulted] = useState(initialVaulted)
+  const [bookmarked, setBookmarked] = useState(initialWatchlisted)
+  const [diaryEntryId, setDiaryEntryId] = useState<number | null>(null)
+
+  const token = getStoredAccessToken()
+
+  const href = item.mediaType === 'tv' 
+    ? `/tv/${item.id}-${createSlug(item.title)}` 
+    : `/movie/${item.id}-${createSlug(item.title)}`
   const visibleGenres = (item.genres || []).slice(0, 3)
   const runtimeLabel = typeof item.runtime === 'number' && item.runtime > 0 ? `${item.runtime} min` : null
 
@@ -406,10 +421,63 @@ function FilmResultItem({ item, delay, isDetailsLoading }: { item: FilmResult; d
         </div>
 
         <div style={{ display: 'flex', gap: 10, marginTop: 16, opacity: hov ? 1 : 0.7, transform: hov ? 'translateY(0)' : 'translateY(4px)', transition: 'opacity 0.25s, transform 0.25s' }}>
-          <button onClick={() => setVaulted((v) => !v)} aria-label={vaulted ? "Quitar de la bóveda" : "Añadir a la bóveda"} style={{ padding: '12px 18px', background: vaulted ? C.accentDim : C.accent, color: C.bg, border: 'none', fontFamily: SANS, fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', cursor: 'pointer' }}>
+          <button 
+            onClick={async (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (!token) {
+                window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: { mode: 'login' } }));
+                return;
+              }
+              try {
+                if (vaulted) {
+                  // We need the diary entry ID to remove it. 
+                  // For now, if we don't have it, we might need a fetch or just toggle local.
+                  // But movieDetailServices expects an ID for removeFromDiary.
+                  // Usually we'd need to search for the entry in the user's diary.
+                  // Simplified: we only allow adding if we don't have the ID, or we fetch it.
+                  if (diaryEntryId) {
+                    await removeFromDiary(token, diaryEntryId);
+                    setVaulted(false);
+                    setDiaryEntryId(null);
+                  }
+                } else {
+                  const res = await addToDiary(token, item.id, undefined, item.mediaType);
+                  setVaulted(true);
+                  if ((res as any).id) setDiaryEntryId((res as any).id);
+                }
+              } catch (err) {
+                console.error("Vault toggle error:", err);
+              }
+            }} 
+            aria-label={vaulted ? "Quitar de la bóveda" : "Añadir a la bóveda"} 
+            style={{ padding: '12px 18px', background: vaulted ? C.accentDim : C.accent, color: C.bg, border: 'none', fontFamily: SANS, fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', cursor: 'pointer' }}
+          >
             {vaulted ? '✓ En Vault' : '+ Vault'}
           </button>
-          <button onClick={() => setBookmarked((v) => !v)} aria-label={bookmarked ? "Quitar de la lista de seguimiento" : "Añadir a la lista de seguimiento"} style={{ padding: '12px 14px', background: 'transparent', color: bookmarked ? C.accent : C.textSoft, border: `1px solid ${bookmarked ? C.accentDim : C.border}`, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: SANS, fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase' }}>
+          <button 
+            onClick={async (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (!token) {
+                window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: { mode: 'login' } }));
+                return;
+              }
+              try {
+                if (bookmarked) {
+                  await removeFromWatchlist(token, item.id);
+                  setBookmarked(false);
+                } else {
+                  await addToWatchlist(token, item.id, item.mediaType);
+                  setBookmarked(true);
+                }
+              } catch (err) {
+                console.error("Watchlist toggle error:", err);
+              }
+            }} 
+            aria-label={bookmarked ? "Quitar de la lista de seguimiento" : "Añadir de la lista de seguimiento"} 
+            style={{ padding: '12px 14px', background: 'transparent', color: bookmarked ? C.accent : C.textSoft, border: `1px solid ${bookmarked ? C.accentDim : C.border}`, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: SANS, fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase' }}
+          >
             <Bookmark size={11} fill={bookmarked ? C.accent : 'none'} /> {bookmarked ? 'En watchlist' : 'Watchlist'}
           </button>
         </div>
@@ -558,14 +626,22 @@ export function Search() {
   const [isSearching, setIsSearching] = useState(false)
   const [showFilters, setShowFilters] = useState(true)
   const [isFiltersOpen, setIsFiltersOpen] = useState(false)
-  const [fetchError, setFetchError] = useState<string | null>(null)
-  const [filmResults, setFilmResults] = useState<FilmResult[]>([])
-  const [personResults, setPersonResults] = useState<PersonResult[]>([])
-  const [userResults, setUserResults] = useState<UserResult[]>([])
+  const [user, setUser] = useState<AuthUser | null>(null)
+  const [myWatchlist, setMyWatchlist] = useState<number[]>([])
+  const [myDiary, setMyDiary] = useState<number[]>([])
   const [enrichedFilms, setEnrichedFilms] = useState<Record<number, FilmDetails>>({})
   const [loadingFilmDetails, setLoadingFilmDetails] = useState<Record<number, boolean>>({})
   const detailsCacheRef = useRef<Map<number, FilmDetails>>(new Map())
   const inflightDetailsRef = useRef<Set<number>>(new Set())
+
+  useEffect(() => {
+    const token = getStoredAccessToken()
+    if (!token) return
+
+    getCurrentUser().then(setUser).catch(() => setUser(null))
+    fetchMyWatchlist(token).then(list => setMyWatchlist(list.map(i => i.movie_id))).catch(() => {})
+    fetchMyDiary(token).then(res => setMyDiary((res.diary || []).map(i => i.movie_id))).catch(() => {})
+  }, [])
   const PER_PAGE = 5
 
   useEffect(() => {
@@ -826,8 +902,8 @@ export function Search() {
         </div>
 
         <main className="search-results-main" style={{ display: 'flex', gap: 0 }}>
-          <AnimatePresence>
-            <div className={`search-filters-drawer ${isFiltersOpen ? 'search-filters-drawer--open' : ''}`}>
+          <AnimatePresence key="drawer-presence">
+            <div key="filters-drawer" className={`search-filters-drawer ${isFiltersOpen ? 'search-filters-drawer--open' : ''}`}>
               <div className="search-filters-drawer-header">
                 <div style={{ fontFamily: SANS, fontSize: 12, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.accent }}>Filtros</div>
                 <button onClick={() => setIsFiltersOpen(false)} aria-label="Cerrar" style={{ background: 'none', border: 'none', color: C.textSoft, cursor: 'pointer' }}>
@@ -858,7 +934,7 @@ export function Search() {
             </div>
 
             {showFilters && (
-              <motion.div className="search-results-desktop-only" initial={{ width: 0, opacity: 0 }} animate={{ width: 280, opacity: 1 }} exit={{ width: 0, opacity: 0 }} transition={{ duration: 0.35, ease: 'easeInOut' }} style={{ overflow: 'hidden', flexShrink: 0, borderRight: `1px solid ${C.border}` }}>
+              <motion.div key="desktop-filters-panel" className="search-results-desktop-only" initial={{ width: 0, opacity: 0 }} animate={{ width: 280, opacity: 1 }} exit={{ width: 0, opacity: 0 }} transition={{ duration: 0.35, ease: 'easeInOut' }} style={{ overflow: 'hidden', flexShrink: 0, borderRight: `1px solid ${C.border}` }}>
                 <div style={{ width: 280, padding: '32px 28px' }}>
                   <FiltersPanel filters={filters} onChange={handleFilterChange} onClear={() => setFilters({ ...EMPTY_FILTERS })} />
                 </div>
@@ -907,8 +983,20 @@ export function Search() {
                         genres: details?.genres ?? film.genres,
                         country: details?.country ?? film.country,
                       }
-
-                      return <FilmResultItem key={`${film.mediaType}-${film.id}`} item={mergedFilm} delay={i * 0.08} isDetailsLoading={Boolean(loadingFilmDetails[film.id])} />
+                      if ('mediaType' in mergedFilm) {
+                        return (
+                          <FilmResultItem 
+                            key={`${mergedFilm.id}-${mergedFilm.mediaType}`} 
+                            item={mergedFilm} 
+                            delay={i * 0.05} 
+                            isDetailsLoading={loadingFilmDetails[mergedFilm.id]} 
+                            user={user}
+                            initialVaulted={myDiary.includes(mergedFilm.id)}
+                            initialWatchlisted={myWatchlist.includes(mergedFilm.id)}
+                          />
+                        )
+                      }
+                      return null
                     })}
                   </>
                 )}
@@ -925,7 +1013,17 @@ export function Search() {
                       country: details?.country ?? film.country,
                     }
 
-                    return <FilmResultItem key={`${film.mediaType}-${film.id}`} item={mergedFilm} delay={i * 0.08} isDetailsLoading={Boolean(loadingFilmDetails[film.id])} />
+                    return (
+                      <FilmResultItem 
+                        key={`${film.id}-movie`} 
+                        item={mergedFilm} 
+                        delay={i * 0.05} 
+                        isDetailsLoading={Boolean(loadingFilmDetails[film.id])} 
+                        user={user}
+                        initialVaulted={myDiary.includes(film.id)}
+                        initialWatchlisted={myWatchlist.includes(film.id)}
+                      />
+                    )
                   })}
                 {activeTab === 'tv' &&
                   pageFilms.map((film, i) => {
@@ -939,7 +1037,17 @@ export function Search() {
                       country: details?.country ?? film.country,
                     }
 
-                    return <FilmResultItem key={`${film.mediaType}-${film.id}`} item={mergedFilm} delay={i * 0.08} isDetailsLoading={Boolean(loadingFilmDetails[film.id])} />
+                    return (
+                      <FilmResultItem 
+                        key={`${film.id}-tv`} 
+                        item={mergedFilm} 
+                        delay={i * 0.05} 
+                        isDetailsLoading={Boolean(loadingFilmDetails[film.id])} 
+                        user={user}
+                        initialVaulted={myDiary.includes(film.id)}
+                        initialWatchlisted={myWatchlist.includes(film.id)}
+                      />
+                    )
                   })}
                 {activeTab === 'person' && personResults.map((person, i) => <PersonResultItem key={person.id} item={person} delay={i * 0.06} />)}
                 {activeTab === 'user' && userResults.map((user, i) => <UserResultItem key={user.id} item={user} delay={i * 0.06} />)}
