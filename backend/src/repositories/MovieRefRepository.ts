@@ -19,6 +19,8 @@ export interface IMovieRefRepository {
   findById(id: number): Promise<{ id: number } | null>
   /** Mapea un ID externo de TMDB a una referencia local */
   findByTmdbId(tmdbId: number, mediaType: ReviewMediaType): Promise<{ id: number } | null>
+  /** Busca todas las referencias locales para un ID de TMDB */
+  findByTmdbIdOnly(tmdbId: number): Promise<{ id: number; media_type: ReviewMediaType }[]>
   /** Resuelve una película a partir de su identificador amigable para URLs (slug) */
   findBySlug(slug: string): Promise<{ id: number } | null>
   /** Inicializa una nueva referencia local para una película de TMDB */
@@ -48,14 +50,22 @@ class MovieRefRepository implements IMovieRefRepository {
    * @param mediaType - Tipo de medio (movie o tv).
    */
   async findByTmdbId(tmdbId: number, mediaType: ReviewMediaType): Promise<{ id: number } | null> {
-    return prisma.movies_ref.findUnique({
+    return prisma.movies_ref.findFirst({
       where: { 
-        tmdb_media_unique: {
-          tmdb_id: tmdbId,
-          media_type: mediaType
-        }
+        tmdb_id: tmdbId,
+        media_type: mediaType
       },
       select: { id: true },
+    })
+  }
+
+  /**
+   * Busca todas las instancias de un ID de TMDB (independientemente del tipo).
+   */
+  async findByTmdbIdOnly(tmdbId: number): Promise<{ id: number; media_type: ReviewMediaType }[]> {
+    return prisma.movies_ref.findMany({
+      where: { tmdb_id: tmdbId },
+      select: { id: true, media_type: true },
     })
   }
 

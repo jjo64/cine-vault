@@ -16,6 +16,7 @@ export const agregarWatchlistSchema = z.object({
     .number({ error: "movie_id debe ser un número" })
     .int("movie_id debe ser un entero")
     .positive("movie_id debe ser positivo"),
+  media_type: z.enum(["movie", "tv"]).optional().default("movie"),
 })
 
 /** 

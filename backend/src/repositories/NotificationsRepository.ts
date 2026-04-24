@@ -21,8 +21,9 @@ export interface INotificationsRepository {
    */
   create(data: {
     user_id: number
-    sender_id: number
+    sender_id: number | null
     type: notifications_type
+    metadata?: any
   }): Promise<notifications>
 
   /**
@@ -53,8 +54,9 @@ export class NotificationsRepository implements INotificationsRepository {
    */
   async create(data: {
     user_id: number
-    sender_id: number
+    sender_id: number | null
     type: notifications_type
+    metadata?: any
   }) {
     return prisma.notifications.create({
       data,

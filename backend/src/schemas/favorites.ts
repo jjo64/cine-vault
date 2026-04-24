@@ -16,6 +16,7 @@ export const agregarFavoritoSchema = z.object({
     .number({ error: "movieId debe ser un número" })
     .int("movieId debe ser un entero")
     .positive("movieId debe ser positivo"),
+  media_type: z.enum(["movie", "tv"]).optional().default("movie"),
   rank_position: z.coerce
     .number()
     .int("La posición en el ranking debe ser un número entero")

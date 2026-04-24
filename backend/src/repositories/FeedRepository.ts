@@ -56,7 +56,7 @@ export class FeedRepository {
         where: { user_id: { in: sourceUserIds } },
         include: {
           users: { select: { id: true, username: true, avatar_url: true } },
-          movies_ref: { select: { id: true, tmdb_id: true } },
+          movies_ref: { select: { id: true, tmdb_id: true, media_type: true } },
         },
         take: 160,
         orderBy: { created_at: "desc" },
@@ -65,7 +65,7 @@ export class FeedRepository {
         where: { user_id: { in: sourceUserIds } },
         include: {
           users: { select: { id: true, username: true, avatar_url: true } },
-          movies_ref: { select: { id: true, tmdb_id: true } },
+          movies_ref: { select: { id: true, tmdb_id: true, media_type: true } },
         },
         take: 160,
         orderBy: { added_at: "desc" },
@@ -74,7 +74,7 @@ export class FeedRepository {
         where: { user_id: { in: sourceUserIds } },
         include: {
           users: { select: { id: true, username: true, avatar_url: true } },
-          movies_ref: { select: { id: true, tmdb_id: true } },
+          movies_ref: { select: { id: true, tmdb_id: true, media_type: true } },
         },
         take: 160,
         orderBy: { added_at: "desc" },

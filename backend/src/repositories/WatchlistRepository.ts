@@ -28,7 +28,7 @@ export interface RichWatchlistEntry {
   /** Identificador de referencia externa */
   tmdb_id: number | null
   /** Metadatos básicos para renderizado de tarjetas */
-  movie_info: { title: string; poster_path: string } | null
+  movie_info: { title: string; poster_path: string; media_type?: string | null } | null
   added_at: Date | null
 }
 
@@ -60,7 +60,10 @@ export class WatchlistRepository implements IWatchlistRepository {
   async findByUserId(userId: number) {
     return prisma.watchlist.findMany({
       where: { user_id: userId },
-      orderBy: { id: "desc" },
+      orderBy: [
+        { added_at: "desc" },
+        { id: "desc" }
+      ],
     })
   }
 
@@ -104,7 +107,10 @@ export class WatchlistRepository implements IWatchlistRepository {
     const entries = await prisma.watchlist.findMany({
       where: { user_id: userId },
       select: { movie_id: true, added_at: true },
-      orderBy: { added_at: "desc" },
+      orderBy: [
+        { added_at: "desc" },
+        { id: "desc" }
+      ],
     })
 
     if (entries.length === 0) return []
@@ -114,19 +120,31 @@ export class WatchlistRepository implements IWatchlistRepository {
     // 2. Fase de Resolución: Mapeo de IDs internos a TMDB
     const movies = await prisma.movies_ref.findMany({
       where: { id: { in: movieIds } },
-      select: { id: true, tmdb_id: true },
+      select: { id: true, tmdb_id: true, media_type: true },
     })
 
     // 3. Fase de Enriquecimiento: Consulta paralela a la API de TMDB
     const tmdbResults = await Promise.allSettled(
-      movies.map((movie) =>
-        consultarTMDB<TMDBMovieResponse>(`movie/${movie.tmdb_id}`).then(
-          (data) => ({
-            title: data.title,
-            poster_path: data.poster_path,
-          })
+      movies.map((movie) => {
+        const isTv = movie.media_type === "tv"
+        const endpoint = isTv ? `tv/${movie.tmdb_id}` : `movie/${movie.tmdb_id}`
+
+        return consultarTMDB<any>(endpoint, { append_to_response: "credits" }).then(
+          (data) => {
+            const title = data.title || data.name || ""
+            const date = data.release_date || data.first_air_date || ""
+            const year = date ? parseInt(date.split("-")[0]) : null
+
+            return {
+              title,
+              poster_path: data.poster_path,
+              director: data.credits?.crew?.find((p: any) => p.job === "Director" || p.job === "Executive Producer")?.name || "Desconocido",
+              year,
+              media_type: movie.media_type
+            }
+          }
         )
-      )
+      })
     )
 
     // 4. Fase de Ensamblaje: Indexación y mapeo final de la respuesta O(N)

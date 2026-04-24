@@ -60,11 +60,15 @@ export class FavoritiesRepository implements IFavoritiesRepository {
   async findByUserId(userId: number) {
     const rows = await prisma.favorites.findMany({
       where: { user_id: userId },
+      orderBy: [
+        { rank_position: "asc" },
+        { id: "desc" }
+      ],
       select: {
         movie_id: true,
         rank_position: true,
         movies_ref: {
-          select: { tmdb_id: true },
+          select: { tmdb_id: true, media_type: true },
         },
       },
     })
@@ -73,6 +77,7 @@ export class FavoritiesRepository implements IFavoritiesRepository {
       movie_id: row.movie_id,
       rank_position: row.rank_position,
       tmdb_id: row.movies_ref?.tmdb_id ?? null,
+      media_type: row.movies_ref?.media_type ?? "movie",
     }))
   }
 

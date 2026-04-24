@@ -8,7 +8,7 @@
  * para la evolución del esquema de base de datos.
  */
 
-import { Prisma, reviews, review_likes, reports, review_comments } from "@prisma/client"
+import { Prisma, reviews, review_likes, reports, review_comments, reports_reason } from "@prisma/client"
 import { prisma } from "../lib/prisma.js"
 import type { CrearResenaDTO, ActualizarResenaDTO } from "../schemas/reviews.js"
 
@@ -42,6 +42,13 @@ const REVIEW_SELECT_BASE = {
   movies_ref: {
     select: {
       tmdb_id: true,
+    },
+  },
+  users: {
+    select: {
+      id: true,
+      username: true,
+      avatar_url: true,
     },
   },
 } as const
@@ -157,12 +164,12 @@ export interface IReviewsRepository {
   deleteComment(id: number): Promise<void>
 }
 
-type ReviewCreateData = CrearResenaDTO & {
+export type ReviewCreateData = CrearResenaDTO & {
   es_critica_larga?: boolean
   tiempo_lectura_min?: number | null
 }
 
-type ReviewUpdateData = ActualizarResenaDTO & {
+export type ReviewUpdateData = ActualizarResenaDTO & {
   es_critica_larga?: boolean
   tiempo_lectura_min?: number | null
 }
@@ -230,7 +237,19 @@ export class ReviewsRepository implements IReviewsRepository {
    * Recupera una reseña por identificador técnico.
    */
   async findById(id: number) {
-    return prisma.reviews.findUnique({ where: { id } })
+    try {
+      return await prisma.reviews.findUnique({
+        where: { id },
+        select: REVIEW_THREAD_SELECT,
+      }) as any
+    } catch (error) {
+      if (!isMissingMediaTypeColumn(error)) throw error
+
+      return prisma.reviews.findUnique({
+        where: { id },
+        select: REVIEW_THREAD_SELECT_BASE,
+      }) as any
+    }
   }
 
   /**
@@ -343,47 +362,60 @@ export class ReviewsRepository implements IReviewsRepository {
    * Actualiza una crítica existente de forma parcial.
    */
   async update(id: number, data: ReviewUpdateData) {
-    return prisma.reviews.update({
-      where: { id },
-      data: {
-        ...(data.media_type !== undefined && { media_type: data.media_type }),
-        ...(data.content !== undefined && { content: data.content }),
-        ...(data.rating !== undefined && { rating: data.rating }),
-        ...(data.mode !== undefined && { mode: data.mode }),
-        ...(data.veredicto !== undefined && { veredicto: data.veredicto }),
-        ...(data.rating_direccion !== undefined && {
-          rating_direccion: data.rating_direccion,
-        }),
-        ...(data.rating_guion !== undefined && {
-          rating_guion: data.rating_guion,
-        }),
-        ...(data.rating_fotografia !== undefined && {
-          rating_fotografia: data.rating_fotografia,
-        }),
-        ...(data.rating_actuaciones !== undefined && {
-          rating_actuaciones: data.rating_actuaciones,
-        }),
-        ...(data.rating_banda_sonora !== undefined && {
-          rating_banda_sonora: data.rating_banda_sonora,
-        }),
-        ...(data.cita_dialogo !== undefined && {
-          cita_dialogo: data.cita_dialogo,
-        }),
-        ...(data.cita_personaje !== undefined && {
-          cita_personaje: data.cita_personaje,
-        }),
-        ...(data.timestamps !== undefined && { timestamps: data.timestamps }),
-        ...(data.contiene_spoilers !== undefined && {
-          contiene_spoilers: data.contiene_spoilers,
-        }),
-        ...(data.es_critica_larga !== undefined && {
-          es_critica_larga: data.es_critica_larga,
-        }),
-        ...(data.tiempo_lectura_min !== undefined && {
-          tiempo_lectura_min: data.tiempo_lectura_min,
-        }),
-      },
-    })
+    const updateData: Prisma.reviewsUpdateInput = {
+      ...(data.content !== undefined && { content: data.content }),
+      ...(data.rating !== undefined && { rating: data.rating }),
+      ...(data.mode !== undefined && { mode: data.mode }),
+      ...(data.veredicto !== undefined && { veredicto: data.veredicto }),
+      ...(data.rating_direccion !== undefined && {
+        rating_direccion: data.rating_direccion,
+      }),
+      ...(data.rating_guion !== undefined && {
+        rating_guion: data.rating_guion,
+      }),
+      ...(data.rating_fotografia !== undefined && {
+        rating_fotografia: data.rating_fotografia,
+      }),
+      ...(data.rating_actuaciones !== undefined && {
+        rating_actuaciones: data.rating_actuaciones,
+      }),
+      ...(data.rating_banda_sonora !== undefined && {
+        rating_banda_sonora: data.rating_banda_sonora,
+      }),
+      ...(data.cita_dialogo !== undefined && {
+        cita_dialogo: data.cita_dialogo,
+      }),
+      ...(data.cita_personaje !== undefined && {
+        cita_personaje: data.cita_personaje,
+      }),
+      ...(data.timestamps !== undefined && { timestamps: data.timestamps as any }),
+      ...(data.contiene_spoilers !== undefined && {
+        contiene_spoilers: data.contiene_spoilers,
+      }),
+      ...(data.es_critica_larga !== undefined && {
+        es_critica_larga: data.es_critica_larga,
+      }),
+      ...(data.tiempo_lectura_min !== undefined && {
+        tiempo_lectura_min: data.tiempo_lectura_min,
+      }),
+    }
+
+    try {
+      return await prisma.reviews.update({
+        where: { id },
+        data: {
+          ...updateData,
+          ...(data.media_type !== undefined && { media_type: data.media_type }),
+        },
+      })
+    } catch (error) {
+      if (!isMissingMediaTypeColumn(error)) throw error
+
+      return prisma.reviews.update({
+        where: { id },
+        data: updateData,
+      })
+    }
   }
 
   /**
@@ -445,7 +477,7 @@ export class ReviewsRepository implements IReviewsRepository {
   /**
    * Canaliza una queja sobre una reseña hacia el flujo de moderación.
    */
-  async createReport(reporterId: number, reviewId: number, reason: string) {
+  async createReport(reporterId: number, reviewId: number, reason: reports_reason) {
     return prisma.reports.create({
       data: {
         reporter_id: reporterId,

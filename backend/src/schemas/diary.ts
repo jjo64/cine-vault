@@ -16,9 +16,7 @@ export const crearEntradaDiarioSchema = z.object({
     .number({ error: "movie_id debe ser un número" })
     .int("movie_id debe ser un entero")
     .positive("movie_id debe ser positivo"),
-  media_type: z.enum(["movie", "tv"], {
-    errorMap: () => ({ message: "media_type debe ser 'movie' o 'tv'" }),
-  }).optional().default("movie"),
+  media_type: z.enum(["movie", "tv"]).optional().default("movie"),
   watched_date: z
     .string()
     .date({ message: "La fecha de visionado debe seguir el formato YYYY-MM-DD" })

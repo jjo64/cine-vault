@@ -7,16 +7,19 @@ datasource db {
 }
 
 model diary_entries {
-  id           Int             @id @default(autoincrement())
-  user_id      Int
-  movie_id     Int
-  watched_date DateTime?       @db.Date
-  media_type   ReviewMediaType @default(movie)
-  users        users           @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "diary_entries_ibfk_1")
-  movies_ref   movies_ref      @relation(fields: [movie_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "diary_entries_ibfk_2")
+  id             Int             @id @default(autoincrement())
+  user_id        Int
+  movie_id       Int
+  watched_date   DateTime?       @db.Date
+  media_type     ReviewMediaType @default(movie)
+  session_id     Int?
+  users          users           @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "diary_entries_ibfk_1")
+  movies_ref     movies_ref      @relation(fields: [movie_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "diary_entries_ibfk_2")
+  diary_sessions diary_sessions? @relation(fields: [session_id], references: [id], onDelete: SetNull, onUpdate: Restrict)
 
   @@index([movie_id], map: "movie_id")
   @@index([user_id], map: "user_id")
+  @@index([session_id], map: "session_id")
   @@index([user_id, watched_date], map: "idx_diary_user_watched")
 }
 
@@ -46,10 +49,10 @@ model follows {
 model movies_ref {
   id                    Int                     @id @default(autoincrement())
   tmdb_id               Int
-  media_type            ReviewMediaType         @default(movie)
   slug                  String?                 @unique(map: "slug") @db.VarChar(255)
   is_public             Boolean                 @default(true)
   updated_at            DateTime                @default(now()) @updatedAt @db.Timestamp(0)
+  media_type            ReviewMediaType         @default(movie)
   arco_movies           arco_movies[]
   curated_gallery_items curated_gallery_items[]
   diary_entries         diary_entries[]
@@ -61,7 +64,7 @@ model movies_ref {
   vault_social_entries  vault_social_entries[]
   watchlist             watchlist[]
 
-  @@unique([tmdb_id, media_type], map: "tmdb_media_unique")
+  @@unique([tmdb_id, media_type], name: "tmdb_media_unique")
 }
 
 model user_lists {
@@ -138,12 +141,13 @@ model reports {
   id                  Int             @id @default(autoincrement())
   reporter_id         Int?
   review_id           Int?
-  reason              String?         @db.Text
+  reason              reports_reason
   status              reports_status? @default(pending)
   resolution_note     String?         @db.VarChar(500)
   resolved_at         DateTime?       @db.Timestamp(0)
   resolved_by_user_id Int?
   created_at          DateTime        @default(now()) @db.Timestamp(0)
+  reason_detail       String?         @db.VarChar(500)
   users               users?          @relation(fields: [reporter_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "reports_ibfk_1")
   reviews             reviews?        @relation(fields: [review_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "reports_ibfk_2")
   resolved_by         users?          @relation("reports_resolved_by", fields: [resolved_by_user_id], references: [id], onUpdate: Restrict)
@@ -252,18 +256,21 @@ model users {
   review_likes                        review_likes[]
   reviews                             reviews[]
   sessions                            sessions[]
+  diary_sessions                      diary_sessions[]
   subscriptions                       subscriptions[]
   user_activity                       user_activity[]
   arco_progress                       user_arco_progress[]
+  user_badges                         user_badges[]
   feed_bookmarks                      user_feed_bookmarks[]
   feed_hides                          user_feed_hides[]
-  user_badges                         user_badges[]
   followed_persons                    user_followed_persons[]
   user_lists                          user_lists[]
   user_strikes                        user_strikes[]
   vault                               vault[]
   vault_social_entries                vault_social_entries[]
   watchlist                           watchlist[]
+  user_taste_profiles                 user_taste_profiles?
+  explicit_interactions               explicit_interactions[]
 
   @@index([is_verified, created_at])
   @@index([locked_until])
@@ -519,15 +526,46 @@ model user_strikes {
   @@index([user_id])
 }
 
-enum notifications_type {
-  follow
-  like
-  comment
-  report_resolved
-  warning
-  payment_success
-  payment_failed
-  subscription_cancelled
+model badges {
+  id          Int           @id @default(autoincrement())
+  name        String        @unique @db.VarChar(100)
+  description String?       @db.Text
+  icon_url    String?       @db.VarChar(500)
+  created_at  DateTime      @default(now()) @db.Timestamp(0)
+  criteria    String?       @db.VarChar(255)
+  user_badges user_badges[]
+}
+
+model user_badges {
+  id          Int      @id @default(autoincrement())
+  user_id     Int
+  badge_id    Int
+  unlocked_at DateTime @default(now()) @db.Timestamp(0)
+  badges      badges   @relation(fields: [badge_id], references: [id], onDelete: Cascade)
+  users       users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, badge_id])
+  @@index([badge_id], map: "user_badges_badge_id_fkey")
+}
+
+model persons_ref {
+  id               Int                     @id @default(autoincrement())
+  tmdb_id          Int                     @unique
+  name             String                  @db.VarChar(255)
+  profile_path     String?                 @db.VarChar(500)
+  followed_by_user user_followed_persons[]
+}
+
+model user_followed_persons {
+  id          Int         @id @default(autoincrement())
+  user_id     Int
+  person_id   Int
+  followed_at DateTime    @default(now()) @db.Timestamp(0)
+  persons     persons_ref @relation(fields: [person_id], references: [id], onDelete: Cascade)
+  users       users       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, person_id])
+  @@index([person_id], map: "user_followed_persons_person_id_fkey")
 }
 
 enum subscriptions_plan {
@@ -626,42 +664,71 @@ enum vault_social_entry_type {
   recomendacion
 }
 
-model badges {
-  id          Int           @id @default(autoincrement())
-  name        String        @unique @db.VarChar(100)
-  description String?       @db.Text
-  icon_url    String?       @db.VarChar(500)
-  criteria    String?       @db.VarChar(255)
-  created_at  DateTime      @default(now()) @db.Timestamp(0)
-  user_badges user_badges[]
+enum notifications_type {
+  follow
+  like
+  comment
+  report_resolved
+  report_rejected
+  warning
+  payment_success
+  payment_failed
+  subscription_cancelled
 }
 
-model user_badges {
-  id          Int      @id @default(autoincrement())
-  user_id     Int
-  badge_id    Int
-  unlocked_at DateTime @default(now()) @db.Timestamp(0)
-  users       users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  badges      badges   @relation(fields: [badge_id], references: [id], onDelete: Cascade)
-
-  @@unique([user_id, badge_id])
+enum reports_reason {
+  lenguaje_ofensivo
+  spam
+  spoiler
+  contenido_inapropiado
+  acoso
+  otro
 }
 
-model persons_ref {
-  id               Int                     @id @default(autoincrement())
-  tmdb_id          Int                     @unique
-  name             String                  @db.VarChar(255)
-  profile_path     String?                 @db.VarChar(500)
-  followed_by_user user_followed_persons[]
+model user_taste_profiles {
+  user_id         Int      @id
+  affinity_vector Json?    // Perfil de gustos iniciales o generados
+  vetoed_entities Json?    // Directores/Géneros con puntuación baja
+  weather_history Json?    // Registro/Preferencias según clima
+  updated_at      DateTime @default(now()) @updatedAt @db.Timestamp(0)
+  users           users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
 }
 
-model user_followed_persons {
-  id          Int         @id @default(autoincrement())
-  user_id     Int
-  person_id   Int
-  followed_at DateTime    @default(now()) @db.Timestamp(0)
-  users       users       @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  persons     persons_ref @relation(fields: [person_id], references: [id], onDelete: Cascade)
+model explicit_interactions {
+  id               Int      @id @default(autoincrement())
+  user_id          Int
+  movie_id         Int?     // Opcional, puede ser interacción con persona o feed
+  interaction_type String   @db.VarChar(50) // "skip_onboarding", "like_onboarding", "tonight_reject", "tonight_accept"
+  metadata         Json?    
+  created_at       DateTime @default(now()) @db.Timestamp(0)
+  users            users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
 
-  @@unique([user_id, person_id])
+  @@index([user_id])
+  @@index([user_id, interaction_type])
+}
+
+enum session_type {
+  single
+  double
+  triple
+  marathon
+}
+
+model diary_sessions {
+  id         Int             @id @default(autoincrement())
+  user_id    Int
+  date       DateTime        @db.Date
+  type       session_type    @default(single)
+  has_order  Boolean         @default(false)
+  mood       String?         @db.VarChar(50)
+  stage      String?         @db.VarChar(100)
+  note       String?         @db.Text
+  created_at DateTime        @default(now()) @db.Timestamp(0)
+  updated_at DateTime        @default(now()) @updatedAt @db.Timestamp(0)
+  
+  users      users           @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  entries    diary_entries[]
+
+  @@index([user_id], map: "idx_diary_sessions_user_id")
+  @@index([user_id, date], map: "idx_diary_sessions_user_date")
 }

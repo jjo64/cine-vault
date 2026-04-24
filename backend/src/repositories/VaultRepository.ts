@@ -156,7 +156,10 @@ export class VaultRepository implements IVaultRepository {
     const entries = await prisma.vault.findMany({
       where: { user_id: userId },
       select: { movie_id: true, added_at: true },
-      orderBy: { added_at: "desc" },
+      orderBy: [
+        { added_at: "desc" },
+        { id: "desc" }
+      ],
     })
 
     if (entries.length === 0) return []
@@ -165,26 +168,39 @@ export class VaultRepository implements IVaultRepository {
 
     const movies = await prisma.movies_ref.findMany({
       where: { id: { in: movieIds } },
-      select: { id: true, tmdb_id: true },
+      select: { id: true, tmdb_id: true, media_type: true },
     })
 
     // Consultas concurrentes a TMDB para reconstruir el contexto visual
     const tmdbResults = await Promise.allSettled(
-      movies.map((movie) =>
-        consultarTMDB(`movie/${movie.tmdb_id}`).then((data: unknown) => {
+      movies.map((movie) => {
+        const isTv = movie.media_type === "tv"
+        const endpoint = isTv ? `tv/${movie.tmdb_id}` : `movie/${movie.tmdb_id}`
+        
+        return consultarTMDB(endpoint, { append_to_response: "credits" }).then((data: unknown) => {
           const payload = data as {
             title?: string
+            name?: string
             poster_path?: string
             release_date?: string
+            first_air_date?: string
+            credits?: { crew: Array<{ job: string; name: string }> }
           }
 
+          const title = payload.title || payload.name || ""
+          const date = payload.release_date || payload.first_air_date || ""
+          const year = date ? parseInt(date.split("-")[0]) : null
+
           return {
-            title: payload.title || "",
+            title,
             poster_path: payload.poster_path || "",
-            release_date: payload.release_date || "",
+            release_date: date,
+            director: payload.credits?.crew?.find(p => p.job === "Director" || p.job === "Executive Producer")?.name || "Desconocido",
+            year,
+            media_type: movie.media_type
           }
         })
-      )
+      })
     )
 
     const tmdbMap = new Map(

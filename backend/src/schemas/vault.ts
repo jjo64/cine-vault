@@ -14,6 +14,7 @@ export const agregarVaultSchema = z.object({
     .number({ error: "movie_id debe ser un número" })
     .int("movie_id debe ser un entero")
     .positive("movie_id debe ser positivo"),
+  media_type: z.enum(["movie", "tv"]).optional().default("movie"),
 })
 
 /** Esquema para la eliminación de una película de la Bóveda mediante parámetros de ruta */
@@ -50,6 +51,7 @@ export const vaultSocialUserParamsSchema = z.object({
  */
 export const createVaultSocialEntrySchema = z.object({
   movie_id: z.coerce.number().int().positive().optional(),
+  media_type: z.enum(["movie", "tv"]).optional().default("movie"),
   entry_type: vaultSocialEntryTypeSchema,
   title: z
     .string({ error: "title debe ser un texto" })
@@ -83,6 +85,7 @@ export const vaultSocialEntryIdParamsSchema = z.object({
 export const updateVaultSocialEntrySchema = z
   .object({
     movie_id: z.coerce.number().int().positive().optional(),
+    media_type: z.enum(["movie", "tv"]).optional(),
     entry_type: vaultSocialEntryTypeSchema.optional(),
     title: z
       .string({ error: "title debe ser un texto" })
