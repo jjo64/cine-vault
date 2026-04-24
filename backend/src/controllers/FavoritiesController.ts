@@ -46,6 +46,7 @@ export const addMovieToFavorites = async (req: Request, res: Response) => {
  */
 export const removeMovieFromFavorites = async (req: Request, res: Response) => {
   const { movieId } = req.params as unknown as MovieIdParamsFavDTO
-  await favoritiesService.eliminarFavoritoService(req.user!.user_id, movieId)
+  const { mediaType } = req.query
+  await favoritiesService.eliminarFavoritoService(req.user!.user_id, movieId, mediaType as string)
   res.json({ message: "La película ha sido eliminada de sus favoritos" })
 }

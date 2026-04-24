@@ -36,11 +36,11 @@ export const agregarAWatchlistService = async (
   userId: number,
   data: AgregarWatchlistDTO
 ) => {
-  const movieId = await ensureMovieRefId(data.movie_id)
+  const movieId = await ensureMovieRefId(data.movie_id, (data as any).media_type || "movie")
   const yaExiste = await watchlistRepository.exists(userId, movieId)
   
   if (yaExiste) {
-    throw new ConflictError(`La película ${data.movie_id} ya se encuentra en su lista de seguimiento`)
+    throw new ConflictError(`La obra ${data.movie_id} ya se encuentra en su lista de seguimiento`)
   }
 
   return watchlistRepository.create(userId, movieId)
@@ -53,7 +53,7 @@ export const eliminarDeWatchlistService = (
   userId: number,
   data: EliminarWatchlistDTO
 ) =>
-  findMovieRefIdByCandidate(data.movie_id).then((resolvedMovieId) => {
+  findMovieRefIdByCandidate(data.movie_id, (data as any).media_type).then((resolvedMovieId) => {
     if (!resolvedMovieId) return
     return watchlistRepository.deleteByMovieId(userId, resolvedMovieId)
   })
