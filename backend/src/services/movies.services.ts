@@ -107,3 +107,11 @@ export const getMovieDetails = async (movieId: number) => {
     },
   }
 }
+
+/**
+ * Obtiene películas similares a una dada por su ID.
+ */
+export const getSimilarMovies = async (movieId: number) => {
+  return await consultarTMDB(`movie/${movieId}/similar`, { region: "es" })
+}
+

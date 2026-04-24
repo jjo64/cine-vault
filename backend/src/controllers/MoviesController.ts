@@ -97,3 +97,33 @@ export const getDetail = async (req: Request, res: Response) => {
 
   res.json(detalle)
 }
+
+/**
+ * Obtiene películas similares a una dada por ID o Slug.
+ */
+export const getSimilar = async (req: Request, res: Response) => {
+  const idOrSlug = req.params.idOrSlug as string
+  let movieId: number = parseInt(idOrSlug)
+
+  if (isNaN(movieId)) {
+    const resolvedId = await getOSet(
+      `tmdb:slug:${idOrSlug}`,
+      () => MovieService.resolveMovieIdFromSlug(idOrSlug),
+      TTL_DETALLE
+    )
+
+    if (!resolvedId) {
+      return res.status(404).json({ message: "Referencia no encontrada." })
+    }
+    movieId = resolvedId as number
+  }
+
+  const data = await getOSet(
+    `tmdb:movie:${movieId}:similar`,
+    () => MovieService.getSimilarMovies(movieId),
+    TTL_LISTAS
+  )
+
+  res.json(data)
+}
+

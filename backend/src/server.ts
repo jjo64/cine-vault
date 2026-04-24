@@ -43,6 +43,7 @@ import rutasActivity from "./routes/activity.routes.js"
 import rutasFeed from "./routes/feed.routes.js"
 import rutasRecommendations from "./routes/recommendations.routes.js"
 import rutasReports from "./routes/reports.routes.js"
+import rutasPersons from "./routes/persons.routes.js"
 
 // --- Middlewares de Soporte ---
 import { manejadorErrores } from "./middlewares/error.middlewares.js"
@@ -212,6 +213,7 @@ app.use("/api/activity", rutasActivity)
 app.use("/api/feed", rutasFeed)
 app.use("/api/recommendations", rutasRecommendations)
 app.use("/api/reports", rutasReports)
+app.use("/api/persons", rutasPersons)
 
 /**
  * 7. Middleware Centralizado de Manejo de Errores (SIEMPRE AL FINAL)

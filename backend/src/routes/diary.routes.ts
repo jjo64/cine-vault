@@ -11,6 +11,8 @@ import {
   getDiaryUser,
   getMyDiary,
   removeDiary,
+  getMyDiarySessions,
+  createDiarySession,
 } from "../controllers/DiaryController.js"
 import { middlewareAutenticacion } from "../middlewares/auth.middlewares.js"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
@@ -49,6 +51,16 @@ const router = Router()
 router.get("/", middlewareAutenticacion, manejadorAsincrono(getMyDiary))
 
 /**
+ * /diary/sessions:
+ *   get:
+ *     summary: Recuperar el historial de sesiones del usuario
+ *     tags: [Diario]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.get("/sessions", middlewareAutenticacion, manejadorAsincrono(getMyDiarySessions))
+
+/**
  * @swagger
  * /diary/{id_user}:
  *   get:
@@ -72,6 +84,21 @@ router.get(
  * BLOQUE: GESTIÓN DE ENTRADAS
  * ---------------------------------------------------------------------------
  */
+
+/**
+ * /diary/sessions:
+ *   post:
+ *     summary: Crear una sesión de visionado (múltiples películas)
+ *     tags: [Diario]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.post(
+  "/sessions",
+  middlewareAutenticacion,
+  limitarSpikesIP,
+  manejadorAsincrono(createDiarySession)
+)
 
 /**
  * @swagger

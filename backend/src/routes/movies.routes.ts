@@ -12,6 +12,7 @@ import { Router } from "express"
 import {
   getDetail,
   getPopular,
+  getSimilar,
   getTopRated,
   getUpcoming,
   search,
@@ -90,5 +91,14 @@ router.get("/search", manejadorAsincrono(search))
  *         description: ID numérico o slug amigable de la película
  */
 router.get("/:idOrSlug", manejadorAsincrono(getDetail))
+
+/**
+ * @swagger
+ * /movies/{idOrSlug}/similar:
+ *   get:
+ *     summary: Obtener películas similares a una dada
+ *     tags: [Películas]
+ */
+router.get("/:idOrSlug/similar", manejadorAsincrono(getSimilar))
 
 export default router

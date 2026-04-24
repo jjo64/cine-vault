@@ -114,7 +114,7 @@ export const addMovieToListService = async (
   const list = await listsRepository.findByIdForUser(listId, userId)
   if (!list) throw new NotFoundError("Lista no encontrada")
 
-  const movieRefId = await ensureMovieRefId(data.movie_id)
+  const movieRefId = await ensureMovieRefId(data.movie_id, "movie")
   const detail = await listsRepository.getDetailForUser(listId, userId)
   const alreadyInList = detail?.items.some(
     (item) => item.movie_id === movieRefId

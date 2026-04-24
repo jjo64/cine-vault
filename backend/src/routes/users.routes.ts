@@ -18,10 +18,11 @@ import {
   obtenerGaleriaCuradaPublica,
   obtenerSeguidores,
   obtenerSiguiendo,
-  obtenerUsuarioPorId,
   obtenerUsuarioPorUsername,
   obtenerUsuarios,
+  obtenerUsuarioPorId,
   seguirUsuario,
+  obtenerInsignias,
 } from "../controllers/UserController.js"
 import { middlewareAutenticacion } from "../middlewares/auth.middlewares.js"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
@@ -202,6 +203,15 @@ router.get(
   "/:id/profile/curated-gallery",
   validarParams(idParamSchema),
   manejadorAsincrono(obtenerGaleriaCuradaPublica)
+)
+
+/**
+ * Obtener listado de insignias desbloqueadas.
+ */
+router.get(
+  "/:id/badges",
+  validarParams(idParamSchema),
+  manejadorAsincrono(obtenerInsignias)
 )
 
 export default router

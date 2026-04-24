@@ -28,15 +28,18 @@ export const emitirNotificacionService = async ({
   user_id,
   sender_id,
   type,
+  metadata,
 }: {
   user_id: number
-  sender_id: number
+  sender_id: number | null
   type: notifications_type
+  metadata?: any
 }) => {
   const notificacion = await notificationsRepository.create({
     user_id,
     sender_id,
     type,
+    metadata,
   })
 
   const socketId = usuariosConectados.get(user_id)

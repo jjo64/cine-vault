@@ -133,6 +133,7 @@ export const getFriendsFeedService = async (
       movie: {
         id: entry.movies_ref.id,
         tmdb_id: entry.movies_ref.tmdb_id,
+        media_type: entry.movies_ref.media_type,
       },
       review: {
         id: entry.id,
@@ -157,6 +158,7 @@ export const getFriendsFeedService = async (
       movie: {
         id: entry.movies_ref.id,
         tmdb_id: entry.movies_ref.tmdb_id,
+        media_type: entry.movies_ref.media_type,
       },
     })),
     ...watchlistEntries.map((entry) => ({
@@ -174,6 +176,7 @@ export const getFriendsFeedService = async (
       movie: {
         id: entry.movies_ref.id,
         tmdb_id: entry.movies_ref.tmdb_id,
+        media_type: entry.movies_ref.media_type,
       },
     })),
   ]

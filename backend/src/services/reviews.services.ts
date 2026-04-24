@@ -6,9 +6,10 @@
  * orquestación de notificaciones en tiempo real.
  */
 
-import { reviewsRepository } from "../repositories/ReviewsRepository.js"
-import { ReviewMediaType } from "@prisma/client"
+import { reviewsRepository, ReviewCreateData, ReviewUpdateData } from "../repositories/ReviewsRepository.js"
+import { ReviewMediaType, reports_reason } from "@prisma/client"
 import { emitirNotificacionService } from "./notifications.services.js"
+import { checkAndAwardAutomaticBadges } from "./badges.services.js"
 import {
   ConflictError,
   ForbiddenError,
@@ -177,9 +178,16 @@ export const crearResenaService = async (userId: number, data: CrearResenaDTO) =
     ...normalized,
     movie_id: movieId,
     media_type: normalized.media_type ?? "movie",
-  })
+    contiene_spoilers: normalized.contiene_spoilers ?? false,
+  } as ReviewCreateData)
 
   await invalidateResenaCache(movieId)
+  
+  // Gamificación: Evaluar logros tras publicar la reseña
+  checkAndAwardAutomaticBadges(userId).catch(err => {
+    console.error("[Gamificación] Error al procesar insignias post-reseña:", err)
+  })
+
   return resena
 }
 
@@ -211,7 +219,7 @@ export const actualizarResenaService = async (
 
   const updated = await reviewsRepository.update(
     id,
-    normalizeReviewPayload(data)
+    normalizeReviewPayload(data) as ReviewUpdateData
   )
   
   await invalidateResenaCache(resena.movie_id)
@@ -249,7 +257,7 @@ export const reportarResenaService = async (
   const resena = await reviewsRepository.findById(id)
   if (!resena) throw new NotFoundError("Reseña no encontrada")
   
-  return reviewsRepository.createReport(userId, id, data.reason)
+  return reviewsRepository.createReport(userId, id, data.reason as reports_reason)
 }
 
 // --- Servicios de Métricas y Agregados ---
@@ -293,6 +301,11 @@ export const darLikeResenaService = async (
       user_id: review.user_id,
       sender_id: userId,
       type: "like",
+      metadata: { 
+        review_id: review.id, 
+        movie_id: review.movie_id,
+        media_type: review.media_type 
+      }
     }).catch(err => {
       console.error("[Notificaciones] Fallo al emitir notificación de like:", err)
     })
@@ -347,6 +360,12 @@ export const crearComentarioService = async (
       user_id: resena.user_id,
       sender_id: userId,
       type: "comment",
+      metadata: { 
+        review_id: resena.id, 
+        movie_id: resena.movie_id,
+        media_type: resena.media_type,
+        comment_id: comentario.id 
+      }
     }).catch((err) => {
       console.error(
         "[Notificaciones] Fallo al emitir notificación de comentario:",

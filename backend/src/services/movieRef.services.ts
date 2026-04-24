@@ -24,10 +24,14 @@ export const findMovieRefIdByCandidate = async (
   const byId = await movieRefRepository.findById(candidate)
   if (byId) return byId.id
 
-  if (!mediaType) return null
-
-  const byTmdb = await movieRefRepository.findByTmdbId(candidate, mediaType)
-  return byTmdb?.id ?? null
+  if (mediaType) {
+    const byTmdb = await movieRefRepository.findByTmdbId(candidate, mediaType)
+    return byTmdb?.id ?? null
+  } else {
+    const byTmdbAny = await movieRefRepository.findByTmdbIdOnly(candidate)
+    // Devolvemos el primero encontrado (podría haber duplicados si TMDB reusa IDs para movie/tv, pero es la mejor suposición sin mediaType)
+    return byTmdbAny[0]?.id ?? null
+  }
 }
 
 /**

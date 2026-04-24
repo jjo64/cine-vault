@@ -8,7 +8,7 @@
  */
 
 import { Router } from "express"
-import { getForYou, getSuggestedDirectors } from "../controllers/RecommendationController.js"
+import { getForYou, getSuggestedDirectors, getTonight, checkStatus, getOnboarding, postInteraction } from "../controllers/RecommendationController.js"
 import { middlewareAutenticacion } from "../middlewares/auth.middlewares.js"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
 
@@ -16,9 +16,69 @@ const router = Router()
 
 /**
  * ---------------------------------------------------------------------------
+ * BLOQUE: ONBOARDING & PERFILADO
+ * ---------------------------------------------------------------------------
+ */
+
+/**
+ * @swagger
+ * /recommendations/onboarding/status:
+ *   get:
+ *     summary: Verifica si el usuario necesita pasar por el onboarding
+ *     tags: [Recomendaciones]
+ */
+router.get(
+  "/onboarding/status",
+  middlewareAutenticacion,
+  manejadorAsincrono(checkStatus)
+)
+
+/**
+ * @swagger
+ * /recommendations/onboarding:
+ *   get:
+ *     summary: Obtiene películas para el onboarding
+ *     tags: [Recomendaciones]
+ */
+router.get(
+  "/onboarding",
+  middlewareAutenticacion,
+  manejadorAsincrono(getOnboarding)
+)
+
+/**
+ * @swagger
+ * /recommendations/interact:
+ *   post:
+ *     summary: Registra una interacción explícita
+ *     tags: [Recomendaciones]
+ */
+router.post(
+  "/interact",
+  middlewareAutenticacion,
+  manejadorAsincrono(postInteraction)
+)
+
+/**
+ * ---------------------------------------------------------------------------
  * BLOQUE: RECOMENDACIONES DE CONTENIDO
  * ---------------------------------------------------------------------------
  */
+
+/**
+ * @swagger
+ * /recommendations/tonight:
+ *   get:
+ *     summary: Sugiere la película perfecta y única para la noche
+ *     tags: [Recomendaciones]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.get(
+  "/tonight",
+  middlewareAutenticacion,
+  manejadorAsincrono(getTonight)
+)
 
 /**
  * @swagger

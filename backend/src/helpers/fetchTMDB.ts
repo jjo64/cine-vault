@@ -66,7 +66,9 @@ export const consultarTMDB = async <T = unknown>(
   const respuesta = await fetch(url, opcionesRequest)
 
   if (!respuesta.ok) {
-    throw new Error(`Error en bridge de TMDB [Estado: ${respuesta.status}] - Endpoint: ${endpoint}`)
+    const error: any = new Error(`Error en bridge de TMDB [Estado: ${respuesta.status}] - Endpoint: ${endpoint}`)
+    error.status = respuesta.status
+    throw error
   }
 
   return respuesta.json() as T

@@ -64,11 +64,11 @@ export const agregarVaultService = async (
   userId: number,
   data: AgregarVaultDTO
 ) => {
-  const movieId = await ensureMovieRefId(data.movie_id)
+  const movieId = await ensureMovieRefId(data.movie_id, data.media_type || "movie")
   const yaExiste = await vaultRepository.exists(userId, movieId)
 
   if (yaExiste) {
-    throw new ConflictError(`La película ${data.movie_id} ya se encuentra en su videoteca personal`)
+    throw new ConflictError(`La obra ${data.movie_id} ya se encuentra en su videoteca personal`)
   }
 
   await vaultRepository.create(userId, movieId)
@@ -162,7 +162,7 @@ export const crearVaultSocialEntryService = async (
   userId: number,
   data: CreateVaultSocialEntryDTO
 ) => {
-  const movieId = data.movie_id ? await ensureMovieRefId(data.movie_id) : null
+  const movieId = data.movie_id ? await ensureMovieRefId(data.movie_id, data.media_type || "movie") : null
   const id = await vaultRepository.createSocialEntry({
     userId,
     movieId,
@@ -206,7 +206,7 @@ export const actualizarVaultSocialEntryService = async (
   )
   if (!current) throw new NotFoundError("Contenido no encontrado o sin permisos de edición")
 
-  const movieId = data.movie_id ? await ensureMovieRefId(data.movie_id) : null
+  const movieId = data.movie_id ? await ensureMovieRefId(data.movie_id, data.media_type || "movie") : null
 
   await vaultRepository.updateSocialEntry({
     id: entryId,
@@ -216,7 +216,7 @@ export const actualizarVaultSocialEntryService = async (
     title: data.title?.trim() ?? null,
     content: data.content?.trim() ?? null,
     coverUrl: data.cover_url?.trim() ?? null,
-    durationLabel: data.duration_label?.trim() ?? null,
+    durationLabel: data.duration_label?.trim() || null,
     isPublic: data.is_public ?? null,
   })
 
