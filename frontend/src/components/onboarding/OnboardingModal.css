@@ -30,7 +30,7 @@
 }
 
 .brand {
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   font-weight: 800;
   letter-spacing: 0.2em;
   font-size: 14px;
@@ -43,7 +43,7 @@
 }
 
 .step-counter {
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   font-size: 10px;
   letter-spacing: 0.3em;
   color: #666;
@@ -94,7 +94,7 @@
 }
 
 .movie-info h3 {
-  font-family: 'Playfair Display', serif;
+  font-family: "Playfair Display", serif;
   font-size: 42px;
   font-weight: 400;
   line-height: 1.1;
@@ -103,7 +103,7 @@
 }
 
 .movie-year {
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   font-size: 14px;
   color: #d4af7a;
   margin-bottom: 20px;
@@ -111,7 +111,7 @@
 }
 
 .movie-info p {
-  font-family: 'Playfair Display', serif;
+  font-family: "Playfair Display", serif;
   font-style: italic;
   font-size: 18px;
   line-height: 1.6;
@@ -153,21 +153,36 @@
 }
 
 .btn-label {
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   font-size: 9px;
   letter-spacing: 0.2em;
   color: #888;
 }
 
 /* Button variants */
-.btn-love:hover { border-color: #ffd700 !important; }
-.btn-love:hover .btn-icon { color: #ffd700; opacity: 1; }
+.btn-love:hover {
+  border-color: #ffd700 !important;
+}
+.btn-love:hover .btn-icon {
+  color: #ffd700;
+  opacity: 1;
+}
 
-.btn-like:hover { border-color: #d4af7a !important; }
-.btn-like:hover .btn-icon { color: #d4af7a; opacity: 1; }
+.btn-like:hover {
+  border-color: #d4af7a !important;
+}
+.btn-like:hover .btn-icon {
+  color: #d4af7a;
+  opacity: 1;
+}
 
-.btn-hate:hover { border-color: #ff4141 !important; }
-.btn-hate:hover .btn-icon { color: #ff4141; opacity: 1; }
+.btn-hate:hover {
+  border-color: #ff4141 !important;
+}
+.btn-hate:hover .btn-icon {
+  color: #ff4141;
+  opacity: 1;
+}
 
 .onboarding-finishing {
   display: flex;
@@ -195,7 +210,7 @@
 }
 
 .onboarding-finishing h2 {
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   letter-spacing: 0.4em;
   text-transform: uppercase;
   font-size: 18px;
@@ -220,8 +235,12 @@
 }
 
 @keyframes scan {
-  from { top: 0% }
-  to { top: 100% }
+  from {
+    top: 0%;
+  }
+  to {
+    top: 100%;
+  }
 }
 
 .grain-overlay {
@@ -229,7 +248,7 @@
   inset: 0;
   pointer-events: none;
   opacity: 0.05;
-  background-image: url('https://grainy-gradients.vercel.app/noise.svg');
+  background-image: url("https://grainy-gradients.vercel.app/noise.svg");
 }
 
 .spinner {
@@ -243,7 +262,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 768px) {
@@ -257,5 +278,7 @@
   .action-buttons {
     grid-template-columns: repeat(2, 1fr);
   }
-  .btn-neutral { grid-column: span 2; }
+  .btn-neutral {
+    grid-column: span 2;
+  }
 }

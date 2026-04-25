@@ -126,7 +126,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 40px;
-  background: rgba(8,8,8,0.97);
+  background: rgba(8, 8, 8, 0.97);
   backdrop-filter: blur(24px);
   border-bottom: 1px solid var(--color-border);
 }
@@ -152,7 +152,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(8,8,8,0.9);
+  background: rgba(8, 8, 8, 0.9);
   backdrop-filter: blur(16px);
   gap: 0;
 }
@@ -205,11 +205,15 @@
 .hl-zone-bg {
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(8,8,8,0.88), rgba(8,8,8,0.82));
+  background: linear-gradient(135deg, rgba(8, 8, 8, 0.88), rgba(8, 8, 8, 0.82));
 }
 
 .hl-zone-btn.active .hl-zone-bg {
-  background: linear-gradient(135deg, rgba(212,175,122,0.08), rgba(8,8,8,0.82));
+  background: linear-gradient(
+    135deg,
+    rgba(212, 175, 122, 0.08),
+    rgba(8, 8, 8, 0.82)
+  );
 }
 
 .hl-zone-line {
@@ -222,7 +226,12 @@
 }
 
 .hl-zone-btn.active .hl-zone-line {
-  background: linear-gradient(to right, var(--color-accent), var(--color-accent-dim), transparent);
+  background: linear-gradient(
+    to right,
+    var(--color-accent),
+    var(--color-accent-dim),
+    transparent
+  );
 }
 
 .hl-zone-glow {
@@ -284,7 +293,7 @@
   font-family: var(--font-serif);
   font-size: 22px;
   font-weight: 400;
-  color: rgba(226,226,226,0.55);
+  color: rgba(226, 226, 226, 0.55);
   margin-bottom: 4px;
 }
 
@@ -418,7 +427,7 @@
   }
 
   .hl-tonight-meta-row {
-     justify-content: center;
+    justify-content: center;
   }
 
   .hl-tonight-actions {

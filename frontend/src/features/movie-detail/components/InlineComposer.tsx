@@ -1,7 +1,5 @@
-
-
 interface InlineComposerProps {
-  mode: 'review' | 'reply' | null;
+  mode: "review" | "reply" | null;
   text: string;
   onTextChange: (value: string) => void;
   onSubmit: () => void;
@@ -17,8 +15,8 @@ export function InlineComposer({
 }: InlineComposerProps) {
   if (!mode) return null;
 
-  const title = mode === 'review' ? 'Escribe tu reseña' : 'Responder reseña';
-  const cta = mode === 'review' ? 'Publicar reseña' : 'Enviar respuesta';
+  const title = mode === "review" ? "Escribe tu reseña" : "Responder reseña";
+  const cta = mode === "review" ? "Publicar reseña" : "Enviar respuesta";
 
   return (
     <div className="md-inline-composer">
@@ -31,10 +29,16 @@ export function InlineComposer({
         className="md-composer-textarea"
       />
       <div className="md-composer-actions">
-        <button onClick={onCancel} className="md-composer-btn md-composer-btn--cancel">
+        <button
+          onClick={onCancel}
+          className="md-composer-btn md-composer-btn--cancel"
+        >
           Cancelar
         </button>
-        <button onClick={onSubmit} className="md-composer-btn md-composer-btn--submit">
+        <button
+          onClick={onSubmit}
+          className="md-composer-btn md-composer-btn--submit"
+        >
           {cta}
         </button>
       </div>

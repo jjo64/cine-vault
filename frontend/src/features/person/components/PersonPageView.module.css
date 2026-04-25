@@ -10,8 +10,8 @@
   --cv-text-soft: #7a7a7a;
   --cv-text-muted: #3a3a3a;
   --cv-gold: #c8a96e;
-  --cv-font-serif: 'Cormorant Garamond', serif;
-  --cv-font-sans: 'Syne', sans-serif;
+  --cv-font-serif: "Cormorant Garamond", serif;
+  --cv-font-sans: "Syne", sans-serif;
 
   background: var(--cv-bg);
   min-height: 100vh;
@@ -57,7 +57,13 @@
 .heroOverlayRight {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to right, rgba(8, 8, 8, 0.98) 0%, rgba(8, 8, 8, 0.82) 45%, rgba(8, 8, 8, 0.3) 70%, transparent 100%);
+  background: linear-gradient(
+    to right,
+    rgba(8, 8, 8, 0.98) 0%,
+    rgba(8, 8, 8, 0.82) 45%,
+    rgba(8, 8, 8, 0.3) 70%,
+    transparent 100%
+  );
 }
 
 .heroOverlayBottom {
@@ -72,7 +78,11 @@
   left: 0;
   width: 500px;
   height: 300px;
-  background: radial-gradient(ellipse at bottom left, var(--cv-accent-glow), transparent 70%);
+  background: radial-gradient(
+    ellipse at bottom left,
+    var(--cv-accent-glow),
+    transparent 70%
+  );
   pointer-events: none;
 }
 
@@ -101,7 +111,11 @@
 .heroPortraitOverlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to left, transparent 20%, rgba(8, 8, 8, 0.9) 100%);
+  background: linear-gradient(
+    to left,
+    transparent 20%,
+    rgba(8, 8, 8, 0.9) 100%
+  );
 }
 
 .heroContent {

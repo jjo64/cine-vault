@@ -1,4 +1,4 @@
-import type { ReviewMode } from '@/services/movieDetailServices';
+import type { ReviewMode } from "@/services/movieDetailServices";
 
 export type AppReview = {
   id: number;
@@ -63,7 +63,7 @@ export type SearchSuggestion = {
   id: number;
   title?: string;
   name?: string;
-  media_type?: 'movie' | 'tv' | 'person';
+  media_type?: "movie" | "tv" | "person";
   poster_path?: string | null;
   profile_path?: string | null;
 };

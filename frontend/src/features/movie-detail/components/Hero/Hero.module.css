@@ -29,10 +29,10 @@
   inset: 0;
   background: linear-gradient(
     to right,
-    rgba(8,8,8,0.92) 0%,
-    rgba(8,8,8,0.80) 40%,
-    rgba(8,8,8,0.45) 70%,
-    rgba(8,8,8,0.78) 100%
+    rgba(8, 8, 8, 0.92) 0%,
+    rgba(8, 8, 8, 0.8) 40%,
+    rgba(8, 8, 8, 0.45) 70%,
+    rgba(8, 8, 8, 0.78) 100%
   );
 }
 
@@ -42,7 +42,11 @@
   left: 0;
   width: 500px;
   height: 400px;
-  background: radial-gradient(ellipse at bottom left, rgba(212,175,122,0.10), transparent 70%);
+  background: radial-gradient(
+    ellipse at bottom left,
+    rgba(212, 175, 122, 0.1),
+    transparent 70%
+  );
   pointer-events: none;
 }
 
@@ -58,7 +62,9 @@
   aspect-ratio: 2 / 3;
   border-radius: 2px;
   overflow: hidden;
-  box-shadow: 0 40px 100px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.04);
+  box-shadow:
+    0 40px 100px rgba(0, 0, 0, 0.9),
+    0 0 0 1px rgba(255, 255, 255, 0.04);
   position: relative;
 }
 
@@ -72,13 +78,18 @@
 .posterSheen {
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 50%, rgba(0,0,0,0.25) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    transparent 50%,
+    rgba(0, 0, 0, 0.25) 100%
+  );
 }
 
 .posterBorder {
   position: absolute;
   inset: 0;
-  border: 1px solid rgba(212,175,122,0.15);
+  border: 1px solid rgba(212, 175, 122, 0.15);
   border-radius: 2px;
 }
 
@@ -92,7 +103,7 @@
   background-position: center;
   aspect-ratio: 2 / 3;
   border-radius: 6px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
 }
 
 /* ── Contenido Principal ── */
@@ -269,15 +280,15 @@
 
 .iconBtn {
   min-width: 44px !important;
-    min-height: 44px !important;
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
-    transition: all 0.2s ease;
-    cursor: pointer;
-    margin: 0 !important;
-    padding: 0 !important;
+  min-height: 44px !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 .iconBtnActive {
@@ -294,9 +305,9 @@
   position: fixed;
   min-width: 180px;
   border: 1px solid var(--md-border);
-  background: rgba(8,8,8,0.98);
+  background: rgba(8, 8, 8, 0.98);
   backdrop-filter: blur(10px);
-  box-shadow: 0 18px 40px rgba(0,0,0,0.45);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
   padding: 6px;
   display: grid;
   gap: 4px;
@@ -316,12 +327,14 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s;
 }
 
 .dropdownItem:hover {
   color: var(--md-text);
-  background: rgba(255,255,255,0.04);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 /* ── Scroll Prompt ── */

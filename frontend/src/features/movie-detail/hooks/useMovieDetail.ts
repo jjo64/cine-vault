@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   addToDiary,
   removeFromDiary,
@@ -25,21 +25,24 @@ import {
   type ReviewMode,
   unlikeReview,
   updateReview,
-} from '../../../services/movieDetailServices';
+} from "../../../services/movieDetailServices";
 import {
   addMovieToList,
   createList,
   getMyLists,
   type UserListSummary,
-} from '../../../services/listsServices';
-import { getCurrentUser, getStoredAccessToken } from '../../../services/authServices';
-import type { AppReview, Viewer, SimilarFilm } from '../types';
-import { 
-  parseMovieId, 
-  isCurrentMovieMatch, 
-  mapMovieReviews 
-} from '../utils/mapping';
-import { TMDB_BASE, SIZES } from '../constants';
+} from "../../../services/listsServices";
+import {
+  getCurrentUser,
+  getStoredAccessToken,
+} from "../../../services/authServices";
+import type { AppReview, Viewer, SimilarFilm } from "../types";
+import {
+  parseMovieId,
+  isCurrentMovieMatch,
+  mapMovieReviews,
+} from "../utils/mapping";
+import { TMDB_BASE, SIZES } from "../constants";
 
 export function useMovieDetail() {
   const { slugOrId } = useParams<{ slugOrId: string }>();
@@ -50,7 +53,9 @@ export function useMovieDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [noticeType, setNoticeType] = useState<'success' | 'error' | 'info'>('info');
+  const [noticeType, setNoticeType] = useState<"success" | "error" | "info">(
+    "info",
+  );
 
   const [viewer, setViewer] = useState<Viewer | null>(null);
   const [userRating, setUserRating] = useState(0);
@@ -58,7 +63,7 @@ export function useMovieDetail() {
   const [inVault, setInVault] = useState(false);
   const [inWatchlist, setInWatchlist] = useState(false);
   const [liked, setLiked] = useState(false);
-  
+
   const [similar, setSimilar] = useState<SimilarFilm[]>([]);
   const [likedReviewIds, setLikedReviewIds] = useState<Set<number>>(new Set());
   const [userLists, setUserLists] = useState<UserListSummary[]>([]);
@@ -68,20 +73,22 @@ export function useMovieDetail() {
   const [addToListOpen, setAddToListOpen] = useState(false);
 
   // Composer state
-  const [composerMode, setComposerMode] = useState<'review' | 'reply' | null>(null);
-  const [composerText, setComposerText] = useState('');
+  const [composerMode, setComposerMode] = useState<"review" | "reply" | null>(
+    null,
+  );
+  const [composerText, setComposerText] = useState("");
   const [replyTargetId, setReplyTargetId] = useState<number | null>(null);
   const [editingReviewId, setEditingReviewId] = useState<number | null>(null);
 
   // Review log form state
   const [reviewLogForm, setReviewLogForm] = useState({
-    text: '',
+    text: "",
     rating: 0,
-    mode: 'RAPIDO' as ReviewMode,
-    veredicto: '',
+    mode: "RAPIDO" as ReviewMode,
+    veredicto: "",
     contieneSpoilers: false,
-    citaDialogo: '',
-    citaPersonaje: '',
+    citaDialogo: "",
+    citaPersonaje: "",
     timestamps: [] as Array<{ minuto: string; descripcion: string }>,
     dimensions: {
       direccion: null as number | null,
@@ -99,8 +106,8 @@ export function useMovieDetail() {
 
   // Add to list modal state
   const [selectedListId, setSelectedListId] = useState<number | null>(null);
-  const [newListName, setNewListName] = useState('');
-  const [newListDescription, setNewListDescription] = useState('');
+  const [newListName, setNewListName] = useState("");
+  const [newListDescription, setNewListDescription] = useState("");
   const [addToListLoading, setAddToListLoading] = useState(false);
   const [addToListSaving, setAddToListSaving] = useState(false);
   const [addToListCreating, setAddToListCreating] = useState(false);
@@ -110,7 +117,7 @@ export function useMovieDetail() {
 
   useEffect(() => {
     if (!slugOrId) {
-      setError('Película no encontrada');
+      setError("Película no encontrada");
       setLoading(false);
       return;
     }
@@ -134,86 +141,131 @@ export function useMovieDetail() {
 
           if (!alive) return;
 
-          const topRatedList = Array.isArray(topRated.results) ? topRated.results.slice(0, 6) : [];
+          const topRatedList = Array.isArray(topRated.results)
+            ? topRated.results.slice(0, 6)
+            : [];
           setSimilar(
             topRatedList
               .filter((item: any) => item.id !== detail.id)
               .map((item: any) => ({
                 id: item.id,
                 title: item.title,
-                year: item.release_date ? new Date(item.release_date).getFullYear() : 0,
-                img: item.poster_path ? `${TMDB_BASE}${SIZES.POSTER}${item.poster_path}` : '',
-              }))
+                year: item.release_date
+                  ? new Date(item.release_date).getFullYear()
+                  : 0,
+                img: item.poster_path
+                  ? `${TMDB_BASE}${SIZES.POSTER}${item.poster_path}`
+                  : "",
+              })),
           );
 
           // Full reviews data
-          const uniqueUserIds = [...new Set(movieReviews.map((r) => r.user_id))];
+          const uniqueUserIds = [
+            ...new Set(movieReviews.map((r) => r.user_id)),
+          ];
           const [userPairs, commentsPairs] = await Promise.all([
-            Promise.all(uniqueUserIds.map(async (id) => {
-              try {
-                const user = await fetchUserById(id);
-                return [id, { username: user.username ?? `Usuario ${id}`, avatarUrl: user.avatar_url ?? null }] as const;
-              } catch {
-                return [id, { username: `Usuario ${id}`, avatarUrl: null }] as const;
-              }
-            })),
-            Promise.all(movieReviews.map(async (review) => {
-              try {
-                const c = await fetchReviewComments(review.id);
-                return [review.id, Array.isArray(c) ? c : []] as const;
-              } catch {
-                return [review.id, []] as const;
-              }
-            }))
+            Promise.all(
+              uniqueUserIds.map(async (id) => {
+                try {
+                  const user = await fetchUserById(id);
+                  return [
+                    id,
+                    {
+                      username: user.username ?? `Usuario ${id}`,
+                      avatarUrl: user.avatar_url ?? null,
+                    },
+                  ] as const;
+                } catch {
+                  return [
+                    id,
+                    { username: `Usuario ${id}`, avatarUrl: null },
+                  ] as const;
+                }
+              }),
+            ),
+            Promise.all(
+              movieReviews.map(async (review) => {
+                try {
+                  const c = await fetchReviewComments(review.id);
+                  return [review.id, Array.isArray(c) ? c : []] as const;
+                } catch {
+                  return [review.id, []] as const;
+                }
+              }),
+            ),
           ]);
 
           if (!alive) return;
           const userMeta = Object.fromEntries(userPairs);
           const commentsByReviewId = Object.fromEntries(commentsPairs);
-          setReviews(mapMovieReviews(movieReviews, userMeta, commentsByReviewId));
+          setReviews(
+            mapMovieReviews(movieReviews, userMeta, commentsByReviewId),
+          );
         };
 
         const loadUserStatus = async () => {
           if (!token) return;
           const user = await getCurrentUser();
-          setViewer({ id: user.id, username: user.username, avatar_url: user.avatar_url, membership: user.membership || null, role: user.role || null });
+          setViewer({
+            id: user.id,
+            username: user.username,
+            avatar_url: user.avatar_url,
+            membership: user.membership || null,
+            role: user.role || null,
+          });
 
-          const [myReviews, myWatchlist, myFavorites, myDiary] = await Promise.all([
-            fetchMyReviews(token).catch(() => []),
-            fetchMyWatchlist(token).catch(() => []),
-            fetchMyFavorites(token).catch(() => []),
-            fetchMyDiary(token).catch(() => ({ diary: [] })),
-          ]);
+          const [myReviews, myWatchlist, myFavorites, myDiary] =
+            await Promise.all([
+              fetchMyReviews(token).catch(() => []),
+              fetchMyWatchlist(token).catch(() => []),
+              fetchMyFavorites(token).catch(() => []),
+              fetchMyDiary(token).catch(() => ({ diary: [] })),
+            ]);
 
           if (!alive) return;
 
-          const myReview = myReviews.find((r: any) => isCurrentMovieMatch(r, detail.id, movieId, 'movie'));
+          const myReview = myReviews.find((r: any) =>
+            isCurrentMovieMatch(r, detail.id, movieId, "movie"),
+          );
           setMyReviewId(myReview?.id ?? null);
           setUserRating(Number(myReview?.rating ?? 0));
-          setInWatchlist(myWatchlist.some((e: any) => isCurrentMovieMatch(e, detail.id, movieId, 'movie')));
-          setLiked(myFavorites.some((e: any) => isCurrentMovieMatch(e, detail.id, movieId, 'movie')));
-          setInVault((myDiary.diary || []).some((e: any) => isCurrentMovieMatch(e, detail.id, movieId, 'movie')));
+          setInWatchlist(
+            myWatchlist.some((e: any) =>
+              isCurrentMovieMatch(e, detail.id, movieId, "movie"),
+            ),
+          );
+          setLiked(
+            myFavorites.some((e: any) =>
+              isCurrentMovieMatch(e, detail.id, movieId, "movie"),
+            ),
+          );
+          setInVault(
+            (myDiary.diary || []).some((e: any) =>
+              isCurrentMovieMatch(e, detail.id, movieId, "movie"),
+            ),
+          );
         };
 
-        await Promise.all([
-          loadSecondary(),
-          loadUserStatus(),
-        ]);
+        await Promise.all([loadSecondary(), loadUserStatus()]);
         if (alive) setLoading(false);
-
       } catch (err) {
         if (alive) {
-          setError((err as Error).message || 'Error al cargar la película');
+          setError((err as Error).message || "Error al cargar la película");
           setLoading(false);
         }
       }
     };
 
     loadData();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, [slugOrId, token, movieId]);
 
-  const showNotice = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+  const showNotice = (
+    message: string,
+    type: "success" | "error" | "info" = "info",
+  ) => {
     setNotice(message);
     setNoticeType(type);
     setTimeout(() => setNotice(null), 3000);
@@ -221,15 +273,21 @@ export function useMovieDetail() {
 
   const openReviewLogWithData = (review?: AppReview | null) => {
     setReviewLogForm({
-      text: review?.content || '',
+      text: review?.content || "",
       rating: review?.rating || userRating || 0,
-      mode: review?.mode || 'RAPIDO',
-      veredicto: review?.veredicto || '',
+      mode: review?.mode || "RAPIDO",
+      veredicto: review?.veredicto || "",
       contieneSpoilers: !!review?.contieneSpoilers,
-      citaDialogo: review?.quote?.dialogo || '',
-      citaPersonaje: review?.quote?.personaje || '',
+      citaDialogo: review?.quote?.dialogo || "",
+      citaPersonaje: review?.quote?.personaje || "",
       timestamps: review?.timestamps || [],
-      dimensions: review?.dimensions || { direccion: null, guion: null, fotografia: null, actuaciones: null, bandaSonora: null },
+      dimensions: review?.dimensions || {
+        direccion: null,
+        guion: null,
+        fotografia: null,
+        actuaciones: null,
+        bandaSonora: null,
+      },
       liked,
       seenDate: new Date().toISOString().slice(0, 10),
       seenBefore: false,
@@ -239,90 +297,115 @@ export function useMovieDetail() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    localStorage.removeItem("token");
     setViewer(null);
-    showNotice('Sesión cerrada', 'success');
-    navigate('/');
+    showNotice("Sesión cerrada", "success");
+    navigate("/");
   };
 
   const requireAuth = () => {
     if (token) return true;
-    window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: { mode: 'login' } }));
-    showNotice('Tienes que loguearte para usar esta opción', 'info');
+    window.dispatchEvent(
+      new CustomEvent("open-auth-modal", { detail: { mode: "login" } }),
+    );
+    showNotice("Tienes que loguearte para usar esta opción", "info");
     return false;
   };
 
   const handleRate = async (value: number) => {
-    if (!movie || !token) { requireAuth(); return; }
+    if (!movie || !token) {
+      requireAuth();
+      return;
+    }
     try {
       if (myReviewId) {
-        await updateReview(token, myReviewId, value, 'movie');
+        await updateReview(token, myReviewId, value, "movie");
       } else {
-        const created = await createReview(token, { movie_id: movie.id, media_type: 'movie', mode: 'RAPIDO', rating: value, content: 'Rating rapido' });
+        const created = await createReview(token, {
+          movie_id: movie.id,
+          media_type: "movie",
+          mode: "RAPIDO",
+          rating: value,
+          content: "Rating rapido",
+        });
         setMyReviewId(created.id);
       }
       setUserRating(value);
-      showNotice('Rating guardado', 'success');
+      showNotice("Rating guardado", "success");
     } catch (err) {
-      showNotice('No se pudo guardar el rating', 'error');
+      showNotice("No se pudo guardar el rating", "error");
     }
   };
 
   const handleToggleVault = async () => {
-    if (!movie || !token) { requireAuth(); return; }
+    if (!movie || !token) {
+      requireAuth();
+      return;
+    }
     try {
       if (inVault) {
         const diary = await fetchMyDiary(token);
-        const entry = (diary.diary || []).find((e: any) => isCurrentMovieMatch(e, movie.id, movieId, 'movie'));
+        const entry = (diary.diary || []).find((e: any) =>
+          isCurrentMovieMatch(e, movie.id, movieId, "movie"),
+        );
         if (entry) await removeFromDiary(token, entry.id);
         setInVault(false);
-        showNotice('Eliminada de tu Vault', 'info');
+        showNotice("Eliminada de tu Vault", "info");
       } else {
         await addToDiary(token, movie.id);
         setInVault(true);
-        showNotice('Añadida a tu Vault', 'success');
+        showNotice("Añadida a tu Vault", "success");
       }
     } catch (err) {
-      showNotice('Error al actualizar Vault', 'error');
+      showNotice("Error al actualizar Vault", "error");
     }
   };
 
   const handleToggleWatchlist = async () => {
-    if (!movie || !token) { requireAuth(); return; }
+    if (!movie || !token) {
+      requireAuth();
+      return;
+    }
     try {
       if (inWatchlist) {
-        await removeFromWatchlist(token, movie.id, 'movie');
+        await removeFromWatchlist(token, movie.id, "movie");
         setInWatchlist(false);
-        showNotice('Eliminada de Watchlist', 'info');
+        showNotice("Eliminada de Watchlist", "info");
       } else {
         await addToWatchlist(token, movie.id);
         setInWatchlist(true);
-        showNotice('Añadida a Watchlist', 'success');
+        showNotice("Añadida a Watchlist", "success");
       }
     } catch (err) {
-      showNotice('Error al actualizar Watchlist', 'error');
+      showNotice("Error al actualizar Watchlist", "error");
     }
   };
 
   const handleToggleFavorite = async () => {
-    if (!movie || !token) { requireAuth(); return; }
+    if (!movie || !token) {
+      requireAuth();
+      return;
+    }
     try {
       if (liked) {
-        await removeFromFavorites(token, movie.id, 'movie');
+        await removeFromFavorites(token, movie.id, "movie");
         setLiked(false);
-        showNotice('Quitada de favoritos', 'info');
+        showNotice("Quitada de favoritos", "info");
       } else {
         await addToFavorites(token, movie.id);
         setLiked(true);
-        showNotice('Añadida a favoritos', 'success');
+        showNotice("Añadida a favoritos", "success");
       }
     } catch (err) {
-      showNotice('Error al actualizar favoritos', 'error');
+      showNotice("Error al actualizar favoritos", "error");
     }
   };
 
   const handleAddToList = async () => {
-    if (!movie || !token) { requireAuth(); return; }
+    if (!movie || !token) {
+      requireAuth();
+      return;
+    }
     setAddToListOpen(true);
     setAddToListLoading(true);
     try {
@@ -330,7 +413,7 @@ export function useMovieDetail() {
       setUserLists(lists);
       if (lists.length > 0) setSelectedListId(lists[0].id);
     } catch (err) {
-      showNotice('Error al cargar listas', 'error');
+      showNotice("Error al cargar listas", "error");
     } finally {
       setAddToListLoading(false);
     }
@@ -342,9 +425,9 @@ export function useMovieDetail() {
     try {
       await addMovieToList(selectedListId, movie.id);
       setAddToListOpen(false);
-      showNotice('Añadida a la lista', 'success');
+      showNotice("Añadida a la lista", "success");
     } catch (err) {
-      showNotice('Error al añadir a lista', 'error');
+      showNotice("Error al añadir a lista", "error");
     } finally {
       setAddToListSaving(false);
     }
@@ -354,14 +437,17 @@ export function useMovieDetail() {
     if (!newListName.trim()) return;
     setAddToListCreating(true);
     try {
-      const created = await createList({ name: newListName.trim(), description: newListDescription.trim() || null });
-      setUserLists(prev => [created, ...prev]);
+      const created = await createList({
+        name: newListName.trim(),
+        description: newListDescription.trim() || null,
+      });
+      setUserLists((prev) => [created, ...prev]);
       setSelectedListId(created.id);
-      setNewListName('');
-      setNewListDescription('');
-      showNotice('Lista creada', 'success');
+      setNewListName("");
+      setNewListDescription("");
+      showNotice("Lista creada", "success");
     } catch (err) {
-      showNotice('Error al crear lista', 'error');
+      showNotice("Error al crear lista", "error");
     } finally {
       setAddToListCreating(false);
     }
@@ -370,15 +456,18 @@ export function useMovieDetail() {
   const handleShare = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
-      showNotice('Enlace copiado', 'success');
+      showNotice("Enlace copiado", "success");
     } catch {
-      showNotice('Error al copiar enlace', 'error');
+      showNotice("Error al copiar enlace", "error");
     }
   };
 
   const handleWriteReview = () => {
-    if (!movie || !token) { requireAuth(); return; }
-    const ownReview = reviews.find(r => r.userId === viewer?.id);
+    if (!movie || !token) {
+      requireAuth();
+      return;
+    }
+    const ownReview = reviews.find((r) => r.userId === viewer?.id);
     openReviewLogWithData(ownReview || null);
   };
 
@@ -398,44 +487,63 @@ export function useMovieDetail() {
         rating_banda_sonora: reviewLogForm.dimensions.bandaSonora || undefined,
         cita_dialogo: reviewLogForm.citaDialogo.trim() || undefined,
         cita_personaje: reviewLogForm.citaPersonaje.trim() || undefined,
-        timestamps: reviewLogForm.timestamps.filter(t => t.minuto && t.descripcion),
+        timestamps: reviewLogForm.timestamps.filter(
+          (t) => t.minuto && t.descripcion,
+        ),
         contiene_spoilers: reviewLogForm.contieneSpoilers,
       };
 
       if (editingReviewId) {
-        await updateReviewContent(token, editingReviewId, { ...payload, media_type: 'movie' });
+        await updateReviewContent(token, editingReviewId, {
+          ...payload,
+          media_type: "movie",
+        });
       } else {
-        const created = await createReview(token, { movie_id: movie.id, media_type: 'movie', ...payload });
+        const created = await createReview(token, {
+          movie_id: movie.id,
+          media_type: "movie",
+          ...payload,
+        });
         setMyReviewId(created.id);
       }
-      
+
       await addToDiary(token, movie.id, reviewLogForm.seenDate).catch(() => {});
       setInVault(true);
       setReviewLogOpen(false);
-      showNotice('Review y log guardados', 'success');
-      
+      showNotice("Review y log guardados", "success");
+
       // Refresh reviews
       await fetchMovieReviews(movie.id);
       // Mapping would be repeated here, simplified for now
     } catch (err) {
-      showNotice('Error al guardar log', 'error');
+      showNotice("Error al guardar log", "error");
     } finally {
       setReviewLogSaving(false);
     }
   };
 
-  const handleToggleReviewLike = async (reviewId: number, alreadyLiked: boolean) => {
-    if (!token) { requireAuth(); return; }
+  const handleToggleReviewLike = async (
+    reviewId: number,
+    alreadyLiked: boolean,
+  ) => {
+    if (!token) {
+      requireAuth();
+      return;
+    }
     try {
       if (alreadyLiked) {
         await unlikeReview(token, reviewId);
-        setLikedReviewIds(prev => { const n = new Set(prev); n.delete(reviewId); return n; });
+        setLikedReviewIds((prev) => {
+          const n = new Set(prev);
+          n.delete(reviewId);
+          return n;
+        });
       } else {
         await likeReview(token, reviewId);
-        setLikedReviewIds(prev => new Set(prev).add(reviewId));
+        setLikedReviewIds((prev) => new Set(prev).add(reviewId));
       }
     } catch (err) {
-      showNotice('Error al actualizar like', 'error');
+      showNotice("Error al actualizar like", "error");
     }
   };
 
@@ -444,15 +552,21 @@ export function useMovieDetail() {
     const text = composerText.trim();
     if (!text) return;
 
-    if (composerMode === 'reply' && replyTargetId) {
-       await commentOnReview(token, replyTargetId, text);
-       showNotice('Comentario enviado', 'success');
+    if (composerMode === "reply" && replyTargetId) {
+      await commentOnReview(token, replyTargetId, text);
+      showNotice("Comentario enviado", "success");
     } else {
-      await createReview(token, { movie_id: movie.id, media_type: 'movie', mode: 'ESTANDAR', content: text, rating: userRating || 4 });
-       showNotice('Reseña publicada', 'success');
+      await createReview(token, {
+        movie_id: movie.id,
+        media_type: "movie",
+        mode: "ESTANDAR",
+        content: text,
+        rating: userRating || 4,
+      });
+      showNotice("Reseña publicada", "success");
     }
     setComposerMode(null);
-    setComposerText('');
+    setComposerText("");
   };
 
   return {
@@ -504,8 +618,20 @@ export function useMovieDetail() {
     handleSaveReviewLog,
     handleToggleReviewLike,
     handleSubmitComposer,
-    handleEditReview: (r: AppReview) => { openReviewLogWithData(r); },
-    handleDeleteReview: async (r: AppReview) => { if (token) { await deleteReview(token, r.id); setReviews(prev => prev.filter(i => i.id !== r.id)); showNotice('Reseña eliminada', 'success'); } },
-    handleReplyReview: (id: number) => { setReplyTargetId(id); setComposerText(''); setComposerMode('reply'); },
+    handleEditReview: (r: AppReview) => {
+      openReviewLogWithData(r);
+    },
+    handleDeleteReview: async (r: AppReview) => {
+      if (token) {
+        await deleteReview(token, r.id);
+        setReviews((prev) => prev.filter((i) => i.id !== r.id));
+        showNotice("Reseña eliminada", "success");
+      }
+    },
+    handleReplyReview: (id: number) => {
+      setReplyTargetId(id);
+      setComposerText("");
+      setComposerMode("reply");
+    },
   };
 }
