@@ -31,6 +31,8 @@ import { deleteReview, removeFromWatchlist, removeFromFavorites } from '../../se
 import { removeFromVault, removeVaultSocialEntry, type VaultSocialEntry } from '../../services/profileServices'
 import { getStoredAccessToken } from '../../services/authServices'
 import { createSlug } from '../../utils/stringUtils'
+import { deleteReview } from '../../services/movieDetailServices'
+import { getStoredAccessToken } from '../../services/authServices'
 
 const mediaHref = (movieId: number, title: string, tmdbId: number | null, mediaType?: 'movie' | 'tv' | null) => {
   const type = mediaType === 'tv' ? 'tv' : 'movie'
