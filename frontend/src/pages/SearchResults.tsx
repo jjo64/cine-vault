@@ -634,6 +634,11 @@ export function Search() {
   const detailsCacheRef = useRef<Map<number, FilmDetails>>(new Map())
   const inflightDetailsRef = useRef<Set<number>>(new Set())
 
+  const [filmResults, setFilmResults] = useState<FilmResult[]>([])
+  const [personResults, setPersonResults] = useState<PersonResult[]>([])
+  const [userResults, setUserResults] = useState<UserResult[]>([])
+  const [fetchError, setFetchError] = useState<string | null>(null)
+
   useEffect(() => {
     const token = getStoredAccessToken()
     if (!token) return
@@ -957,7 +962,7 @@ export function Search() {
                     {personResults.length > 0 && (
                       <div style={{ marginBottom: 8 }}>
                         <div style={{ fontSize: 10, letterSpacing: '0.24em', textTransform: 'uppercase', color: C.accentDim, marginBottom: 4, fontFamily: SANS }}>Personas</div>
-                        {personResults.map((person, i) => (
+                        {personResults.map((person: PersonResult, i: number) => (
                           <PersonResultItem key={person.id} item={person} delay={i * 0.06} />
                         ))}
                       </div>
@@ -966,14 +971,14 @@ export function Search() {
                     {userResults.length > 0 && (
                       <div style={{ marginBottom: 8 }}>
                         <div style={{ fontSize: 10, letterSpacing: '0.24em', textTransform: 'uppercase', color: C.accentDim, marginBottom: 4, fontFamily: SANS, marginTop: 16 }}>Usuarios</div>
-                        {userResults.map((user, i) => (
+                        {userResults.map((user: UserResult, i: number) => (
                           <UserResultItem key={user.id} item={user} delay={i * 0.06} />
                         ))}
                       </div>
                     )}
 
                     <div style={{ fontSize: 10, letterSpacing: '0.24em', textTransform: 'uppercase', color: C.accentDim, marginBottom: 4, fontFamily: SANS, marginTop: 16 }}>Películas</div>
-                    {pageFilms.map((film, i) => {
+                    {pageFilms.map((film: FilmResult, i: number) => {
                       const details = enrichedFilms[film.id]
                       const mergedFilm: FilmResult = {
                         ...film,
@@ -1002,7 +1007,7 @@ export function Search() {
                 )}
 
                 {activeTab === 'film' &&
-                  pageFilms.map((film, i) => {
+                  pageFilms.map((film: FilmResult, i: number) => {
                     const details = enrichedFilms[film.id]
                     const mergedFilm: FilmResult = {
                       ...film,
@@ -1026,7 +1031,7 @@ export function Search() {
                     )
                   })}
                 {activeTab === 'tv' &&
-                  pageFilms.map((film, i) => {
+                  pageFilms.map((film: FilmResult, i: number) => {
                     const details = enrichedFilms[film.id]
                     const mergedFilm: FilmResult = {
                       ...film,
@@ -1049,8 +1054,8 @@ export function Search() {
                       />
                     )
                   })}
-                {activeTab === 'person' && personResults.map((person, i) => <PersonResultItem key={person.id} item={person} delay={i * 0.06} />)}
-                {activeTab === 'user' && userResults.map((user, i) => <UserResultItem key={user.id} item={user} delay={i * 0.06} />)}
+                {activeTab === 'person' && personResults.map((person: PersonResult, i: number) => <PersonResultItem key={person.id} item={person} delay={i * 0.06} />)}
+                {activeTab === 'user' && userResults.map((user: UserResult, i: number) => <UserResultItem key={user.id} item={user} delay={i * 0.06} />)}
 
                 {isSearching ? (
                   <div style={{ padding: '100px 0', textAlign: 'center' }}>
