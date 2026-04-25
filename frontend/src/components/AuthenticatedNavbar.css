@@ -3,10 +3,10 @@
 :root {
   --auth-nav-height: 64px;
   --auth-nav-bg: rgba(8, 8, 8, 0.96);
-  --auth-nav-accent: #D4AF7A;
+  --auth-nav-accent: #d4af7a;
   --auth-nav-border: #252525;
-  --auth-nav-text: #E2E2E2;
-  --auth-nav-text-soft: #7A7A7A;
+  --auth-nav-text: #e2e2e2;
+  --auth-nav-text-soft: #7a7a7a;
 }
 
 .auth-nav {
@@ -24,11 +24,11 @@
   display: flex;
   align-items: center;
   padding: 0 48px;
-  font-family: 'Syne', sans-serif;
+  font-family: "Syne", sans-serif;
 }
 
 .auth-nav-logo {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: "Cormorant Garamond", serif;
   font-size: 22px;
   font-weight: 500;
   letter-spacing: 0.12em;
@@ -64,7 +64,7 @@
   color: var(--auth-nav-text-soft);
   transition: color 0.2s;
   padding: 8px 0;
-  font-family: 'Syne', sans-serif;
+  font-family: "Syne", sans-serif;
   text-decoration: none;
   display: flex;
   align-items: center;
@@ -111,7 +111,7 @@
   border: none;
   outline: none;
   background: transparent;
-  font-family: 'Syne', sans-serif;
+  font-family: "Syne", sans-serif;
   font-size: 14px;
   color: var(--auth-nav-text);
 }
@@ -134,7 +134,7 @@
   border: none;
   color: var(--auth-nav-text-soft);
   cursor: pointer;
-  font-family: 'Syne', sans-serif;
+  font-family: "Syne", sans-serif;
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -205,7 +205,7 @@
 }
 
 .auth-nav-avatar-initials {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: "Cormorant Garamond", serif;
   font-size: 14px;
   color: var(--auth-nav-accent);
 }
@@ -243,7 +243,7 @@
 }
 
 .auth-nav-dropdown-danger {
-  color: #FF8A8A;
+  color: #ff8a8a;
 }
 
 .auth-nav-suggestions {
@@ -256,7 +256,7 @@
   border: 1px solid var(--auth-nav-border);
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.45);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
   max-height: 65vh;
   overflow-y: auto;
   z-index: 1001;
@@ -292,45 +292,47 @@
 
 /* Guest Actions */
 .auth-nav-guest-actions {
-    display: flex;
-    align-items: center;
-    gap: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
 .auth-nav-login-btn {
-    background: none;
-    border: none;
-    color: var(--auth-nav-text-soft);
-    font-family: 'Syne', sans-serif;
-    font-size: 11px;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: color 0.2s ease;
+  background: none;
+  border: none;
+  color: var(--auth-nav-text-soft);
+  font-family: "Syne", sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.2s ease;
 }
 
 .auth-nav-login-btn:hover {
-    color: var(--auth-nav-text);
+  color: var(--auth-nav-text);
 }
 
 .auth-nav-join-btn {
-    background: var(--auth-nav-accent);
-    color: #000;
-    border: none;
-    padding: 8px 16px;
-    font-family: 'Syne', sans-serif;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    border-radius: 2px;
-    cursor: pointer;
-    transition: transform 0.2s ease, filter 0.2s ease;
+  background: var(--auth-nav-accent);
+  color: #000;
+  border: none;
+  padding: 8px 16px;
+  font-family: "Syne", sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    filter 0.2s ease;
 }
 
 .auth-nav-join-btn:hover {
-    transform: translateY(-1px);
-    filter: brightness(1.1);
+  transform: translateY(-1px);
+  filter: brightness(1.1);
 }
 
 /* Mobile */
@@ -338,11 +340,11 @@
   .auth-nav {
     padding: 0 24px;
   }
-  
+
   .auth-nav-links {
     display: none;
   }
-  
+
   .auth-nav-search-form {
     width: 200px;
   }
@@ -357,11 +359,11 @@
   .auth-nav-back-btn {
     display: none;
   }
-  
+
   .auth-nav-search-form {
     display: none;
   }
-  
+
   .auth-nav-hamburger {
     display: block;
   }

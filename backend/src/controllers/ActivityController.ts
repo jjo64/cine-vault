@@ -15,7 +15,7 @@ import * as ActivityService from "../services/activity.services.js"
 export const getFeed = async (req: Request, res: Response) => {
   const viewerId = req.user!.user_id
   const type = String(req.query.type || "friends").toLowerCase()
-  
+
   // Normalización de paginación
   const page = Math.max(1, Number(req.query.page || 1))
   const limit = Math.min(50, Math.max(1, Number(req.query.limit || 20)))

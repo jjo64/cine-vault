@@ -1,4 +1,4 @@
-@import './styles/tokens.css';
+@import "./styles/tokens.css";
 
 :root {
   --background: 8 8% 3%;
@@ -62,10 +62,9 @@ h6 {
   font-family: var(--font-serif);
 }
 
-
 /* ── Grain overlay global ── */
 body::before {
-  content: '';
+  content: "";
   position: fixed;
   inset: 0;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
@@ -94,15 +93,15 @@ body::before {
   color: var(--color-bg);
 }
 
-[data-sonner-toast][data-type='success'] {
-  border-left: 3px solid #D4AF7A;
+[data-sonner-toast][data-type="success"] {
+  border-left: 3px solid #d4af7a;
 }
 
-[data-sonner-toast][data-type='error'] {
-  border-left: 3px solid #8B3A3A;
+[data-sonner-toast][data-type="error"] {
+  border-left: 3px solid #8b3a3a;
 }
 
-[data-sonner-toast][data-type='info'] {
+[data-sonner-toast][data-type="info"] {
   border-left: 3px solid #252525;
 }
 
@@ -112,7 +111,7 @@ body::before {
     --nav-height: var(--nav-height-mobile);
   }
 }
-/* -- Keyboard navigation (WCAG 2.1 AA � 2.4.7 Focus Visible) -- */
+/* -- Keyboard navigation (WCAG 2.1 AA � 2.4.7 Focus Visible) -- */
 *:focus {
   outline: none;
 }
@@ -131,7 +130,7 @@ textarea:focus-visible {
   border-color: var(--color-accent) !important;
 }
 
-/* -- Reduced motion (WCAG 2.1 � 2.3.3) -- */
+/* -- Reduced motion (WCAG 2.1 � 2.3.3) -- */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

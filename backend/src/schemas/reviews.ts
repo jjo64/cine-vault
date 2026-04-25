@@ -2,7 +2,7 @@
  * @file reviews.ts
  * @description Motor de validación Zod para el sistema de Reseñas y Crítica Cinematográfica.
  * Define la lógica de integridad para los tres modos de reseña (Rápido, Estándar y Crítico),
- * asegurando que los contenidos cumplan con los requisitos mínimos de extensión y 
+ * asegurando que los contenidos cumplan con los requisitos mínimos de extensión y
  * profundidad exigidos por la plataforma.
  */
 
@@ -37,7 +37,7 @@ const timestampSchema = z.object({
 
 const optionalDimensionRating = ratingStep.optional()
 
-/** 
+/**
  * Esquema para la creación de una nueva reseña.
  * Incluye lógica de validación condicional (superRefine) según el modo elegido.
  */
@@ -51,7 +51,10 @@ export const crearResenaSchema = z
     content: z
       .string()
       .trim()
-      .max(8000, "El contenido de la reseña no puede superar los 8000 caracteres")
+      .max(
+        8000,
+        "El contenido de la reseña no puede superar los 8000 caracteres"
+      )
       .optional(),
     rating: ratingStep.optional(),
     mode: reviewModeSchema.default("RAPIDO"),
@@ -60,14 +63,14 @@ export const crearResenaSchema = z
       .trim()
       .max(280, "El veredicto breve no puede superar los 280 caracteres")
       .optional(),
-    
+
     // Ratings granulares (Dimensiones técnicas)
     rating_direccion: optionalDimensionRating,
     rating_guion: optionalDimensionRating,
     rating_fotografia: optionalDimensionRating,
     rating_actuaciones: optionalDimensionRating,
     rating_banda_sonora: optionalDimensionRating,
-    
+
     cita_dialogo: z
       .string()
       .trim()
@@ -78,7 +81,7 @@ export const crearResenaSchema = z
       .trim()
       .max(120, "El nombre del personaje no puede superar los 120 caracteres")
       .optional(),
-    
+
     timestamps: z
       .array(timestampSchema)
       .max(12, "Se permite un máximo de 12 momentos destacados (timestamps)")
@@ -128,12 +131,13 @@ export const crearResenaSchema = z
       ctx.addIssue({
         code: "custom",
         path: ["content"],
-        message: "El análisis en modo 'Crítico' exige una extensión mínima de 500 caracteres",
+        message:
+          "El análisis en modo 'Crítico' exige una extensión mínima de 500 caracteres",
       })
     }
   })
 
-/** 
+/**
  * Esquema para la actualización parcial de una reseña.
  * Permite modificar cualquier metadato excepto el identificador de la obra (movie_id).
  */
@@ -164,7 +168,8 @@ export const actualizarResenaSchema = z
     contiene_spoilers: z.boolean().optional(),
   })
   .refine((data) => Object.values(data).some((value) => value !== undefined), {
-    message: "Debe proporcionar al menos un campo (contenido o calificación) para actualizar",
+    message:
+      "Debe proporcionar al menos un campo (contenido o calificación) para actualizar",
   })
 
 /** Esquema para la denuncia de contenido inapropiado en una reseña */
@@ -199,7 +204,10 @@ const idPositivo = z.coerce.number().int().positive()
 export const reviewIdParamsSchema = z.object({ reviewId: idPositivo })
 export const movieIdParamsSchema = z.object({ movieId: idPositivo })
 export const userIdParamsSchema = z.object({ userId: idPositivo })
-export const commentParamsSchema = z.object({ reviewId: idPositivo, commentId: idPositivo })
+export const commentParamsSchema = z.object({
+  reviewId: idPositivo,
+  commentId: idPositivo,
+})
 export const commentIdParamsSchema = z.object({ commentId: idPositivo })
 export const usernameMovieSlugParamsSchema = z.object({
   username: z.string().min(1, "El nombre de usuario es requerido"),

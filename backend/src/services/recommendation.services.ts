@@ -43,62 +43,95 @@ const curatedFallbackDirectors = [
   { name: "Chantal Akerman", reason: "Cine de observación y riesgo formal" },
   { name: "Andrei Tarkovsky", reason: "Poesía visual y tempo contemplativo" },
   { name: "Agnès Varda", reason: "Mirada íntima y documental sensible" },
-  { name: "Apichatpong Weerasethakul", reason: "Narrativas hipnóticas y sensoriales" },
+  {
+    name: "Apichatpong Weerasethakul",
+    reason: "Narrativas hipnóticas y sensoriales",
+  },
 ]
 
 /**
  * Genera un feed de recomendaciones personalizadas para un usuario.
  */
-export const getPersonalizedFeed = async (viewerId: number, page: number, limit: number) => {
+export const getPersonalizedFeed = async (
+  viewerId: number,
+  page: number,
+  limit: number
+) => {
   // 1. Recuperar semillas del historial reciente del usuario
   const [vaultEntries, diaryEntries, ownReviews] = await Promise.all([
     prisma.vault.findMany({
       where: { user_id: viewerId },
       orderBy: { added_at: "desc" },
       take: 12,
-      include: { movies_ref: { select: { id: true, tmdb_id: true, media_type: true } } },
+      include: {
+        movies_ref: { select: { id: true, tmdb_id: true, media_type: true } },
+      },
     }),
     prisma.diary_entries.findMany({
       where: { user_id: viewerId },
       orderBy: { id: "desc" },
       take: 12,
-      include: { movies_ref: { select: { id: true, tmdb_id: true, media_type: true } } },
+      include: {
+        movies_ref: { select: { id: true, tmdb_id: true, media_type: true } },
+      },
     }),
     prisma.reviews.findMany({
       where: { user_id: viewerId },
       orderBy: { created_at: "desc" },
       take: 12,
-      include: { movies_ref: { select: { id: true, tmdb_id: true, media_type: true } } },
+      include: {
+        movies_ref: { select: { id: true, tmdb_id: true, media_type: true } },
+      },
     }),
   ])
 
   // Combinar semillas con priorización: Diario > Reseñas > Bóveda (Deduplicadas)
-  const seedMap = new Map<string, { tmdb_id: number; media_type: string; recency_score: number }>()
-  
+  const seedMap = new Map<
+    string,
+    { tmdb_id: number; media_type: string; recency_score: number }
+  >()
+
   // Prioridad 1: Diario (lo que realmente ha visto recientemente)
   diaryEntries.forEach((e, idx) => {
     const key = `${e.movies_ref.media_type}-${e.movies_ref.tmdb_id}`
-    if (!seedMap.has(key)) seedMap.set(key, { tmdb_id: e.movies_ref.tmdb_id, media_type: e.movies_ref.media_type, recency_score: 100 - idx })
+    if (!seedMap.has(key))
+      seedMap.set(key, {
+        tmdb_id: e.movies_ref.tmdb_id,
+        media_type: e.movies_ref.media_type,
+        recency_score: 100 - idx,
+      })
   })
 
   // Prioridad 2: Reseñas propias (lo que le ha impulsado a escribir)
   ownReviews.forEach((e, idx) => {
     const key = `${e.movies_ref.media_type}-${e.movies_ref.tmdb_id}`
-    if (!seedMap.has(key)) seedMap.set(key, { tmdb_id: e.movies_ref.tmdb_id, media_type: e.movies_ref.media_type, recency_score: 90 - idx })
+    if (!seedMap.has(key))
+      seedMap.set(key, {
+        tmdb_id: e.movies_ref.tmdb_id,
+        media_type: e.movies_ref.media_type,
+        recency_score: 90 - idx,
+      })
   })
 
   // Prioridad 3: Bóveda (lo que tiene guardado)
   vaultEntries.forEach((e, idx) => {
     const key = `${e.movies_ref.media_type}-${e.movies_ref.tmdb_id}`
-    if (!seedMap.has(key)) seedMap.set(key, { tmdb_id: e.movies_ref.tmdb_id, media_type: e.movies_ref.media_type, recency_score: 80 - idx })
+    if (!seedMap.has(key))
+      seedMap.set(key, {
+        tmdb_id: e.movies_ref.tmdb_id,
+        media_type: e.movies_ref.media_type,
+        recency_score: 80 - idx,
+      })
   })
 
   // Tomar una mezcla balanceada: Las 4 más recientes + 4 aleatorias del resto para dar variedad
-  const allSeeds = Array.from(seedMap.values()).sort((a, b) => b.recency_score - a.recency_score)
+  const allSeeds = Array.from(seedMap.values()).sort(
+    (a, b) => b.recency_score - a.recency_score
+  )
   const topSeeds = allSeeds.slice(0, 4)
   const restSeeds = allSeeds.slice(4)
   const randomRest = restSeeds.sort(() => Math.random() - 0.5).slice(0, 4)
-  
+
   const seeds = [...topSeeds, ...randomRest]
 
   const recommendedMedia: RecommendationItem[] = []
@@ -107,14 +140,20 @@ export const getPersonalizedFeed = async (viewerId: number, page: number, limit:
     const results = await Promise.all(
       seeds.map(async (seed) => {
         try {
-          const path = seed.media_type === 'movie' 
-            ? `movie/${seed.tmdb_id}/recommendations` 
-            : `tv/${seed.tmdb_id}/recommendations`
-            
+          const path =
+            seed.media_type === "movie"
+              ? `movie/${seed.tmdb_id}/recommendations`
+              : `tv/${seed.tmdb_id}/recommendations`
+
           const data = (await consultarTMDB(path, { page: "1" })) as any
           const items = Array.isArray(data.results) ? data.results : []
-          return items.map((i: any) => ({ ...i, source_media_type: seed.media_type }))
-        } catch { return [] }
+          return items.map((i: any) => ({
+            ...i,
+            source_media_type: seed.media_type,
+          }))
+        } catch {
+          return []
+        }
       })
     )
 
@@ -123,34 +162,41 @@ export const getPersonalizedFeed = async (viewerId: number, page: number, limit:
       const globalKey = `${item.source_media_type}-${item.id}`
       if (seen.has(globalKey)) continue
       seen.add(globalKey)
-      
+
       recommendedMedia.push({
         id: `media-${item.id}`,
         type: "media",
         media: {
           id: item.id,
           title: item.title || item.name || "Sin título",
-          year: (item.release_date || item.first_air_date) 
-            ? Number((item.release_date || item.first_air_date).slice(0, 4)) || null 
-            : null,
+          year:
+            item.release_date || item.first_air_date
+              ? Number(
+                  (item.release_date || item.first_air_date).slice(0, 4)
+                ) || null
+              : null,
           poster_path: item.poster_path || null,
           vote_average: Number(item.vote_average || 0),
-          reason: `Basado en tus ${item.source_media_type === 'movie' ? 'películas' : 'series'} recientes`,
-          media_type: item.source_media_type as "movie" | "tv"
+          reason: `Basado en tus ${item.source_media_type === "movie" ? "películas" : "series"} recientes`,
+          media_type: item.source_media_type as "movie" | "tv",
         },
       })
       if (recommendedMedia.length >= 12) break
     }
   } else {
     // Fallback: Mezcla de populares
-    const [popularMovies, popularTV] = await Promise.all([
+    const [popularMovies, popularTV] = (await Promise.all([
       consultarTMDB("movie/popular", { page: "1", region: "ES" }),
-      consultarTMDB("tv/popular", { page: "1" })
-    ]) as any[]
+      consultarTMDB("tv/popular", { page: "1" }),
+    ])) as any[]
 
     const fallbackItems = [
-      ...(popularMovies.results || []).slice(0, 6).map((i: any) => ({ ...i, type: 'movie' })),
-      ...(popularTV.results || []).slice(0, 6).map((i: any) => ({ ...i, type: 'tv' }))
+      ...(popularMovies.results || [])
+        .slice(0, 6)
+        .map((i: any) => ({ ...i, type: "movie" })),
+      ...(popularTV.results || [])
+        .slice(0, 6)
+        .map((i: any) => ({ ...i, type: "tv" })),
     ]
 
     for (const item of fallbackItems) {
@@ -160,13 +206,16 @@ export const getPersonalizedFeed = async (viewerId: number, page: number, limit:
         media: {
           id: item.id,
           title: item.title || item.name || "Sin título",
-          year: (item.release_date || item.first_air_date) 
-            ? Number((item.release_date || item.first_air_date).slice(0, 4)) || null 
-            : null,
+          year:
+            item.release_date || item.first_air_date
+              ? Number(
+                  (item.release_date || item.first_air_date).slice(0, 4)
+                ) || null
+              : null,
           poster_path: item.poster_path || null,
           vote_average: Number(item.vote_average || 0),
           reason: "Sugerencia global de descubrimiento",
-          media_type: item.type as "movie" | "tv"
+          media_type: item.type as "movie" | "tv",
         },
       })
     }
@@ -174,17 +223,25 @@ export const getPersonalizedFeed = async (viewerId: number, page: number, limit:
 
   // 2. Complementar con reseñas sugeridas de la comunidad
   const tmdbSeedsForReviews = recommendedMedia
-    .map((m) => (m.type === "media" ? { tmdb_id: m.media.id, media_type: m.media.media_type } : null))
-    .filter(Boolean) as { tmdb_id: number, media_type: string }[]
+    .map((m) =>
+      m.type === "media"
+        ? { tmdb_id: m.media.id, media_type: m.media.media_type }
+        : null
+    )
+    .filter(Boolean) as { tmdb_id: number; media_type: string }[]
 
-  const mediaRefCandidates = tmdbSeedsForReviews.length > 0 
-    ? await prisma.movies_ref.findMany({
-        where: {
-          OR: tmdbSeedsForReviews.map(s => ({ tmdb_id: s.tmdb_id, media_type: s.media_type as any }))
-        },
-        select: { id: true },
-      })
-    : []
+  const mediaRefCandidates =
+    tmdbSeedsForReviews.length > 0
+      ? await prisma.movies_ref.findMany({
+          where: {
+            OR: tmdbSeedsForReviews.map((s) => ({
+              tmdb_id: s.tmdb_id,
+              media_type: s.media_type as any,
+            })),
+          },
+          select: { id: true },
+        })
+      : []
 
   const reviewSuggestions = mediaRefCandidates.length
     ? await prisma.reviews.findMany({
@@ -214,11 +271,15 @@ export const getPersonalizedFeed = async (viewerId: number, page: number, limit:
         mode: r.mode,
         created_at: r.created_at.toISOString(),
       },
-      user: { id: r.users.id, username: r.users.username, avatar_url: r.users.avatar_url },
-      media: { 
-        id: r.movies_ref.id, 
+      user: {
+        id: r.users.id,
+        username: r.users.username,
+        avatar_url: r.users.avatar_url,
+      },
+      media: {
+        id: r.movies_ref.id,
         tmdb_id: r.movies_ref.tmdb_id,
-        media_type: r.movies_ref.media_type as "movie" | "tv"
+        media_type: r.movies_ref.media_type as "movie" | "tv",
       },
     })),
   ]
@@ -243,7 +304,7 @@ export const getSuggestedDirectors = async (userId: number) => {
   })
 
   const movieSeeds = refs
-    .filter(e => e.movies_ref.media_type === 'movie')
+    .filter((e) => e.movies_ref.media_type === "movie")
     .map((e) => e.movies_ref.tmdb_id)
     .slice(0, 10)
 
@@ -262,16 +323,33 @@ export const getSuggestedDirectors = async (userId: number) => {
       try {
         const data = (await consultarTMDB(`movie/${id}/credits`)) as any
         return { id, crew: data.crew || [] }
-      } catch { return { id, crew: [] } }
+      } catch {
+        return { id, crew: [] }
+      }
     })
   )
 
-  const byDirector = new Map<string, { id: number, name: string; profile_path: string | null; score: number; movies: number[] }>()
+  const byDirector = new Map<
+    string,
+    {
+      id: number
+      name: string
+      profile_path: string | null
+      score: number
+      movies: number[]
+    }
+  >()
 
   for (const e of credits) {
     for (const p of e.crew) {
       if (p.job !== "Director" || !p.name) continue
-      const prev = byDirector.get(p.name) || { id: p.id, name: p.name, profile_path: p.profile_path || null, score: 0, movies: [] as number[] }
+      const prev = byDirector.get(p.name) || {
+        id: p.id,
+        name: p.name,
+        profile_path: p.profile_path || null,
+        score: 0,
+        movies: [] as number[],
+      }
       prev.score++
       if (!prev.movies.includes(e.id)) prev.movies.push(e.id)
       byDirector.set(p.name, prev)
@@ -303,12 +381,12 @@ export const getTonightMovie = async (
 ) => {
   // 1. Obtener Blacklist y Preferencias de user_taste_profiles
   const tasteProfile = await prisma.user_taste_profiles.findUnique({
-    where: { user_id: userId }
+    where: { user_id: userId },
   })
-  
+
   let vetoedDirectors: string[] = []
   let vetoedGenres: string[] = [] // asumiendo genre IDs as strings if needed
-  
+
   if (tasteProfile && tasteProfile.vetoed_entities) {
     const vetoes = tasteProfile.vetoed_entities as any
     if (vetoes.directors) vetoedDirectors = vetoes.directors
@@ -328,17 +406,17 @@ export const getTonightMovie = async (
       include: { movies_ref: true },
       take: 20,
       orderBy: { watched_date: "desc" },
-    })
+    }),
   ])
 
   const seenMap = new Set([
-    ...vaultEntries.map(e => e.movies_ref.tmdb_id),
-    ...diaryEntries.map(e => e.movies_ref.tmdb_id)
+    ...vaultEntries.map((e) => e.movies_ref.tmdb_id),
+    ...diaryEntries.map((e) => e.movies_ref.tmdb_id),
   ])
 
   const seeds = vaultEntries
-    .filter(e => e.movies_ref.media_type === "movie")
-    .map(e => e.movies_ref.tmdb_id)
+    .filter((e) => e.movies_ref.media_type === "movie")
+    .map((e) => e.movies_ref.tmdb_id)
 
   const isLateNight = localHour >= 22 || localHour < 5
 
@@ -351,9 +429,13 @@ export const getTonightMovie = async (
     const recomms = await Promise.all(
       recentSeeds.map(async (seedId) => {
         try {
-           const data = await consultarTMDB(`movie/${seedId}/recommendations`, { page: "1" }) as any
-           return data.results || []
-        } catch { return [] }
+          const data = (await consultarTMDB(`movie/${seedId}/recommendations`, {
+            page: "1",
+          })) as any
+          return data.results || []
+        } catch {
+          return []
+        }
       })
     )
     candidates = recomms.flat()
@@ -361,13 +443,15 @@ export const getTonightMovie = async (
 
   // Fallback si no hay candidatos
   if (candidates.length === 0) {
-    const backup = await consultarTMDB("movie/top_rated", { page: "1" }) as any
+    const backup = (await consultarTMDB("movie/top_rated", {
+      page: "1",
+    })) as any
     candidates = backup.results || []
   }
 
   // 4. Filtrar y puntuar candidatos
   // Eliminar vistos y sin poster
-  candidates = candidates.filter(c => !seenMap.has(c.id) && c.poster_path)
+  candidates = candidates.filter((c) => !seenMap.has(c.id) && c.poster_path)
 
   let bestCandidate = null
   let bestScore = -9999
@@ -377,38 +461,42 @@ export const getTonightMovie = async (
 
     // Filtro Blacklist: Géneros directos
     if (c.genre_ids && vetoedGenres.length > 0) {
-       // Simplificación: si un item de vetoedGenres hace match, penalizamos
-       const hasVetoedGenre = c.genre_ids.some((id: number) => vetoedGenres.includes(id.toString()))
-       if (hasVetoedGenre) {
-         score -= 50; // Penalización mortal
-       }
+      // Simplificación: si un item de vetoedGenres hace match, penalizamos
+      const hasVetoedGenre = c.genre_ids.some((id: number) =>
+        vetoedGenres.includes(id.toString())
+      )
+      if (hasVetoedGenre) {
+        score -= 50 // Penalización mortal
+      }
     }
 
     // Heurística de Tiempo: Si es Late Night, premiar películas que parecen "intensas pero directas" o penalizar si logramos deducir que son muy largas.
     // Como la API recommendation no da runtime, usamos géneros de atajo.
     // Thriller (53), Horror (27), Action (28), Drama (18), Comedy (35)
     if (isLateNight) {
-       if (c.genre_ids?.includes(27) || c.genre_ids?.includes(53)) {
-         score += 2 // Boost a thriller/horror de madrugada
-       }
+      if (c.genre_ids?.includes(27) || c.genre_ids?.includes(53)) {
+        score += 2 // Boost a thriller/horror de madrugada
+      }
     } else {
-       // Tarde soleada / normal
-       if (weather.includes("rain") || weather.includes("cloud")) {
-         if (c.genre_ids?.includes(18) || c.genre_ids?.includes(9648)) score += 3; // Drama / Misterio
-       } else {
-         if (c.genre_ids?.includes(35) || c.genre_ids?.includes(12)) score += 3; // Comedia / Aventura
-       }
+      // Tarde soleada / normal
+      if (weather.includes("rain") || weather.includes("cloud")) {
+        if (c.genre_ids?.includes(18) || c.genre_ids?.includes(9648)) score += 3 // Drama / Misterio
+      } else {
+        if (c.genre_ids?.includes(35) || c.genre_ids?.includes(12)) score += 3 // Comedia / Aventura
+      }
     }
 
     if (score > bestScore) {
-      bestScore = score;
-      bestCandidate = c;
+      bestScore = score
+      bestCandidate = c
     }
   }
 
   // Si a pesar de todo no hallamos nada (muy raro), devolver un fallback duro
   if (!bestCandidate) {
-    const hardFallback = await consultarTMDB("movie/popular", { page: "1" }) as any
+    const hardFallback = (await consultarTMDB("movie/popular", {
+      page: "1",
+    })) as any
     bestCandidate = (hardFallback.results || [])[0]
   }
 
@@ -419,29 +507,37 @@ export const getTonightMovie = async (
     media: {
       id: bestCandidate?.id,
       title: bestCandidate?.title || bestCandidate?.name,
-      year: bestCandidate?.release_date ? Number(bestCandidate?.release_date.slice(0, 4)) : null,
+      year: bestCandidate?.release_date
+        ? Number(bestCandidate?.release_date.slice(0, 4))
+        : null,
       poster_path: bestCandidate?.poster_path,
       vote_average: bestCandidate?.vote_average,
       media_type: "movie",
-      reason: `Elegida para ti esta noche (${localHour}:00). ${isLateNight ? 'Perfecta para cerrar el día.' : ''}`,
-      weather_context: weather
-    }
+      reason: `Elegida para ti esta noche (${localHour}:00). ${isLateNight ? "Perfecta para cerrar el día." : ""}`,
+      weather_context: weather,
+    },
   }
 }
 
 /**
  * Obtiene películas para el flujo de Onboarding (Tinder-style).
  */
-export const getOnboardingMovies = async (userId: number, step: number, seedId?: number) => {
+export const getOnboardingMovies = async (
+  userId: number,
+  step: number,
+  seedId?: number
+) => {
   // En el onboarding queremos variedad pero también afinamiento.
-  // Si tenemos un seedId y el paso es impar, buscamos algo relacionado. 
+  // Si tenemos un seedId y el paso es impar, buscamos algo relacionado.
   // Si es paso par o no hay seed, buscamos algo genérico de descubrimiento.
-  
+
   let candidates: any[] = []
 
   if (seedId && step % 2 !== 0) {
     try {
-      const data = await consultarTMDB(`movie/${seedId}/recommendations`, { page: "1" }) as any
+      const data = (await consultarTMDB(`movie/${seedId}/recommendations`, {
+        page: "1",
+      })) as any
       candidates = data.results || []
     } catch (e) {
       candidates = []
@@ -451,22 +547,23 @@ export const getOnboardingMovies = async (userId: number, step: number, seedId?:
   if (candidates.length === 0) {
     const categories = ["popular", "top_rated", "upcoming"]
     const cat = categories[step % categories.length]
-    const data = await consultarTMDB(`movie/${cat}`, { page: "1" }) as any
+    const data = (await consultarTMDB(`movie/${cat}`, { page: "1" })) as any
     candidates = data.results || []
   }
-  
+
   // Barajamos un poco para que no sea siempre lo mismo
-  const pick = candidates[Math.floor(Math.random() * Math.min(10, candidates.length))]
-  
+  const pick =
+    candidates[Math.floor(Math.random() * Math.min(10, candidates.length))]
+
   return {
     step,
     movie: {
       id: pick.id,
       title: pick.title,
       poster_path: pick.poster_path,
-      year: pick.release_date ? Number(pick.release_date.slice(0,4)) : null,
-      overview: pick.overview
-    }
+      year: pick.release_date ? Number(pick.release_date.slice(0, 4)) : null,
+      overview: pick.overview,
+    },
   }
 }
 
@@ -485,42 +582,44 @@ export const saveExplicitInteraction = async (
       user_id: userId,
       movie_id: movieId,
       interaction_type: type,
-      metadata: JSON.stringify(metadata)
-    }
+      metadata: JSON.stringify(metadata),
+    },
   })
 
   // 2. Actualizar (o crear) User Taste Profile
   // Simplificación: si es onboarding_love, sumamos afinidad a los géneros de esa película
-  if (['like', 'love'].includes(type)) {
-     try {
-       const movieData = await consultarTMDB(`movie/${movieId}`) as any
-       const genres = movieData.genres || []
-       
-       const profile = await prisma.user_taste_profiles.findUnique({ where: { user_id: userId } })
-       let vector = profile?.affinity_vector ? JSON.parse(profile.affinity_vector as string) : {}
-       
-       for(const g of genres) {
-         vector[g.name] = (vector[g.name] || 0) + (type === 'love' ? 0.3 : 0.1)
-       }
+  if (["like", "love"].includes(type)) {
+    try {
+      const movieData = (await consultarTMDB(`movie/${movieId}`)) as any
+      const genres = movieData.genres || []
 
-       await prisma.user_taste_profiles.upsert({
-         where: { user_id: userId },
-         create: {
-           user_id: userId,
-           affinity_vector: JSON.stringify(vector),
-           vetoed_entities: JSON.stringify({ directors: [], genres: [] }),
-           weather_history: JSON.stringify({})
-         },
-         update: {
-           affinity_vector: JSON.stringify(vector)
-         }
-       })
-     } catch (e) {
-       console.error("Error actualizando perfil de gusto:", e)
-     }
+      const profile = await prisma.user_taste_profiles.findUnique({
+        where: { user_id: userId },
+      })
+      let vector = profile?.affinity_vector
+        ? JSON.parse(profile.affinity_vector as string)
+        : {}
+
+      for (const g of genres) {
+        vector[g.name] = (vector[g.name] || 0) + (type === "love" ? 0.3 : 0.1)
+      }
+
+      await prisma.user_taste_profiles.upsert({
+        where: { user_id: userId },
+        create: {
+          user_id: userId,
+          affinity_vector: JSON.stringify(vector),
+          vetoed_entities: JSON.stringify({ directors: [], genres: [] }),
+          weather_history: JSON.stringify({}),
+        },
+        update: {
+          affinity_vector: JSON.stringify(vector),
+        },
+      })
+    } catch (e) {
+      console.error("Error actualizando perfil de gusto:", e)
+    }
   }
 
   return interaction
 }
-
-

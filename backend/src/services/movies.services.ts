@@ -84,13 +84,29 @@ export const resolveMovieIdFromSlug = async (slug: string) => {
  * Obtiene todos los metadatos necesarios de una película en una sola operación consolidada.
  */
 export const getMovieDetails = async (movieId: number) => {
-  const [detalles, creditos, proveedores, titulos, imagenes] = (await Promise.all([
-    consultarTMDB(`movie/${movieId}`),
-    consultarTMDB(`movie/${movieId}/credits`),
-    consultarTMDB(`movie/${movieId}/watch/providers`, { language: "es-ES" }),
-    consultarTMDB(`movie/${movieId}/alternative_titles`, { language: "" }, { includeDefaultLanguage: false }),
-    consultarTMDB(`movie/${movieId}/images`, { include_image_language: "en,null" }, { includeDefaultLanguage: false }),
-  ])) as [any, any, any, any, any]
+  // 1. Obtener información básica (Crítica/Mandatoria)
+  const detalles = (await consultarTMDB(`movie/${movieId}`)) as any
+
+  // 2. Obtener metadatos secundarios (Resilientes/Opcionales)
+  const [creditos, proveedores, titulos, imagenes]: any[] = await Promise.all([
+    consultarTMDB(`movie/${movieId}/credits`).catch(() => ({
+      cast: [],
+      crew: [],
+    })),
+    consultarTMDB(`movie/${movieId}/watch/providers`, {
+      language: "es-ES",
+    }).catch(() => ({ results: {} })),
+    consultarTMDB(
+      `movie/${movieId}/alternative_titles`,
+      { language: "" },
+      { includeDefaultLanguage: false }
+    ).catch(() => ({ titles: [] })),
+    consultarTMDB(
+      `movie/${movieId}/images`,
+      { include_image_language: "en,null" },
+      { includeDefaultLanguage: false }
+    ).catch(() => ({ backdrops: [], logos: [], posters: [] })),
+  ])
 
   return {
     ...detalles,
@@ -114,4 +130,3 @@ export const getMovieDetails = async (movieId: number) => {
 export const getSimilarMovies = async (movieId: number) => {
   return await consultarTMDB(`movie/${movieId}/similar`, { region: "es" })
 }
-

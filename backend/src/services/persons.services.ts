@@ -9,7 +9,7 @@ import { NotFoundError, ConflictError } from "../errors/AppErrors.js"
 
 /**
  * Garantiza que una persona de TMDB exista en el índice local de CineVault.
- * 
+ *
  * @param tmdbId - ID único de TMDB.
  * @param name - Nombre de la persona.
  * @param profilePath - URL parcial de la imagen de perfil.
@@ -21,7 +21,7 @@ export const ensurePersonRef = async (
 ) => {
   const existing = await prisma.persons_ref.findUnique({
     where: { tmdb_id: tmdbId },
-    select: { id: true }
+    select: { id: true },
   })
 
   if (existing) return existing.id
@@ -30,9 +30,9 @@ export const ensurePersonRef = async (
     data: {
       tmdb_id: tmdbId,
       name,
-      profile_path: profilePath
+      profile_path: profilePath,
     },
-    select: { id: true }
+    select: { id: true },
   })
 
   return created.id
@@ -53,8 +53,8 @@ export const followPersonService = async (
     return await prisma.user_followed_persons.create({
       data: {
         user_id: userId,
-        person_id: personId
-      }
+        person_id: personId,
+      },
     })
   } catch (error) {
     // Si ya lo sigue (restricción única), devolvemos error de conflicto
@@ -68,18 +68,19 @@ export const followPersonService = async (
 export const unfollowPersonService = async (userId: number, tmdbId: number) => {
   const person = await prisma.persons_ref.findUnique({
     where: { tmdb_id: tmdbId },
-    select: { id: true }
+    select: { id: true },
   })
 
-  if (!person) throw new NotFoundError("Persona no encontrada en el índice local")
+  if (!person)
+    throw new NotFoundError("Persona no encontrada en el índice local")
 
   await prisma.user_followed_persons.delete({
     where: {
       user_id_person_id: {
         user_id: userId,
-        person_id: person.id
-      }
-    }
+        person_id: person.id,
+      },
+    },
   })
 }
 
@@ -90,19 +91,22 @@ export const getFollowedPersonsService = async (userId: number) => {
   return prisma.user_followed_persons.findMany({
     where: { user_id: userId },
     include: {
-      persons: true
+      persons: true,
     },
-    orderBy: { followed_at: "desc" }
+    orderBy: { followed_at: "desc" },
   })
 }
 
 /**
  * Verifica si un usuario sigue a una persona específica.
  */
-export const isFollowingPersonService = async (userId: number, tmdbId: number) => {
+export const isFollowingPersonService = async (
+  userId: number,
+  tmdbId: number
+) => {
   const person = await prisma.persons_ref.findUnique({
     where: { tmdb_id: tmdbId },
-    select: { id: true }
+    select: { id: true },
   })
 
   if (!person) return false
@@ -111,9 +115,9 @@ export const isFollowingPersonService = async (userId: number, tmdbId: number) =
     where: {
       user_id_person_id: {
         user_id: userId,
-        person_id: person.id
-      }
-    }
+        person_id: person.id,
+      },
+    },
   })
 
   return !!connection

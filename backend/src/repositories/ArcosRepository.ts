@@ -2,7 +2,7 @@
  * @file ArcosRepository.ts
  * @description Capa de persistencia para el sistema de Arcos Cinematográficos de CineVault.
  * Gestiona la creación, moderación y seguimiento de progreso de colecciones curadas.
- * Utiliza SQL nativo (Prisma.sql) para optimizar consultas de agregación y reportes 
+ * Utiliza SQL nativo (Prisma.sql) para optimizar consultas de agregación y reportes
  * de compromiso de usuarios (engaged users).
  */
 
@@ -93,7 +93,7 @@ type ModerateArcoInput = {
   is_official: boolean
 }
 
-/** 
+/**
  * Fragmento SQL base para la proyección de resúmenes de Arcos.
  * Centraliza la lógica de conteos y proyecciones para evitar inconsistencias.
  */
@@ -280,7 +280,7 @@ export class ArcosRepository {
   }
 
   /**
-   * Gestiona la vinculación de películas a un arco mediante una transacción atómica 
+   * Gestiona la vinculación de películas a un arco mediante una transacción atómica
    * de limpieza y repoblación.
    */
   async replaceArcoMovies(arcoId: number, movies: ArcoMovieInsertInput[]) {

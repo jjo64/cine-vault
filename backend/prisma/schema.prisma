@@ -68,15 +68,20 @@ model movies_ref {
 }
 
 model user_lists {
-  id          Int               @id @default(autoincrement())
-  user_id     Int
-  name        String            @db.VarChar(120)
-  description String?           @db.Text
-  is_public   Boolean           @default(false)
-  created_at  DateTime          @default(now()) @db.Timestamp(0)
-  updated_at  DateTime          @default(now()) @db.Timestamp(0)
-  items       user_list_items[]
-  users       users             @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  id           Int               @id @default(autoincrement())
+  user_id      Int
+  name         String            @db.VarChar(120)
+  description  String?           @db.Text
+  is_public    Boolean           @default(false)
+  is_official  Boolean           @default(false)
+  is_premium   Boolean           @default(false)
+  tags         Json?
+  glow_color   String?           @db.VarChar(50)
+  custom_cover String?           @db.VarChar(500)
+  created_at   DateTime          @default(now()) @db.Timestamp(0)
+  updated_at   DateTime          @default(now()) @db.Timestamp(0)
+  items        user_list_items[]
+  users        users             @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
 
   @@index([user_id], map: "idx_user_lists_user_id")
   @@index([is_public, updated_at], map: "idx_user_lists_public_updated")

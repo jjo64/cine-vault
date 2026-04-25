@@ -1,66 +1,66 @@
 // import TextType from './TextType';
-import { useEffect, useState } from 'react';
-import Landing from '../components/Landing';
-import HomeLogged from '@/components/HomeLogged.tsx';
-import { getCurrentUser } from '../services/authServices';
-import { SeoHead } from '../components/SeoHead';
-import { buildWebSiteSchema } from '../utils/seo/buildMovieSchema';
+import { useEffect, useState } from "react";
+import Landing from "../components/Landing";
+import HomeLogged from "@/components/HomeLogged.tsx";
+import { getCurrentUser } from "../services/authServices";
+import { SeoHead } from "../components/SeoHead";
+import { buildWebSiteSchema } from "../utils/seo/buildMovieSchema";
 
 interface User {
-    username: string;
+  username: string;
 }
 
 const Home: React.FC = () => {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let alive = true
-    let authEpoch = 0
+    let alive = true;
+    let authEpoch = 0;
 
     async function fetchUser(epoch: number) {
       try {
-        const currentUser = await getCurrentUser()
+        const currentUser = await getCurrentUser();
         if (alive && epoch === authEpoch) {
-          setUser(currentUser)
+          setUser(currentUser);
         }
       } catch {
         if (alive && epoch === authEpoch) {
-          setUser(null)
+          setUser(null);
         }
       } finally {
         if (alive && epoch === authEpoch) {
-          setLoading(false)
+          setLoading(false);
         }
       }
     }
 
     const onAuthChange = (event: Event) => {
-      const authEvent = event as CustomEvent<{ authenticated?: boolean }>
+      const authEvent = event as CustomEvent<{ authenticated?: boolean }>;
       if (authEvent.detail?.authenticated === false) {
-        authEpoch += 1
-        setUser(null)
-        setLoading(false)
-        return
+        authEpoch += 1;
+        setUser(null);
+        setLoading(false);
+        return;
       }
 
-      authEpoch += 1
-      const currentEpoch = authEpoch
-      setLoading(true)
-      fetchUser(currentEpoch)
-    }
+      authEpoch += 1;
+      const currentEpoch = authEpoch;
+      setLoading(true);
+      fetchUser(currentEpoch);
+    };
 
-    window.addEventListener('auth-state-changed', onAuthChange)
-    authEpoch += 1
-    fetchUser(authEpoch)
+    window.addEventListener("auth-state-changed", onAuthChange);
+    authEpoch += 1;
+    fetchUser(authEpoch);
 
     return () => {
-      alive = false
-      window.removeEventListener('auth-state-changed', onAuthChange)
-    }
-  }, [])
+      alive = false;
+      window.removeEventListener("auth-state-changed", onAuthChange);
+    };
+  }, []);
 
-  if (loading) return <p>Cargando...</p>
+  if (loading) return <p>Cargando...</p>;
 
   return (
     <>
@@ -68,11 +68,10 @@ const Home: React.FC = () => {
         title="CineVault — El diario cinematográfico que te define"
         description="Guardá películas en tu vault, escribí reseñas, llevá tu diario de cine y recibí una recomendación irrechazable cada noche. Para los que hacen del cine su vida."
         canonical="https://cinevault.art/"
-        structuredData={buildWebSiteSchema('https://cinevault.art')}
+        structuredData={buildWebSiteSchema("https://cinevault.art")}
       />
       {user ? <HomeLogged username={user.username} /> : <Landing />}
     </>
-  )
-
-}
+  );
+};
 export default Home;

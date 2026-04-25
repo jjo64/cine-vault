@@ -1,7 +1,7 @@
 /**
  * @file arcos.routes.ts
  * @description Definición de rutas para el sistema de "Arcos Narrativos".
- * Gestiona la creación, moderación y seguimiento del progreso de colecciones 
+ * Gestiona la creación, moderación y seguimiento del progreso de colecciones
  * temáticas curadas (Story Arcs) por los usuarios.
  */
 

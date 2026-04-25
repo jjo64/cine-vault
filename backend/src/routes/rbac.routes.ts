@@ -1,9 +1,9 @@
 /**
  * @file rbac.routes.ts
  * @description Rutas de Administración y Control de Acceso Basado en Roles (RBAC).
- * Centraliza las operaciones privilegiadas como moderación de contenido, 
+ * Centraliza las operaciones privilegiadas como moderación de contenido,
  * gestión de noticias, reportes y ajuste de roles de usuario.
- * 
+ *
  * @note Las peticiones son delegadas a RbacController tras validar permisos.
  */
 

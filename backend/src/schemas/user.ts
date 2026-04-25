@@ -7,9 +7,9 @@
 
 import { z } from "zod"
 
-/** 
+/**
  * Esquema interno para el registro de nuevos usuarios.
- * Aplica restricciones de longitud y formato sobre el nombre de usuario, 
+ * Aplica restricciones de longitud y formato sobre el nombre de usuario,
  * el correo electrónico y la fortaleza de la contraseña.
  */
 const esquemaUsuario = z.object({
@@ -17,7 +17,10 @@ const esquemaUsuario = z.object({
     .string()
     .trim()
     .min(3, "El nombre de usuario debe tener al menos 3 caracteres"),
-  email: z.string().email("El formato del correo electrónico no es válido").trim(),
+  email: z
+    .string()
+    .email("El formato del correo electrónico no es válido")
+    .trim(),
   password: z
     .string()
     .min(8, "La contraseña debe tener al menos 8 caracteres")
@@ -30,7 +33,7 @@ const esquemaUsuario = z.object({
 /**
  * Función de utilidad para la validación síncrona de datos de usuario.
  * Proporciona una interfaz simplificada para el parseo seguro y la recopilación de errores.
- * 
+ *
  * @param data - Payload con los datos del usuario a validar.
  * @returns Objeto con el estado de la validación y los datos o mensajes de error resultantes.
  */

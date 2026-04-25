@@ -1,7 +1,7 @@
 /**
  * @file AuthTokenRepository.ts
  * @description Repositorio especializado en la gestión de secretos temporales y tokens de flujo.
- * Centraliza la persistencia de tokens para verificación de correo electrónico, 
+ * Centraliza la persistencia de tokens para verificación de correo electrónico,
  * restablecimiento de contraseñas y otros mecanismos de seguridad temporal.
  * Implementa una interfaz contractual para facilitar el desacoplamiento y el testing unitario.
  */
@@ -26,7 +26,7 @@ export interface IAuthTokenRepository {
 export class AuthTokenRepository implements IAuthTokenRepository {
   /**
    * Persiste un nuevo token de flujo (ej: código de registro).
-   * 
+   *
    * @param data - Configuración del token y relación con el usuario.
    * @returns El registro del token creado.
    */
@@ -36,7 +36,7 @@ export class AuthTokenRepository implements IAuthTokenRepository {
 
   /**
    * Busca un token específico basado en filtros complejos (token, tipo, exp.).
-   * 
+   *
    * @param where - Filtros de búsqueda (Prisma Where Input).
    * @returns El token localizado o null si no se encuentra.
    */
@@ -47,9 +47,9 @@ export class AuthTokenRepository implements IAuthTokenRepository {
   }
 
   /**
-   * Elimina registros de tokens. 
+   * Elimina registros de tokens.
    * Útil para invalidar sesiones previas tras un cambio de password exitoso.
-   * 
+   *
    * @param where - Criterios de eliminación.
    * @returns Cantidad de registros afectados.
    */

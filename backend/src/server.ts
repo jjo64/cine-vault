@@ -1,8 +1,8 @@
 /**
  * @file server.ts
  * @description Punto de entrada principal para el backend de CineVault.
- * Configura el servidor Express, orquestra los middlewares de seguridad y 
- * optimización, establece la conexión de WebSockets (Socket.io), 
+ * Configura el servidor Express, orquestra los middlewares de seguridad y
+ * optimización, establece la conexión de WebSockets (Socket.io),
  * define la arquitectura de rutas de la API y arranca las tareas programadas.
  */
 
@@ -76,7 +76,7 @@ const PUERTO = process.env.PORT || 3000
 // Validaciones críticas de entorno antes del arranque
 if (!process.env.JWT_SECRET)
   throw new Error("CRÍTICO: JWT_SECRET no definido en el entorno.")
-if (!process.env.API_KEY_TMDB) 
+if (!process.env.API_KEY_TMDB)
   throw new Error("CRÍTICO: API_KEY_TMDB no definido en el entorno.")
 
 /**
@@ -150,7 +150,10 @@ app.use(
         return callback(null, true)
       }
 
-      console.warn("Seguridad: Intento de acceso bloqueado por CORS desde:", origin)
+      console.warn(
+        "Seguridad: Intento de acceso bloqueado por CORS desde:",
+        origin
+      )
       return callback(new Error("Acceso no permitido por la política CORS"))
     },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
@@ -172,9 +175,18 @@ app.use(cookieParser()) // Habilita la lectura de cookies firmadas
 app.disable("x-powered-by") // Oculta la cabecera Express por seguridad
 
 /**
- * 5. Tareas Programadas y Autenticación
+ * 5. Tareas Programadas, Autenticación y Diagnóstico
  */
 cron.schedule("0 * * * *", limpiarUsuariosNoVerificados) // Mantenimiento cada hora
+
+// Middleware de diagnóstico para depurar 404s en producción
+app.use((req, _res, next) => {
+  if (req.path.startsWith("/api")) {
+    console.log(`[API Request] ${req.method} ${req.path}`)
+  }
+  next()
+})
+
 app.use(passport.initialize())
 
 /**

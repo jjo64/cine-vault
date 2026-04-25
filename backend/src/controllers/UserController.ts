@@ -1,7 +1,7 @@
 /**
  * @file UserController.ts
  * @description Controlador para el ecosistema de Usuarios y Relaciones Sociales.
- * Gestiona perfiles públicos, búsquedas de miembros, grafos de seguimiento 
+ * Gestiona perfiles públicos, búsquedas de miembros, grafos de seguimiento
  * e integración de firmas cinematográficas personalizadas.
  */
 
@@ -33,7 +33,7 @@ export const obtenerUsuarios = async (req: Request, res: Response) => {
 }
 
 /**
- * Recupera el perfil de un usuario por su ID, resolviendo opcionalmente el estado 
+ * Recupera el perfil de un usuario por su ID, resolviendo opcionalmente el estado
  * de seguimiento si el espectador está autenticado.
  */
 export const obtenerUsuarioPorId = async (req: Request, res: Response) => {

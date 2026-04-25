@@ -7,7 +7,7 @@
 
 import { z } from "zod"
 
-/** 
+/**
  * Esquema para la actualización de la Firma Cinematográfica.
  * Permite registrar hitos personales como la película pivotal, el director formativo,
  * escenas inolvidables y años clave en la historia del cine para el usuario.
@@ -33,16 +33,25 @@ export const actualizarFirmaSchema = z
       data.unforgettable_scene_detail !== undefined ||
       data.cinema_turning_year !== undefined ||
       data.cinema_turning_year_detail !== undefined,
-    { message: "Debe proporcionar al menos un campo de la firma para procesar la actualización" }
+    {
+      message:
+        "Debe proporcionar al menos un campo de la firma para procesar la actualización",
+    }
   )
 
-/** 
+/**
  * Esquema para un ítem individual dentro de la Galería Curada.
  * Incluye el identificador de la película, su posición visual y una nota editorial opcional.
  */
 export const curatedGalleryItemSchema = z.object({
-  movie_id: z.coerce.number().int().positive("El identificador de película debe ser un número positivo"),
-  order_index: z.coerce.number().int().min(1, "La posición de orden debe iniciar en 1"),
+  movie_id: z.coerce
+    .number()
+    .int()
+    .positive("El identificador de película debe ser un número positivo"),
+  order_index: z.coerce
+    .number()
+    .int()
+    .min(1, "La posición de orden debe iniciar en 1"),
   note: z
     .string()
     .max(255, "La nota editorial no puede superar los 255 caracteres")
@@ -50,7 +59,7 @@ export const curatedGalleryItemSchema = z.object({
     .nullable(),
 })
 
-/** 
+/**
  * Esquema para la actualización masiva de la Galería Curada.
  * Garantiza que la selección tenga entre 1 y 12 elementos y que los índices de posición sean únicos.
  */
@@ -64,7 +73,10 @@ export const actualizarGaleriaCuradaSchema = z
       const unique = new Set(indices)
       return unique.size === indices.length
     },
-    { message: "Se detectaron posiciones de orden (order_index) duplicadas en la galería" }
+    {
+      message:
+        "Se detectaron posiciones de orden (order_index) duplicadas en la galería",
+    }
   )
 
 // Tipado exportado deducido de los esquemas para uso en la lógica de negocio

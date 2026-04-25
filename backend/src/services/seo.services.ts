@@ -8,7 +8,9 @@ import { prisma } from "../lib/prisma.js"
 import { consultarTMDB } from "../helpers/fetchTMDB.js"
 import { generateSlug } from "../helpers/generateSlug.js"
 
-const SITE_URL = (process.env.PUBLIC_SITE_URL || "https://cinevault.art").replace(/\/$/, "")
+const SITE_URL = (
+  process.env.PUBLIC_SITE_URL || "https://cinevault.art"
+).replace(/\/$/, "")
 
 /**
  * ---------------------------------------------------------------------------

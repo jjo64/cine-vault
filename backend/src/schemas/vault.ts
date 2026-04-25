@@ -1,8 +1,8 @@
 /**
  * @file vault.ts
  * @description Esquemas de validación Zod para el módulo de Bóveda (Vault) y Vault Social.
- * Define las reglas de integridad para el almacenamiento personal de películas ("The Vault") 
- * y la creación de contenidos enriquecidos (reflexiones, ensayos y recomendaciones) 
+ * Define las reglas de integridad para el almacenamiento personal de películas ("The Vault")
+ * y la creación de contenidos enriquecidos (reflexiones, ensayos y recomendaciones)
  * asociados a las obras cinematográficas.
  */
 
@@ -27,9 +27,9 @@ export const eliminarVaultParamsSchema = z.object({
 
 /** Categorías de contenido permitidas dentro del sistema Vault Social */
 export const vaultSocialEntryTypeSchema = z.enum([
-  "reflexion",    // Pensamientos personales sobre una obra
-  "edit",         // Montajes o ediciones visuales
-  "critica",      // Análisis técnico o artístico
+  "reflexion", // Pensamientos personales sobre una obra
+  "edit", // Montajes o ediciones visuales
+  "critica", // Análisis técnico o artístico
   "recomendacion", // Sugerencia curada para la comunidad
 ])
 
@@ -41,12 +41,15 @@ export const listVaultSocialQuerySchema = z.object({
 
 /** Esquema para filtrar publicaciones sociales por el ID de un usuario específico */
 export const vaultSocialUserParamsSchema = z.object({
-  id_user: z.coerce.number().int().positive("El identificador del usuario es inválido"),
+  id_user: z.coerce
+    .number()
+    .int()
+    .positive("El identificador del usuario es inválido"),
 })
 
-/** 
+/**
  * Esquema para la creación de una nueva publicación en Vault Social.
- * Permite adjuntar portadas personalizadas, etiquetas de duración y 
+ * Permite adjuntar portadas personalizadas, etiquetas de duración y
  * vincular opcionalmente la entrada a una película del catálogo.
  */
 export const createVaultSocialEntrySchema = z.object({
@@ -78,7 +81,10 @@ export const createVaultSocialEntrySchema = z.object({
 
 /** Esquema para identificar una entrada específica de Vault Social por su ID */
 export const vaultSocialEntryIdParamsSchema = z.object({
-  id: z.coerce.number().int().positive("El identificador de la entrada es inválido"),
+  id: z.coerce
+    .number()
+    .int()
+    .positive("El identificador de la entrada es inválido"),
 })
 
 /** Esquema para la actualización parcial de una publicación social */

@@ -7,19 +7,25 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  transition: background 0.4s, border-color 0.4s;
+  transition:
+    background 0.4s,
+    border-color 0.4s;
   padding: 0 32px;
   height: 64px;
 }
 
 .navbarDefault {
-  background: linear-gradient(to bottom, rgba(8,8,8,0.97) 0%, transparent 100%);
+  background: linear-gradient(
+    to bottom,
+    rgba(8, 8, 8, 0.97) 0%,
+    transparent 100%
+  );
   backdrop-filter: none;
   border-bottom: 1px solid transparent;
 }
 
 .navbarScrolled {
-  background: rgba(8,8,8,0.97);
+  background: rgba(8, 8, 8, 0.97);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid #252525;
 }
@@ -31,18 +37,18 @@
 }
 
 .logo {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: "Cormorant Garamond", serif;
   font-size: 21px;
   font-weight: 500;
   letter-spacing: 0.13em;
   text-transform: uppercase;
-  color: #E2E2E2;
+  color: #e2e2e2;
   text-decoration: none;
   margin-right: 32px;
 }
 
 .logoAccent {
-  color: #D4AF7A;
+  color: #d4af7a;
 }
 
 .desktopLinks {
@@ -58,17 +64,17 @@
   border: none;
   padding: 6px 10px;
   background: none;
-  font-family: 'Syne', sans-serif;
+  font-family: "Syne", sans-serif;
   font-size: 11px;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  color: #7A7A7A;
+  color: #7a7a7a;
   cursor: pointer;
   transition: color 0.2s;
 }
 
 .navBtn:hover {
-  color: #E2E2E2;
+  color: #e2e2e2;
 }
 
 .right {
@@ -86,7 +92,7 @@
   height: 38px;
   border-radius: 999px;
   border: 1px solid #252525;
-  background: rgba(255,255,255,0.14);
+  background: rgba(255, 255, 255, 0.14);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -98,8 +104,8 @@
   border: none;
   outline: none;
   background: transparent;
-  color: #E2E2E2;
-  font-family: 'Syne', sans-serif;
+  color: #e2e2e2;
+  font-family: "Syne", sans-serif;
   font-size: 12px;
   width: 160px;
 }
@@ -110,7 +116,7 @@
   right: 0;
   width: min(92vw, 420px);
   border: 1px solid #252525;
-  background: rgba(8,8,8,0.98);
+  background: rgba(8, 8, 8, 0.98);
   border-radius: 6px;
   overflow: hidden;
   max-height: 65vh;
@@ -122,7 +128,7 @@
   border: none;
   border-bottom: 1px solid #252525;
   background: transparent;
-  color: #E2E2E2;
+  color: #e2e2e2;
   display: flex;
   align-items: flex-start;
   gap: 10px;
@@ -133,18 +139,18 @@
 }
 
 .searchItem:hover {
-  background: rgba(255,255,255,0.04);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .searchItemTitle {
-  font-family: 'Syne', sans-serif;
+  font-family: "Syne", sans-serif;
   font-size: 12px;
 }
 
 .searchEmpty {
   padding: 10px;
-  color: #7A7A7A;
-  font-family: 'Syne', sans-serif;
+  color: #7a7a7a;
+  font-family: "Syne", sans-serif;
   font-size: 11px;
 }
 
@@ -158,16 +164,18 @@
   height: 36px;
   border: 1px solid #252525;
   background: transparent;
-  color: #7A7A7A;
+  color: #7a7a7a;
   cursor: pointer;
   display: grid;
   place-items: center;
-  transition: border-color 0.2s, color 0.2s;
+  transition:
+    border-color 0.2s,
+    color 0.2s;
 }
 
 .mobileToggle:hover {
-  border-color: #7A7A7A;
-  color: #E2E2E2;
+  border-color: #7a7a7a;
+  color: #e2e2e2;
 }
 
 .mobileDropdown {
@@ -176,7 +184,7 @@
   top: 42px;
   min-width: 170px;
   border: 1px solid #252525;
-  background: rgba(8,8,8,0.98);
+  background: rgba(8, 8, 8, 0.98);
   padding: 8px;
   display: grid;
   gap: 6px;
@@ -186,7 +194,7 @@
   height: 36px;
   border-radius: 999px;
   border: 1px solid #252525;
-  background: rgba(255,255,255,0.08);
+  background: rgba(255, 255, 255, 0.08);
   display: flex;
   align-items: center;
   padding: 0 10px;
@@ -195,10 +203,10 @@
 .mobileNavBtn {
   border: none;
   background: transparent;
-  color: #E2E2E2;
+  color: #e2e2e2;
   text-align: left;
   padding: 8px 10px;
-  font-family: 'Syne', sans-serif;
+  font-family: "Syne", sans-serif;
   font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -207,7 +215,7 @@
 }
 
 .mobileNavBtn:hover {
-  color: #D4AF7A;
+  color: #d4af7a;
 }
 
 .mobileNavBtnDanger {
@@ -227,16 +235,16 @@
   font-size: 11px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #7A7A7A;
+  color: #7a7a7a;
   background: none;
   border: none;
   cursor: pointer;
-  font-family: 'Syne', sans-serif;
+  font-family: "Syne", sans-serif;
   transition: color 0.2s;
 }
 
 .backBtn:hover {
-  color: #E2E2E2;
+  color: #e2e2e2;
 }
 
 .avatarBtn {
@@ -252,7 +260,7 @@
 }
 
 .avatarBtn:hover {
-  border-color: #9A7A48;
+  border-color: #9a7a48;
 }
 
 .avatarFallback {
@@ -260,8 +268,8 @@
   height: 100%;
   display: grid;
   place-items: center;
-  color: #7A7A7A;
-  font-family: 'Syne', sans-serif;
+  color: #7a7a7a;
+  font-family: "Syne", sans-serif;
   font-size: 11px;
 }
 
@@ -271,7 +279,7 @@
   top: 44px;
   min-width: 180px;
   border: 1px solid #252525;
-  background: rgba(8,8,8,0.98);
+  background: rgba(8, 8, 8, 0.98);
   padding: 6px;
 }
 
@@ -279,11 +287,11 @@
   width: 100%;
   border: none;
   background: transparent;
-  color: #E2E2E2;
+  color: #e2e2e2;
   text-align: left;
   padding: 8px 10px;
   cursor: pointer;
-  font-family: 'Syne', sans-serif;
+  font-family: "Syne", sans-serif;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -291,7 +299,7 @@
 }
 
 .dropdownBtn:hover {
-  color: #D4AF7A;
+  color: #d4af7a;
 }
 
 .dropdownBtnDanger {

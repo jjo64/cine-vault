@@ -1,8 +1,8 @@
 /**
  * @file ReportsRepository.ts
  * @description Capa de persistencia para el sistema de moderación y auditoría de contenidos.
- * Gestiona el flujo de denuncias (Report/Abuse) sobre reseñas y comentarios. 
- * Utiliza SQL nativo (Prisma.sql) para realizar proyecciones complejas que integran 
+ * Gestiona el flujo de denuncias (Report/Abuse) sobre reseñas y comentarios.
+ * Utiliza SQL nativo (Prisma.sql) para realizar proyecciones complejas que integran
  * metadatos de denunciantes, sujetos denunciados y moderadores en una sola operación de lectura.
  */
 
@@ -12,8 +12,8 @@ import { prisma } from "../lib/prisma.js"
 /** Ciclo de vida administrativo de una denuncia */
 export type ReportStatus = "pending" | "resolved" | "rejected"
 
-/** 
- * Estructura enriquecida de un reporte para el Panel de Moderación. 
+/**
+ * Estructura enriquecida de un reporte para el Panel de Moderación.
  * Combina la traza de la denuncia con identidades de usuario y contenido sujeto a revisión.
  */
 export type ReportRow = {
@@ -32,7 +32,7 @@ export type ReportRow = {
   resolved_by_user_id: number | null
   /** Nota justificativa de la resolución */
   resolution_note: string | null
-  
+
   // Metadatos de Red (JOINS)
   reporter_username: string | null
   reporter_avatar_url: string | null
@@ -41,8 +41,8 @@ export type ReportRow = {
   review_content: string | null
 }
 
-/** 
- * Fragmento SQL base para las consultas de supervisión. 
+/**
+ * Fragmento SQL base para las consultas de supervisión.
  * Optimiza la recuperación de identidades cruzadas mediante un triple JOIN.
  */
 const REPORTS_BASE_SELECT = Prisma.sql`
@@ -74,7 +74,7 @@ const REPORTS_BASE_SELECT = Prisma.sql`
 export class ReportsRepository {
   /**
    * Genera dinámicamente predicados SQL basados en los filtros de moderación activos.
-   * 
+   *
    * @param status - Estado del flujo deseado o 'all' para vista global.
    * @param reviewId - Filtro opcional para agrupar denuncias sobre una misma obra.
    */
@@ -95,7 +95,7 @@ export class ReportsRepository {
 
   /**
    * Lista y pagina las incidencias reportadas.
-   * Proporciona los metadatos necesarios para que el staff de CineVault pueda 
+   * Proporciona los metadatos necesarios para que el staff de CineVault pueda
    * tomar decisiones de moderación informadas.
    */
   async listReports(params: {
@@ -147,7 +147,7 @@ export class ReportsRepository {
 
   /**
    * Registra una resolución administrativa.
-   * 
+   *
    * @param input - Datos de la resolución, incluyendo el moderador y la nota técnica.
    */
   async moderateReport(input: {

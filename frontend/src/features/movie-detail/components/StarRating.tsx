@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 
 interface StarRatingProps {
   value: number;
@@ -6,16 +6,16 @@ interface StarRatingProps {
 }
 
 const LABELS: Record<string, string> = {
-  '0.5': 'Muy mala, pero viste algo rescatable',
-  '1': 'Muy floja',
-  '1.5': 'Floja, apenas se deja ver',
-  '2': 'Regular tirando a floja',
-  '2.5': 'Pasable',
-  '3': 'Buena',
-  '3.5': 'Muy buena',
-  '4': 'Gran película',
-  '4.5': 'Excelente, casi obra maestra',
-  '5': 'Obra maestra',
+  "0.5": "Muy mala, pero viste algo rescatable",
+  "1": "Muy floja",
+  "1.5": "Floja, apenas se deja ver",
+  "2": "Regular tirando a floja",
+  "2.5": "Pasable",
+  "3": "Buena",
+  "3.5": "Muy buena",
+  "4": "Gran película",
+  "4.5": "Excelente, casi obra maestra",
+  "5": "Obra maestra",
 };
 
 export function StarRating({ value, onChange }: StarRatingProps) {
@@ -23,8 +23,10 @@ export function StarRating({ value, onChange }: StarRatingProps) {
 
   const activeRaw = hover ?? value;
   const active =
-    typeof activeRaw === 'number'
-      ? (Number.isFinite(activeRaw) ? activeRaw : 0)
+    typeof activeRaw === "number"
+      ? Number.isFinite(activeRaw)
+        ? activeRaw
+        : 0
       : Number(activeRaw) || 0;
 
   const getFill = (starIndex: number) => {
@@ -37,8 +39,11 @@ export function StarRating({ value, onChange }: StarRatingProps) {
     setHover(next);
   };
 
-  const labelKey = Number.isInteger(active) ? String(active) : active.toFixed(1);
-  const activeLabel = active > 0 ? LABELS[labelKey] || 'Tu rating' : 'Tu rating';
+  const labelKey = Number.isInteger(active)
+    ? String(active)
+    : active.toFixed(1);
+  const activeLabel =
+    active > 0 ? LABELS[labelKey] || "Tu rating" : "Tu rating";
 
   return (
     <div className="md-star-rating-container">
@@ -47,10 +52,17 @@ export function StarRating({ value, onChange }: StarRatingProps) {
           const fill = getFill(starIndex);
           return (
             <div key={starIndex} className="md-star-item">
-              <span aria-hidden className="md-star-base">★</span>
+              <span aria-hidden className="md-star-base">
+                ★
+              </span>
 
-              <div className="md-star-fill-wrapper" style={{ width: `${fill * 100}%` }}>
-                <span aria-hidden className="md-star-fill">★</span>
+              <div
+                className="md-star-fill-wrapper"
+                style={{ width: `${fill * 100}%` }}
+              >
+                <span aria-hidden className="md-star-fill">
+                  ★
+                </span>
               </div>
 
               <button
@@ -71,9 +83,7 @@ export function StarRating({ value, onChange }: StarRatingProps) {
           );
         })}
       </div>
-      <div className="md-star-label">
-        {activeLabel}
-      </div>
+      <div className="md-star-label">{activeLabel}</div>
     </div>
   );
 }

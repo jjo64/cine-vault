@@ -1,63 +1,86 @@
-import { useMemo, useState } from "react"
-import { AnimatePresence, motion } from "motion/react"
-import { useSocket } from "../context/SocketContext"
+import { useMemo, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { useSocket } from "../context/SocketContext";
 
-type NotificationType = "follow" | "like" | "comment" | "report_resolved" | "review" | "system"
+type NotificationType =
+  | "follow"
+  | "like"
+  | "comment"
+  | "report_resolved"
+  | "review"
+  | "system";
 
 const mensajeNotificacion = (type: NotificationType, username: string) => {
   switch (type) {
-    case "like": return `${username} dio like a tu reseña`
-    case "follow": return `${username} empezó a seguirte`
-    case "comment": return `${username} comentó tu reseña`
-    case "report_resolved": return "Tu reporte ha sido resuelto"
-    default: return "Nueva notificación"
+    case "like":
+      return `${username} dio like a tu reseña`;
+    case "follow":
+      return `${username} empezó a seguirte`;
+    case "comment":
+      return `${username} comentó tu reseña`;
+    case "report_resolved":
+      return "Tu reporte ha sido resuelto";
+    default:
+      return "Nueva notificación";
   }
-}
+};
 
 const formatRelativeDate = (isoDate: string) => {
-  const date = new Date(isoDate)
-  const now = new Date()
-  const diffMs = date.getTime() - now.getTime()
-  const minute = 60 * 1000
-  const hour = 60 * minute
-  const day = 24 * hour
-  const rtf = new Intl.RelativeTimeFormat("es", { numeric: "auto" })
+  const date = new Date(isoDate);
+  const now = new Date();
+  const diffMs = date.getTime() - now.getTime();
+  const minute = 60 * 1000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+  const rtf = new Intl.RelativeTimeFormat("es", { numeric: "auto" });
 
   if (Math.abs(diffMs) < hour) {
-    return rtf.format(Math.round(diffMs / minute), "minute")
+    return rtf.format(Math.round(diffMs / minute), "minute");
   }
 
   if (Math.abs(diffMs) < day) {
-    return rtf.format(Math.round(diffMs / hour), "hour")
+    return rtf.format(Math.round(diffMs / hour), "hour");
   }
 
-  return rtf.format(Math.round(diffMs / day), "day")
-}
+  return rtf.format(Math.round(diffMs / day), "day");
+};
 
 type NotificacionesProps = {
-  open?: boolean
-  showTrigger?: boolean
-}
+  open?: boolean;
+  showTrigger?: boolean;
+};
 
-export const Notificaciones = ({ open, showTrigger = true }: NotificacionesProps) => {
-  const [abiertoInterno, setAbiertoInterno] = useState(false)
-  const { notificaciones, noLeidas, marcarLeida, marcarTodasLeidas, loading } = useSocket()
+export const Notificaciones = ({
+  open,
+  showTrigger = true,
+}: NotificacionesProps) => {
+  const [abiertoInterno, setAbiertoInterno] = useState(false);
+  const { notificaciones, noLeidas, marcarLeida, marcarTodasLeidas, loading } =
+    useSocket();
 
-  const items = useMemo(() => notificaciones, [notificaciones])
-  const abierto = open ?? abiertoInterno
+  const items = useMemo(() => notificaciones, [notificaciones]);
+  const abierto = open ?? abiertoInterno;
 
   return (
     <div style={{ position: "relative" }}>
       {showTrigger && (
         <button
           onClick={() => setAbiertoInterno((prev) => !prev)}
-          aria-label={noLeidas > 0
-            ? `Notificaciones, ${noLeidas} sin leer`
-            : 'Notificaciones'}
+          aria-label={
+            noLeidas > 0
+              ? `Notificaciones, ${noLeidas} sin leer`
+              : "Notificaciones"
+          }
           aria-expanded={abiertoInterno}
           aria-haspopup="true"
           aria-controls="notificaciones-panel"
-          style={{ position: 'relative', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+          style={{
+            position: "relative",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: 0,
+          }}
         >
           <span aria-hidden="true">🔔</span>
           {noLeidas > 0 && (
@@ -82,7 +105,7 @@ export const Notificaciones = ({ open, showTrigger = true }: NotificacionesProps
             </span>
           )}
           <span className="sr-only" aria-live="polite" aria-atomic="true">
-            {noLeidas > 0 ? `${noLeidas} notificaciones sin leer` : ''}
+            {noLeidas > 0 ? `${noLeidas} notificaciones sin leer` : ""}
           </span>
         </button>
       )}
@@ -106,8 +129,24 @@ export const Notificaciones = ({ open, showTrigger = true }: NotificacionesProps
             zIndex: 1000,
           }}
         >
-          <div style={{ padding: "12px 16px", borderBottom: "1px solid #252525", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, color: "#E2E2E2" }}>Notificaciones</span>
+          <div
+            style={{
+              padding: "12px 16px",
+              borderBottom: "1px solid #252525",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <span
+              style={{
+                fontFamily: "'Cormorant Garamond', serif",
+                fontSize: 18,
+                color: "#E2E2E2",
+              }}
+            >
+              Notificaciones
+            </span>
             <button
               onClick={() => marcarTodasLeidas()}
               disabled={noLeidas <= 0}
@@ -124,17 +163,33 @@ export const Notificaciones = ({ open, showTrigger = true }: NotificacionesProps
                 opacity: noLeidas > 0 ? 1 : 0.6,
               }}
             >
-                Marcar todas
-              </button>
+              Marcar todas
+            </button>
           </div>
 
-
           {loading ? (
-            <div style={{ padding: 20, textAlign: "center", color: "#7a7a7a", fontFamily: "'Syne', sans-serif", fontSize: 12 }}>
+            <div
+              style={{
+                padding: 20,
+                textAlign: "center",
+                color: "#7a7a7a",
+                fontFamily: "'Syne', sans-serif",
+                fontSize: 12,
+              }}
+            >
               Cargando...
             </div>
           ) : items.length === 0 ? (
-            <div style={{ padding: 20, textAlign: "center", color: "#7a7a7a", fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontStyle: "italic" }}>
+            <div
+              style={{
+                padding: 20,
+                textAlign: "center",
+                color: "#7a7a7a",
+                fontFamily: "'Cormorant Garamond', serif",
+                fontSize: 18,
+                fontStyle: "italic",
+              }}
+            >
               Sin notificaciones nuevas.
             </div>
           ) : (
@@ -147,12 +202,19 @@ export const Notificaciones = ({ open, showTrigger = true }: NotificacionesProps
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.34, delay: index * 0.04 }}
                   onClick={() => !n.read && marcarLeida(n.id)}
-                  onKeyDown={(e) => { if (!n.read && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); marcarLeida(n.id) } }}
+                  onKeyDown={(e) => {
+                    if (!n.read && (e.key === "Enter" || e.key === " ")) {
+                      e.preventDefault();
+                      marcarLeida(n.id);
+                    }
+                  }}
                   role={!n.read ? "button" : undefined}
                   tabIndex={!n.read ? 0 : undefined}
-                  aria-label={!n.read
-                    ? `Notificación de ${n.sender?.username ?? 'alguien'}: ${mensajeNotificacion(n.type, n.sender?.username ?? 'alguien')}. Presionar para marcar como leída`
-                    : undefined}
+                  aria-label={
+                    !n.read
+                      ? `Notificación de ${n.sender?.username ?? "alguien"}: ${mensajeNotificacion(n.type, n.sender?.username ?? "alguien")}. Presionar para marcar como leída`
+                      : undefined
+                  }
                   style={{
                     padding: "12px 16px",
                     borderBottom: "1px solid #252525",
@@ -162,13 +224,20 @@ export const Notificaciones = ({ open, showTrigger = true }: NotificacionesProps
                     gap: 10,
                     color: n.read ? "#7a7a7a" : "#E2E2E2",
                   }}
-                  whileHover={!n.read ? { backgroundColor: "#1a1a1a" } : undefined}
+                  whileHover={
+                    !n.read ? { backgroundColor: "#1a1a1a" } : undefined
+                  }
                 >
                   {n.sender?.avatar_url ? (
                     <img
                       src={n.sender.avatar_url}
                       alt={`Avatar de ${n.sender.username}`}
-                      style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover" }}
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: "50%",
+                        objectFit: "cover",
+                      }}
                     />
                   ) : (
                     <div
@@ -189,16 +258,39 @@ export const Notificaciones = ({ open, showTrigger = true }: NotificacionesProps
                   )}
 
                   <div style={{ display: "grid", gap: 2 }}>
-                    <p style={{ margin: 0, fontFamily: "'Syne', sans-serif", fontSize: 12 }}>
-                      {mensajeNotificacion(n.type, n.sender?.username ?? "Alguien")}
+                    <p
+                      style={{
+                        margin: 0,
+                        fontFamily: "'Syne', sans-serif",
+                        fontSize: 12,
+                      }}
+                    >
+                      {mensajeNotificacion(
+                        n.type,
+                        n.sender?.username ?? "Alguien",
+                      )}
                     </p>
-                    <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 10, color: "#7a7a7a" }}>
+                    <span
+                      style={{
+                        fontFamily: "'Syne', sans-serif",
+                        fontSize: 10,
+                        color: "#7a7a7a",
+                      }}
+                    >
                       {formatRelativeDate(n.created_at)}
                     </span>
                   </div>
 
                   {!n.read && (
-                    <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#D4AF7A", marginLeft: "auto" }} />
+                    <div
+                      style={{
+                        width: 7,
+                        height: 7,
+                        borderRadius: "50%",
+                        background: "#D4AF7A",
+                        marginLeft: "auto",
+                      }}
+                    />
                   )}
                 </motion.div>
               ))}
@@ -207,5 +299,5 @@ export const Notificaciones = ({ open, showTrigger = true }: NotificacionesProps
         </div>
       )}
     </div>
-  )
-}
+  );
+};

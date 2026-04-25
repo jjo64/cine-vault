@@ -1,17 +1,17 @@
 /**
  * @file NotificationsRepository.ts
  * @description Repositorio encargado de la persistencia y gestión de alertas del sistema.
- * Registra y administra las notificaciones generadas por interacciones sociales 
- * (likes en reseñas, nuevos seguidores, menciones) y eventos de moderación, 
+ * Registra y administra las notificaciones generadas por interacciones sociales
+ * (likes en reseñas, nuevos seguidores, menciones) y eventos de moderación,
  * facilitando un historial cronológico y control de lectura para el usuario.
  */
 
 import { notifications, notifications_type } from "@prisma/client"
 import { prisma } from "../lib/prisma.js"
 
-/** 
+/**
  * Contrato de persistencia para el sistema de notificaciones.
- * Define las operaciones necesarias para el flujo de alertas desde su creación 
+ * Define las operaciones necesarias para el flujo de alertas desde su creación
  * hasta su consumo por el usuario final.
  */
 export interface INotificationsRepository {
@@ -28,7 +28,7 @@ export interface INotificationsRepository {
 
   /**
    * Recupera la cronología de alertas para la vista del centro de notificaciones.
-   * 
+   *
    * @param userId - Destatario de las notificaciones.
    * @param limit - Umbral máximo de registros (Optimización de carga).
    */
@@ -103,9 +103,9 @@ export class NotificationsRepository implements INotificationsRepository {
   }
 
   /**
-   * Ejecuta una operación de actualización masiva sobre todas las alertas 
+   * Ejecuta una operación de actualización masiva sobre todas las alertas
    * pendientes del usuario.
-   * 
+   *
    * @returns El número de notificaciones que han pasado a estado leído.
    */
   async markAllAsRead(userId: number) {

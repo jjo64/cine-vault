@@ -1,8 +1,8 @@
 /**
  * @file validation.middleware.ts
  * @description Fábrica de middlewares para la validación de integridad de datos mediante Esquemas Zod.
- * Proporciona una capa de pre-procesamiento que garantiza que cualquier petición que 
- * alcance los controladores cumpla con los tipos, formatos y reglas de negocio 
+ * Proporciona una capa de pre-procesamiento que garantiza que cualquier petición que
+ * alcance los controladores cumpla con los tipos, formatos y reglas de negocio
  * definidos en la capa de esquemas, inyectando además los valores predeterminados.
  */
 
@@ -19,7 +19,7 @@ const formatZodIssue = (e: ZodIssue) => `${e.path.join(".")}: ${e.message}`
  * Middleware: Validación de Cuerpo (Body).
  * Procesa req.body contra el esquema proporcionado.
  * Reemplaza req.body con el resultado del parseo exitoso (sanitizado).
- * 
+ *
  * @param schema - Esquema Zod de validación.
  */
 export const validarBody =
@@ -39,7 +39,7 @@ export const validarBody =
  * Middleware: Validación de Consulta (Query).
  * Procesa req.query (parámetros de búsqueda, filtros, paginación).
  * Útil para convertir cadenas de URL en tipos numéricos o booleanos de forma segura.
- * 
+ *
  * @param schema - Esquema Zod de validación.
  */
 export const validarQuery =
@@ -63,7 +63,7 @@ export const validarQuery =
  * Middleware: Validación de Parámetros de Ruta (Params).
  * Procesa req.params (ej: /api/movies/:id).
  * Asegura que los identificadores de recursos cumplan con las restricciones técnicas.
- * 
+ *
  * @param schema - Esquema Zod de validación.
  */
 export const validarParams =

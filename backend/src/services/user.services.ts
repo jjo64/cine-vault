@@ -1,7 +1,7 @@
 /**
  * @file user.services.ts
  * @description Capa de servicios para la gestión de Identidad, Perfiles y Relaciones Sociales.
- * Implementa la lógica de negocio para la personalización del perfil, el motor de 
+ * Implementa la lógica de negocio para la personalización del perfil, el motor de
  * seguimiento (social graph), la búsqueda de miembros y la gestión de la "Firma Cinematográfica".
  */
 
@@ -45,7 +45,7 @@ const EMPTY_SIGNATURE = {
 /**
  * Actualiza los datos biográficos y de identidad del usuario.
  * Realiza validaciones de integridad en el nombre de usuario (longitud) y bio.
- * 
+ *
  * @param idUsuario ID del usuario autenticado.
  * @param datos Fragmento de datos a actualizar.
  * @throws ValidationError si los datos no cumplen los requisitos de formato.
@@ -62,7 +62,9 @@ export const actualizarPerfilService = async (
       typeof datos.username !== "string" ||
       datos.username.trim().length < 3
     ) {
-      throw new ValidationError("Nombre de usuario inválido (mínimo 3 caracteres)")
+      throw new ValidationError(
+        "Nombre de usuario inválido (mínimo 3 caracteres)"
+      )
     }
     datosActualizar.username = datos.username.trim()
   }
@@ -76,7 +78,9 @@ export const actualizarPerfilService = async (
 
   if (datos.bio !== undefined) {
     if (typeof datos.bio !== "string" || datos.bio.length > 280) {
-      throw new ValidationError("La biografía excede el límite de 280 caracteres")
+      throw new ValidationError(
+        "La biografía excede el límite de 280 caracteres"
+      )
     }
     datosActualizar.bio = datos.bio
   }
@@ -92,7 +96,9 @@ export const actualizarPerfilService = async (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
     ) {
-      throw new ConflictError("El nombre de usuario ya está siendo utilizado por otro miembro")
+      throw new ConflictError(
+        "El nombre de usuario ya está siendo utilizado por otro miembro"
+      )
     }
     throw error
   }
@@ -152,7 +158,9 @@ export const dejarDeSeguirUsuarioService = async (
   )
 
   if (eliminado.count === 0) {
-    throw new NotFoundError("No existe una relación de seguimiento previa con este usuario")
+    throw new NotFoundError(
+      "No existe una relación de seguimiento previa con este usuario"
+    )
   }
 }
 
@@ -162,7 +170,7 @@ export const dejarDeSeguirUsuarioService = async (
 export const obtenerSeguidoresService = async (id: number) => {
   const usuario = await userProfileRepository.findFollowers(id)
   if (!usuario) throw new NotFoundError("Usuario no encontrado")
-  
+
   return usuario.follows_follows_following_idTousers
     .map((f: any) => f.users_follows_follower_idTousers)
     .filter(Boolean)
@@ -190,7 +198,7 @@ export const obtenerUsuariosService = async () => {
 }
 
 /**
- * Recupera el perfil público de un usuario, incluyendo el estado de seguimiento 
+ * Recupera el perfil público de un usuario, incluyendo el estado de seguimiento
  * relativo a un espectador (viewer).
  */
 export const obtenerUsuarioPorIdService = async (
@@ -213,7 +221,8 @@ export const obtenerUsuarioPorIdService = async (
  */
 export const obtenerUsuarioPorUsernameService = async (username: string) => {
   const normalized = username.trim()
-  if (!normalized) throw new ValidationError("Se requiere un nombre de usuario válido")
+  if (!normalized)
+    throw new ValidationError("Se requiere un nombre de usuario válido")
 
   const usuario = await userProfileRepository.findByUsername(normalized)
   if (!usuario) throw new NotFoundError("Perfil no encontrado")

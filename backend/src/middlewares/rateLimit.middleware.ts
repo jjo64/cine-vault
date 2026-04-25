@@ -1,8 +1,8 @@
 /**
  * @file rateLimit.middleware.ts
  * @description Capa de protección contra abusos de red y ataques de fuerza bruta.
- * Implementa una jerarquía de limitación de tasa (Rate Limiting) con cuatro niveles 
- * de severidad, integrando Redis como almacenamiento distribuido para garantizar 
+ * Implementa una jerarquía de limitación de tasa (Rate Limiting) con cuatro niveles
+ * de severidad, integrando Redis como almacenamiento distribuido para garantizar
  * que los contadores de bloqueo sean persistentes y precisos.
  */
 
@@ -16,7 +16,7 @@ const isProduction = process.env.NODE_ENV === "production"
 
 /**
  * 1. LIMITADOR GLOBAL
- * Aplica una restricción generosa a todos los endpoints para prevenir 
+ * Aplica una restricción generosa a todos los endpoints para prevenir
  * el consumo excesivo de recursos por bots o rastreadores agresivos.
  */
 export const limitadorGlobal = rateLimit({
@@ -30,12 +30,13 @@ export const limitadorGlobal = rateLimit({
   message: {
     error: {
       code: "RATE_LIMIT",
-      message: "Se ha detectado un volumen inusual de peticiones. Inténtelo de nuevo en 15 minutos.",
+      message:
+        "Se ha detectado un volumen inusual de peticiones. Inténtelo de nuevo en 15 minutos.",
     },
   },
 })
 
-/** 
+/**
  * 2. LIMITADOR ESTRICTO (Autenticación)
  * Diseñado específicamente para proteger rutas críticas (Login, 2FA, Registro)
  * contra ataques de fuerza bruta y diccionarios.
@@ -74,7 +75,7 @@ export const limitadorAuth = async (
   }
 }
 
-/** 
+/**
  * 3. LIMITADOR DE ENVÍO DE CORREOS
  * Previene el abuso de los servicios de notificaciones (Spam de verificación de email).
  */
@@ -100,7 +101,8 @@ export const limitadorEmail = async (
     res.status(429).json({
       error: {
         code: "EMAIL_LIMIT",
-        message: "Límite de envío de correos alcanzado. Por favor, espere una hora.",
+        message:
+          "Límite de envío de correos alcanzado. Por favor, espere una hora.",
       },
     })
   }

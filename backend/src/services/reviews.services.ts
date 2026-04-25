@@ -1,12 +1,16 @@
 /**
  * @file reviews.services.ts
  * @description Capa de servicios para la gestión de Críticas, Interacciones Sociales y Moderación.
- * Orquestas el ciclo de vida de las reseñas (creación, edición, borrado), el motor de 
- * interacciones (likes, comentarios), la lógica de reputación (modo crítico) y la 
+ * Orquestas el ciclo de vida de las reseñas (creación, edición, borrado), el motor de
+ * interacciones (likes, comentarios), la lógica de reputación (modo crítico) y la
  * orquestación de notificaciones en tiempo real.
  */
 
-import { reviewsRepository, ReviewCreateData, ReviewUpdateData } from "../repositories/ReviewsRepository.js"
+import {
+  reviewsRepository,
+  ReviewCreateData,
+  ReviewUpdateData,
+} from "../repositories/ReviewsRepository.js"
 import { ReviewMediaType, reports_reason } from "@prisma/client"
 import { emitirNotificacionService } from "./notifications.services.js"
 import { checkAndAwardAutomaticBadges } from "./badges.services.js"
@@ -79,7 +83,10 @@ const resolverMovieRefIdPorSlug = async (
 
   // 1. Priorizar resolución por ID de TMDB si el slug lo contiene
   if (Number.isFinite(tmdbCandidate)) {
-    const byTmdb = await movieRefRepository.findByTmdbId(tmdbCandidate, mediaType)
+    const byTmdb = await movieRefRepository.findByTmdbId(
+      tmdbCandidate,
+      mediaType
+    )
     if (byTmdb) return byTmdb.id
   }
 
@@ -143,7 +150,7 @@ export const obtenerResenasPorPeliculaService = async (
     await getCache<Awaited<ReturnType<typeof reviewsRepository.findByMovieId>>>(
       cacheKey
     )
-    
+
   if (cached) return cached
 
   const resenas = await reviewsRepository.findByMovieId(resolvedMovieId)
@@ -154,7 +161,10 @@ export const obtenerResenasPorPeliculaService = async (
 /**
  * Orquestas la creación de una reseña, validando permisos y unicidad (máximo una reseña por película/usuario).
  */
-export const crearResenaService = async (userId: number, data: CrearResenaDTO) => {
+export const crearResenaService = async (
+  userId: number,
+  data: CrearResenaDTO
+) => {
   const usuario = await userRepository.findById(userId)
   if (!usuario) throw new NotFoundError("Usuario no encontrado")
 
@@ -168,7 +178,7 @@ export const crearResenaService = async (userId: number, data: CrearResenaDTO) =
   const normalized = normalizeReviewPayload(data)
   const mediaType = (normalized.media_type as ReviewMediaType) || "movie"
   const movieId = await ensureMovieRefId(data.movie_id, mediaType)
-  
+
   const existente = await reviewsRepository.findByUserAndMovie(userId, movieId)
   if (existente) {
     throw new ConflictError("Ya tienes una reseña para esta película")
@@ -182,10 +192,13 @@ export const crearResenaService = async (userId: number, data: CrearResenaDTO) =
   } as ReviewCreateData)
 
   await invalidateResenaCache(movieId)
-  
+
   // Gamificación: Evaluar logros tras publicar la reseña
-  checkAndAwardAutomaticBadges(userId).catch(err => {
-    console.error("[Gamificación] Error al procesar insignias post-reseña:", err)
+  checkAndAwardAutomaticBadges(userId).catch((err) => {
+    console.error(
+      "[Gamificación] Error al procesar insignias post-reseña:",
+      err
+    )
   })
 
   return resena
@@ -202,7 +215,7 @@ export const actualizarResenaService = async (
   const id = asegurarId(reviewId)
   const resena = await reviewsRepository.findById(reviewId)
   if (!resena) throw new NotFoundError("Reseña no encontrada")
-  
+
   if (resena.user_id !== userId) {
     throw new ForbiddenError("No tienes permiso para editar esta reseña")
   }
@@ -221,7 +234,7 @@ export const actualizarResenaService = async (
     id,
     normalizeReviewPayload(data) as ReviewUpdateData
   )
-  
+
   await invalidateResenaCache(resena.movie_id)
   return updated
 }
@@ -236,7 +249,7 @@ export const eliminarResenaService = async (
   const id = asegurarId(reviewId)
   const resena = await reviewsRepository.findById(id)
   if (!resena) throw new NotFoundError("Reseña no encontrada")
-  
+
   if (resena.user_id !== userId) {
     throw new ForbiddenError("No tienes permiso para eliminar esta reseña")
   }
@@ -256,8 +269,12 @@ export const reportarResenaService = async (
   const id = asegurarId(reviewId)
   const resena = await reviewsRepository.findById(id)
   if (!resena) throw new NotFoundError("Reseña no encontrada")
-  
-  return reviewsRepository.createReport(userId, id, data.reason as reports_reason)
+
+  return reviewsRepository.createReport(
+    userId,
+    id,
+    data.reason as reports_reason
+  )
 }
 
 // --- Servicios de Métricas y Agregados ---
@@ -292,7 +309,7 @@ export const darLikeResenaService = async (
     userId,
     id
   )
-  
+
   await invalidateResenaCache(review.movie_id)
 
   // Desacoplamiento de eventos secundarios hacia el motor de notificaciones
@@ -301,13 +318,16 @@ export const darLikeResenaService = async (
       user_id: review.user_id,
       sender_id: userId,
       type: "like",
-      metadata: { 
-        review_id: review.id, 
+      metadata: {
+        review_id: review.id,
         movie_id: review.movie_id,
-        media_type: review.media_type 
-      }
-    }).catch(err => {
-      console.error("[Notificaciones] Fallo al emitir notificación de like:", err)
+        media_type: review.media_type,
+      },
+    }).catch((err) => {
+      console.error(
+        "[Notificaciones] Fallo al emitir notificación de like:",
+        err
+      )
     })
   }
 
@@ -324,7 +344,7 @@ export const quitarLikeResenaService = async (
   const id = asegurarId(reviewId)
   const likeExistente = await reviewsRepository.findLike(userId, id)
   if (!likeExistente) throw new NotFoundError("No has dado like a esta reseña")
-  
+
   const result = await reviewsRepository.removeLikeTransaction(userId, id)
   await invalidateResenaCache(result.review.movie_id)
   return result
@@ -360,12 +380,12 @@ export const crearComentarioService = async (
       user_id: resena.user_id,
       sender_id: userId,
       type: "comment",
-      metadata: { 
-        review_id: resena.id, 
+      metadata: {
+        review_id: resena.id,
         movie_id: resena.movie_id,
         media_type: resena.media_type,
-        comment_id: comentario.id 
-      }
+        comment_id: comentario.id,
+      },
     }).catch((err) => {
       console.error(
         "[Notificaciones] Fallo al emitir notificación de comentario:",
@@ -387,7 +407,7 @@ export const actualizarComentarioService = async (
 ) => {
   const comentario = await reviewsRepository.findCommentById(commentId)
   if (!comentario) throw new NotFoundError("Comentario no encontrado")
-  
+
   if (comentario.user_id !== userId) {
     throw new ForbiddenError("No tienes permiso para editar este comentario")
   }
@@ -404,7 +424,7 @@ export const eliminarComentarioService = async (
 ) => {
   const comentario = await reviewsRepository.findCommentById(commentId)
   if (!comentario) throw new NotFoundError("Comentario no encontrado")
-  
+
   if (comentario.user_id !== userId) {
     throw new ForbiddenError("No tienes permiso para eliminar este comentario")
   }
@@ -429,7 +449,7 @@ export const obtenerResenaPorUsernameYMovieSlugService = async (
     usuario.id,
     movieRefId
   )
-  
+
   if (!review) throw new NotFoundError("Reseña no encontrada")
   return review
 }

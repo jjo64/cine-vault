@@ -1,7 +1,7 @@
 /**
  * @file reports.services.ts
  * @description Capa de servicios para el sistema de moderación y reportes de CineVault.
- * Permite a la administración listar incidentes, consultar detalles de infracciones 
+ * Permite a la administración listar incidentes, consultar detalles de infracciones
  * y ejecutar acciones de moderación (resolución de reportes) sobre el contenido.
  */
 
@@ -15,7 +15,7 @@ import { ListReportsQueryDTO, ModerateReportDTO } from "../schemas/reports.js"
 // --- Funciones de Utilidad Interna ---
 
 /**
- * Transforma una fila cruda de reporte de la base de datos a un objeto de dominio 
+ * Transforma una fila cruda de reporte de la base de datos a un objeto de dominio
  * estructurado con metadatos de reportero y reseña.
  */
 const mapReport = (row: ReportRow) => ({
@@ -82,7 +82,7 @@ export const getReportDetailService = async (reportId: number) => {
 /**
  * Ejecuta una acción de moderación sobre un reporte pendiente.
  * Valida que el reporte esté en estado 'pending' antes de aplicar la resolución.
- * 
+ *
  * @param reviewerId ID del moderador que resuelve el reporte.
  * @param reportId ID del reporte a moderar.
  * @param data Datos de la resolución (estado, nota explicativa).

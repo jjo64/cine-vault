@@ -1,188 +1,347 @@
-import { authorizedFetch, getStoredAccessToken } from './authServices'
+import { authorizedFetch, getStoredAccessToken } from "./authServices";
 
-const API_URL = String(import.meta.env.VITE_API_URL || 'https://cine-vault-ncuh.onrender.com').trim().replace(/\/+$/, '')
+const API_URL = String(
+  import.meta.env.VITE_API_URL || "https://cine-vault-ncuh.onrender.com",
+)
+  .trim()
+  .replace(/\/+$/, "");
 
 type FetchOptions = {
-  token?: string | null
-}
+  token?: string | null;
+};
 
-async function requestJson<T>(path: string, options: FetchOptions = {}): Promise<T> {
+async function requestJson<T>(
+  path: string,
+  options: FetchOptions = {},
+): Promise<T> {
   const response = await (options.token !== undefined
-    ? authorizedFetch(path, { method: 'GET' })
-    : fetch(`${API_URL}${path}`, { method: 'GET', credentials: 'include' }))
+    ? authorizedFetch(path, { method: "GET" })
+    : fetch(`${API_URL}${path}`, { method: "GET", credentials: "include" }));
 
   if (!response.ok) {
-    const message = await response.text()
-    throw new Error(message || `Error ${response.status}`)
+    const message = await response.text();
+    throw new Error(message || `Error ${response.status}`);
   }
 
-  return (await response.json()) as T
+  return (await response.json()) as T;
 }
 
 export type ActivityItem = {
-  id: string
-  type: 'review_published' | 'diary_entry' | 'vault_added' | 'watchlist_added' | 'review_liked' | 'follow'
-  created_at: string
+  id: string;
+  type:
+    | "review_published"
+    | "diary_entry"
+    | "vault_added"
+    | "watchlist_added"
+    | "review_liked"
+    | "follow";
+  created_at: string;
   user: {
-    id: number
-    username: string
-    avatar_url: string | null
-  }
+    id: number;
+    username: string;
+    avatar_url: string | null;
+  };
   movie?: {
-    id: number
-    tmdb_id: number
-  }
+    id: number;
+    tmdb_id: number;
+    title?: string;
+    poster_path?: string | null;
+    media_type?: "movie" | "tv";
+  };
   review?: {
-    id: number
-    content: string | null
-    rating: number | null
-  }
+    id: number;
+    content: string | null;
+    rating: number | null;
+  };
   target_user?: {
-    id: number
-    username: string
-    avatar_url: string | null
-  }
-}
+    id: number;
+    username: string;
+    avatar_url: string | null;
+  };
+};
 
 export type ActivityResponse = {
-  page: number
-  limit: number
-  total: number
-  has_more: boolean
-  items: ActivityItem[]
-}
+  page: number;
+  limit: number;
+  total: number;
+  has_more: boolean;
+  items: ActivityItem[];
+};
+
+export type FeedApiItem = {
+  id: string;
+  type: "review" | "vault" | "watchlist";
+  created_at: string;
+  liked: boolean;
+  bookmarked: boolean;
+  hidden: boolean;
+  user: {
+    id: number;
+    username: string;
+    avatar_url: string | null;
+  };
+  movie?: {
+    id: number;
+    tmdb_id: number;
+    media_type: "movie" | "tv";
+  };
+  review?: {
+    id: number;
+    content: string | null;
+    rating: number | null;
+    mode: string;
+    likes: number;
+  };
+};
+
+export type FeedResponse = {
+  page: number;
+  limit: number;
+  total: number;
+  has_more: boolean;
+  items: FeedApiItem[];
+};
 
 export type ForYouMovieItem = {
-  id: string
-  type: 'media'
+  id: string;
+  type: "media";
   media: {
-    id: number
-    title: string
-    year: number | null
-    poster_path: string | null
-    vote_average: number
-    reason: string
-    media_type: "movie" | "tv"
-  }
-}
+    id: number;
+    title: string;
+    year: number | null;
+    poster_path: string | null;
+    vote_average: number;
+    reason: string;
+    media_type: "movie" | "tv";
+  };
+};
 
 export type ForYouReviewItem = {
-  id: string
-  type: 'review'
+  id: string;
+  type: "review";
   review: {
-    id: number
-    content: string | null
-    rating: number | null
-    mode: string
-    created_at: string
-  }
+    id: number;
+    content: string | null;
+    rating: number | null;
+    mode: string;
+    created_at: string;
+  };
   user: {
-    id: number
-    username: string
-    avatar_url: string | null
-  }
+    id: number;
+    username: string;
+    avatar_url: string | null;
+  };
   media: {
-    id: number
-    tmdb_id: number
-  }
-}
+    id: number;
+    tmdb_id: number;
+  };
+};
 
-export type ForYouItem = ForYouMovieItem | ForYouReviewItem
+export type ForYouItem = ForYouMovieItem | ForYouReviewItem;
 
 export type ForYouResponse = {
-  page: number
-  limit: number
-  total: number
-  has_more: boolean
-  items: ForYouItem[]
-}
+  page: number;
+  limit: number;
+  total: number;
+  has_more: boolean;
+  items: ForYouItem[];
+};
 
-export const fetchActivityFeed = async (type: 'friends' | 'own', page = 1, limit = 20) => {
-  const token = getStoredAccessToken()
-  return requestJson<ActivityResponse>(`/api/activity/feed?type=${type}&page=${page}&limit=${limit}`, { token })
-}
+export const fetchActivityFeed = async (
+  type: "friends" | "own",
+  page = 1,
+  limit = 20,
+) => {
+  const token = getStoredAccessToken();
+  return requestJson<ActivityResponse>(
+    `/api/activity/feed?type=${type}&page=${page}&limit=${limit}`,
+    { token },
+  );
+};
 
 export const fetchForYouFeed = async (page = 1) => {
-  const token = getStoredAccessToken()
-  return requestJson<ForYouResponse>(`/api/recommendations/for-you?page=${page}`, { token })
-}
+  const token = getStoredAccessToken();
+  return requestJson<ForYouResponse>(
+    `/api/recommendations/for-you?page=${page}`,
+    { token },
+  );
+};
 
 export const fetchGlobalFeed = async (page = 1, limit = 10) => {
-  const token = getStoredAccessToken()
-  return requestJson(`/api/feed?page=${page}&limit=${limit}`, { token })
+  const token = getStoredAccessToken();
+  return requestJson<FeedResponse>(`/api/feed?page=${page}&limit=${limit}`, {
+    token,
+  });
+};
+
+type FeedActionBody = {
+  item_ref: string;
+  active?: boolean;
+  channel?: string;
+};
+
+async function postAuthorizedJson<T>(
+  path: string,
+  body: Record<string, unknown>,
+): Promise<T> {
+  const response = await authorizedFetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || `Error ${response.status}`);
+  }
+
+  if (response.status === 204) return {} as T;
+  return (await response.json()) as T;
 }
+
+export const setFeedLike = async (payload: FeedActionBody) =>
+  postAuthorizedJson<{ item_ref: string; active: boolean; likes?: number }>(
+    "/api/feed/actions/like",
+    payload,
+  );
+
+export const setFeedBookmark = async (payload: FeedActionBody) =>
+  postAuthorizedJson<{ item_ref: string; active: boolean }>(
+    "/api/feed/actions/bookmark",
+    payload,
+  );
+
+export const setFeedHide = async (payload: FeedActionBody) =>
+  postAuthorizedJson<{ item_ref: string; active: boolean }>(
+    "/api/feed/actions/hide",
+    payload,
+  );
+
+export const trackFeedShare = async (payload: FeedActionBody) =>
+  postAuthorizedJson<{ item_ref: string; tracked: boolean }>(
+    "/api/feed/actions/share",
+    payload,
+  );
+
+export type ReviewComment = {
+  id: number;
+  review_id: number;
+  user_id: number;
+  content: string;
+  created_at: string;
+  updated_at?: string;
+  user?: {
+    id: number;
+    username: string;
+    avatar_url: string | null;
+  };
+};
+
+export const fetchReviewComments = async (reviewId: number) =>
+  requestJson<ReviewComment[]>(`/api/reviews/${reviewId}/comments`);
+
+export const createReviewComment = async (reviewId: number, content: string) =>
+  postAuthorizedJson<ReviewComment>(`/api/reviews/${reviewId}/comments`, {
+    content,
+  });
+
+export const reportReview = async (reviewId: number, reason: string) =>
+  postAuthorizedJson<{ message?: string }>(`/api/reviews/${reviewId}/report`, {
+    reason,
+  });
 
 export type SuggestedDirector = {
-  id: number
-  name: string
-  profile_path: string | null
-  score: number
-  reason: string
-  source: string
-  movie_tmdb_ids: number[]
-}
+  id: number;
+  name: string;
+  profile_path: string | null;
+  score: number;
+  reason: string;
+  source: string;
+  movie_tmdb_ids: number[];
+};
 
-export const fetchSuggestedDirectors = async (): Promise<{ items: SuggestedDirector[] }> => {
-  const token = getStoredAccessToken()
-  return requestJson<{ items: SuggestedDirector[] }>(`/api/recommendations/directors`, { token })
-}
+export const fetchSuggestedDirectors = async (): Promise<{
+  items: SuggestedDirector[];
+}> => {
+  const token = getStoredAccessToken();
+  return requestJson<{ items: SuggestedDirector[] }>(
+    `/api/recommendations/directors`,
+    { token },
+  );
+};
 
 export type TonightResponse = {
-  id: string
-  type: 'tonight'
+  id: string;
+  type: "tonight";
   media: {
-    id: number
-    title: string
-    year: number | null
-    poster_path: string | null
-    vote_average: number | null
-    media_type: 'movie'
-    reason: string
-    weather_context: string
-  }
-}
+    id: number;
+    title: string;
+    year: number | null;
+    poster_path: string | null;
+    vote_average: number | null;
+    media_type: "movie";
+    reason: string;
+    weather_context: string;
+  };
+};
 
 export const fetchTonightMovie = async (hour?: number, weather?: string) => {
-  const token = getStoredAccessToken()
-  let params = new URLSearchParams()
-  if (hour) params.append('hour', hour.toString())
-  if (weather) params.append('weather', weather)
-  return requestJson<TonightResponse>(`/api/recommendations/tonight?${params.toString()}`, { token })
-}
+  const token = getStoredAccessToken();
+  const params = new URLSearchParams();
+  if (hour) params.append("hour", hour.toString());
+  if (weather) params.append("weather", weather);
+  return requestJson<TonightResponse>(
+    `/api/recommendations/tonight?${params.toString()}`,
+    { token },
+  );
+};
 
 /**
  * Onboarding
  */
 
 export type OnboardingMovie = {
-  step: number
+  step: number;
   movie: {
-    id: number
-    title: string
-    poster_path: string | null
-    year: number | null
-    overview: string
-  }
-}
+    id: number;
+    title: string;
+    poster_path: string | null;
+    year: number | null;
+    overview: string;
+  };
+};
 
-export const fetchOnboardingStatus = async (): Promise<{ needs_onboarding: boolean }> => {
-  const token = getStoredAccessToken()
-  return requestJson<{ needs_onboarding: boolean }>(`/api/recommendations/onboarding/status`, { token })
-}
+export const fetchOnboardingStatus = async (): Promise<{
+  needs_onboarding: boolean;
+}> => {
+  const token = getStoredAccessToken();
+  return requestJson<{ needs_onboarding: boolean }>(
+    `/api/recommendations/onboarding/status`,
+    { token },
+  );
+};
 
-export const fetchOnboardingMovie = async (step: number, seedId?: number): Promise<OnboardingMovie> => {
-  const token = getStoredAccessToken()
-  let url = `/api/recommendations/onboarding?step=${step}`
-  if (seedId) url += `&seedId=${seedId}`
-  return requestJson<OnboardingMovie>(url, { token })
-}
+export const fetchOnboardingMovie = async (
+  step: number,
+  seedId?: number,
+): Promise<OnboardingMovie> => {
+  const token = getStoredAccessToken();
+  let url = `/api/recommendations/onboarding?step=${step}`;
+  if (seedId) url += `&seedId=${seedId}`;
+  return requestJson<OnboardingMovie>(url, { token });
+};
 
-export const sendOnboardingInteraction = async (movieId: number, type: string, metadata: any = {}) => {
+export const sendOnboardingInteraction = async (
+  movieId: number,
+  type: string,
+  metadata: Record<string, unknown> = {},
+) => {
   const response = await authorizedFetch(`/api/recommendations/interact`, {
-    method: 'POST',
-    body: JSON.stringify({ movieId, type, metadata })
-  })
-  if (!response.ok) throw new Error("No se pudo guardar la interacción")
-  return await response.json()
-}
+    method: "POST",
+    body: JSON.stringify({ movieId, type, metadata }),
+  });
+  if (!response.ok) throw new Error("No se pudo guardar la interacción");
+  return await response.json();
+};
 
+export const sendRecommendationInteraction = sendOnboardingInteraction;

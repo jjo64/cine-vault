@@ -50,7 +50,10 @@ export const getFollowedPersons = async (req: Request, res: Response) => {
 export const checkFollowingStatus = async (req: Request, res: Response) => {
   const userId = req.user!.user_id
   const { tmdbId } = req.params as unknown as UnfollowParamsDTO
-  
-  const isFollowing = await personsService.isFollowingPersonService(userId, tmdbId)
+
+  const isFollowing = await personsService.isFollowingPersonService(
+    userId,
+    tmdbId
+  )
   res.json({ isFollowing })
 }

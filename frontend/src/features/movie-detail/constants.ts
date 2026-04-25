@@ -1,33 +1,33 @@
 export const C = {
-  bg: '#080808',
-  surface: '#111111',
-  elevated: '#1A1A1A',
-  border: '#252525',
-  accent: '#D4AF7A',
-  accentDim: '#9A7A48',
-  accentGlow: 'rgba(212,175,122,0.10)',
-  accentGlowStrong: 'rgba(212,175,122,0.18)',
-  text: '#E2E2E2',
-  textSoft: '#A1A1A1',
-  textMuted: '#B0B0B0',
-  gold: '#C8A96E',
+  bg: "#080808",
+  surface: "#111111",
+  elevated: "#1A1A1A",
+  border: "#252525",
+  accent: "#D4AF7A",
+  accentDim: "#9A7A48",
+  accentGlow: "rgba(212,175,122,0.10)",
+  accentGlowStrong: "rgba(212,175,122,0.18)",
+  text: "#E2E2E2",
+  textSoft: "#A1A1A1",
+  textMuted: "#B0B0B0",
+  gold: "#C8A96E",
 } as const;
 
 export const SERIF = "'Cormorant Garamond', serif";
 export const SANS = "'Syne', sans-serif";
-export const TMDB_BASE = 'https://image.tmdb.org/t/p/';
+export const TMDB_BASE = "https://image.tmdb.org/t/p/";
 
 export const SIZES = {
-  BACKDROP: 'w1280',
-  POSTER: 'w342',
-  STILL: 'w780',
-  PROFILE: 'w185',
+  BACKDROP: "w1280",
+  POSTER: "w342",
+  STILL: "w780",
+  PROFILE: "w185",
 };
 
 export const REVIEW_DIMENSIONS = [
-  { key: 'direccion', label: 'Direccion' },
-  { key: 'guion', label: 'Guion' },
-  { key: 'fotografia', label: 'Foto' },
-  { key: 'actuaciones', label: 'Actuacion' },
-  { key: 'bandaSonora', label: 'Banda' },
+  { key: "direccion", label: "Direccion" },
+  { key: "guion", label: "Guion" },
+  { key: "fotografia", label: "Foto" },
+  { key: "actuaciones", label: "Actuacion" },
+  { key: "bandaSonora", label: "Banda" },
 ] as const;

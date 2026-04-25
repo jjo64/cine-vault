@@ -1,7 +1,7 @@
 /**
  * @file CinematographicSignatureRepository.ts
  * @description Repositorio encargado de gestionar la "Firma Cinematográfica" (Identidad Cinéfila).
- * Persiste los pilares narrativos que definen el gusto del usuario: películas clave, 
+ * Persiste los pilares narrativos que definen el gusto del usuario: películas clave,
  * directores fundamentales, escenas inolvidables y momentos de inflexión.
  * Implementa una lógica de actualización atómica (Upsert) para sincronizar el perfil.
  */
@@ -9,7 +9,7 @@
 import { prisma } from "../lib/prisma.js"
 import type { ActualizarFirmaDTO } from "../schemas/profile.js"
 
-/** 
+/**
  * Estructura de datos que representa la identidad cinematográfica en la base de datos.
  * Cada campo se compone de un título/nombre y un detalle explicativo.
  */
@@ -32,7 +32,7 @@ export interface FirmaRow {
   updated_at?: Date | null
 }
 
-/** 
+/**
  * Fábrica de firmas neutrales.
  * Se utiliza para inicializar perfiles que aún no han definido su identidad.
  */
@@ -55,9 +55,9 @@ const FIRMA_VACIA = (userId: number): FirmaRow => ({
 export const cinematographicSignatureRepository = {
   /**
    * Recupera la firma de identidad vinculada a una cuenta.
-   * Si el usuario no ha completado su firma, devuelve una estructura con valores nulos 
+   * Si el usuario no ha completado su firma, devuelve una estructura con valores nulos
    * para mantener la consistencia en el frontend.
-   * 
+   *
    * @param userId - ID único del usuario.
    */
   async findByUserId(userId: number): Promise<FirmaRow> {
@@ -69,7 +69,7 @@ export const cinematographicSignatureRepository = {
 
   /**
    * Persiste o actualiza la configuración de identidad cinematográfica.
-   * 
+   *
    * @param userId - Propietario de la firma.
    * @param data - DTO con los campos validados de la firma.
    */

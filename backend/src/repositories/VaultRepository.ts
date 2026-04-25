@@ -1,9 +1,9 @@
 /**
  * @file VaultRepository.ts
- * @description Repositorio maestro para la gestión de la "Bóveda" (Vault). 
- * Administra tanto la colección física de películas como el componente editorial 
- * ("Vault Social") donde los usuarios publican reflexiones, críticas y recomendaciones. 
- * Combina la eficiencia de Prisma para CRUD básico con SQL nativo para JOINS complejos 
+ * @description Repositorio maestro para la gestión de la "Bóveda" (Vault).
+ * Administra tanto la colección física de películas como el componente editorial
+ * ("Vault Social") donde los usuarios publican reflexiones, críticas y recomendaciones.
+ * Combina la eficiencia de Prisma para CRUD básico con SQL nativo para JOINS complejos
  * e hidratación concurrente de metadatos externos de TMDB.
  */
 
@@ -13,8 +13,8 @@ import { consultarTMDB } from "../helpers/fetchTMDB.js"
 
 // --- Definiciones de Tipado y Contratos ---
 
-/** 
- * Entrada de la bóveda hidratada para la capa de presentación. 
+/**
+ * Entrada de la bóveda hidratada para la capa de presentación.
  * Fusiona el registro local con arte gráfico y metadatos de TMDB.
  */
 export interface RichVaultEntry {
@@ -30,16 +30,16 @@ export interface RichVaultEntry {
   added_at: Date | null
 }
 
-/** 
+/**
  * Taxonomía de contenidos editoriales permitidos en el Vault Social.
  */
 export type VaultSocialEntryType =
-  | "reflexion"      // Pensamientos breves sobre una obra
-  | "edit"           // Contenido audiovisual o montajes vinculados
-  | "critica"        // Análisis profundo (distinto del rating rápido)
-  | "recomendacion"  // Prescripción directa a la comunidad
+  | "reflexion" // Pensamientos breves sobre una obra
+  | "edit" // Contenido audiovisual o montajes vinculados
+  | "critica" // Análisis profundo (distinto del rating rápido)
+  | "recomendacion" // Prescripción directa a la comunidad
 
-/** 
+/**
  * Representación de una publicación editorial proyectada desde base de datos.
  */
 export type VaultSocialEntryRow = {
@@ -106,7 +106,10 @@ export interface IVaultRepository {
     isPublic: boolean | null
   }): Promise<void>
   /** Localiza una publicación verificando la propiedad del autor */
-  getSocialEntryByIdForOwner(id: number, userId: number): Promise<VaultSocialEntryRow | null>
+  getSocialEntryByIdForOwner(
+    id: number,
+    userId: number
+  ): Promise<VaultSocialEntryRow | null>
   /** Elimina contenido editorial de forma permanente */
   deleteSocialEntry(id: number, userId: number): Promise<void>
 }
@@ -147,19 +150,16 @@ export class VaultRepository implements IVaultRepository {
 
   /**
    * Construye el mosaico visual de la bóveda del usuario.
-   * Ejecuta la hidratación de metadatos desde TMDB mediante concurrencia protegida 
+   * Ejecuta la hidratación de metadatos desde TMDB mediante concurrencia protegida
    * (Promise.allSettled) para garantizar la disponibilidad incluso ante fallos de la API externa.
-   * 
+   *
    * @param userId - Propietario de la colección.
    */
   async buildRichResponse(userId: number): Promise<RichVaultEntry[]> {
     const entries = await prisma.vault.findMany({
       where: { user_id: userId },
       select: { movie_id: true, added_at: true },
-      orderBy: [
-        { added_at: "desc" },
-        { id: "desc" }
-      ],
+      orderBy: [{ added_at: "desc" }, { id: "desc" }],
     })
 
     if (entries.length === 0) return []
@@ -176,30 +176,35 @@ export class VaultRepository implements IVaultRepository {
       movies.map((movie) => {
         const isTv = movie.media_type === "tv"
         const endpoint = isTv ? `tv/${movie.tmdb_id}` : `movie/${movie.tmdb_id}`
-        
-        return consultarTMDB(endpoint, { append_to_response: "credits" }).then((data: unknown) => {
-          const payload = data as {
-            title?: string
-            name?: string
-            poster_path?: string
-            release_date?: string
-            first_air_date?: string
-            credits?: { crew: Array<{ job: string; name: string }> }
-          }
 
-          const title = payload.title || payload.name || ""
-          const date = payload.release_date || payload.first_air_date || ""
-          const year = date ? parseInt(date.split("-")[0]) : null
+        return consultarTMDB(endpoint, { append_to_response: "credits" }).then(
+          (data: unknown) => {
+            const payload = data as {
+              title?: string
+              name?: string
+              poster_path?: string
+              release_date?: string
+              first_air_date?: string
+              credits?: { crew: Array<{ job: string; name: string }> }
+            }
 
-          return {
-            title,
-            poster_path: payload.poster_path || "",
-            release_date: date,
-            director: payload.credits?.crew?.find(p => p.job === "Director" || p.job === "Executive Producer")?.name || "Desconocido",
-            year,
-            media_type: movie.media_type
+            const title = payload.title || payload.name || ""
+            const date = payload.release_date || payload.first_air_date || ""
+            const year = date ? parseInt(date.split("-")[0]) : null
+
+            return {
+              title,
+              poster_path: payload.poster_path || "",
+              release_date: date,
+              director:
+                payload.credits?.crew?.find(
+                  (p) => p.job === "Director" || p.job === "Executive Producer"
+                )?.name || "Desconocido",
+              year,
+              media_type: movie.media_type,
+            }
           }
-        })
+        )
       })
     )
 

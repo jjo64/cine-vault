@@ -17,7 +17,10 @@ import {
 import { middlewareAutenticacion } from "../middlewares/auth.middlewares.js"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
 import { limitarSpikesIP } from "../middlewares/rateLimit.middleware.js"
-import { validarBody, validarParams } from "../middlewares/validation.middleware.js"
+import {
+  validarBody,
+  validarParams,
+} from "../middlewares/validation.middleware.js"
 import {
   crearEntradaDiarioSchema,
   diaryIdParamsSchema,
@@ -58,7 +61,11 @@ router.get("/", middlewareAutenticacion, manejadorAsincrono(getMyDiary))
  *     security:
  *       - bearerAuth: []
  */
-router.get("/sessions", middlewareAutenticacion, manejadorAsincrono(getMyDiarySessions))
+router.get(
+  "/sessions",
+  middlewareAutenticacion,
+  manejadorAsincrono(getMyDiarySessions)
+)
 
 /**
  * @swagger

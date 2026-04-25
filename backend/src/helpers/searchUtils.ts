@@ -2,7 +2,7 @@
  * @file searchUtils.ts
  * @description Motor de inteligencia y análisis de consultas para el buscador de CineVault.
  * Contiene algoritmos de procesamiento de lenguaje natural (tokenización, stop-words),
- * métricas de similitud de cadenas (Levenshtein) y lógica heurística para detectar 
+ * métricas de similitud de cadenas (Levenshtein) y lógica heurística para detectar
  * la intención de búsqueda del usuario.
  */
 
@@ -32,13 +32,33 @@ export type LocalCounts = {
   watchlist_count: number
 }
 
-/** 
- * Conjunto de palabras irrelevantes (stop-words) en ES/EN que se filtran 
+/**
+ * Conjunto de palabras irrelevantes (stop-words) en ES/EN que se filtran
  * durante la tokenización para enfocar la búsqueda en términos clave.
  */
 const STOP_WORDS = new Set([
-  "y", "e", "de", "del", "la", "el", "los", "las", "un", "una", "con", "en", "a", "o", "que",
-  "the", "and", "of", "in", "movie", "film", "pelicula"
+  "y",
+  "e",
+  "de",
+  "del",
+  "la",
+  "el",
+  "los",
+  "las",
+  "un",
+  "una",
+  "con",
+  "en",
+  "a",
+  "o",
+  "que",
+  "the",
+  "and",
+  "of",
+  "in",
+  "movie",
+  "film",
+  "pelicula",
 ])
 
 /** Heurísticas para detección de nombres y contextos de personas */
@@ -62,7 +82,7 @@ export const tokenizarQuery = (raw: string): string[] =>
  * Implementación del algoritmo de distancia de Levenshtein.
  * Calcula el número mínimo de ediciones (inserciones, borrados, sustituciones)
  * necesarias para transformar una cadena en otra.
- * 
+ *
  * @param a - Primera cadena.
  * @param b - Segunda cadena.
  * @returns Entero representando la distancia.
@@ -174,9 +194,9 @@ export function calcularPersonNameScore(
 
 /**
  * Analiza una consulta en bruto para determinar la intención del usuario.
- * Decide si se deben consultar endpoints de personas, películas o mixto, 
+ * Decide si se deben consultar endpoints de personas, películas o mixto,
  * optimizando el consumo de la API externa.
- * 
+ *
  * @param raw - Consulta original del buscador.
  * @returns Objeto con la estrategia de búsqueda recomendada.
  */
@@ -208,16 +228,24 @@ export function analizarQuery(raw: string): QueryAnalizado {
   // Lógica de decisión heurística
   if (tokens.length <= 2 && (hasTwoCapitalizedWords || hasPersonContext)) {
     tipo = "persona"
-    estrategia.push("Estructura de nombre detectada: priorizar búsqueda de personas")
+    estrategia.push(
+      "Estructura de nombre detectada: priorizar búsqueda de personas"
+    )
     queries_tmdb.buscar_personas = true
     queries_tmdb.buscar_peliculas = false
     queries_tmdb.buscar_tv = false
     queries_tmdb.termino_persona = raw
     delete queries_tmdb.termino_pelicula
     delete queries_tmdb.termino_tv
-  } else if (hasSingleLongToken || (tokens.length >= 3 && tokensImprobables.length >= 2) || hasLongTokenPair) {
+  } else if (
+    hasSingleLongToken ||
+    (tokens.length >= 3 && tokensImprobables.length >= 2) ||
+    hasLongTokenPair
+  ) {
     tipo = "mixto"
-    estrategia.push("Consulta ambigua/mixta detectada: consulta total de entidades")
+    estrategia.push(
+      "Consulta ambigua/mixta detectada: consulta total de entidades"
+    )
     queries_tmdb.buscar_personas = true
     queries_tmdb.buscar_peliculas = true
     queries_tmdb.buscar_tv = true

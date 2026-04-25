@@ -1,7 +1,7 @@
 /**
  * @file SettingsController.ts
  * @description Controlador para la gestión de preferencias y personalización de cuenta.
- * Permite a los usuarios actualizar su perfil biográfico, credenciales de acceso, 
+ * Permite a los usuarios actualizar su perfil biográfico, credenciales de acceso,
  * avatares y elementos decorativos como la "Firma Cinematográfica" y la "Galería Curada".
  */
 

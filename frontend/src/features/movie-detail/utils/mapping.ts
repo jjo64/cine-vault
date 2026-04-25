@@ -1,8 +1,10 @@
-import type { MovieDetailApi, ReviewApi, ReviewCommentApi } from '../../../services/movieDetailServices';
-import type { AppReview, PlatformEntry } from '../types';
-import { createSlug } from '../../../utils/stringUtils';
-
-
+import type {
+  MovieDetailApi,
+  ReviewApi,
+  ReviewCommentApi,
+} from "../../../services/movieDetailServices";
+import type { AppReview, PlatformEntry } from "../types";
+import { createSlug } from "../../../utils/stringUtils";
 
 export function parseMovieId(slugOrId?: string): number | null {
   if (!slugOrId) return null;
@@ -17,39 +19,65 @@ export function buildMovieCanonicalPath(movieId: number, title: string) {
 }
 
 export function isCurrentMovieMatch(
-  candidate: { movie_id?: number | null; tmdb_id?: number | null; media_type?: string | null; movie_info?: { media_type?: string | null } | null },
+  candidate: {
+    movie_id?: number | null;
+    tmdb_id?: number | null;
+    media_type?: string | null;
+    movie_info?: { media_type?: string | null } | null;
+  },
   detailId: number,
   routeMovieId: number | null,
-  targetType?: 'movie' | 'tv'
+  targetType?: "movie" | "tv",
 ) {
   const cType = candidate.media_type || candidate.movie_info?.media_type;
   if (targetType && cType && cType !== targetType) return false;
 
   if (candidate.tmdb_id && candidate.tmdb_id === detailId) return true;
-  if (routeMovieId && candidate.tmdb_id && candidate.tmdb_id === routeMovieId) return true;
+  if (routeMovieId && candidate.tmdb_id && candidate.tmdb_id === routeMovieId)
+    return true;
   if (candidate.movie_id && candidate.movie_id === detailId) return true;
-  if (routeMovieId && candidate.movie_id && candidate.movie_id === routeMovieId) return true;
+  if (routeMovieId && candidate.movie_id && candidate.movie_id === routeMovieId)
+    return true;
   return false;
 }
 
 export function getDirectorObj(movie: MovieDetailApi | null) {
-  return (movie?.credits?.crew || []).find((person) => person.job === 'Director') || null;
+  return (
+    (movie?.credits?.crew || []).find((person) => person.job === "Director") ||
+    null
+  );
 }
 
 export function getCrewByJob(movie: MovieDetailApi | null, jobs: string[]) {
-  return (movie?.credits?.crew || []).find((person) => person.job && jobs.includes(person.job))?.name || 'Desconocido';
+  return (
+    (movie?.credits?.crew || []).find(
+      (person) => person.job && jobs.includes(person.job),
+    )?.name || "Desconocido"
+  );
 }
 
 export function mapPlatforms(movie: MovieDetailApi | null): PlatformEntry[] {
   if (!movie?.watch_providers) return [];
 
-  const region = movie.watch_providers.ES || movie.watch_providers.US || Object.values(movie.watch_providers)[0];
+  const region =
+    movie.watch_providers.ES ||
+    movie.watch_providers.US ||
+    Object.values(movie.watch_providers)[0];
   if (!region) return [];
 
   const entries: PlatformEntry[] = [];
-  const addEntries = (items: Array<{ provider_name: string }> | undefined, type: string) => {
+  const addEntries = (
+    items: Array<{ provider_name: string }> | undefined,
+    type: string,
+  ) => {
     (items || []).forEach((provider) => {
-      if (entries.some((entry) => entry.name === provider.provider_name && entry.type === type)) return;
+      if (
+        entries.some(
+          (entry) =>
+            entry.name === provider.provider_name && entry.type === type,
+        )
+      )
+        return;
       entries.push({
         name: provider.provider_name,
         type,
@@ -58,9 +86,9 @@ export function mapPlatforms(movie: MovieDetailApi | null): PlatformEntry[] {
     });
   };
 
-  addEntries(region.flatrate, 'Streaming incluido');
-  addEntries(region.rent, 'Alquiler');
-  addEntries(region.buy, 'Compra');
+  addEntries(region.flatrate, "Streaming incluido");
+  addEntries(region.rent, "Alquiler");
+  addEntries(region.buy, "Compra");
 
   return entries;
 }
@@ -68,17 +96,17 @@ export function mapPlatforms(movie: MovieDetailApi | null): PlatformEntry[] {
 export function mapMovieReviews(
   reviews: ReviewApi[],
   userMeta: Record<number, { username: string; avatarUrl: string | null }>,
-  commentsByReviewId: Record<number, ReviewCommentApi[]>
+  commentsByReviewId: Record<number, ReviewCommentApi[]>,
 ): AppReview[] {
   return reviews.map((review) => ({
     id: review.id,
     userId: review.user_id,
     movieId: review.movie_id,
     tmdbId: review.tmdb_id ?? null,
-    mode: review.mode || 'RAPIDO',
+    mode: review.mode || "RAPIDO",
     username: userMeta[review.user_id]?.username || `Usuario ${review.user_id}`,
     avatarUrl: userMeta[review.user_id]?.avatarUrl || null,
-    content: review.content || 'Sin comentario',
+    content: review.content || "Sin comentario",
     rating: review.rating || 0,
     veredicto: review.veredicto ?? null,
     dimensions: {
@@ -90,9 +118,9 @@ export function mapMovieReviews(
     },
     quote: review.cita_dialogo
       ? {
-        dialogo: review.cita_dialogo,
-        personaje: review.cita_personaje ?? null,
-      }
+          dialogo: review.cita_dialogo,
+          personaje: review.cita_personaje ?? null,
+        }
       : null,
     timestamps: Array.isArray(review.timestamps) ? review.timestamps : [],
     contieneSpoilers: Boolean(review.contiene_spoilers),

@@ -1,8 +1,8 @@
 /**
  * @file titleRanking.ts
  * @description Motor de relevancia y lógica de ordenamiento para títulos de películas.
- * Implementa algoritmos de normalización de texto, comparación semántica y 
- * fusión de resultados multilenguaje (Inglés/Español) para garantizar que el 
+ * Implementa algoritmos de normalización de texto, comparación semántica y
+ * fusión de resultados multilenguaje (Inglés/Español) para garantizar que el
  * título más preciso aparezca en las primeras posiciones.
  */
 
@@ -43,7 +43,7 @@ const uniqueStrings = (values: Array<string | null | undefined>) => [
 
 /**
  * Evalúa la fuerza de coincidencia entre un candidato y una consulta.
- * 
+ *
  * @param candidate - Título almacenado o alternativo.
  * @param query - Texto buscado por el usuario.
  * @returns Puntuación de 0 a 100 basada en proximidad léxica.
@@ -105,7 +105,7 @@ const getSpanishTitleFromAlternative = (titles: TMDBAlternativeTitle[] = []) =>
 /**
  * Calcula la puntuación de relevancia de una película respecto a una consulta.
  * Considera títulos en inglés, español y el título original con pesos distintos.
- * 
+ *
  * @param movie - Objeto película con metadatos de TMDB.
  * @param rawQuery - Consulta original del usuario.
  * @returns Score numérico. A mayor valor, mayor relevancia.
@@ -114,7 +114,10 @@ export const rankMovieByQuery = (movie: SearchMovieLike, rawQuery: string) => {
   const query = normalizeText(rawQuery)
   if (!query) return 0
 
-  const englishCandidates = withNormalizedCandidates([movie.title_en, movie.title])
+  const englishCandidates = withNormalizedCandidates([
+    movie.title_en,
+    movie.title,
+  ])
   const originalCandidates = withNormalizedCandidates([movie.original_title])
   const localizedCandidates = withNormalizedCandidates([
     movie.title_es,
@@ -145,9 +148,9 @@ export const rankMovieByQuery = (movie: SearchMovieLike, rawQuery: string) => {
 
 /**
  * Fusiona resultados obtenidos de búsquedas paralelas en inglés y español.
- * Evita duplicados identificando películas por ID y enriquece la metadata 
+ * Evita duplicados identificando películas por ID y enriquece la metadata
  * de idioma cruzado.
- * 
+ *
  * @param englishResults - Resultados de la API TMDB con locale en-US.
  * @param spanishResults - Resultados de la API TMDB con locale es-ES.
  */
@@ -196,8 +199,16 @@ export const mergeEnglishAndSpanishResults = (
 
     // Enriquecemos la entrada existente (Inglés) con los datos en Castellano
     Object.assign(existing, {
-      title: existing.title_en || existing.title || movie.title || existing.original_title,
-      title_en: existing.title_en || movie.original_title || existing.original_title || null,
+      title:
+        existing.title_en ||
+        existing.title ||
+        movie.title ||
+        existing.original_title,
+      title_en:
+        existing.title_en ||
+        movie.original_title ||
+        existing.original_title ||
+        null,
       title_es: movie.title || existing.title_es || null,
       localized_title: movie.title || existing.localized_title || null,
       localized_titles: mergedLocalized,

@@ -1,7 +1,7 @@
 /**
  * @file favorities.services.ts
  * @description Capa de servicios para la gestión de "Favoritos" de los usuarios.
- * Permite a los cinéfilos marcar sus obras predilectas, gestionando la resolución 
+ * Permite a los cinéfilos marcar sus obras predilectas, gestionando la resolución
  * de referencias entre metadatos externos (TMDB) y la base de datos local.
  */
 
@@ -43,8 +43,8 @@ export const agregarFavoritoService = (
   userId: number,
   data: AgregarFavoritoDTO
 ) =>
-  ensureMovieRefId(data.movieId, (data as any).media_type || "movie").then((movieId) =>
-    favoritiesRepository.create(userId, { ...data, movieId })
+  ensureMovieRefId(data.movieId, (data as any).media_type || "movie").then(
+    (movieId) => favoritiesRepository.create(userId, { ...data, movieId })
   )
 
 /**

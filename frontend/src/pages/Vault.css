@@ -3,7 +3,7 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(8,8,8,0.97);
+  background: rgba(8, 8, 8, 0.97);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--color-border);
   padding: 0 var(--page-padding-x);
@@ -66,7 +66,7 @@
   .vault-type-tabs {
     font-size: 11px;
   }
-  
+
   .vault-header h1 {
     font-size: 28px;
   }

@@ -1,66 +1,108 @@
-import { authorizedJson } from './authServices'
+import { authorizedJson } from "./authServices";
 
 export type UserListSummary = {
-  id: number
-  name: string
-  description: string | null
-  is_public: boolean
-  created_at: string
-  updated_at: string
-  items_count: number
-}
+  id: number;
+  user_id: number;
+  name: string;
+  description: string | null;
+  is_public: boolean;
+  is_official: boolean;
+  is_premium: boolean;
+  tags: string[] | null;
+  glow_color: string | null;
+  custom_cover: string | null;
+  created_at: string;
+  updated_at: string;
+  items_count: number;
+  posters: (string | null)[];
+  owner?: {
+    id: number;
+    username: string;
+    avatar_url: string | null;
+    is_verified?: boolean;
+  };
+};
 
 export type UserListItem = {
-  movie_id: number
-  tmdb_id: number | null
-  added_at: string
-}
+  movie_id: number;
+  tmdb_id: number | null;
+  added_at: string;
+};
 
 export type UserListDetail = UserListSummary & {
-  items: UserListItem[]
-}
+  items: UserListItem[];
+};
 
-export const getMyLists = () => authorizedJson<UserListSummary[]>('/api/lists')
+export const getMyLists = () => authorizedJson<UserListSummary[]>("/api/lists");
 
 export const getMyListDetail = (listId: number) =>
-  authorizedJson<UserListDetail>(`/api/lists/${listId}`)
+  authorizedJson<UserListDetail>(`/api/lists/${listId}`);
+
+export const getPublicLists = (page = 1, limit = 20) =>
+  authorizedJson<{
+    items: UserListSummary[];
+    total: number;
+    page: number;
+    limit: number;
+    has_more: boolean;
+  }>(`/api/lists/public?page=${page}&limit=${limit}`);
+
+export const getPublicListDetail = (listId: number) =>
+  authorizedJson<UserListDetail>(`/api/lists/public/${listId}`);
 
 export const createList = (payload: {
-  name: string
-  description?: string | null
-  is_public?: boolean
+  name: string;
+  description?: string | null;
+  is_public?: boolean;
+  is_official?: boolean;
+  is_premium?: boolean;
+  tags?: string[];
+  glow_color?: string;
+  custom_cover?: string;
 }) =>
-  authorizedJson<UserListSummary>('/api/lists', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+  authorizedJson<UserListSummary>("/api/lists", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
-  })
+  });
 
 export const updateList = (
   listId: number,
-  payload: { name?: string; description?: string | null; is_public?: boolean }
+  payload: {
+    name?: string;
+    description?: string | null;
+    is_public?: boolean;
+    is_official?: boolean;
+    is_premium?: boolean;
+    tags?: string[];
+    glow_color?: string;
+    custom_cover?: string;
+  },
 ) =>
   authorizedJson<UserListSummary>(`/api/lists/${listId}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
-  })
+  });
 
 export const deleteList = (listId: number) =>
   authorizedJson<{ message: string }>(`/api/lists/${listId}`, {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
-  })
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+  });
 
 export const addMovieToList = (listId: number, movieId: number) =>
   authorizedJson<{ message: string }>(`/api/lists/${listId}/movies`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ movie_id: movieId }),
-  })
+  });
 
 export const removeMovieFromList = (listId: number, movieId: number) =>
-  authorizedJson<{ message: string }>(`/api/lists/${listId}/movies/${movieId}`, {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
-  })
+  authorizedJson<{ message: string }>(
+    `/api/lists/${listId}/movies/${movieId}`,
+    {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+    },
+  );

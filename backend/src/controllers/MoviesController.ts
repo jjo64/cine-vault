@@ -55,7 +55,9 @@ export const search = async (req: Request, res: Response) => {
   const page = String(req.query.page || "1").trim()
 
   if (!query) {
-    return res.status(400).json({ message: "Se requiere un término de búsqueda." })
+    return res
+      .status(400)
+      .json({ message: "Se requiere un término de búsqueda." })
   }
 
   const data = await getOSet(
@@ -126,4 +128,3 @@ export const getSimilar = async (req: Request, res: Response) => {
 
   res.json(data)
 }
-

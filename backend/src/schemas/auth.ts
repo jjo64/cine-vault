@@ -34,15 +34,19 @@ export const changePasswordSchema = z.object({
 
 /** Esquema para la activación inicial del segundo factor (2FA) */
 export const twoFAConfirmSchema = z.object({
-  codigo: z.string().length(6, "El código TOTP debe tener exactamente 6 dígitos"),
+  codigo: z
+    .string()
+    .length(6, "El código TOTP debe tener exactamente 6 dígitos"),
 })
 
-/** 
+/**
  * Esquema para la verificación del 2FA durante el flujo de Login.
  * Incluye soporte para el reconocimiento de dispositivos de confianza.
  */
 export const twoFAVerifySchema = z.object({
-  codigo: z.string().length(6, "El código TOTP debe tener exactamente 6 dígitos"),
+  codigo: z
+    .string()
+    .length(6, "El código TOTP debe tener exactamente 6 dígitos"),
   tokenTemporal: z.string().min(1, "El token de sesión temporal es requerido"),
   rememberDevice: z.boolean().optional(),
 })

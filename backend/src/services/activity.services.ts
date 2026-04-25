@@ -6,6 +6,8 @@
  */
 
 import { prisma } from "../lib/prisma.js"
+import { consultarTMDB } from "../helpers/fetchTMDB.js"
+import { getOSet } from "../config/redis.js"
 
 /**
  * Kind descriptivos de los eventos que pueden aparecer en el feed.
@@ -33,6 +35,9 @@ export type ActivityEvent = {
   movie?: {
     id: number
     tmdb_id: number
+    title?: string
+    poster_path?: string | null
+    media_type?: string
   }
   review?: {
     id: number
@@ -88,7 +93,7 @@ export const getSocialFeed = async ({
     }
   }
 
-  // Si es "own" y no hay resultados, o si es "friends" y no sigue a nadie, 
+  // Si es "own" y no hay resultados, o si es "friends" y no sigue a nadie,
   // permitimos que el flujo continúe pero sourceUserIds podría estar vacío.
   // Sin embargo, si es amigos y no sigue a nadie, devolvemos vacío directamente.
   if (type === "friends" && followingIds.length === 0) {
@@ -110,7 +115,7 @@ export const getSocialFeed = async ({
       orderBy: { created_at: "desc" },
       include: {
         users: { select: { id: true, username: true, avatar_url: true } },
-        movies_ref: { select: { id: true, tmdb_id: true } },
+        movies_ref: { select: { id: true, tmdb_id: true, media_type: true } },
       },
     }),
     prisma.diary_entries.findMany({
@@ -119,7 +124,7 @@ export const getSocialFeed = async ({
       orderBy: { id: "desc" },
       include: {
         users: { select: { id: true, username: true, avatar_url: true } },
-        movies_ref: { select: { id: true, tmdb_id: true } },
+        movies_ref: { select: { id: true, tmdb_id: true, media_type: true } },
       },
     }),
     prisma.vault.findMany({
@@ -128,7 +133,7 @@ export const getSocialFeed = async ({
       orderBy: { added_at: "desc" },
       include: {
         users: { select: { id: true, username: true, avatar_url: true } },
-        movies_ref: { select: { id: true, tmdb_id: true } },
+        movies_ref: { select: { id: true, tmdb_id: true, media_type: true } },
       },
     }),
     prisma.watchlist.findMany({
@@ -137,7 +142,7 @@ export const getSocialFeed = async ({
       orderBy: { added_at: "desc" },
       include: {
         users: { select: { id: true, username: true, avatar_url: true } },
-        movies_ref: { select: { id: true, tmdb_id: true } },
+        movies_ref: { select: { id: true, tmdb_id: true, media_type: true } },
       },
     }),
     prisma.review_likes.findMany({
@@ -151,7 +156,9 @@ export const getSocialFeed = async ({
             id: true,
             content: true,
             rating: true,
-            movies_ref: { select: { id: true, tmdb_id: true } },
+            movies_ref: {
+              select: { id: true, tmdb_id: true, media_type: true },
+            },
           },
         },
       },
@@ -184,6 +191,7 @@ export const getSocialFeed = async ({
       movie: {
         id: entry.movies_ref.id,
         tmdb_id: entry.movies_ref.tmdb_id,
+        media_type: entry.movies_ref.media_type,
       },
       review: {
         id: entry.id,
@@ -203,6 +211,7 @@ export const getSocialFeed = async ({
       movie: {
         id: entry.movies_ref.id,
         tmdb_id: entry.movies_ref.tmdb_id,
+        media_type: entry.movies_ref.media_type,
       },
     })),
     ...vaultEntries.map((entry) => ({
@@ -217,6 +226,7 @@ export const getSocialFeed = async ({
       movie: {
         id: entry.movies_ref.id,
         tmdb_id: entry.movies_ref.tmdb_id,
+        media_type: entry.movies_ref.media_type,
       },
     })),
     ...watchlistEntries.map((entry) => ({
@@ -231,6 +241,7 @@ export const getSocialFeed = async ({
       movie: {
         id: entry.movies_ref.id,
         tmdb_id: entry.movies_ref.tmdb_id,
+        media_type: entry.movies_ref.media_type,
       },
     })),
     ...likes.map((entry) => ({
@@ -246,6 +257,7 @@ export const getSocialFeed = async ({
         ? {
             id: entry.reviews.movies_ref.id,
             tmdb_id: entry.reviews.movies_ref.tmdb_id,
+            media_type: entry.reviews.movies_ref.media_type,
           }
         : undefined,
       review: {
@@ -278,6 +290,47 @@ export const getSocialFeed = async ({
 
   const start = (page - 1) * limit
   const paginatedItems = events.slice(start, start + limit)
+
+  // 5. Enriquecimiento de metadatos de películas (TMDB)
+  const movieIds = [
+    ...new Set(paginatedItems.map((i) => i.movie?.tmdb_id).filter(Boolean)),
+  ] as number[]
+  if (movieIds.length > 0) {
+    const moviesData = await Promise.all(
+      movieIds.map(async (id) => {
+        const item = paginatedItems.find((p) => p.movie?.tmdb_id === id)
+        const mediaType = item?.movie?.media_type || "movie"
+
+        return getOSet(
+          `tmdb:${mediaType}:short:${id}`,
+          async () => {
+            try {
+              const data = (await consultarTMDB(`${mediaType}/${id}`)) as any
+              return {
+                title: data.title || data.name || "Sin título",
+                poster_path: data.poster_path,
+              }
+            } catch {
+              return { title: "Película desconocida", poster_path: null }
+            }
+          },
+          86400
+        ) // 24h cache
+      })
+    )
+
+    const movieMap = new Map(movieIds.map((id, idx) => [id, moviesData[idx]]))
+
+    paginatedItems.forEach((item) => {
+      if (item.movie && item.movie.tmdb_id) {
+        const metadata = movieMap.get(item.movie.tmdb_id) as any
+        if (metadata) {
+          item.movie.title = metadata.title
+          item.movie.poster_path = metadata.poster_path
+        }
+      }
+    })
+  }
 
   return {
     items: paginatedItems,

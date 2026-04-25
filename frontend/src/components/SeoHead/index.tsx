@@ -1,64 +1,64 @@
 /* eslint-disable react-refresh/only-export-components */
 /* eslint-disable @typescript-eslint/no-namespace */
-import { Helmet } from 'react-helmet-async'
-import type React from 'react'
+import { Helmet } from "react-helmet-async";
+import type React from "react";
 
-type OpenGraphType = 'website' | 'video.movie' | 'profile'
+type OpenGraphType = "website" | "video.movie" | "profile";
 
 type BaseSeoProps = {
-  title: string
-  description: string
-  canonical: string
-  image: string
-  type: OpenGraphType
-  robots: string
-  structuredData?: string
-}
+  title: string;
+  description: string;
+  canonical: string;
+  image: string;
+  type: OpenGraphType;
+  robots: string;
+  structuredData?: string;
+};
 
 type PageSeoProps = {
-  title: string
-  description: string
-  canonical: string
-  image?: string
-  structuredData?: string
-}
+  title: string;
+  description: string;
+  canonical: string;
+  image?: string;
+  structuredData?: string;
+};
 
 type MovieSeoProps = {
-  title: string
-  description: string
-  canonical: string
-  image: string
-  structuredData: string
-}
+  title: string;
+  description: string;
+  canonical: string;
+  image: string;
+  structuredData: string;
+};
 
 type ProfileSeoProps = {
-  title: string
-  description: string
-  canonical: string
-  image?: string
-}
+  title: string;
+  description: string;
+  canonical: string;
+  image?: string;
+};
 
 type NoIndexSeoProps = {
-  title: string
-  description: string
-  canonical: string
-  image?: string
-}
+  title: string;
+  description: string;
+  canonical: string;
+  image?: string;
+};
 
 // CAMBIADO: imagen OG propia de la app en lugar de whiplash2.jpg
-const DEFAULT_IMAGE = 'https://cinevault.art/og-home.jpg'
+const DEFAULT_IMAGE = "https://cinevault.art/og-home.jpg";
 
-const clampText = (value: string, max: number) => value.trim().slice(0, max)
+const clampText = (value: string, max: number) => value.trim().slice(0, max);
 
 const normalizeCanonical = (value: string) => {
   try {
-    const url = new URL(value)
-    url.search = ''
-    return url.toString().replace(/\/$/, '') || url.origin
+    const url = new URL(value);
+    url.search = "";
+    return url.toString().replace(/\/$/, "") || url.origin;
   } catch {
-    return value
+    return value;
   }
-}
+};
 
 const SeoBase = ({
   title,
@@ -69,9 +69,9 @@ const SeoBase = ({
   robots,
   structuredData,
 }: BaseSeoProps) => {
-  const safeTitle = clampText(title, 60)
-  const safeDescription = clampText(description, 155)
-  const safeCanonical = normalizeCanonical(canonical)
+  const safeTitle = clampText(title, 60);
+  const safeDescription = clampText(description, 155);
+  const safeCanonical = normalizeCanonical(canonical);
 
   return (
     <Helmet prioritizeSeoTags>
@@ -97,13 +97,21 @@ const SeoBase = ({
       <meta name="twitter:image" content={image} />
 
       <link rel="canonical" href={safeCanonical} />
-      {structuredData ? <script type="application/ld+json">{structuredData}</script> : null}
+      {structuredData ? (
+        <script type="application/ld+json">{structuredData}</script>
+      ) : null}
     </Helmet>
-  )
-}
+  );
+};
 
 export namespace SeoHead {
-  export const Page: React.FC<PageSeoProps> = ({ title, description, canonical, image, structuredData }) => (
+  export const Page: React.FC<PageSeoProps> = ({
+    title,
+    description,
+    canonical,
+    image,
+    structuredData,
+  }) => (
     <SeoBase
       title={title}
       description={description}
@@ -113,9 +121,15 @@ export namespace SeoHead {
       robots="index, follow"
       structuredData={structuredData}
     />
-  )
+  );
 
-  export const Movie: React.FC<MovieSeoProps> = ({ title, description, canonical, image, structuredData }) => (
+  export const Movie: React.FC<MovieSeoProps> = ({
+    title,
+    description,
+    canonical,
+    image,
+    structuredData,
+  }) => (
     <SeoBase
       title={title}
       description={description}
@@ -125,9 +139,14 @@ export namespace SeoHead {
       robots="index, follow"
       structuredData={structuredData}
     />
-  )
+  );
 
-  export const Profile: React.FC<ProfileSeoProps> = ({ title, description, canonical, image }) => (
+  export const Profile: React.FC<ProfileSeoProps> = ({
+    title,
+    description,
+    canonical,
+    image,
+  }) => (
     <SeoBase
       title={title}
       description={description}
@@ -136,9 +155,14 @@ export namespace SeoHead {
       type="profile"
       robots="index, follow"
     />
-  )
+  );
 
-  export const NoIndex: React.FC<NoIndexSeoProps> = ({ title, description, canonical, image }) => (
+  export const NoIndex: React.FC<NoIndexSeoProps> = ({
+    title,
+    description,
+    canonical,
+    image,
+  }) => (
     <SeoBase
       title={title}
       description={description}
@@ -147,5 +171,5 @@ export namespace SeoHead {
       type="website"
       robots="noindex, nofollow"
     />
-  )
+  );
 }

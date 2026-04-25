@@ -1,299 +1,424 @@
-import { authorizedFetch } from './authServices'
+import { authorizedFetch } from "./authServices";
 
-const API_URL = import.meta.env.VITE_API_URL
+const API_URL = import.meta.env.VITE_API_URL;
 
 export type MovieDetailApi = {
-  id: number
-  title: string
-  original_title?: string
-  release_date?: string
-  runtime?: number | null
-  overview?: string
-  tagline?: string | null
-  vote_average?: number
-  vote_count?: number
-  poster_path?: string | null
-  backdrop_path?: string | null
-  genres?: Array<{ id: number; name: string }>
-  production_countries?: Array<{ iso_3166_1: string; name: string }>
-  spoken_languages?: Array<{ english_name?: string; name?: string }>
-  production_companies?: Array<{ name: string }>
+  id: number;
+  title: string;
+  original_title?: string;
+  release_date?: string;
+  runtime?: number | null;
+  overview?: string;
+  tagline?: string | null;
+  vote_average?: number;
+  vote_count?: number;
+  poster_path?: string | null;
+  backdrop_path?: string | null;
+  genres?: Array<{ id: number; name: string }>;
+  production_countries?: Array<{ iso_3166_1: string; name: string }>;
+  spoken_languages?: Array<{ english_name?: string; name?: string }>;
+  production_companies?: Array<{ name: string }>;
   credits?: {
-    cast?: Array<{ id: number; name: string; character?: string; profile_path?: string | null }>
-    crew?: Array<{ id: number; name: string; job?: string; profile_path?: string | null }>
-  }
-  watch_providers?: Record<string, {
-    flatrate?: Array<{ provider_name: string }>
-    rent?: Array<{ provider_name: string }>
-    buy?: Array<{ provider_name: string }>
-  }>
+    cast?: Array<{
+      id: number;
+      name: string;
+      character?: string;
+      profile_path?: string | null;
+    }>;
+    crew?: Array<{
+      id: number;
+      name: string;
+      job?: string;
+      profile_path?: string | null;
+    }>;
+  };
+  watch_providers?: Record<
+    string,
+    {
+      flatrate?: Array<{ provider_name: string }>;
+      rent?: Array<{ provider_name: string }>;
+      buy?: Array<{ provider_name: string }>;
+    }
+  >;
   images?: {
-    backdrops?: Array<{ file_path?: string | null }>
-  }
-}
+    backdrops?: Array<{ file_path?: string | null }>;
+  };
+};
 
 export type ReviewApi = {
-  id: number
-  user_id: number
-  movie_id: number
-  media_type?: 'movie' | 'tv'
-  tmdb_id?: number | null
-  mode?: 'RAPIDO' | 'ESTANDAR' | 'CRITICO'
-  content: string | null
-  rating: number | null
-  veredicto?: string | null
-  rating_direccion?: number | null
-  rating_guion?: number | null
-  rating_fotografia?: number | null
-  rating_actuaciones?: number | null
-  rating_banda_sonora?: number | null
-  cita_dialogo?: string | null
-  cita_personaje?: string | null
-  timestamps?: Array<{ minuto: string; descripcion: string }> | null
-  contiene_spoilers?: boolean
-  es_critica_larga?: boolean
-  tiempo_lectura_min?: number | null
-  likes?: number
-  created_at: string
-}
+  id: number;
+  user_id: number;
+  movie_id: number;
+  media_type?: "movie" | "tv";
+  tmdb_id?: number | null;
+  mode?: "RAPIDO" | "ESTANDAR" | "CRITICO";
+  content: string | null;
+  rating: number | null;
+  veredicto?: string | null;
+  rating_direccion?: number | null;
+  rating_guion?: number | null;
+  rating_fotografia?: number | null;
+  rating_actuaciones?: number | null;
+  rating_banda_sonora?: number | null;
+  cita_dialogo?: string | null;
+  cita_personaje?: string | null;
+  timestamps?: Array<{ minuto: string; descripcion: string }> | null;
+  contiene_spoilers?: boolean;
+  es_critica_larga?: boolean;
+  tiempo_lectura_min?: number | null;
+  likes?: number;
+  created_at: string;
+};
 
-export type ReviewMode = 'RAPIDO' | 'ESTANDAR' | 'CRITICO'
+export type ReviewMode = "RAPIDO" | "ESTANDAR" | "CRITICO";
 
 export type ReviewPayload = {
-  movie_id: number
-  media_type?: 'movie' | 'tv'
-  mode: ReviewMode
-  content?: string
-  rating?: number
-  veredicto?: string
-  rating_direccion?: number
-  rating_guion?: number
-  rating_fotografia?: number
-  rating_actuaciones?: number
-  rating_banda_sonora?: number
-  cita_dialogo?: string
-  cita_personaje?: string
-  timestamps?: Array<{ minuto: string; descripcion: string }>
-  contiene_spoilers?: boolean
-}
+  movie_id: number;
+  media_type?: "movie" | "tv";
+  mode: ReviewMode;
+  content?: string;
+  rating?: number;
+  veredicto?: string;
+  rating_direccion?: number;
+  rating_guion?: number;
+  rating_fotografia?: number;
+  rating_actuaciones?: number;
+  rating_banda_sonora?: number;
+  cita_dialogo?: string;
+  cita_personaje?: string;
+  timestamps?: Array<{ minuto: string; descripcion: string }>;
+  contiene_spoilers?: boolean;
+};
 
 export type ReviewCommentApi = {
-  id: number
-  review_id: number
-  user_id: number
-  content: string
-  created_at: string
+  id: number;
+  review_id: number;
+  user_id: number;
+  content: string;
+  created_at: string;
   users?: {
-    id: number
-    username?: string
-    avatar_url?: string | null
-  }
-}
+    id: number;
+    username?: string;
+    avatar_url?: string | null;
+  };
+};
 
 export type ReviewThreadApi = ReviewApi & {
   users?: {
-    id: number
-    username?: string
-    avatar_url?: string | null
-  }
+    id: number;
+    username?: string;
+    avatar_url?: string | null;
+  };
   movies_ref?: {
-    id: number
-    tmdb_id: number
-    slug?: string | null
-  }
-  review_comments?: ReviewCommentApi[]
-}
+    id: number;
+    tmdb_id: number;
+    slug?: string | null;
+  };
+  review_comments?: ReviewCommentApi[];
+};
 
 type RequestOptions = {
-  token?: string | null
-  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
-  body?: unknown
-}
+  token?: string | null;
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+  body?: unknown;
+};
 
-async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
+async function apiRequest<T>(
+  path: string,
+  options: RequestOptions = {},
+): Promise<T> {
   const requestInit: RequestInit = {
-    method: options.method ?? 'GET',
+    method: options.method ?? "GET",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...(options.token ? { Authorization: `Bearer ${options.token}` } : {}),
     },
     ...(options.body ? { body: JSON.stringify(options.body) } : {}),
-  }
+  };
 
-  const response = options.token !== undefined
-    ? await authorizedFetch(path, requestInit)
-    : await fetch(`${API_URL}${path}`, requestInit)
+  const response =
+    options.token !== undefined
+      ? await authorizedFetch(path, requestInit)
+      : await fetch(`${API_URL}${path}`, requestInit);
 
   if (!response.ok) {
-    const message = await response.text()
-    throw new Error(message || `Request failed (${response.status})`)
+    const message = await response.text();
+    throw new Error(message || `Request failed (${response.status})`);
   }
 
-  if (response.status === 204) return {} as T
-  return (await response.json()) as T
+  if (response.status === 204) return {} as T;
+  return (await response.json()) as T;
 }
 
-export const fetchMovieDetail = (idOrSlug: string) => apiRequest<MovieDetailApi>(`/api/movies/${idOrSlug}`)
+export const fetchMovieDetail = (idOrSlug: string) =>
+  apiRequest<MovieDetailApi>(`/api/movies/${idOrSlug}`);
 
-export const fetchMovieReviews = (movieId: number) => apiRequest<ReviewApi[]>(`/api/reviews/movie/${movieId}`)
+export const fetchMovieReviews = (movieId: number) =>
+  apiRequest<ReviewApi[]>(`/api/reviews/movie/${movieId}`);
 
-export const fetchPopularMovies = () => apiRequest<{ results?: Array<{ id: number; title: string; poster_path: string | null; release_date?: string }> }>(`/api/movies/popular`)
+export const fetchPopularMovies = () =>
+  apiRequest<{
+    results?: Array<{
+      id: number;
+      title: string;
+      poster_path: string | null;
+      release_date?: string;
+      vote_average?: number;
+      overview?: string;
+      genre_ids?: number[];
+    }>;
+  }>(`/api/movies/popular`);
 
-export const fetchTopRatedMovies = () => apiRequest<{ results?: Array<{ id: number; title: string; poster_path: string | null; release_date?: string }> }>(`/api/movies/top-rated`)
+export const fetchUpcomingMovies = () =>
+  apiRequest<{
+    results?: Array<{
+      id: number;
+      title: string;
+      poster_path: string | null;
+      release_date?: string;
+      vote_average?: number;
+      overview?: string;
+      genre_ids?: number[];
+    }>;
+  }>(`/api/movies/upcoming`);
 
-export const fetchSimilarMovies = (idOrSlug: string) => apiRequest<{ results?: Array<{ id: number; title: string; poster_path: string | null; release_date?: string; vote_average?: number }> }>(`/api/movies/${idOrSlug}/similar`)
+export const fetchTopRatedMovies = () =>
+  apiRequest<{
+    results?: Array<{
+      id: number;
+      title: string;
+      poster_path: string | null;
+      release_date?: string;
+      vote_average?: number;
+      overview?: string;
+      genre_ids?: number[];
+    }>;
+  }>(`/api/movies/top-rated`);
+
+export const fetchSimilarMovies = (idOrSlug: string) =>
+  apiRequest<{
+    results?: Array<{
+      id: number;
+      title: string;
+      poster_path: string | null;
+      release_date?: string;
+      vote_average?: number;
+    }>;
+  }>(`/api/movies/${idOrSlug}/similar`);
+
 
 export const fetchSearchMovies = (query: string) =>
-  apiRequest<{ results?: Array<{
-    id: number
-    title?: string
-    name?: string
-    media_type?: 'movie' | 'tv' | 'person'
-    poster_path?: string | null
-    profile_path?: string | null
-  }> }>(`/api/search?q=${encodeURIComponent(query)}`)
+  apiRequest<{
+    results?: Array<{
+      id: number;
+      title?: string;
+      name?: string;
+      media_type?: "movie" | "tv" | "person";
+      poster_path?: string | null;
+      profile_path?: string | null;
+    }>;
+  }>(`/api/search?q=${encodeURIComponent(query)}`);
 
 export const fetchUserById = (userId: number) =>
-  apiRequest<{ id: number; username?: string; avatar_url?: string | null }>(`/api/users/${userId}`)
+  apiRequest<{ id: number; username?: string; avatar_url?: string | null }>(
+    `/api/users/${userId}`,
+  );
 
-export const fetchMyReviews = (token: string | null) => apiRequest<ReviewApi[]>('/api/reviews', { token })
+export const fetchMyReviews = (token: string | null) =>
+  apiRequest<ReviewApi[]>("/api/reviews", { token });
 
 export const createReview = (token: string | null, payload: ReviewPayload) =>
-  apiRequest<ReviewApi>('/api/reviews', {
+  apiRequest<ReviewApi>("/api/reviews", {
     token,
-    method: 'POST',
+    method: "POST",
     body: payload,
-  })
+  });
 
 export const updateReview = (
   token: string | null,
   reviewId: number,
   rating: number,
-  mediaType?: 'movie' | 'tv'
+  mediaType?: "movie" | "tv",
 ) =>
   apiRequest<ReviewApi>(`/api/reviews/${reviewId}`, {
     token,
-    method: 'PATCH',
+    method: "PATCH",
     body: mediaType ? { rating, media_type: mediaType } : { rating },
-  })
+  });
 
 export const updateReviewContent = (
   token: string | null,
   reviewId: number,
-  payload: Omit<Partial<ReviewPayload>, 'movie_id'>
+  payload: Omit<Partial<ReviewPayload>, "movie_id">,
 ) =>
   apiRequest<ReviewApi>(`/api/reviews/${reviewId}`, {
     token,
-    method: 'PATCH',
+    method: "PATCH",
     body: payload,
-  })
+  });
 
 export const deleteReview = (token: string | null, reviewId: number) =>
   apiRequest<{ message: string }>(`/api/reviews/${reviewId}`, {
     token,
-    method: 'DELETE',
-  })
+    method: "DELETE",
+  });
 
 export const fetchMyWatchlist = (token: string | null) =>
-  apiRequest<Array<{ movie_id: number; tmdb_id?: number | null }>>('/api/watchlist', { token })
+  apiRequest<Array<{ movie_id: number; tmdb_id?: number | null }>>(
+    "/api/watchlist",
+    { token },
+  );
 
-export const addToWatchlist = (token: string | null, movieId: number, mediaType: 'movie' | 'tv' = 'movie') =>
-  apiRequest<{ message: string }>('/api/watchlist', {
+export const addToWatchlist = (
+  token: string | null,
+  movieId: number,
+  mediaType: "movie" | "tv" = "movie",
+) =>
+  apiRequest<{ message: string }>("/api/watchlist", {
     token,
-    method: 'POST',
+    method: "POST",
     body: { movie_id: movieId, media_type: mediaType },
-  })
+  });
 
-export const removeFromWatchlist = (token: string | null, movieId: number, mediaType?: 'movie' | 'tv') => {
-  const query = mediaType ? `?mediaType=${mediaType}` : ''
+export const removeFromWatchlist = (
+  token: string | null,
+  movieId: number,
+  mediaType?: "movie" | "tv",
+) => {
+  const query = mediaType ? `?mediaType=${mediaType}` : "";
   return apiRequest<{ message: string }>(`/api/watchlist/${movieId}${query}`, {
     token,
-    method: 'DELETE',
-  })
-}
+    method: "DELETE",
+  });
+};
 
 export const fetchMyFavorites = async (token: string | null) => {
   try {
-    return await apiRequest<Array<{ movie_id: number; tmdb_id?: number | null }>>('/api/favorites', { token })
+    return await apiRequest<
+      Array<{ movie_id: number; tmdb_id?: number | null }>
+    >("/api/favorites", { token });
   } catch {
-    return [] as Array<{ movie_id: number; tmdb_id?: number | null }>
+    return [] as Array<{ movie_id: number; tmdb_id?: number | null }>;
   }
-}
+};
 
-export const addToFavorites = (token: string | null, movieId: number, mediaType: 'movie' | 'tv' = 'movie') =>
-  apiRequest('/api/favorites/' + movieId, {
+export const addToFavorites = (
+  token: string | null,
+  movieId: number,
+  mediaType: "movie" | "tv" = "movie",
+) =>
+  apiRequest("/api/favorites/" + movieId, {
     token,
-    method: 'POST',
+    method: "POST",
     body: { movieId, media_type: mediaType },
-  })
+  });
 
-export const removeFromFavorites = (token: string | null, movieId: number, mediaType?: 'movie' | 'tv') => {
-  const query = mediaType ? `?mediaType=${mediaType}` : ''
+export const removeFromFavorites = (
+  token: string | null,
+  movieId: number,
+  mediaType?: "movie" | "tv",
+) => {
+  const query = mediaType ? `?mediaType=${mediaType}` : "";
   return apiRequest(`/api/favorites/${movieId}${query}`, {
     token,
-    method: 'DELETE',
-  })
-}
+    method: "DELETE",
+  });
+};
 
 export const fetchMyDiary = async (token: string | null) => {
   try {
-    return await apiRequest<{ diary?: Array<{ id: number; movie_id: number; tmdb_id?: number | null; watched_date?: string | null }> }>('/api/diary', { token })
+    return await apiRequest<{
+      diary?: Array<{
+        id: number;
+        movie_id: number;
+        tmdb_id?: number | null;
+        watched_date?: string | null;
+      }>;
+    }>("/api/diary", { token });
   } catch {
-    return { diary: [] as Array<{ id: number; movie_id: number; tmdb_id?: number | null; watched_date?: string | null }> }
+    return {
+      diary: [] as Array<{
+        id: number;
+        movie_id: number;
+        tmdb_id?: number | null;
+        watched_date?: string | null;
+      }>,
+    };
   }
-}
+};
 
-export const addToDiary = (token: string | null, movieId: number, watchedDate?: string, mediaType: 'movie' | 'tv' = 'movie') =>
-  apiRequest('/api/diary', {
+export const addToDiary = (
+  token: string | null,
+  movieId: number,
+  watchedDate?: string,
+  mediaType: "movie" | "tv" = "movie",
+) =>
+  apiRequest("/api/diary", {
     token,
-    method: 'POST',
+    method: "POST",
     body: {
       movie_id: movieId,
       watched_date: watchedDate || new Date().toISOString().slice(0, 10),
       media_type: mediaType,
     },
-  })
+  });
 
 export const removeFromDiary = (token: string | null, diaryEntryId: number) =>
-  apiRequest('/api/diary/' + diaryEntryId, {
+  apiRequest("/api/diary/" + diaryEntryId, {
     token,
-    method: 'DELETE',
-  })
+    method: "DELETE",
+  });
 
 export const likeReview = (token: string | null, reviewId: number) =>
-  apiRequest<{ review: { id: number; likes: number } }>(`/api/reviews/${reviewId}/like`, {
-    token,
-    method: 'POST',
-  })
+  apiRequest<{ review: { id: number; likes: number } }>(
+    `/api/reviews/${reviewId}/like`,
+    {
+      token,
+      method: "POST",
+    },
+  );
 
 export const unlikeReview = (token: string | null, reviewId: number) =>
-  apiRequest<{ review: { id: number; likes: number } }>(`/api/reviews/${reviewId}/like`, {
-    token,
-    method: 'DELETE',
-  })
+  apiRequest<{ review: { id: number; likes: number } }>(
+    `/api/reviews/${reviewId}/like`,
+    {
+      token,
+      method: "DELETE",
+    },
+  );
 
-export const commentOnReview = (token: string | null, reviewId: number, content: string) =>
+export const commentOnReview = (
+  token: string | null,
+  reviewId: number,
+  content: string,
+) =>
   apiRequest(`/api/reviews/${reviewId}/comments`, {
     token,
-    method: 'POST',
+    method: "POST",
     body: { content, review_id: reviewId },
-  })
+  });
 
 export const fetchReviewComments = (reviewId: number) =>
-  apiRequest<ReviewCommentApi[]>(`/api/reviews/${reviewId}/comments`)
+  apiRequest<ReviewCommentApi[]>(`/api/reviews/${reviewId}/comments`);
 
-export const updateReviewComment = (token: string | null, commentId: number, content: string) =>
+export const updateReviewComment = (
+  token: string | null,
+  commentId: number,
+  content: string,
+) =>
   apiRequest<ReviewCommentApi>(`/api/reviews/comments/${commentId}`, {
     token,
-    method: 'PUT',
+    method: "PUT",
     body: { content },
-  })
+  });
 
 export const deleteReviewComment = (token: string | null, commentId: number) =>
   apiRequest<{ message: string }>(`/api/reviews/comments/${commentId}`, {
     token,
-    method: 'DELETE',
-  })
+    method: "DELETE",
+  });
 
 export const fetchReviewThread = (username: string, movieSlug: string) =>
-  apiRequest<ReviewThreadApi>(`/api/reviews/${encodeURIComponent(username)}/${encodeURIComponent(movieSlug)}`)
+  apiRequest<ReviewThreadApi>(
+    `/api/reviews/${encodeURIComponent(username)}/${encodeURIComponent(movieSlug)}`,
+  );

@@ -21,7 +21,7 @@ type Serializable =
 
 /**
  * Obtiene un objeto tipado desde la caché de Redis.
- * 
+ *
  * @param key - Clave única del recurso.
  * @returns El objeto deserializado o null si hubo un fallo o miss.
  */
@@ -31,7 +31,7 @@ export const getCache = async <T>(key: string): Promise<T | null> => {
   try {
     return JSON.parse(raw) as T
   } catch {
-    // Si el contenido corrupto no es JSON, invalidamos silenciosamente 
+    // Si el contenido corrupto no es JSON, invalidamos silenciosamente
     // para que la lógica de aplicación regenere el recurso.
     return null
   }
@@ -39,7 +39,7 @@ export const getCache = async <T>(key: string): Promise<T | null> => {
 
 /**
  * Persiste un objeto en la caché con un límite de tiempo.
- * 
+ *
  * @param key - Clave única del recurso.
  * @param value - Datos a serializar.
  * @param ttlSeconds - Tiempo de expiración (por defecto 300s).

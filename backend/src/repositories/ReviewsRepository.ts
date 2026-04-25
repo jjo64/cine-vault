@@ -1,21 +1,28 @@
 /**
  * @file ReviewsRepository.ts
  * @description Repositorio central de la capa social y crítica de CineVault.
- * Gestiona el ciclo de vida completo de las reseñas de la comunidad, desde calificaciones 
- * granulares (guion, dirección, etc.) hasta interacciones secundarias como hilos de 
- * comentarios y reacciones. Implementa lógica de denormalización atómica para 
- * optimizar la lectura de métricas de popularidad y mecanismos de resiliencia 
+ * Gestiona el ciclo de vida completo de las reseñas de la comunidad, desde calificaciones
+ * granulares (guion, dirección, etc.) hasta interacciones secundarias como hilos de
+ * comentarios y reacciones. Implementa lógica de denormalización atómica para
+ * optimizar la lectura de métricas de popularidad y mecanismos de resiliencia
  * para la evolución del esquema de base de datos.
  */
 
-import { Prisma, reviews, review_likes, reports, review_comments, reports_reason } from "@prisma/client"
+import {
+  Prisma,
+  reviews,
+  review_likes,
+  reports,
+  review_comments,
+  reports_reason,
+} from "@prisma/client"
 import { prisma } from "../lib/prisma.js"
 import type { CrearResenaDTO, ActualizarResenaDTO } from "../schemas/reviews.js"
 
 // --- Configuraciones de Proyección y Seguridad ---
 
-/** 
- * Conjunto de campos optimizados para la carga de listas masivas. 
+/**
+ * Conjunto de campos optimizados para la carga de listas masivas.
  * Excluye relaciones pesadas para mejorar el throughput de la API.
  */
 const REVIEW_SELECT_BASE = {
@@ -59,8 +66,8 @@ const REVIEW_SELECT = {
   media_type: true,
 } as const
 
-/** 
- * Proyección profunda para la vista de hilo de discusión. 
+/**
+ * Proyección profunda para la vista de hilo de discusión.
  * Hidrata el autor, la película vinculada y el árbol de comentarios.
  */
 const REVIEW_THREAD_SELECT_BASE = {
@@ -86,8 +93,8 @@ const REVIEW_THREAD_SELECT = {
   media_type: true,
 } as const
 
-/** 
- * Guardia de resiliencia frente a migraciones pendientes. 
+/**
+ * Guardia de resiliencia frente a migraciones pendientes.
  * Detecta si la columna 'media_type' existe en el esquema actual.
  */
 const isMissingMediaTypeColumn = (error: unknown) => {
@@ -112,8 +119,8 @@ export interface MovieReviewsAggregate {
   likes_total: number
 }
 
-/** 
- * Contrato de acceso a datos para el ecosistema de reseñas. 
+/**
+ * Contrato de acceso a datos para el ecosistema de reseñas.
  * Define la orquestación técnica de las críticas y la interacción social.
  */
 export interface IReviewsRepository {
@@ -133,7 +140,7 @@ export interface IReviewsRepository {
   update(id: number, data: ReviewUpdateData): Promise<reviews>
   /** Elimina una reseña y sus dependencias sociales */
   delete(id: number): Promise<void>
-  
+
   // --- Mecanismos de Reacción (Likes) ---
   findLike(userId: number, reviewId: number): Promise<review_likes | null>
   addLikeTransaction(
@@ -144,14 +151,14 @@ export interface IReviewsRepository {
     userId: number,
     reviewId: number
   ): Promise<{ like: review_likes; review: reviews }>
-  
+
   // --- Moderación Preventiva ---
   createReport(
     reporterId: number,
     reviewId: number,
     reason: string
   ): Promise<reports>
-  
+
   // --- Capa de Discusión (Comentarios) ---
   findCommentsByReviewId(reviewId: number): Promise<review_comments[]>
   findCommentById(id: number): Promise<review_comments | null>
@@ -238,10 +245,10 @@ export class ReviewsRepository implements IReviewsRepository {
    */
   async findById(id: number) {
     try {
-      return await prisma.reviews.findUnique({
+      return (await prisma.reviews.findUnique({
         where: { id },
         select: REVIEW_THREAD_SELECT,
-      }) as any
+      })) as any
     } catch (error) {
       if (!isMissingMediaTypeColumn(error)) throw error
 
@@ -388,7 +395,9 @@ export class ReviewsRepository implements IReviewsRepository {
       ...(data.cita_personaje !== undefined && {
         cita_personaje: data.cita_personaje,
       }),
-      ...(data.timestamps !== undefined && { timestamps: data.timestamps as any }),
+      ...(data.timestamps !== undefined && {
+        timestamps: data.timestamps as any,
+      }),
       ...(data.contiene_spoilers !== undefined && {
         contiene_spoilers: data.contiene_spoilers,
       }),
@@ -438,7 +447,7 @@ export class ReviewsRepository implements IReviewsRepository {
 
   /**
    * Registra una reacción atómica.
-   * Utiliza una transacción para sincronizar el registro individual con el 
+   * Utiliza una transacción para sincronizar el registro individual con el
    * contador denormalizado de popularidad de la reseña.
    */
   async addLikeTransaction(userId: number, reviewId: number) {
@@ -477,7 +486,11 @@ export class ReviewsRepository implements IReviewsRepository {
   /**
    * Canaliza una queja sobre una reseña hacia el flujo de moderación.
    */
-  async createReport(reporterId: number, reviewId: number, reason: reports_reason) {
+  async createReport(
+    reporterId: number,
+    reviewId: number,
+    reason: reports_reason
+  ) {
     return prisma.reports.create({
       data: {
         reporter_id: reporterId,

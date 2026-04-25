@@ -1,16 +1,16 @@
 /**
  * @file PaymentsRepository.ts
  * @description Repositorio crítico para la gestión financiera y de suscripciones.
- * Administra el ciclo de vida de los planes CineVault (PRO/VIP), encargándose de la 
- * persistencia de pagos, renovaciones automáticas y la sincronización de estados 
- * con el proveedor externo de pagos (Stripe). Garantiza la integridad de la 
+ * Administra el ciclo de vida de los planes CineVault (PRO/VIP), encargándose de la
+ * persistencia de pagos, renovaciones automáticas y la sincronización de estados
+ * con el proveedor externo de pagos (Stripe). Garantiza la integridad de la
  * membresía del usuario mediante operaciones transaccionales.
  */
 
 import { users_membership, subscriptions_plan } from "@prisma/client"
 import { prisma } from "../lib/prisma.js"
 
-/** 
+/**
  * Payload consolidado tras una operación exitosa en la pasarela de pagos.
  */
 export interface ICheckoutCompletedData {
@@ -31,7 +31,7 @@ export interface ICheckoutCompletedData {
   providerPaymentId: string
 }
 
-/** 
+/**
  * Estructura de auditoría interna para el registro histórico de cobros.
  */
 interface PaymentRecord {
@@ -45,7 +45,7 @@ interface PaymentRecord {
 
 /**
  * Repositorio de Pagos
- * Centraliza la lógica de negocio económica, asegurando que los privilegios 
+ * Centraliza la lógica de negocio económica, asegurando que los privilegios
  * premium estén siempre sincronizados con el estado real de los cobros.
  */
 class PaymentsRepository {
@@ -76,13 +76,13 @@ class PaymentsRepository {
     })
   }
 
-  /** 
+  /**
    * Orquestador de finalización de compra.
    * Ejecuta una serie de operaciones atómicas:
    * 1. Eleva el rango del usuario al plan correspondiente.
    * 2. Inicializa la entidad de suscripción persistente.
    * 3. Registra el asiento contable del pago inicial.
-   * 
+   *
    * @param data - Resultados validados de la pasarela Stripe.
    */
   async checkoutCompleted(data: ICheckoutCompletedData) {
@@ -123,9 +123,9 @@ class PaymentsRepository {
     })
   }
 
-  /** 
+  /**
    * Extiende la validez de una membresía activa.
-   * 
+   *
    * @param stripeSubId - Referencia de la suscripción a renovar.
    * @param newEndDate - Próxima fecha de vencimiento.
    */
@@ -155,14 +155,14 @@ class PaymentsRepository {
 
   /**
    * Persiste o actualiza un registro de pago individual.
-   * Implementa una lógica de 'Idempotencia' manual para evitar duplicar asientos 
+   * Implementa una lógica de 'Idempotencia' manual para evitar duplicar asientos
    * contables en caso de recepciones múltiples de webhooks.
    */
   async recordPayment(data: PaymentRecord) {
     const existing = await prisma.payments.findFirst({
       where: { provider_payment_id: data.providerPaymentId },
     })
-    
+
     if (existing) {
       return prisma.payments.update({
         where: { id: existing.id },
@@ -183,16 +183,16 @@ class PaymentsRepository {
     })
   }
 
-  /** 
+  /**
    * Ejecuta la baja del servicio para un usuario.
-   * Transacción atómica que asegura que el usuario pierda los privilegios PRO 
+   * Transacción atómica que asegura que el usuario pierda los privilegios PRO
    * en el momento exacto en que la suscripción se marca como cancelada.
    */
   async cancelSubscription(stripeSubId: string) {
     const sub = await prisma.subscriptions.findFirst({
       where: { provider_subscription_id: stripeSubId },
     })
-    
+
     if (!sub) return
 
     await prisma.$transaction([

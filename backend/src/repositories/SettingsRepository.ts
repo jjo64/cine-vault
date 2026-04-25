@@ -1,7 +1,7 @@
 /**
  * @file SettingsRepository.ts
  * @description Repositorio encargado de la gestión de la configuración personal y seguridad de la cuenta.
- * Centraliza las operaciones de edición de perfil, actualización de biografía, 
+ * Centraliza las operaciones de edición de perfil, actualización de biografía,
  * sincronización de credenciales de acceso y gestión de identificadores visuales (Avatares).
  * Es el punto de entrada para la personalización de la experiencia del usuario en CineVault.
  */
@@ -42,7 +42,7 @@ export class SettingsRepository implements ISettingsRepository {
   /**
    * Realiza una actualización parcial de los datos de identidad.
    * Valida la presencia de campos antes de la persistencia para evitar sobreescrituras nulas.
-   * 
+   *
    * @param id - Identificador del usuario.
    * @param data - Fragmento DTO con los campos a actualizar (username, email, bio).
    */
@@ -59,7 +59,7 @@ export class SettingsRepository implements ISettingsRepository {
 
   /**
    * Persiste una nueva contraseña en el sistema.
-   * 
+   *
    * @param id - Usuario destino.
    * @param hashedPassword - Secreto ya procesado por el motor de hashing de la aplicación.
    */
@@ -72,7 +72,7 @@ export class SettingsRepository implements ISettingsRepository {
 
   /**
    * Actualiza la referencia al avatar del usuario.
-   * 
+   *
    * @param id - Usuario destino.
    * @param avatarUrl - Dirección absoluta o relativa del nuevo recurso de imagen.
    */

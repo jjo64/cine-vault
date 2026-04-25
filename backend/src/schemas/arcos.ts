@@ -1,7 +1,7 @@
 /**
  * @file arcos.ts
  * @description Esquemas de validación Zod para el módulo de Arcos Cinematográficos.
- * Define las reglas de integridad para la creación, edición, moderación y seguimiento 
+ * Define las reglas de integridad para la creación, edición, moderación y seguimiento
  * del progreso en las rutas educativas y temáticas de la plataforma.
  */
 

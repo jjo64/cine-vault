@@ -1,7 +1,7 @@
 /**
  * @file socketio.config.ts
  * @description Configuración y orquestación de WebSockets mediante Socket.io.
- * Gestiona la comunicación en tiempo real para notificaciones, actualizaciones 
+ * Gestiona la comunicación en tiempo real para notificaciones, actualizaciones
  * de feed y presencia de usuarios en CineVault.
  */
 
@@ -20,7 +20,7 @@ export let io: Server
 /**
  * Inicializa la instancia de Socket.io vinculada al servidor HTTP principal.
  * Configura las políticas de CORS y los listeners de conexión/desconexión.
- * 
+ *
  * @param httpServer - Servidor Node.js HTTP ya inicializado.
  * @returns La instancia de Socket.io configurada.
  */
@@ -43,7 +43,9 @@ export const initSocketIO = (httpServer: HttpServer) => {
      */
     socket.on("registrar_usuario", (userId: number) => {
       usuariosConectados.set(userId, socket.id)
-      console.log(`Usuario [ID: ${userId}] vinculado al socket [ID: ${socket.id}]`)
+      console.log(
+        `Usuario [ID: ${userId}] vinculado al socket [ID: ${socket.id}]`
+      )
     })
 
     /**

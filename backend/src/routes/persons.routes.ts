@@ -4,15 +4,18 @@
  */
 
 import { Router } from "express"
-import { 
-  followPerson, 
-  unfollowPerson, 
+import {
+  followPerson,
+  unfollowPerson,
   getFollowedPersons,
-  checkFollowingStatus 
+  checkFollowingStatus,
 } from "../controllers/PersonsController.js"
 import { middlewareAutenticacion } from "../middlewares/auth.middlewares.js"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
-import { validarBody, validarParams } from "../middlewares/validation.middleware.js"
+import {
+  validarBody,
+  validarParams,
+} from "../middlewares/validation.middleware.js"
 import { followPersonSchema, unfollowParamsSchema } from "../schemas/persons.js"
 
 const router = Router()
@@ -46,7 +49,11 @@ router.get("/followed", manejadorAsincrono(getFollowedPersons))
  *     security:
  *       - bearerAuth: []
  */
-router.get("/check/:tmdbId", validarParams(unfollowParamsSchema), manejadorAsincrono(checkFollowingStatus))
+router.get(
+  "/check/:tmdbId",
+  validarParams(unfollowParamsSchema),
+  manejadorAsincrono(checkFollowingStatus)
+)
 
 /**
  * @swagger
@@ -57,7 +64,11 @@ router.get("/check/:tmdbId", validarParams(unfollowParamsSchema), manejadorAsinc
  *     security:
  *       - bearerAuth: []
  */
-router.post("/follow", validarBody(followPersonSchema), manejadorAsincrono(followPerson))
+router.post(
+  "/follow",
+  validarBody(followPersonSchema),
+  manejadorAsincrono(followPerson)
+)
 
 /**
  * @swagger
@@ -68,6 +79,10 @@ router.post("/follow", validarBody(followPersonSchema), manejadorAsincrono(follo
  *     security:
  *       - bearerAuth: []
  */
-router.delete("/follow/:tmdbId", validarParams(unfollowParamsSchema), manejadorAsincrono(unfollowPerson))
+router.delete(
+  "/follow/:tmdbId",
+  validarParams(unfollowParamsSchema),
+  manejadorAsincrono(unfollowPerson)
+)
 
 export default router

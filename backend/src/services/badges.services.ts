@@ -11,7 +11,7 @@ import { Prisma } from "@prisma/client"
 /**
  * Vincula una insignia específica a un usuario.
  * Maneja silenciosamente si el usuario ya posee la insignia (Race Condition Safe).
- * 
+ *
  * @param userId - ID del usuario.
  * @param badgeId - ID de la insignia.
  */
@@ -20,12 +20,17 @@ export const awardBadge = async (userId: number, badgeId: number) => {
     await prisma.user_badges.create({
       data: {
         user_id: userId,
-        badge_id: badgeId
-      }
+        badge_id: badgeId,
+      },
     })
-    console.log(`[Gamificación] Usuario ${userId} ha ganado la insignia ${badgeId}`)
+    console.log(
+      `[Gamificación] Usuario ${userId} ha ganado la insignia ${badgeId}`
+    )
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
       // El usuario ya tiene la insignia, ignoramos.
       return
     }
@@ -36,35 +41,39 @@ export const awardBadge = async (userId: number, badgeId: number) => {
 /**
  * Analiza el historial del usuario contra los criterios de insignias automáticas.
  * Otorga las insignias que el usuario haya calificado pero que aún no posea.
- * 
+ *
  * @param userId - ID del usuario a evaluar.
  */
 export const checkAndAwardAutomaticBadges = async (userId: number) => {
   // 1. Obtener insignias que el usuario NO tiene
-  const earnedBadgeIds = (await prisma.user_badges.findMany({
-    where: { user_id: userId },
-    select: { badge_id: true }
-  })).map(ub => ub.badge_id)
+  const earnedBadgeIds = (
+    await prisma.user_badges.findMany({
+      where: { user_id: userId },
+      select: { badge_id: true },
+    })
+  ).map((ub) => ub.badge_id)
 
   const availableBadges = await prisma.badges.findMany({
-    where: { 
+    where: {
       id: { notIn: earnedBadgeIds },
-      criteria: { not: null }
-    }
+      criteria: { not: null },
+    },
   })
 
   if (availableBadges.length === 0) return
 
   // 2. Cache de estadísticas básicas para evitar múltiples queries
   const stats = {
-    diaryCount: await prisma.diary_entries.count({ where: { user_id: userId } }),
-    reviewsCount: await prisma.reviews.count({ where: { user_id: userId } }),
-    criticalReviewsCount: await prisma.reviews.count({ 
-      where: { user_id: userId, mode: "CRITICO" } 
+    diaryCount: await prisma.diary_entries.count({
+      where: { user_id: userId },
     }),
-    tvDiaryCount: await prisma.diary_entries.count({ 
-      where: { user_id: userId, media_type: "tv" } 
-    })
+    reviewsCount: await prisma.reviews.count({ where: { user_id: userId } }),
+    criticalReviewsCount: await prisma.reviews.count({
+      where: { user_id: userId, mode: "CRITICO" },
+    }),
+    tvDiaryCount: await prisma.diary_entries.count({
+      where: { user_id: userId, media_type: "tv" },
+    }),
   }
 
   // 3. Evaluación de criterios
@@ -103,8 +112,8 @@ export const getUserBadgesService = async (userId: number) => {
   return prisma.user_badges.findMany({
     where: { user_id: userId },
     include: {
-      badges: true
+      badges: true,
     },
-    orderBy: { unlocked_at: "desc" }
+    orderBy: { unlocked_at: "desc" },
   })
 }

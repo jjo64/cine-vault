@@ -1,7 +1,7 @@
 /**
  * @file FeedController.ts
  * @description Controlador para el ecosistema social y feed de actividad de CineVault.
- * Gestiona la visualización de actividad de amigos, interacciones (likes), marcadores 
+ * Gestiona la visualización de actividad de amigos, interacciones (likes), marcadores
  * y compartición de contenido.
  */
 

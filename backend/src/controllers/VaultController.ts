@@ -1,7 +1,7 @@
 /**
  * @file VaultController.ts
  * @description Controlador para la gestión del "Vault" (Bóveda) personal de los usuarios.
- * Permite organizar colecciones de películas y gestionar entradas sociales 
+ * Permite organizar colecciones de películas y gestionar entradas sociales
  * detalladas sobre la experiencia cinematográfica del usuario.
  */
 

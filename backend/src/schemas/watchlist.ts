@@ -1,13 +1,13 @@
 /**
  * @file watchlist.ts
  * @description Esquemas de validación Zod para la gestión de la Watchlist (Películas pendientes).
- * Define las reglas de integridad para la adición y eliminación de obras en la lista 
+ * Define las reglas de integridad para la adición y eliminación de obras en la lista
  * de seguimiento del usuario.
  */
 
 import { z } from "zod"
 
-/** 
+/**
  * Esquema para la adición de una película a la Watchlist.
  * Valida que el identificador de la obra sea un número entero positivo.
  */
@@ -19,7 +19,7 @@ export const agregarWatchlistSchema = z.object({
   media_type: z.enum(["movie", "tv"]).optional().default("movie"),
 })
 
-/** 
+/**
  * Esquema para la eliminación de una película de la Watchlist.
  * Se espera el identificador de la obra en el cuerpo de la petición.
  */
