@@ -206,7 +206,6 @@ export const fetchSimilarMovies = (idOrSlug: string) =>
     }>;
   }>(`/api/movies/${idOrSlug}/similar`);
 
-export const fetchSimilarMovies = (idOrSlug: string) => apiRequest<{ results?: Array<{ id: number; title: string; poster_path: string | null; release_date?: string; vote_average?: number }> }>(`/api/movies/${idOrSlug}/similar`)
 
 export const fetchSearchMovies = (query: string) =>
   apiRequest<{
