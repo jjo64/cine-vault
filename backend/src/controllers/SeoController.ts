@@ -31,7 +31,9 @@ export const getSitemap = async (_req: Request, res: Response) => {
         return SeoService.buildUrlSetXml(allEntries)
       }
 
-      const SITE_URL = (process.env.PUBLIC_SITE_URL || "https://cinevault.art").replace(/\/$/, "")
+      const SITE_URL = (
+        process.env.PUBLIC_SITE_URL || "https://cinevault.art"
+      ).replace(/\/$/, "")
       return SeoService.buildSitemapIndexXml([
         `${SITE_URL}/sitemaps/pages.xml`,
         `${SITE_URL}/sitemaps/movies.xml`,
@@ -93,7 +95,11 @@ export const getRobots = async (_req: Request, res: Response) => {
 /**
  * Redirige URLs antiguas o sin slug a las URLs normalizadas de CineVault.
  */
-export const redirectMovieToSlug = async (req: Request, res: Response, next: NextFunction) => {
+export const redirectMovieToSlug = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const tmdbId = Number(req.params.id)
   if (!Number.isInteger(tmdbId) || tmdbId <= 0) return next()
 
@@ -105,8 +111,8 @@ export const redirectMovieToSlug = async (req: Request, res: Response, next: Nex
 
   if (!slug) return next()
 
-  const target = req.path.startsWith("/film/") 
-    ? `/film/${slug}` 
+  const target = req.path.startsWith("/film/")
+    ? `/film/${slug}`
     : `/movie/${tmdbId}-${slug}`
 
   res.redirect(301, target)

@@ -1,7 +1,7 @@
 /**
  * @file ReportsController.ts
  * @description Controlador para el sistema de reportes y denuncias de la comunidad.
- * Permite a los administradores listar, consultar y procesar moderaciones sobre 
+ * Permite a los administradores listar, consultar y procesar moderaciones sobre
  * contenido reportado por infracción de normas.
  */
 

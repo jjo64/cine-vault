@@ -1,7 +1,7 @@
 /**
  * @file PaymentsController.ts
  * @description Controlador para la gestión de suscripciones y transacciones comerciales.
- * Maneja el flujo de pagos mediante Stripe, incluyendo la creación de sesiones de 
+ * Maneja el flujo de pagos mediante Stripe, incluyendo la creación de sesiones de
  * checkout, portales de autoservicio y la recepción de webhooks de red.
  */
 

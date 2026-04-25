@@ -1,7 +1,7 @@
 /**
  * @file SearchController.ts
  * @description Controlador para el motor de búsqueda y exploración de contenido.
- * Gestiona consultas unificadas, búsquedas especializadas y la recuperación de 
+ * Gestiona consultas unificadas, búsquedas especializadas y la recuperación de
  * metadatos detallados de cine y televisión.
  */
 
@@ -33,7 +33,7 @@ export const getTVDetail = async (req: Request, res: Response) => {
 }
 
 /**
- * Realiza una búsqueda unificada inteligente (Smart Search) balanceando 
+ * Realiza una búsqueda unificada inteligente (Smart Search) balanceando
  * relevancia de TMDB y métricas locales.
  */
 export const getSearch = async (req: Request, res: Response) => {
@@ -61,7 +61,9 @@ export const getSearch = async (req: Request, res: Response) => {
  */
 export const getSearchDebug = async (req: Request, res: Response) => {
   if (!shouldAllowSearchDebug(req)) {
-    return res.status(403).json({ error: "Acceso denegado a herramientas de depuración." })
+    return res
+      .status(403)
+      .json({ error: "Acceso denegado a herramientas de depuración." })
   }
 
   const q = normalizeQuery(req.query.q as string)
@@ -179,4 +181,3 @@ export const getTVSearch = async (req: Request, res: Response) => {
   )
   res.status(200).json(datos)
 }
-

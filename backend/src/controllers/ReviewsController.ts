@@ -1,7 +1,7 @@
 /**
  * @file ReviewsController.ts
  * @description Controlador para el ecosistema de Críticas y Valoraciones de CineVault.
- * Gestiona el ciclo de vida de las reseñas de películas, incluyendo la creación, 
+ * Gestiona el ciclo de vida de las reseñas de películas, incluyendo la creación,
  * edición, borrado, interacciones sociales (likes) y reportes de moderación.
  */
 
@@ -136,5 +136,3 @@ export const reportReview = async (req: Request, res: Response) => {
   )
   res.json(reporte)
 }
-
-

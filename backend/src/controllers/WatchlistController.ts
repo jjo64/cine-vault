@@ -1,7 +1,7 @@
 /**
  * @file WatchlistController.ts
  * @description Controlador para la gestión de la lista de seguimiento (Watchlist).
- * Permite a los usuarios organizar las películas que desean ver en el futuro, 
+ * Permite a los usuarios organizar las películas que desean ver en el futuro,
  * facilitando la planificación de su consumo cinematográfico.
  */
 

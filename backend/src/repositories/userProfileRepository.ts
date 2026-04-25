@@ -1,8 +1,8 @@
 /**
  * @file userProfileRepository.ts
  * @description Repositorio central de la capa social y de descubrimiento de perfiles.
- * Administra el "Social Graph" (seguidores/seguidos) y la exposición de la identidad 
- * pública de los usuarios. Provee agregaciones de actividad (conteo de reseñas, diario, 
+ * Administra el "Social Graph" (seguidores/seguidos) y la exposición de la identidad
+ * pública de los usuarios. Provee agregaciones de actividad (conteo de reseñas, diario,
  * seguidores) y proyecciones enriquecidas para la visualización de perfiles en la plataforma.
  */
 
@@ -24,8 +24,8 @@ type ActualizarPerfilData = {
 /** Tipo comodín para proyecciones SQL nativas */
 type RawRow = Record<string, string | number | null>
 
-/** 
- * Estructura de perfil público optimizada para la Web. 
+/**
+ * Estructura de perfil público optimizada para la Web.
  * Incluye contadores denormalizados de actividad para evitar consultas recursivas.
  */
 type UserPublicProfile = {
@@ -40,9 +40,9 @@ type UserPublicProfile = {
     diary_entries: number
     watchlist: number
     /** Mapeo de seguidores (Followers) */
-    follows_follows_follower_idTousers: number 
+    follows_follows_follower_idTousers: number
     /** Mapeo de seguidos (Following) */
-    follows_follows_following_idTousers: number 
+    follows_follows_following_idTousers: number
   }
 }
 

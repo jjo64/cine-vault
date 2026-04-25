@@ -1,7 +1,7 @@
 /**
  * @file NotificationsController.ts
  * @description Controlador para el sistema de alertas y notificaciones en tiempo real.
- * Gestiona la entrega de notificaciones pendientes, el conteo de elementos no leídos 
+ * Gestiona la entrega de notificaciones pendientes, el conteo de elementos no leídos
  * y la actualización de estados de lectura para el usuario autenticado.
  */
 
@@ -36,7 +36,9 @@ export const marcarComoLeida = async (req: Request, res: Response) => {
  */
 export const marcarTodasComoLeidas = async (req: Request, res: Response) => {
   await notifService.marcarTodasComoLeidasService(req.user!.user_id)
-  res.json({ message: "Todas las notificaciones han sido marcadas como leídas" })
+  res.json({
+    message: "Todas las notificaciones han sido marcadas como leídas",
+  })
 }
 
 /**

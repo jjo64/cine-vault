@@ -1,7 +1,7 @@
 /**
  * @file ArcosController.ts
  * @description Controlador para la gestión de Arcos Cinematográficos (retos y colecciones curadas).
- * Maneja las peticiones HTTP para la visualización, creación, moderación y seguimiento 
+ * Maneja las peticiones HTTP para la visualización, creación, moderación y seguimiento
  * del progreso de los arcos por parte de los usuarios.
  */
 

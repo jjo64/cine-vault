@@ -1,7 +1,7 @@
 /**
  * @file CuratedGalleryRepository.ts
  * @description Repositorio para la gestión de la vitrina personal ("Galería Curada") del usuario.
- * Permite a los cinéfilos destacar un conjunto selecto de películas en su perfil público, 
+ * Permite a los cinéfilos destacar un conjunto selecto de películas en su perfil público,
  * con soporte para ordenación personalizada y notas curatoriales.
  * Implementa sincronización atómica para garantizar la integridad de la colección.
  */
@@ -10,8 +10,8 @@ import { Prisma } from "@prisma/client"
 import { prisma } from "../lib/prisma.js"
 import type { ActualizarGaleriaCuradaDTO } from "../schemas/profile.js"
 
-/** 
- * Estructura de un ítem destacado en la galería. 
+/**
+ * Estructura de un ítem destacado en la galería.
  * Combina la relación del usuario con metadatos técnicos de la película.
  */
 type GaleriaItem = {
@@ -32,7 +32,7 @@ export const curatedGalleryRepository = {
   /**
    * Recupera la colección completa de películas destacadas de un usuario.
    * Realiza un JOIN con la tabla de referencia para obtener identificadores TMDB.
-   * 
+   *
    * @param userId - Propietario de la galería.
    */
   async findByUserId(userId: number): Promise<GaleriaItem[]> {
@@ -52,7 +52,7 @@ export const curatedGalleryRepository = {
   /**
    * Valida la existencia de un conjunto de películas antes de su inserción.
    * Garantiza que no se referencien películas inexistentes en el catálogo local.
-   * 
+   *
    * @param movieIds - Lista de identificadores a verificar.
    */
   async existMovieIds(movieIds: number[]): Promise<number[]> {
@@ -68,7 +68,7 @@ export const curatedGalleryRepository = {
    * Realiza una sincronización completa de la galería de un usuario.
    * Utiliza una transacción atómica para asegurar que el proceso de "limpiar y repoblar"
    * sea seguro y no deje la galería en un estado inconsistente.
-   * 
+   *
    * @param userId - Propietario de la galería.
    * @param data - DTO con el nuevo estado deseado de la vitrina.
    */

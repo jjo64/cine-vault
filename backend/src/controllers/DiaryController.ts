@@ -1,7 +1,7 @@
 /**
  * @file DiaryController.ts
  * @description Controlador para la gestión del Diario de Visionado.
- * Maneja las peticiones HTTP relacionadas con el registro cronológico de películas 
+ * Maneja las peticiones HTTP relacionadas con el registro cronológico de películas
  * consumidas por el usuario, permitiendo crear, consultar y eliminar entradas.
  */
 
@@ -47,7 +47,9 @@ export const removeDiary = async (req: Request, res: Response) => {
  * Recupera las sesiones del usuario autenticado.
  */
 export const getMyDiarySessions = async (req: Request, res: Response) => {
-  const sessions = await diaryService.obtenerSesionesDiarioService(req.user!.user_id)
+  const sessions = await diaryService.obtenerSesionesDiarioService(
+    req.user!.user_id
+  )
   res.json({ sessions })
 }
 
@@ -61,4 +63,3 @@ export const createDiarySession = async (req: Request, res: Response) => {
   )
   res.status(201).json(session)
 }
-

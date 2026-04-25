@@ -1,9 +1,9 @@
 /**
  * @file UserRepository.ts
  * @description Repositorio maestro para la gestión de identidades y perfiles de usuario.
- * Centraliza la persistencia de credenciales, roles, membresías y estados de seguridad. 
- * Implementa proyecciones seguras para garantizar que secretos críticos (como contraseñas 
- * y semillas 2FA) nunca abandonen la capa de persistencia en consultas ordinarias, 
+ * Centraliza la persistencia de credenciales, roles, membresías y estados de seguridad.
+ * Implementa proyecciones seguras para garantizar que secretos críticos (como contraseñas
+ * y semillas 2FA) nunca abandonen la capa de persistencia en consultas ordinarias,
  * salvaguardando la integridad de la base de usuarios.
  */
 
@@ -12,8 +12,8 @@ import { prisma } from "../lib/prisma.js"
 
 // --- Definiciones de Tipado de Seguridad ---
 
-/** 
- * Representación segurizada de la entidad de usuario. 
+/**
+ * Representación segurizada de la entidad de usuario.
  * Excluye explícitamente cualquier campo que pueda comprometer la cuenta si se expone.
  */
 export type UserWithoutPassword = Omit<users, "password" | "two_factor_secret">

@@ -1,6 +1,6 @@
 /**
  * @file InformationController.ts
- * @description Controlador para la obtención de metadatos biográficos y 
+ * @description Controlador para la obtención de metadatos biográficos y
  * filmografías directas desde servicios externos.
  */
 

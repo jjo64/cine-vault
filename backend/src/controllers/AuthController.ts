@@ -1,16 +1,19 @@
 /**
  * @file AuthController.ts
  * @description Controlador central para la gestión de Identidad y Seguridad.
- * Implementa los flujos de autenticación local (Email/Password), OAuth2 (Google), 
- * Seguridad en dos pasos (2FA) y gestión de sesiones activas. 
- * Sigue el principio de Responsabilidad Única (SRP) delegando la lógica de negocio 
+ * Implementa los flujos de autenticación local (Email/Password), OAuth2 (Google),
+ * Seguridad en dos pasos (2FA) y gestión de sesiones activas.
+ * Sigue el principio de Responsabilidad Única (SRP) delegando la lógica de negocio
  * íntegramente a los servicios de autenticación.
  */
 
 import { NextFunction, Request, Response } from "express"
 import passport from "passport"
 import { UnauthorizedError, ValidationError } from "../errors/AppErrors.js"
-import { buildGoogleState, resolveGoogleCallback } from "../helpers/googleAuth.js"
+import {
+  buildGoogleState,
+  resolveGoogleCallback,
+} from "../helpers/googleAuth.js"
 import {
   ACCESS_COOKIE_CLEAR_OPTIONS,
   ACCESS_COOKIE_OPTIONS,
@@ -54,7 +57,8 @@ export const registrar = async (req: Request, res: Response) => {
 
   if (resultado.verificationResent) {
     return res.status(200).json({
-      message: "Su cuenta ya existía pero no estaba verificada. Se ha reenviado el correo de confirmación.",
+      message:
+        "Su cuenta ya existía pero no estaba verificada. Se ha reenviado el correo de confirmación.",
       userId: resultado.userId,
       verificationResent: true,
     })
@@ -98,7 +102,8 @@ export const reenviarVerificacion = async (req: Request, res: Response) => {
   const { email } = req.body
   await authService.reenviarVerificacionService(email)
   res.json({
-    message: "Si la dirección está registrada y pendiente de verificación, recibirá un correo en breve.",
+    message:
+      "Si la dirección está registrada y pendiente de verificación, recibirá un correo en breve.",
   })
 }
 
@@ -107,10 +112,14 @@ export const reenviarVerificacion = async (req: Request, res: Response) => {
  */
 export const renovarToken = async (req: Request, res: Response) => {
   const token = req.cookies.refresh_token
-  if (!token) throw new UnauthorizedError("Identidad no proporcionada (Refresh Token faltante)")
-  
-  const { accessToken, refreshToken } = await authService.renovarTokenService(token)
-  
+  if (!token)
+    throw new UnauthorizedError(
+      "Identidad no proporcionada (Refresh Token faltante)"
+    )
+
+  const { accessToken, refreshToken } =
+    await authService.renovarTokenService(token)
+
   res.cookie("refresh_token", refreshToken, COOKIE_OPTIONS)
   res.cookie("access_token", accessToken, ACCESS_COOKIE_OPTIONS)
   res.json({ accessToken })
@@ -148,7 +157,11 @@ export const verificarToken = async (req: Request, res: Response) => {
 /**
  * Inicia el flujo de autenticación delegada con Google.
  */
-export const iniciarOAuthGoogle = (req: Request, res: Response, next: NextFunction) => {
+export const iniciarOAuthGoogle = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const callbackURL = resolveGoogleCallback(req)
   const state = buildGoogleState(callbackURL)
   const authOptions = {
@@ -163,7 +176,11 @@ export const iniciarOAuthGoogle = (req: Request, res: Response, next: NextFuncti
 /**
  * Valida dinámicamente el callback de Google antes de la resolución final.
  */
-export const verificarCallbackGoogle = (req: Request, res: Response, next: NextFunction) => {
+export const verificarCallbackGoogle = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const callbackURL = resolveGoogleCallback(req)
   const authOptions = {
     failureRedirect: "/api/auth/google",
@@ -178,7 +195,8 @@ export const verificarCallbackGoogle = (req: Request, res: Response, next: NextF
  */
 export const controladorCallback = async (req: Request, res: Response) => {
   const usuarioPassport = req.user as any
-  const { tokenAcceso, tokenRefresco } = await authService.googleCallbackService(usuarioPassport)
+  const { tokenAcceso, tokenRefresco } =
+    await authService.googleCallbackService(usuarioPassport)
 
   res.cookie("refresh_token", tokenRefresco, COOKIE_OPTIONS)
   res.cookie("access_token", tokenAcceso, ACCESS_COOKIE_OPTIONS)
@@ -230,9 +248,13 @@ export const verificar2FA = async (req: Request, res: Response) => {
   res.cookie("refresh_token", tokenRefresco, COOKIE_OPTIONS)
   res.cookie("access_token", tokenAcceso, ACCESS_COOKIE_OPTIONS)
   if (trustedDeviceToken) {
-    res.cookie("trusted_device", trustedDeviceToken, TRUSTED_DEVICE_COOKIE_OPTIONS)
+    res.cookie(
+      "trusted_device",
+      trustedDeviceToken,
+      TRUSTED_DEVICE_COOKIE_OPTIONS
+    )
   }
-  
+
   res.json({
     accessToken: tokenAcceso,
     usedRecoveryCode,
@@ -246,7 +268,10 @@ export const verificar2FA = async (req: Request, res: Response) => {
 export const olvidarContrasena = async (req: Request, res: Response) => {
   const { email } = req.body
   await authService.olvidarContrasenaService(email)
-  res.json({ message: "Si la cuenta existe, recibirá instrucciones en su bandeja de entrada." })
+  res.json({
+    message:
+      "Si la cuenta existe, recibirá instrucciones en su bandeja de entrada.",
+  })
 }
 
 /**

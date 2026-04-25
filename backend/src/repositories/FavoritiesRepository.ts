@@ -1,7 +1,7 @@
 /**
  * @file FavoritiesRepository.ts
  * @description Capa de persistencia para la gestión de películas favoritas de los usuarios.
- * Nota histórica: Se mantiene la nomenclatura "Favorities" para preservar la coherencia 
+ * Nota histórica: Se mantiene la nomenclatura "Favorities" para preservar la coherencia
  * con los identificadores de tablas y esquemas de la base de datos (Legacy Schema Compliance).
  * Provee métodos para clasificar y organizar las obras predilectas de la comunidad.
  */
@@ -10,7 +10,7 @@ import { favorites } from "@prisma/client"
 import { prisma } from "../lib/prisma.js"
 import type { AgregarFavoritoDTO } from "../schemas/favorites.js"
 
-/** 
+/**
  * Contrato de acceso a datos para la gestión de favoritos.
  * Define las operaciones atómicas necesarias para el control de la colección personal.
  */
@@ -19,9 +19,7 @@ export interface IFavoritiesRepository {
    * Recupera la lista completa de favoritos de un usuario.
    * Integra automáticamente el ID de TMDB para facilitar la carga de arte en el cliente.
    */
-  findByUserId(
-    userId: number
-  ): Promise<
+  findByUserId(userId: number): Promise<
     Array<{
       movie_id: number
       rank_position: number | null
@@ -54,16 +52,13 @@ export class FavoritiesRepository implements IFavoritiesRepository {
   /**
    * Recupera la colección de favoritos hidratada con referencias cruzadas.
    * Realiza un JOIN implícito para obtener el 'tmdb_id' desde la tabla de referencia global.
-   * 
+   *
    * @param userId - Propietario de la colección.
    */
   async findByUserId(userId: number) {
     const rows = await prisma.favorites.findMany({
       where: { user_id: userId },
-      orderBy: [
-        { rank_position: "asc" },
-        { id: "desc" }
-      ],
+      orderBy: [{ rank_position: "asc" }, { id: "desc" }],
       select: {
         movie_id: true,
         rank_position: true,
@@ -106,7 +101,7 @@ export class FavoritiesRepository implements IFavoritiesRepository {
 
   /**
    * Elimina la entrada de favorito especificada.
-   * 
+   *
    * @param id - Identificador único del registro en la tabla de favoritos.
    */
   async delete(id: number) {

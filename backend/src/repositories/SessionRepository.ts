@@ -1,8 +1,8 @@
 /**
  * @file SessionRepository.ts
  * @description Repositorio encargado de la gestión de persistencia de sesiones activas.
- * Implementa el control de acceso basado en dispositivos, permitiendo la monitorización 
- * de metadatos (User Agent, IP) y la invalidación granular o masiva de tokens. 
+ * Implementa el control de acceso basado en dispositivos, permitiendo la monitorización
+ * de metadatos (User Agent, IP) y la invalidación granular o masiva de tokens.
  * Es el núcleo de la seguridad de sesiones persistentes en la plataforma.
  */
 
@@ -54,7 +54,7 @@ export class SessionRepository implements ISessionRepository {
   /**
    * Punto de verificación de seguridad.
    * Compara el identificador de sesión con el hash del token persistido.
-   * 
+   *
    * @param id - UUID de la sesión extraído del token o cookie.
    * @param tokenHash - Hash criptográfico del token secreto.
    */
