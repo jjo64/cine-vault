@@ -11,6 +11,9 @@ pnpm-debug.log*
 .env.*
 !.env.example
 
+# Scratch
+scratch/
+
 # Build & Output
 dist/
 dist-ssr/
