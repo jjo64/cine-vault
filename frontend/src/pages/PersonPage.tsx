@@ -1,5 +1,5 @@
-import { PersonPageView } from '../features/person'
+import { PersonPageView } from "../features/person";
 
 export default function PersonPage() {
-	return <PersonPageView />
+  return <PersonPageView />;
 }

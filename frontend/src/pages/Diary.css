@@ -2,7 +2,7 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(8,8,8,0.97);
+  background: rgba(8, 8, 8, 0.97);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--color-border);
   padding: 0 var(--page-padding-x);
@@ -13,26 +13,29 @@
 }
 
 .diary-session-card {
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    padding: 24px 28px;
-    transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
-    position: relative;
-    overflow: hidden;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: 24px 28px;
+  transition:
+    border-color 0.3s,
+    transform 0.3s,
+    box-shadow 0.3s;
+  position: relative;
+  overflow: hidden;
 }
 
 .diary-poster-fan-container {
-    position: relative;
-    flex-shrink: 0;
-    transition: all 0.3s ease;
+  position: relative;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
 }
 
 .diary-poster-fan-item {
-    position: absolute;
-    border: 2px solid #0A0A0A;
-    overflow: hidden;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.7);
-    transition: transform 0.3s;
+  position: absolute;
+  border: 2px solid #0a0a0a;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7);
+  transition: transform 0.3s;
 }
 
 .diary-main {
@@ -91,16 +94,16 @@
   }
 
   .diary-poster-fan-container {
-      transform: scale(0.9);
-      margin-bottom: 10px;
+    transform: scale(0.9);
+    margin-bottom: 10px;
   }
 
   .diary-session-card {
-      padding: 20px 16px;
-      text-align: center;
+    padding: 20px 16px;
+    text-align: center;
   }
 
   .diary-session-films {
-      justify-content: center;
+    justify-content: center;
   }
 }

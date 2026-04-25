@@ -1,108 +1,108 @@
 /* Navbar */
 .md-navbar {
-    padding: 0 52px;
-    height: 64px;
+  padding: 0 52px;
+  height: 64px;
 }
 
 .md-nav-logo {
-    gap: 30px;
+  gap: 30px;
 }
 
 .md-nav-links {
-    gap: 24px;
+  gap: 24px;
 }
 
 .md-search-wrapper {
-    width: 240px;
+  width: 240px;
 }
 
 .md-search-title {
-    display: -webkit-box;
-    line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    word-break: break-word;
-    line-height: 1.25;
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+  line-height: 1.25;
 }
 
 .md-search-item {
-    min-width: 0;
+  min-width: 0;
 }
 
 .md-nav-right {
-    gap: 12px;
+  gap: 12px;
 }
 
 .md-mobile-menu-btn {
-    display: none;
+  display: none;
 }
 
 .md-desktop-links {
-    display: flex;
+  display: flex;
 }
 
 @media (max-width: 1024px) {
-    .md-navbar {
-        padding: 0 24px;
-    }
+  .md-navbar {
+    padding: 0 24px;
+  }
 
-    .md-search-wrapper {
-        width: 190px;
-    }
+  .md-search-wrapper {
+    width: 190px;
+  }
 
-    .md-nav-links {
-        gap: 14px;
-    }
+  .md-nav-links {
+    gap: 14px;
+  }
 }
 
 @media (max-width: 768px) {
-    .md-navbar {
-        padding: 0 14px;
-        height: 56px;
-    }
+  .md-navbar {
+    padding: 0 14px;
+    height: 56px;
+  }
 
-    .md-nav-logo {
-        gap: 12px;
-    }
+  .md-nav-logo {
+    gap: 12px;
+  }
 
-    .md-search-wrapper {
-        display: none;
-    }
+  .md-search-wrapper {
+    display: none;
+  }
 
-    .md-nav-right {
-        gap: 8px;
-    }
+  .md-nav-right {
+    gap: 8px;
+  }
 
-    .md-user-actions {
-        display: none !important;
-    }
+  .md-user-actions {
+    display: none !important;
+  }
 
-    .md-desktop-links {
-        display: none;
-    }
+  .md-desktop-links {
+    display: none;
+  }
 
-    .md-mobile-menu-btn {
-        display: grid;
-    }
+  .md-mobile-menu-btn {
+    display: grid;
+  }
 
-    .md-search-dropdown {
-        right: 0 !important;
-        left: auto !important;
-        width: min(94vw, 360px) !important;
-    }
+  .md-search-dropdown {
+    right: 0 !important;
+    left: auto !important;
+    width: min(94vw, 360px) !important;
+  }
 
-    .md-logo-link {
-        font-size: 17px !important;
-        letter-spacing: 0.1em !important;
-    }
+  .md-logo-link {
+    font-size: 17px !important;
+    letter-spacing: 0.1em !important;
+  }
 }
 
 .tv-detail-page {
   min-height: 100vh;
   background: #080808;
   color: #e2e2e2;
-  font-family: 'Syne', sans-serif;
+  font-family: "Syne", sans-serif;
 }
 
 .tv-detail-loading,
@@ -110,7 +110,7 @@
   min-height: 100vh;
   background: #080808;
   color: #7a7a7a;
-  font-family: 'Syne', sans-serif;
+  font-family: "Syne", sans-serif;
   display: grid;
   place-items: center;
   padding: 24px;
@@ -149,11 +149,14 @@
   align-items: center;
   gap: 8px;
   margin-bottom: 14px;
-  font-family: 'Syne', sans-serif;
+  font-family: "Syne", sans-serif;
   font-size: 11px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  transition: border-color 0.22s ease, color 0.22s ease, transform 0.22s ease;
+  transition:
+    border-color 0.22s ease,
+    color 0.22s ease,
+    transform 0.22s ease;
 }
 
 .tv-back-button:hover {
@@ -164,7 +167,7 @@
 
 .tv-title {
   margin: 0;
-  font-family: 'Cormorant Garamond', serif;
+  font-family: "Cormorant Garamond", serif;
   font-size: clamp(34px, 6vw, 72px);
   line-height: 1.03;
   font-weight: 500;
@@ -199,22 +202,22 @@
 
 .tv-detail-quote {
   padding: 52px 52px 40px;
-    position: relative;
-    z-index: 20; /* Por encima del fondo del hero */
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    min-height: 260px;
-    
-    /* Un margen superior negativo "tira" de la sección hacia arriba 
+  position: relative;
+  z-index: 20; /* Por encima del fondo del hero */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  min-height: 260px;
+
+  /* Un margen superior negativo "tira" de la sección hacia arriba 
        dentro del área del 100vh del Hero sin cortar la imagen. */
-    margin-top: -27vh; 
-    
-    /* Añadimos un degradado al inicio de esta sección para que 
+  margin-top: -27vh;
+
+  /* Añadimos un degradado al inicio de esta sección para que 
        se funda con el negro del final del backdrop */
-    background: linear-gradient(to bottom, rgba(8, 8, 8, 0.78), #080808 26%);
+  background: linear-gradient(to bottom, rgba(8, 8, 8, 0.78), #080808 26%);
 }
 
 .tv-detail-main-layout {
@@ -246,7 +249,7 @@
 .tv-tagline {
   margin-top: 0;
   color: #d4af7a;
-  font-family: 'Cormorant Garamond', serif;
+  font-family: "Cormorant Garamond", serif;
   font-size: 24px;
   font-style: italic;
 }
@@ -256,7 +259,7 @@
   color: #e2e2e2;
   line-height: 1.75;
   font-size: 18px;
-  font-family: 'Cormorant Garamond', serif;
+  font-family: "Cormorant Garamond", serif;
 }
 
 .tv-meta-grid {
@@ -318,7 +321,11 @@
   gap: 6px;
   align-items: center;
   cursor: pointer;
-  transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease,
+    background-color 0.2s ease,
+    transform 0.2s ease;
 }
 
 .tv-action-btn:hover {
@@ -351,7 +358,10 @@
   display: grid;
   place-items: center;
   cursor: pointer;
-  transition: border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
 }
 
 .tv-star-btn:hover {
@@ -372,7 +382,7 @@
   border: 1px solid #252525;
   color: #e2e2e2;
   padding: 10px;
-  font-family: 'Cormorant Garamond', serif;
+  font-family: "Cormorant Garamond", serif;
   font-size: 16px;
   line-height: 1.45;
 }
@@ -390,7 +400,10 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 11px;
-  transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    transform 0.2s ease;
 }
 
 .tv-save-review:hover:not(:disabled) {
@@ -424,7 +437,7 @@
 }
 
 .tv-section-title {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: "Cormorant Garamond", serif;
   font-size: clamp(26px, 4vw, 36px);
   font-weight: 500;
   margin: 0 0 14px;
@@ -460,7 +473,7 @@
 }
 
 .tv-season-title {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: "Cormorant Garamond", serif;
   font-size: 24px;
 }
 
@@ -505,7 +518,7 @@
 }
 
 .tv-episode-title {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: "Cormorant Garamond", serif;
   font-size: 20px;
 }
 
@@ -543,7 +556,10 @@
   max-width: 162px;
   width: 100%;
   justify-self: center;
-  transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+  transition:
+    transform 0.22s ease,
+    border-color 0.22s ease,
+    box-shadow 0.22s ease;
 }
 
 .tv-credit-card:hover {
@@ -588,7 +604,7 @@
 
 .tv-crew-title {
   margin: 0 0 8px;
-  font-family: 'Cormorant Garamond', serif;
+  font-family: "Cormorant Garamond", serif;
   font-size: 24px;
 }
 
@@ -647,7 +663,10 @@
   max-width: 166px;
   width: 100%;
   justify-self: center;
-  transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+  transition:
+    transform 0.22s ease,
+    border-color 0.22s ease,
+    box-shadow 0.22s ease;
 }
 
 .tv-similar-card:hover {
@@ -706,7 +725,7 @@
 }
 
 .tv-review-content {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: "Cormorant Garamond", serif;
   font-size: 20px;
   line-height: 1.4;
   margin-bottom: 8px;
@@ -794,7 +813,7 @@
   }
 
   .tv-action-row {
-     justify-content: center;
+    justify-content: center;
   }
 
   .tv-action-btn {
