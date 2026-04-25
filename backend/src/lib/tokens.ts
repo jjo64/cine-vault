@@ -1,3 +1,10 @@
+/**
+ * @file tokens.ts
+ * @description Gestión centralizada de tokens JWT y configuración de cookies de seguridad.
+ * Implementa la lógica de autenticación de doble token (Access + Refresh) y 
+ * la persistencia de sesiones en base de datos mediante hashing SHA-256.
+ */
+
 import {
   PayloadAcceso,
   PayloadRefresco,
@@ -9,19 +16,26 @@ import { sessionRepository } from "../repositories/SessionRepository.js"
 const EXPIRACION_TOKEN_ACCESO = "15m"
 const DIAS_EXPIRACION_TOKEN_REFRESCO = 7
 const IS_PRODUCTION = process.env.NODE_ENV === "production"
-const COOKIE_SAME_SITE: "none" | "lax" = IS_PRODUCTION ? "none" : "lax"
-/* ==========================================================================
-   1. CONFIGURACIÓN DE COOKIES
-   ========================================================================== */
 
+/** Determina la política de SameSite basándose en el entorno de ejecución */
+const COOKIE_SAME_SITE: "none" | "lax" = IS_PRODUCTION ? "none" : "lax"
+
+/**
+ * ---------------------------------------------------------------------------
+ * CONFIGURACIÓN DE COOKIES
+ * ---------------------------------------------------------------------------
+ */
+
+/** Opciones base para la cookie de Refresh Token (larga duración) */
 export const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: IS_PRODUCTION,
   sameSite: COOKIE_SAME_SITE,
   path: "/",
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días en ms
+  maxAge: DIAS_EXPIRACION_TOKEN_REFRESCO * 24 * 60 * 60 * 1000,
 }
 
+/** Opciones para la cookie de Access Token (corta duración) */
 export const ACCESS_COOKIE_OPTIONS = {
   httpOnly: true,
   secure: IS_PRODUCTION,
@@ -30,6 +44,7 @@ export const ACCESS_COOKIE_OPTIONS = {
   maxAge: 15 * 60 * 1000,
 }
 
+/** Opciones para la cookie de dispositivo de confianza (30 días) */
 export const TRUSTED_DEVICE_COOKIE_OPTIONS = {
   httpOnly: true,
   secure: IS_PRODUCTION,
@@ -38,33 +53,24 @@ export const TRUSTED_DEVICE_COOKIE_OPTIONS = {
   maxAge: 30 * 24 * 60 * 60 * 1000,
 }
 
-export const COOKIE_CLEAR_OPTIONS = {
-  httpOnly: true,
-  secure: IS_PRODUCTION,
-  sameSite: COOKIE_SAME_SITE,
-  path: "/",
-}
-
-export const ACCESS_COOKIE_CLEAR_OPTIONS = {
-  httpOnly: true,
-  secure: IS_PRODUCTION,
-  sameSite: COOKIE_SAME_SITE,
-  path: "/",
-}
-
-export const TRUSTED_DEVICE_COOKIE_CLEAR_OPTIONS = {
-  httpOnly: true,
-  secure: IS_PRODUCTION,
-  sameSite: COOKIE_SAME_SITE,
-  path: "/",
-}
-
-/* ==========================================================================
-   2. TOKENS JWT
-   ========================================================================== */
+// Opciones de limpieza de cookies (Logout)
+export const COOKIE_CLEAR_OPTIONS = { httpOnly: true, secure: IS_PRODUCTION, sameSite: COOKIE_SAME_SITE, path: "/" }
+export const ACCESS_COOKIE_CLEAR_OPTIONS = { ...COOKIE_CLEAR_OPTIONS }
+export const TRUSTED_DEVICE_COOKIE_CLEAR_OPTIONS = { ...COOKIE_CLEAR_OPTIONS }
 
 /**
- * Genera un JWT de acceso de corta duración (15 minutos).
+ * ---------------------------------------------------------------------------
+ * GESTIÓN DE TOKENS JWT
+ * ---------------------------------------------------------------------------
+ */
+
+/**
+ * Crea un token de acceso firmado digitalmente.
+ * 
+ * @param idUsuario - Identificador único del usuario.
+ * @param rol - Rol administrativo asignado.
+ * @param isVerified - Estado de verificación de la cuenta.
+ * @returns Token JWT firmado.
  */
 export const crearTokenAcceso = (
   idUsuario: number,
@@ -82,8 +88,11 @@ export const crearTokenAcceso = (
 }
 
 /**
- * Genera un Refresh Token, lo hashea y persiste la sesión en la DB.
- * Solo el hash se usa para verificaciones — el token original va en la cookie.
+ * Genera un Refresh Token, crea una sesión en DB y devuelve el token.
+ * Se guarda el HASH del token en DB para mayor seguridad (Slow lookup).
+ * 
+ * @param idUsuario - ID del usuario solicitante.
+ * @returns Objeto con el token en texto plano y el ID de sesión.
  */
 export const crearTokenRefresco = async (idUsuario: number) => {
   const idSesion = crypto.randomUUID()
@@ -95,7 +104,7 @@ export const crearTokenRefresco = async (idUsuario: number) => {
 
   await sessionRepository.create({
     id: idSesion,
-    refresh_token: token,
+    refresh_token: token, // Se almacena por compatibilidad, pero se valida por hash
     token_hash: hashearToken(token),
     users: { connect: { id: idUsuario } },
     expires_at: new Date(
@@ -107,8 +116,11 @@ export const crearTokenRefresco = async (idUsuario: number) => {
 }
 
 /**
- * Verifica un Refresh Token y comprueba que la sesión exista en DB por hash.
- * Si la sesión fue revocada, lanza error aunque el JWT sea válido.
+ * Valida un Refresh Token y verifica su vigencia en la base de datos.
+ * 
+ * @param token - Token de refresco recibido por el cliente.
+ * @returns Payload de la sesión si es válido.
+ * @throws Error si el token es inválido o la sesión ha sido revocada explícitamente.
  */
 export const verificarTokenRefresco = async (token: string) => {
   const payload = jwt.verify(
@@ -121,14 +133,13 @@ export const verificarTokenRefresco = async (token: string) => {
     hashearToken(token)
   )
 
-  if (!sesion) throw new Error("Sesión inválida o revocada")
+  if (!sesion) throw new Error("Sesión inválida, inexistente o revocada")
 
   return payload
 }
 
 /**
- * Genera un hash SHA-256 de un token.
- * Usado para guardar el refresh_token de forma segura en la DB.
+ * Genera un resumen SHA-256 de un token para almacenamiento seguro.
  */
 export const hashearToken = (token: string): string => {
   return crypto.createHash("sha256").update(token).digest("hex")

@@ -17,10 +17,14 @@ export function buildMovieCanonicalPath(movieId: number, title: string) {
 }
 
 export function isCurrentMovieMatch(
-  candidate: { movie_id?: number | null; tmdb_id?: number | null },
+  candidate: { movie_id?: number | null; tmdb_id?: number | null; media_type?: string | null; movie_info?: { media_type?: string | null } | null },
   detailId: number,
-  routeMovieId: number | null
+  routeMovieId: number | null,
+  targetType?: 'movie' | 'tv'
 ) {
+  const cType = candidate.media_type || candidate.movie_info?.media_type;
+  if (targetType && cType && cType !== targetType) return false;
+
   if (candidate.tmdb_id && candidate.tmdb_id === detailId) return true;
   if (routeMovieId && candidate.tmdb_id && candidate.tmdb_id === routeMovieId) return true;
   if (candidate.movie_id && candidate.movie_id === detailId) return true;

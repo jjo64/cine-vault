@@ -141,6 +141,8 @@ export const fetchPopularMovies = () => apiRequest<{ results?: Array<{ id: numbe
 
 export const fetchTopRatedMovies = () => apiRequest<{ results?: Array<{ id: number; title: string; poster_path: string | null; release_date?: string }> }>(`/api/movies/top-rated`)
 
+export const fetchSimilarMovies = (idOrSlug: string) => apiRequest<{ results?: Array<{ id: number; title: string; poster_path: string | null; release_date?: string; vote_average?: number }> }>(`/api/movies/${idOrSlug}/similar`)
+
 export const fetchSearchMovies = (query: string) =>
   apiRequest<{ results?: Array<{
     id: number
@@ -195,18 +197,20 @@ export const deleteReview = (token: string | null, reviewId: number) =>
 export const fetchMyWatchlist = (token: string | null) =>
   apiRequest<Array<{ movie_id: number; tmdb_id?: number | null }>>('/api/watchlist', { token })
 
-export const addToWatchlist = (token: string | null, movieId: number) =>
+export const addToWatchlist = (token: string | null, movieId: number, mediaType: 'movie' | 'tv' = 'movie') =>
   apiRequest<{ message: string }>('/api/watchlist', {
     token,
     method: 'POST',
-    body: { movie_id: movieId },
+    body: { movie_id: movieId, media_type: mediaType },
   })
 
-export const removeFromWatchlist = (token: string | null, movieId: number) =>
-  apiRequest<{ message: string }>(`/api/watchlist/${movieId}`, {
+export const removeFromWatchlist = (token: string | null, movieId: number, mediaType?: 'movie' | 'tv') => {
+  const query = mediaType ? `?mediaType=${mediaType}` : ''
+  return apiRequest<{ message: string }>(`/api/watchlist/${movieId}${query}`, {
     token,
     method: 'DELETE',
   })
+}
 
 export const fetchMyFavorites = async (token: string | null) => {
   try {
@@ -216,18 +220,20 @@ export const fetchMyFavorites = async (token: string | null) => {
   }
 }
 
-export const addToFavorites = (token: string | null, movieId: number) =>
+export const addToFavorites = (token: string | null, movieId: number, mediaType: 'movie' | 'tv' = 'movie') =>
   apiRequest('/api/favorites/' + movieId, {
     token,
     method: 'POST',
-    body: { movieId },
+    body: { movieId, media_type: mediaType },
   })
 
-export const removeFromFavorites = (token: string | null, movieId: number) =>
-  apiRequest('/api/favorites/' + movieId, {
+export const removeFromFavorites = (token: string | null, movieId: number, mediaType?: 'movie' | 'tv') => {
+  const query = mediaType ? `?mediaType=${mediaType}` : ''
+  return apiRequest(`/api/favorites/${movieId}${query}`, {
     token,
     method: 'DELETE',
   })
+}
 
 export const fetchMyDiary = async (token: string | null) => {
   try {
@@ -237,13 +243,14 @@ export const fetchMyDiary = async (token: string | null) => {
   }
 }
 
-export const addToDiary = (token: string | null, movieId: number, watchedDate?: string) =>
+export const addToDiary = (token: string | null, movieId: number, watchedDate?: string, mediaType: 'movie' | 'tv' = 'movie') =>
   apiRequest('/api/diary', {
     token,
     method: 'POST',
     body: {
       movie_id: movieId,
       watched_date: watchedDate || new Date().toISOString().slice(0, 10),
+      media_type: mediaType,
     },
   })
 

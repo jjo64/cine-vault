@@ -1,33 +1,37 @@
 /**
  * @file FeedRepository.ts
- * @description Repositorio encargado de la orquestación recursiva del Feed social. 
- * Recupera actividades de usuarios seguidos (reseñas, bóveda, watchlist) y gestiona interacciones 
- * sociales como "likes", "bookmarks" y eventos de compartir.
+ * @description Motor de agregación y persistencia para el "Cine-Feed" social de la plataforma.
+ * Orquestra la recuperación de múltiples flujos de actividad (reseñas, adiciones a la boveda, 
+ * seguimiento) para construir una línea de tiempo cohesiva y personalizada. 
+ * Gestiona además la lógica de interacción social (likes, guardados, ocultaciones) 
+ * asegurando la integridad de los contadores mediante transacciones atómicas.
  */
 
 import { Prisma } from "@prisma/client"
 import { prisma } from "../lib/prisma.js"
 
-/**
- * Tipos de actividades que pueden aparecer en el Feed.
+/** 
+ * Clasificación de los eventos que alimentan el ecosistema social de CineVault.
  */
 type FeedItemType =
-  | "review"
-  | "vault"
-  | "watchlist"
-  | "discovery"
-  | "tonight"
-  | "list"
-  | "quote"
+  | "review"     // Nueva crítica o calificación
+  | "vault"      // Adición a la colección permanente (Bóveda)
+  | "watchlist"  // Registro en la lista de visionado pendiente
+  | "discovery"  // Recomendación generada por inteligencia de búsqueda
+  | "tonight"    // Visionado programado para la sesión actual
+  | "list"       // Creación o actualización de una lista curada
+  | "quote"      // Cita cinematográfica destacada
 
 /**
- * Clase FeedRepository
- * Gestiona la agregación de eventos sociales para construir la línea de tiempo del usuario.
+ * Repositorio de Feed
+ * Provee la infraestructura de datos para la experiencia social central.
  */
 export class FeedRepository {
   /**
-   * Obtiene la lista de IDs de usuarios que el espectador sigue, incluyendo el suyo propio.
-   * @param viewerId - ID del usuario que solicita el feed.
+   * Identifica el grafo de origen del feed del usuario.
+   * Recupera a todos los usuarios seguidos e incluye el propio perfil del espectador.
+   * 
+   * @param viewerId - Usuario que solicita la visualización del feed.
    */
   async listSourceUserIds(viewerId: number) {
     const following = await prisma.follows.findMany({
@@ -39,16 +43,20 @@ export class FeedRepository {
   }
 
   /**
-   * Recupera las filas crudas de diversas tablas de actividad para los usuarios origen.
-   * Limitado a 160 entradas por tipo para optimizar rendimiento previo al filtrado de negocio.
+   * Recupera los bloques de actividad bruta de los usuarios origen.
+   * Aplica un límite preventivo (Soft-cap) para equilibrar el rendimiento y 
+   * la profundidad histórica del feed antes de su mezcla final en la capa de servicios.
+   * 
+   * @param sourceUserIds - Grafo de usuarios a monitorizar.
    */
   async listFeedRows(sourceUserIds: number[]) {
+    // Recuperación paralela de los tres pilares de actividad
     const [reviews, vaultEntries, watchlistEntries] = await Promise.all([
       prisma.reviews.findMany({
         where: { user_id: { in: sourceUserIds } },
         include: {
           users: { select: { id: true, username: true, avatar_url: true } },
-          movies_ref: { select: { id: true, tmdb_id: true } },
+          movies_ref: { select: { id: true, tmdb_id: true, media_type: true } },
         },
         take: 160,
         orderBy: { created_at: "desc" },
@@ -57,7 +65,7 @@ export class FeedRepository {
         where: { user_id: { in: sourceUserIds } },
         include: {
           users: { select: { id: true, username: true, avatar_url: true } },
-          movies_ref: { select: { id: true, tmdb_id: true } },
+          movies_ref: { select: { id: true, tmdb_id: true, media_type: true } },
         },
         take: 160,
         orderBy: { added_at: "desc" },
@@ -66,7 +74,7 @@ export class FeedRepository {
         where: { user_id: { in: sourceUserIds } },
         include: {
           users: { select: { id: true, username: true, avatar_url: true } },
-          movies_ref: { select: { id: true, tmdb_id: true } },
+          movies_ref: { select: { id: true, tmdb_id: true, media_type: true } },
         },
         take: 160,
         orderBy: { added_at: "desc" },
@@ -77,7 +85,7 @@ export class FeedRepository {
   }
 
   /**
-   * Determina qué reseñas de una lista han sido marcadas con "like" por el espectador.
+   * Procesa el estado de las interacciones (likes) del espectador sobre el feed recuperado.
    */
   async listLikedReviewIds(viewerId: number, reviewIds: number[]) {
     if (reviewIds.length === 0) return []
@@ -94,7 +102,8 @@ export class FeedRepository {
   }
 
   /**
-   * Recupera los favoritos (bookmarks) guardados por el usuario para una lista de referencias.
+   * Recupera las marcas de guardado (bookmarks) para una colección heterogénea de ítems.
+   * Utiliza SQL Raw para optimizar la consulta multicriterio sobre tipos y IDs.
    */
   async listBookmarkedRefs(
     viewerId: number,
@@ -127,7 +136,7 @@ export class FeedRepository {
   }
 
   /**
-   * Recupera los elementos que el usuario ha decidido ocultar de su feed.
+   * Identifica los elementos marcados por el usuario para su exclusión del feed.
    */
   async listHiddenRefs(
     viewerId: number,
@@ -160,7 +169,7 @@ export class FeedRepository {
   }
 
   /**
-   * Verifica la existencia de una reseña por ID.
+   * Verifica la existencia física de una reseña.
    */
   async existsReview(reviewId: number) {
     const review = await prisma.reviews.findUnique({
@@ -171,11 +180,13 @@ export class FeedRepository {
   }
 
   /**
-   * Alterna el estado de "like" en una reseña de forma atómica.
-   * Actualiza el contador denormalizado en la tabla de reseñas para optimización de lectura.
+   * Alterna el estado de aceptación ("Like") de una reseña.
+   * Implementa una de-normalización controlada actualizando el contador total en la tabla 
+   * de reseñas mediante una transacción para mantener la consistencia eventual.
    */
   async setReviewLike(viewerId: number, reviewId: number, active: boolean) {
     return prisma.$transaction(async (tx) => {
+      // 1. Registro de la interacción atómica
       if (active) {
         await tx.$executeRaw(Prisma.sql`
           INSERT IGNORE INTO review_likes (user_id, review_id)
@@ -188,6 +199,7 @@ export class FeedRepository {
         `)
       }
 
+      // 2. Recalibración del contador denormalizado para optimización de lectura
       const rows = await tx.$queryRaw<Array<{ total: bigint }>>(Prisma.sql`
         SELECT COUNT(*) AS total
         FROM review_likes
@@ -207,7 +219,7 @@ export class FeedRepository {
   }
 
   /**
-   * Guarda o elimina un bookmark sobre un elemento del feed.
+   * Persiste el interés del usuario en un elemento guardándolo para acceso rápido posterior.
    */
   async setBookmark(
     viewerId: number,
@@ -230,7 +242,7 @@ export class FeedRepository {
   }
 
   /**
-   * Registra o elimina la ocultación de un elemento para un usuario.
+   * Excluye un elemento específico de la vista de feed del usuario.
    */
   async setHidden(
     viewerId: number,
@@ -253,7 +265,8 @@ export class FeedRepository {
   }
 
   /**
-   * Registra un evento de compartición para analíticas o efectos secundarios.
+   * Registra un hito de propagación (Share).
+   * Estos eventos alimentan las métricas de visibilidad del contenido en la plataforma.
    */
   async createShareEvent(
     viewerId: number,
@@ -268,4 +281,5 @@ export class FeedRepository {
   }
 }
 
+/** Instancia única de acceso al repositorio social */
 export const feedRepository = new FeedRepository()

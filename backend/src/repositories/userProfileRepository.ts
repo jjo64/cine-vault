@@ -1,31 +1,32 @@
 /**
  * @file userProfileRepository.ts
- * @description Repositorio central para la gestión de perfiles públicos, relaciones 
- * de seguimiento (social graph) y colecciones destacadas de los usuarios. 
- * Implementa consultas optimizadas para la exposición de perfiles en la red social.
+ * @description Repositorio central de la capa social y de descubrimiento de perfiles.
+ * Administra el "Social Graph" (seguidores/seguidos) y la exposición de la identidad 
+ * pública de los usuarios. Provee agregaciones de actividad (conteo de reseñas, diario, 
+ * seguidores) y proyecciones enriquecidas para la visualización de perfiles en la plataforma.
  */
 
 import { Prisma } from "@prisma/client"
 import { prisma } from "../lib/prisma.js"
 
-// --- Tipos de Datos Locales ---
+// --- Tipado de la Capa de Presentación Social ---
 
-/**
- * Datos necesarios para actualizar campos básicos del perfil.
- */
+/** Payload para la actualización de metadatos de identidad social */
 type ActualizarPerfilData = {
+  /** Identificador único visual */
   username?: string
+  /** URL del recurso gráfico de avatar */
   avatar_url?: string
+  /** Biografía o declaración cinematográfica */
   bio?: string
 }
 
-/**
- * Registro genérico para resultados de consultas SQL Raw.
- */
+/** Tipo comodín para proyecciones SQL nativas */
 type RawRow = Record<string, string | number | null>
 
-/**
- * Perfil público completo con agregaciones de actividad social.
+/** 
+ * Estructura de perfil público optimizada para la Web. 
+ * Incluye contadores denormalizados de actividad para evitar consultas recursivas.
  */
 type UserPublicProfile = {
   id: number
@@ -33,18 +34,19 @@ type UserPublicProfile = {
   avatar_url: string | null
   bio: string | null
   created_at: Date
+  /** Estadísticas vitales de participación en la comunidad */
   _count: {
     reviews: number
     diary_entries: number
     watchlist: number
-    follows_follows_follower_idTousers: number // Seguidores
-    follows_follows_following_idTousers: number // Seguidos
+    /** Mapeo de seguidores (Followers) */
+    follows_follows_follower_idTousers: number 
+    /** Mapeo de seguidos (Following) */
+    follows_follows_following_idTousers: number 
   }
 }
 
-/**
- * Resumen de usuario para listados de administración o Directorio.
- */
+/** Resumen de identidad para listados de directorio */
 type UserSummary = {
   id: number
   username: string
@@ -53,9 +55,7 @@ type UserSummary = {
   avatar_url: string | null
 }
 
-/**
- * Resultado individual de búsqueda de usuarios.
- */
+/** Resultado de búsqueda de perfiles en el motor social */
 type UserSearchResult = {
   id: number
   username: string
@@ -64,9 +64,8 @@ type UserSearchResult = {
   _count: { reviews: number }
 }
 
-/**
- * Tipos auxiliares para la resolución de relaciones de seguimiento con Prisma.
- */
+// --- Tipos de Relación (Social Graph) ---
+
 type FollowsWithFollower = Awaited<
   ReturnType<typeof prisma.users.findUnique>
 > & {
@@ -93,36 +92,48 @@ type FollowsWithFollowing = Awaited<
 
 /**
  * Interfaz IUserProfileRepository
- * Define las capacidades de consulta y mutación social de perfiles.
+ * Contrato de persistencia para el motor social de CineVault.
  */
 export interface IUserProfileRepository {
+  /** Localiza la ficha pública de un usuario por ID */
   findById(id: number): Promise<UserPublicProfile | null>
+  /** Resuelve el perfil público mediante el nombre de usuario (slug) */
   findByUsername(username: string): Promise<UserPublicProfile | null>
+  /** Obtiene el catálogo global de perfiles */
   findAll(): Promise<UserSummary[]>
+  /** Ejecuta la búsqueda de usuarios por texto libre */
   search(query: string, take: number): Promise<UserSearchResult[]>
+  /** Actualiza metadatos del perfil */
   update(id: number, data: ActualizarPerfilData): Promise<void>
+  /** Establece un nuevo vínculo de seguimiento */
   createFollow(followerId: number, followingId: number): Promise<void>
+  /** Revoca un vínculo de seguimiento */
   deleteFollow(
     followerId: number,
     followingId: number
   ): Promise<{ count: number }>
+  /** Verifica el estado de relación entre dos usuarios */
   findFollow(
     viewerId: number,
     targetId: number
   ): Promise<{ follower_id: number } | null>
+  /** Recupera el listado de seguidores */
   findFollowers(id: number): Promise<FollowsWithFollower | null>
+  /** Recupera el listado de usuarios seguidos */
   findFollowing(id: number): Promise<FollowsWithFollowing | null>
+  /** Obtiene la identidad cinematográfica mediante SQL Raw */
   findCinematographicSignature(id: number): Promise<RawRow[]>
+  /** Obtiene la vitrina curada del usuario */
   findCuratedGallery(id: number): Promise<RawRow[]>
 }
 
 /**
- * Clase UserProfileRepository
- * Implementa la lógica de acceso a datos para la capa social de CineVault.
+ * Repositorio de Perfiles
+ * Implementación que unifica la gestión de la identidad y las conexiones sociales.
  */
 export class UserProfileRepository implements IUserProfileRepository {
   /**
-   * Recupera el perfil público de un usuario por ID, incluyendo conteos de actividad.
+   * Recupera el perfil enriquecido con métricas de actividad.
    */
   async findById(id: number) {
     return prisma.users.findUnique({
@@ -133,6 +144,7 @@ export class UserProfileRepository implements IUserProfileRepository {
         avatar_url: true,
         bio: true,
         created_at: true,
+        /** Agregaciones automatizadas de Prisma para el Social Cloud */
         _count: {
           select: {
             reviews: true,
@@ -147,7 +159,7 @@ export class UserProfileRepository implements IUserProfileRepository {
   }
 
   /**
-   * Recupera el perfil público por nombre de usuario (slug).
+   * Resuelve el perfil público utilizando el nombre de usuario.
    */
   async findByUsername(username: string) {
     return prisma.users.findUnique({
@@ -172,7 +184,7 @@ export class UserProfileRepository implements IUserProfileRepository {
   }
 
   /**
-   * Lista todos los usuarios con información básica de contacto.
+   * Lista los perfiles registrados para el centro de miembros.
    */
   async findAll() {
     return prisma.users.findMany({
@@ -187,7 +199,7 @@ export class UserProfileRepository implements IUserProfileRepository {
   }
 
   /**
-   * Ejecuta una búsqueda de usuarios por nombre o biografía.
+   * Implementa una búsqueda difusa sobre el grafo de usuarios.
    */
   async search(query: string, take: number) {
     return prisma.users.findMany({
@@ -207,14 +219,14 @@ export class UserProfileRepository implements IUserProfileRepository {
   }
 
   /**
-   * Actualiza el contenido del perfil (username, avatar, etc).
+   * Persiste la actualización de identidad social.
    */
   async update(id: number, data: ActualizarPerfilData) {
     await prisma.users.update({ where: { id }, data })
   }
 
   /**
-   * Registra una nueva relación de seguimiento entre dos usuarios.
+   * Crea una suscripción social entre dos entidades de usuario.
    */
   async createFollow(followerId: number, followingId: number) {
     await prisma.follows.create({
@@ -223,7 +235,7 @@ export class UserProfileRepository implements IUserProfileRepository {
   }
 
   /**
-   * Elimina una relación de seguimiento (unfollow).
+   * Elimina un vínculo social.
    */
   async deleteFollow(followerId: number, followingId: number) {
     return prisma.follows.deleteMany({
@@ -232,7 +244,7 @@ export class UserProfileRepository implements IUserProfileRepository {
   }
 
   /**
-   * Verifica si existe una relación de seguimiento activa para el visor actual.
+   * Verifica la existencia de una relación de seguimiento activa.
    */
   async findFollow(viewerId: number, targetId: number) {
     return prisma.follows.findUnique({
@@ -247,7 +259,7 @@ export class UserProfileRepository implements IUserProfileRepository {
   }
 
   /**
-   * Obtiene la lista de seguidores de un usuario.
+   * Recupera la comunidad de seguidores hidratada con datos de identidad.
    */
   async findFollowers(id: number) {
     return prisma.users.findUnique({
@@ -265,7 +277,7 @@ export class UserProfileRepository implements IUserProfileRepository {
   }
 
   /**
-   * Obtiene la lista de usuarios seguidos por el usuario indicado.
+   * Recupera la constelación de usuarios seguidos.
    */
   async findFollowing(id: number) {
     return prisma.users.findUnique({
@@ -283,7 +295,7 @@ export class UserProfileRepository implements IUserProfileRepository {
   }
 
   /**
-   * Consulta SQL Raw para obtener la firma cinematográfica del usuario.
+   * Recupera la identidad cinematográfica profunda (Firma) mediante SQL nativo.
    */
   async findCinematographicSignature(id: number): Promise<RawRow[]> {
     return prisma.$queryRaw<RawRow[]>(Prisma.sql`
@@ -299,7 +311,7 @@ export class UserProfileRepository implements IUserProfileRepository {
   }
 
   /**
-   * Consulta SQL Raw para obtener los ítems de la galería curada del usuario.
+   * Recupera la vitrina destacada de obras (Galería Curada) integrando referencias locales.
    */
   async findCuratedGallery(id: number): Promise<RawRow[]> {
     return prisma.$queryRaw<RawRow[]>(Prisma.sql`
@@ -312,4 +324,5 @@ export class UserProfileRepository implements IUserProfileRepository {
   }
 }
 
+/** Instancia exportada del repositorio de perfiles sociales */
 export const userProfileRepository = new UserProfileRepository()

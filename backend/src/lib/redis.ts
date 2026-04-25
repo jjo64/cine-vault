@@ -1,5 +1,17 @@
+/**
+ * @file redis.ts
+ * @description Fábrica y cliente centralizado para Redis.
+ * Proporciona una abstracción (RedisLike) que permite alternar entre un cliente 
+ * real (ioredis) para producción y una implementación en memoria (Mock) 
+ * para entornos de test, asegurando el aislamiento de las pruebas.
+ */
+
 import { Redis } from "ioredis"
 
+/**
+ * Interfaz que unifica los métodos de Redis utilizados en la aplicación.
+ * Facilita el intercambio entre implementaciones reales y simuladas.
+ */
 interface RedisLike {
   get(key: string): Promise<string | null>
   set(key: string, value: string, ...args: unknown[]): Promise<"OK" | null>
@@ -14,11 +26,16 @@ interface RedisLike {
   on(event: string, listener: (...args: unknown[]) => void): this
 }
 
+/**
+ * Implementación de Redis en memoria.
+ * Útil para tests unitarios y de integración donde no se dispone de un servidor Redis real.
+ */
 const createInMemoryRedis = (): RedisLike => {
   const kv = new Map<string, string>()
   const lists = new Map<string, string[]>()
   const expiry = new Map<string, number>()
 
+  /** Verifica si una clave ha expirado y la elimina si es necesario */
   const isExpired = (key: string) => {
     const exp = expiry.get(key)
     if (exp && Date.now() > exp) {
@@ -36,7 +53,6 @@ const createInMemoryRedis = (): RedisLike => {
       return kv.has(key) ? kv.get(key)! : null
     },
     async set(key: string, value: string, ...args: unknown[]) {
-      // Soportar firmas: set key value ["EX", ttl] ["NX"]
       const parts = args.flat().map(String)
       const hasNx = parts.includes("NX")
       const exIndex = parts.indexOf("EX")
@@ -69,7 +85,6 @@ const createInMemoryRedis = (): RedisLike => {
       return removed
     },
     async keys(pattern: string) {
-      // Implementación simple con comodín *
       const regex = new RegExp("^" + pattern.replace(/\*/g, ".*") + "$")
       const allKeys = new Set([...kv.keys(), ...lists.keys()])
       return Array.from(allKeys).filter((key) => regex.test(key))
@@ -103,11 +118,7 @@ const createInMemoryRedis = (): RedisLike => {
       const arr = lists.get(key) || []
       lists.set(key, arr.slice(start, stop + 1))
     },
-    async lrange(
-      key: string,
-      start: string | number = 0,
-      stop: string | number = -1
-    ) {
+    async lrange(key: string, start: string | number = 0, stop: string | number = -1) {
       if (isExpired(key)) return []
       const arr = lists.get(key) || []
       const s = Number(start)
@@ -121,7 +132,10 @@ const createInMemoryRedis = (): RedisLike => {
   }
 }
 
-// Usamos un único cliente: mock en test, ioredis en otros entornos.
+/**
+ * Fábrica de clientes. 
+ * Devuelve el Mock en modo test o la instancia real en desarrollo/producción.
+ */
 const buildRedisClient = (): RedisLike => {
   if (process.env.NODE_ENV === "test") return createInMemoryRedis()
 
@@ -144,6 +158,7 @@ const buildRedisClient = (): RedisLike => {
   return client
 }
 
+/** Instancia exportada para su consumo en la aplicación */
 const redis: RedisLike = buildRedisClient()
 
 export { redis }

@@ -10,8 +10,10 @@ import {
   fetchReviews,
   fetchUserProfile,
   fetchUserProfileByUsername,
+  fetchUserBadges,
   fetchWatchlist,
   resolveViewerId,
+  fetchVaultSocial,
 } from '../services/profileServices'
 import { getMyLists } from '../services/listsServices'
 import { IMG } from '../components/profile-v2/assets'
@@ -105,17 +107,24 @@ type MovieMetaTarget = {
   mediaType: ReviewMediaType
 }
 
-async function fetchMovieMetaMap(targets: MovieMetaTarget[]) {
+async function fetchMovieMetaMap(targets: MovieMetaTarget[], existingMap?: Map<number, EnrichedMovie>) {
+  const map = new Map<number, EnrichedMovie>(existingMap ? Array.from(existingMap.entries()) : [])
+  
   const normalized = Array.from(
     new Map(
       targets
-        .filter((item) => item.tmdbId !== null)
+        .filter((item) => item.tmdbId !== null && !map.has(item.movieId))
         .map((item) => [item.movieId, item]),
     ).entries(),
   )
 
+  if (normalized.length === 0) return map
+
+  // Limitamos a un máximo razonable por lote para evitar timeouts
+  const batch = normalized.slice(0, 40)
+
   const entries = await Promise.allSettled(
-    normalized.map(async ([movieId, target]) => {
+    batch.map(async ([movieId, target]) => {
       const tmdbId = target.tmdbId as number
       const endpoint = target.mediaType === 'tv'
         ? `${API_URL}/api/search/tv/${tmdbId}`
@@ -145,12 +154,12 @@ async function fetchMovieMetaMap(targets: MovieMetaTarget[]) {
         posterUrl: moviePoster(data.poster_path, 'w500'),
         runtimeMinutes,
         primaryGenre,
+        mediaType: target.mediaType,
       }
       return [movieId, meta] as const
     }),
   )
 
-  const map = new Map<number, EnrichedMovie>()
   entries.forEach((item) => {
     if (item.status === 'fulfilled') {
       const [movieId, data] = item.value
@@ -171,11 +180,16 @@ export function useProfilePageData(userParam?: string) {
   const [userLists, setUserLists] = useState<UserListSummaryItem[]>([])
   const [signature, setSignature] = useState<CinematicSignatureData | null>(null)
   const [curatedGalleryItems, setCuratedGalleryItems] = useState<CuratedGalleryItemData[]>([])
+  const [userBadges, setUserBadges] = useState<any[]>([])
+  const [vaultSocialEntries, setVaultSocialEntries] = useState<any[]>([])
   const [viewerId, setViewerId] = useState<number | null>(null)
   const [targetId, setTargetId] = useState<number | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [refCount, setRefCount] = useState(0)
+
+  const refresh = () => setRefCount((prev) => prev + 1)
 
   useEffect(() => {
     let active = true
@@ -257,6 +271,8 @@ export function useProfilePageData(userParam?: string) {
           followingData,
           signatureData,
           curatedGalleryData,
+          badgesData,
+          vaultData,
         ] = await Promise.all([
           // Always include viewer token when available so backend can resolve `is_following` on public profiles.
           fetchUserProfile(resolvedTargetId, token),
@@ -277,6 +293,8 @@ export function useProfilePageData(userParam?: string) {
                 data: { items: [] },
               }))
             : fetchPublicCuratedGallery(resolvedTargetId).catch(() => ({ items: [] })),
+          fetchUserBadges(resolvedTargetId).catch(() => []),
+          fetchVaultSocial(resolvedTargetId, authToken, isSelf).catch(() => ({ items: [] })),
         ])
 
         if (!active) return
@@ -309,6 +327,8 @@ export function useProfilePageData(userParam?: string) {
 
         setSignature(resolvedSignature)
         setCuratedGalleryItems(resolvedCuratedItems)
+        setVaultSocialEntries(vaultData.items || [])
+        setUserBadges(badgesData || [])
 
         if (isSelf) {
           const lists = await getMyLists().catch(() => [])
@@ -327,22 +347,37 @@ export function useProfilePageData(userParam?: string) {
         }
 
         const tmdbByMovieId = new Map<number, number | null>()
-        nextDiary.forEach((item) => tmdbByMovieId.set(item.movie_id, item.tmdb_id))
-        nextWatchlist.forEach((item) => {
-          if (!tmdbByMovieId.has(item.movie_id)) tmdbByMovieId.set(item.movie_id, item.tmdb_id)
-        })
+        const initialMap = new Map<number, EnrichedMovie>()
+
+        const seedFromEntry = (item: RichDiaryEntry | RichWatchlistEntry) => {
+          tmdbByMovieId.set(item.movie_id, item.tmdb_id)
+          if (item.movie_info && item.tmdb_id) {
+            initialMap.set(item.movie_id, {
+              movieId: item.movie_id,
+              tmdbId: item.tmdb_id,
+              title: item.movie_info.title,
+              director: (item.movie_info as any).director || 'Desconocido',
+              year: (item.movie_info as any).year || null,
+              posterUrl: moviePoster(item.movie_info.poster_path, 'w500'),
+              mediaType: (item as any).mediaType || (item as any).media_type || (item.movie_info as any)?.media_type || 'movie',
+            })
+          }
+        }
+
+        nextDiary.forEach(seedFromEntry)
+        nextWatchlist.forEach(seedFromEntry)
 
         const ids: MovieMetaTarget[] = [
-          ...nextDiary.map((item) => ({ movieId: item.movie_id, tmdbId: item.tmdb_id, mediaType: 'movie' as const })),
-          ...nextWatchlist.map((item) => ({ movieId: item.movie_id, tmdbId: item.tmdb_id, mediaType: 'movie' as const })),
+          ...nextDiary.map((item) => ({ movieId: item.movie_id, tmdbId: item.tmdb_id, mediaType: (item.movie_info?.media_type as any) || 'movie' })),
+          ...nextWatchlist.map((item) => ({ movieId: item.movie_id, tmdbId: item.tmdb_id, mediaType: (item.movie_info?.media_type as any) || 'movie' })),
           ...nextReviews.map((item) => ({
             movieId: item.movie_id,
             tmdbId: item.tmdb_id ?? item.movies_ref?.tmdb_id ?? tmdbByMovieId.get(item.movie_id) ?? null,
-            mediaType: item.media_type === 'tv' ? 'tv' as const : 'movie' as const,
+            mediaType: item.media_type as any || (item.movies_ref as any)?.media_type || 'movie',
           })),
         ]
 
-        const map = await fetchMovieMetaMap(ids)
+        const map = await fetchMovieMetaMap(ids, initialMap)
         if (active) setMovieMap(map)
       } catch (err) {
         if (!active) return
@@ -357,7 +392,7 @@ export function useProfilePageData(userParam?: string) {
     return () => {
       active = false
     }
-  }, [userParam])
+  }, [userParam, refCount])
 
   const profileHeader: ProfileHeaderData = useMemo(() => {
     const year = profile?.created_at ? new Date(profile.created_at).getFullYear().toString() : '2024'
@@ -419,8 +454,18 @@ export function useProfilePageData(userParam?: string) {
     avatarUrl: item.avatar_url || null,
   })), [following])
 
-  const recentlyWatched: RecentlyWatchedItem[] = useMemo(() => (
-    diary.slice(0, 6).map((entry) => {
+  const recentlyWatched: RecentlyWatchedItem[] = useMemo(() => {
+    const deduped: typeof diary = []
+    const seenMovieIds = new Set<number>()
+    for (const entry of diary) {
+      if (!seenMovieIds.has(entry.movie_id)) {
+        seenMovieIds.add(entry.movie_id)
+        deduped.push(entry)
+        if (deduped.length === 6) break
+      }
+    }
+
+    return deduped.map((entry) => {
       const fromMovieMap = movieMap.get(entry.movie_id)
       return {
         id: entry.id,
@@ -431,9 +476,10 @@ export function useProfilePageData(userParam?: string) {
         director: fromMovieMap?.director || 'Desconocido',
         posterUrl: entry.movie_info?.poster_path ? moviePoster(entry.movie_info.poster_path, 'w500') : fromMovieMap?.posterUrl || IMG.grain,
         rating: parseRatingValue(entry.review?.rating),
+        mediaType: entry.movie_info?.media_type as any || fromMovieMap?.mediaType || 'movie',
       }
     })
-  ), [diary, movieMap])
+  }, [diary, movieMap])
 
   const watchlistFilms: WatchlistItem[] = useMemo(() => (
     watchlist.slice(0, 20).map((entry, index) => {
@@ -448,6 +494,7 @@ export function useProfilePageData(userParam?: string) {
         runtimeMinutes: fromMovieMap?.runtimeMinutes ?? null,
         primaryGenre: fromMovieMap?.primaryGenre ?? null,
         priority: index < 4 ? 'alta' : 'normal',
+        mediaType: entry.movie_info?.media_type as any || fromMovieMap?.mediaType || 'movie',
       }
     })
   ), [watchlist, movieMap])
@@ -489,6 +536,7 @@ export function useProfilePageData(userParam?: string) {
         director: fromMovieMap?.director || 'Desconocido',
         posterUrl: entry.movie_info?.poster_path ? moviePoster(entry.movie_info.poster_path, 'w500') : fromMovieMap?.posterUrl || IMG.grain,
         rating: parseRatingValue(entry.review?.rating),
+        mediaType: entry.movie_info?.media_type as any || fromMovieMap?.mediaType || 'movie',
       }
     })
   ), [diary, movieMap])
@@ -513,6 +561,7 @@ export function useProfilePageData(userParam?: string) {
         stageLabel: mapStageFromIndex(index),
         id: entry.id,
         note,
+        mediaType: entry.movie_info?.media_type as any || fromMovieMap?.mediaType || 'movie',
       }
     })
   ), [diary, movieMap])
@@ -537,6 +586,9 @@ export function useProfilePageData(userParam?: string) {
     userLists,
     signature,
     curatedGalleryItems,
+    userBadges,
     allDiaryFilms,
+    vaultSocialEntries,
+    refresh,
   }
 }

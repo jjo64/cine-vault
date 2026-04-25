@@ -6,8 +6,10 @@
  * orquestación de notificaciones en tiempo real.
  */
 
-import { reviewsRepository } from "../repositories/ReviewsRepository.js"
+import { reviewsRepository, ReviewCreateData, ReviewUpdateData } from "../repositories/ReviewsRepository.js"
+import { ReviewMediaType, reports_reason } from "@prisma/client"
 import { emitirNotificacionService } from "./notifications.services.js"
+import { checkAndAwardAutomaticBadges } from "./badges.services.js"
 import {
   ConflictError,
   ForbiddenError,
@@ -69,14 +71,15 @@ const canUseCriticalMode = (
  * Resuelve una película a partir de un slug (ej: "123-interstellar") o identificador.
  */
 const resolverMovieRefIdPorSlug = async (
-  movieSlug: string
+  movieSlug: string,
+  mediaType: ReviewMediaType = "movie"
 ): Promise<number | null> => {
   const slug = movieSlug.trim().toLowerCase()
   const tmdbCandidate = Number(slug.split("-")[0])
 
   // 1. Priorizar resolución por ID de TMDB si el slug lo contiene
   if (Number.isFinite(tmdbCandidate)) {
-    const byTmdb = await movieRefRepository.findByTmdbId(tmdbCandidate)
+    const byTmdb = await movieRefRepository.findByTmdbId(tmdbCandidate, mediaType)
     if (byTmdb) return byTmdb.id
   }
 
@@ -86,7 +89,7 @@ const resolverMovieRefIdPorSlug = async (
 
   // 3. Fallback: creación/recuperación perezosa vía TMDB API
   if (Number.isFinite(tmdbCandidate)) {
-    return findMovieRefIdByCandidate(tmdbCandidate)
+    return findMovieRefIdByCandidate(tmdbCandidate, mediaType)
   }
 
   return null
@@ -128,8 +131,11 @@ export const obtenerResenasPorUsuarioService = async (userId: number) => {
 /**
  * Recupera las reseñas de una película, empleando una capa de caché de Redis.
  */
-export const obtenerResenasPorPeliculaService = async (movieId: number) => {
-  const resolvedMovieId = await findMovieRefIdByCandidate(movieId)
+export const obtenerResenasPorPeliculaService = async (
+  movieId: number,
+  mediaType: ReviewMediaType = "movie"
+) => {
+  const resolvedMovieId = await findMovieRefIdByCandidate(movieId, mediaType)
   if (!resolvedMovieId) return []
 
   const cacheKey = movieReviewsKey(resolvedMovieId)
@@ -160,7 +166,8 @@ export const crearResenaService = async (userId: number, data: CrearResenaDTO) =
   }
 
   const normalized = normalizeReviewPayload(data)
-  const movieId = await ensureMovieRefId(data.movie_id)
+  const mediaType = (normalized.media_type as ReviewMediaType) || "movie"
+  const movieId = await ensureMovieRefId(data.movie_id, mediaType)
   
   const existente = await reviewsRepository.findByUserAndMovie(userId, movieId)
   if (existente) {
@@ -171,9 +178,16 @@ export const crearResenaService = async (userId: number, data: CrearResenaDTO) =
     ...normalized,
     movie_id: movieId,
     media_type: normalized.media_type ?? "movie",
-  })
+    contiene_spoilers: normalized.contiene_spoilers ?? false,
+  } as ReviewCreateData)
 
   await invalidateResenaCache(movieId)
+  
+  // Gamificación: Evaluar logros tras publicar la reseña
+  checkAndAwardAutomaticBadges(userId).catch(err => {
+    console.error("[Gamificación] Error al procesar insignias post-reseña:", err)
+  })
+
   return resena
 }
 
@@ -205,7 +219,7 @@ export const actualizarResenaService = async (
 
   const updated = await reviewsRepository.update(
     id,
-    normalizeReviewPayload(data)
+    normalizeReviewPayload(data) as ReviewUpdateData
   )
   
   await invalidateResenaCache(resena.movie_id)
@@ -243,7 +257,7 @@ export const reportarResenaService = async (
   const resena = await reviewsRepository.findById(id)
   if (!resena) throw new NotFoundError("Reseña no encontrada")
   
-  return reviewsRepository.createReport(userId, id, data.reason)
+  return reviewsRepository.createReport(userId, id, data.reason as reports_reason)
 }
 
 // --- Servicios de Métricas y Agregados ---
@@ -287,6 +301,11 @@ export const darLikeResenaService = async (
       user_id: review.user_id,
       sender_id: userId,
       type: "like",
+      metadata: { 
+        review_id: review.id, 
+        movie_id: review.movie_id,
+        media_type: review.media_type 
+      }
     }).catch(err => {
       console.error("[Notificaciones] Fallo al emitir notificación de like:", err)
     })
@@ -341,6 +360,12 @@ export const crearComentarioService = async (
       user_id: resena.user_id,
       sender_id: userId,
       type: "comment",
+      metadata: { 
+        review_id: resena.id, 
+        movie_id: resena.movie_id,
+        media_type: resena.media_type,
+        comment_id: comentario.id 
+      }
     }).catch((err) => {
       console.error(
         "[Notificaciones] Fallo al emitir notificación de comentario:",

@@ -109,17 +109,17 @@ export function useUserActions(detailId: number | undefined) {
         ])
         if (!alive) return
 
-        setIsFavorite(favs.some(e => e.tmdb_id === detailId || e.movie_id === detailId))
-        setInWatchlist(wl.some(e => e.tmdb_id === detailId || e.movie_id === detailId))
+        setIsFavorite(favs.some(e => (e.tmdb_id === detailId || e.movie_id === detailId) && ((e as any).media_type === 'tv' || (e as any).movie_info?.media_type === 'tv')))
+        setInWatchlist(wl.some(e => (e.tmdb_id === detailId || e.movie_id === detailId) && ((e as any).media_type === 'tv' || (e as any).movie_info?.media_type === 'tv')))
 
         const diaryHit = (diary.diary || []).find(
-          e => e.tmdb_id === detailId || e.movie_id === detailId
+          e => (e.tmdb_id === detailId || e.movie_id === detailId) && (e as any).media_type === 'tv'
         )
         setInDiary(Boolean(diaryHit))
         setDiaryEntryId(diaryHit?.id ?? null)
 
         const myRev_ = myRev.find(
-          e => e.tmdb_id === detailId || e.movie_id === detailId
+          e => (e.tmdb_id === detailId || e.movie_id === detailId) && e.media_type === 'tv'
         )
         setMyReviewId(myRev_?.id ?? null)
         setUserRating(Number(myRev_?.rating || 0))
@@ -169,14 +169,14 @@ export function useUserActions(detailId: number | undefined) {
       const token = getStoredAccessToken()!
       if (inDiary && diaryEntryId) {
         await removeFromDiary(token, diaryEntryId)
-        await removeFromFavorites(token, detailId)
+        await removeFromFavorites(token, detailId, 'tv')
         setInDiary(false)
         setDiaryEntryId(null)
         setIsFavorite(false)
         setActionMessage('Quitada del Vault')
       } else {
-        await addToDiary(token, detailId)
-        await addToFavorites(token, detailId)
+        await addToDiary(token, detailId, undefined, 'tv')
+        await addToFavorites(token, detailId, 'tv')
         setInDiary(true)
         setIsFavorite(true)
         setActionMessage('Añadida al Vault')
@@ -189,11 +189,11 @@ export function useUserActions(detailId: number | undefined) {
     runProtected(async () => {
       const token = getStoredAccessToken()!
       if (inWatchlist) {
-        await removeFromWatchlist(token, detailId)
+        await removeFromWatchlist(token, detailId, 'tv')
         setInWatchlist(false)
         setActionMessage('Quitada de watchlist')
       } else {
-        await addToWatchlist(token, detailId)
+        await addToWatchlist(token, detailId, 'tv')
         setInWatchlist(true)
         setActionMessage('Añadida a watchlist')
       }
@@ -297,7 +297,7 @@ export function useUserActions(detailId: number | undefined) {
         setMyReviewId(created.id)
       }
 
-      await addToDiary(token, detailId, reviewLogForm.seenDate).catch(() => {})
+      await addToDiary(token, detailId, reviewLogForm.seenDate, 'tv').catch(() => {})
       setInDiary(true)
       setUserRating(reviewLogForm.rating)
       setReviewText(reviewLogForm.text)

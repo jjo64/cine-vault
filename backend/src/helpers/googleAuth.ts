@@ -1,18 +1,27 @@
-import { Request } from "express"
-
 /**
- * CineVault: Módulo auxiliar para la resolución y manejo del estado de Google OAuth.
- * Delegamos aquí la construcción del estado y la normalización de la URL de callback
- * para mantener limpias las capas de enrutamiento y seguir el Principio de Responsabilidad Única (SRP).
+ * @file googleAuth.ts
+ * @description Módulo de soporte para el flujo de autenticación mediante Google OAuth 2.0.
+ * Gestiona la resolución dinámica de URLs de retorno (callbacks), la persistencia 
+ * del estado mediante mutación de cadenas en base64 y la validación de dominios 
+ * permitidos para prevenir vulnerabilidades de redirección abierta (Open Redirect).
  */
+
+import { Request } from "express"
 
 const DEFAULT_LOCAL_GOOGLE_CALLBACK =
   "http://localhost:4000/api/auth/google/callback"
+
+/** Prefijo utilizado para identificar estados generados por CineVault */
 const GOOGLE_STATE_PREFIX = "cv_google_cb:"
 
-/** Normaliza URLs eliminando slash final */
+/**
+ * Normaliza URLs eliminando espacios y barras diagonales finales.
+ */
 export const normalizeUrl = (value: string) => value.trim().replace(/\/+$/, "")
 
+/**
+ * Determina la URL de callback por defecto basada en las variables de entorno.
+ */
 export const getDefaultGoogleCallback = () => {
   const explicit = String(process.env.GOOGLE_REDIRECT_URI || "").trim()
   if (explicit) return explicit
@@ -23,6 +32,10 @@ export const getDefaultGoogleCallback = () => {
   return DEFAULT_LOCAL_GOOGLE_CALLBACK
 }
 
+/**
+ * Construye el conjunto de URLs de redirección permitidas (Allowlist).
+ * Combina la URL base con las configuradas en GOOGLE_REDIRECT_URI_ALLOWLIST.
+ */
 export const getAllowedGoogleCallbacks = () => {
   const configured = String(process.env.GOOGLE_REDIRECT_URI_ALLOWLIST || "")
     .split(",")
@@ -32,11 +45,20 @@ export const getAllowedGoogleCallbacks = () => {
   return new Set([getDefaultGoogleCallback(), ...configured].map(normalizeUrl))
 }
 
+/**
+ * Genera un parámetro 'state' de OAuth que codifica la URL de retorno deseada.
+ * 
+ * @param callbackUrl - URL a la que el frontend espera volver tras el login.
+ * @returns Cadena opaca prefijada con codificación base64url.
+ */
 export const buildGoogleState = (callbackUrl: string) => {
   const encoded = Buffer.from(callbackUrl, "utf8").toString("base64url")
   return `${GOOGLE_STATE_PREFIX}${encoded}`
 }
 
+/**
+ * Extrae y decodifica la URL de callback almacenada en el parámetro 'state'.
+ */
 export const readCallbackFromState = (state: unknown) => {
   if (typeof state !== "string" || !state.startsWith(GOOGLE_STATE_PREFIX)) {
     return null
@@ -53,6 +75,14 @@ export const readCallbackFromState = (state: unknown) => {
   }
 }
 
+/**
+ * Orquestador que resuelve cuál es la URL de callback válida para la petición actual.
+ * Prioriza el estado codificado seguido de los parámetros de consulta explícitos.
+ * Siempre valida el resultado contra la lista blanca de seguridad.
+ * 
+ * @param req - Objeto de petición de Express.
+ * @returns URL de callback normalizada y validada.
+ */
 export const resolveGoogleCallback = (req: Request) => {
   const fromState = readCallbackFromState(req.query.state)
   const fromQuery =
@@ -67,5 +97,6 @@ export const resolveGoogleCallback = (req: Request) => {
   
   if (allowlist.has(candidate)) return candidate
 
+  // Fallback de seguridad al callback predeterminado del sistema
   return getDefaultGoogleCallback()
 }

@@ -43,7 +43,7 @@ const SHAME_FILMS: ShameFilm[] = [
     director: "Stanley Kubrick",
     year: 1968,
     poster:
-      "https://images.unsplash.com/photo-1769121803735-59cde1085231?w=300&q=80",
+      "https://image.tmdb.org/t/p/w300/zVDZhHrgT0CiwEeyV9mHwe4bXfW.jpg",
     shamePct: 78,
     confession:
       '"La dejé en la parte del monolito. Volví dos veces. Ambas quedé dormida en el mismo lugar."',
@@ -55,7 +55,7 @@ const SHAME_FILMS: ShameFilm[] = [
     director: "Bela Tarr",
     year: 1994,
     poster:
-      "https://images.unsplash.com/photo-1691573252567-6c1be35aae79?w=300&q=80",
+      "https://image.tmdb.org/t/p/w300/1K8QIfbE1E9T8O4Y20pA2o2lM6u.jpg",
     shamePct: 91,
     confession:
       '"Siete horas. Vi tres. Estoy contando esas tres como si hubiera visto las siete."',
@@ -67,7 +67,7 @@ const SHAME_FILMS: ShameFilm[] = [
     director: "David Lynch",
     year: 2006,
     poster:
-      "https://images.unsplash.com/photo-1670782128814-c5a55b68f50d?w=300&q=80",
+      "https://image.tmdb.org/t/p/w300/vXbU4zW25Yit9Fm1VnB5sS7IfH5.jpg",
     shamePct: 84,
     confession: '"La vi completa. No entendí nada. ¿Eso cuenta?"',
     voterCount: 3780,
@@ -81,7 +81,7 @@ const SURPRISING_FILMS: SurprisingFilm[] = [
     director: "Wong Kar-wai",
     year: 2000,
     poster:
-      "https://images.unsplash.com/photo-1742695760180-92c9a73ffdf2?w=300&q=80",
+      "https://image.tmdb.org/t/p/w300/7yNq16MEnk4bW0sD26c2gGgl71k.jpg",
     finishRate: 98,
     note: "La más terminada de la plataforma.",
   },
@@ -91,7 +91,7 @@ const SURPRISING_FILMS: SurprisingFilm[] = [
     director: "David Lynch",
     year: 2001,
     poster:
-      "https://images.unsplash.com/photo-1670782128814-c5a55b68f50d?w=300&q=80",
+      "https://image.tmdb.org/t/p/w300/tGLON9xrXHLyB8GfN7EwX9E1M70.jpg",
     finishRate: 96,
     note: "No se entiende, pero nadie la abandona.",
   },

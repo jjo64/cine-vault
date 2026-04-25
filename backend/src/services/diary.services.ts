@@ -14,6 +14,9 @@ import { getCache, invalidateKeys, setCache } from "../lib/cache.js"
 import { diaryRepository } from "../repositories/DiaryRepository.js"
 import type { CrearEntradaDiarioDTO } from "../schemas/diary.js"
 import { ensureMovieRefId } from "./movieRef.services.js"
+import { ReviewMediaType } from "@prisma/client"
+import { standardizeToMidnight } from "../utils/date.utils.js"
+import { checkAndAwardAutomaticBadges } from "./badges.services.js"
 
 // --- Constantes de Caché ---
 
@@ -25,10 +28,7 @@ const movieAggregateKey = (movieId: number) => `movie:agg:${movieId}`
 /**
  * Normaliza una fecha ISO o retorna la fecha actual sin componentes de tiempo.
  */
-const normalizarFecha = (iso?: string) => {
-  if (!iso) return new Date(new Date().toDateString())
-  return new Date(iso)
-}
+const normalizarFecha = (iso?: string) => standardizeToMidnight(iso)
 
 /**
  * Gestiona la invalidación de claves de caché ante mutaciones en el diario.
@@ -45,7 +45,8 @@ const crearDiarioUnicoPorDia = async (
   userId: number,
   data: CrearEntradaDiarioDTO
 ) => {
-  const movieId = await ensureMovieRefId(data.movie_id)
+  const mediaType = (data.media_type as ReviewMediaType) || ReviewMediaType.movie
+  const movieId = await ensureMovieRefId(data.movie_id, mediaType)
   const watchedDate = normalizarFecha(data.watched_date)
   
   const existente = await diaryRepository.findByUserMovieDate(
@@ -61,10 +62,17 @@ const crearDiarioUnicoPorDia = async (
   const entry = await diaryRepository.create(userId, {
     ...data,
     movie_id: movieId,
+    media_type: mediaType,
     watched_date: watchedDate.toISOString().slice(0, 10),
   })
 
   await invalidateCacheForDiary(userId, movieId)
+  
+  // Gamificación: Verificar si el usuario ha ganado insignias tras este registro
+  checkAndAwardAutomaticBadges(userId).catch(err => {
+    console.error("[Gamificación] Error al procesar insignias post-diario:", err)
+  })
+
   return entry
 }
 
@@ -113,4 +121,38 @@ export const eliminarEntradaDiarioService = async (
 
   await invalidateCacheForDiary(userId, entrada.movie_id)
   await diaryRepository.delete(entradaId)
+}
+
+/**
+ * Recupera el registro cronológico basado en múltiples sesiones.
+ */
+export const obtenerSesionesDiarioService = async (userId: number) => {
+  return await diaryRepository.findSessionsByUserId(userId)
+}
+
+/**
+ * Crea una sesión que contiene múltiples películas
+ */
+export const crearSesionDiarioService = async (userId: number, data: any) => {
+  // Asegurar que las referencias de película existen
+  const resolvedEntries = await Promise.all(
+    data.entries.map(async (entry: any) => {
+      const tmdbId = typeof entry === 'number' ? entry : (entry.tmdbId || entry.movie_id)
+      const mediaType = typeof entry === 'object' ? (entry.mediaType || entry.media_type || 'movie') : 'movie'
+      const movieRefId = await ensureMovieRefId(tmdbId, mediaType)
+      return {
+        movie_id: movieRefId,
+        media_type: mediaType
+      }
+    })
+  )
+  
+  const created = await diaryRepository.createSession(userId, {
+    ...data,
+    entries: resolvedEntries
+  })
+  
+  // Limpiar cachés relevantes (feed, historial)
+  await invalidateKeys([diarioCacheKey(userId)])
+  return created
 }

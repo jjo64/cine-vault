@@ -387,7 +387,9 @@ export function Profile() {
     userLists,
     signature,
     curatedGalleryItems,
+    userBadges,
     allDiaryFilms,
+    vaultSocialEntries,
   } = useProfilePageData(username)
 
   const [isFollowing, setIsFollowing] = useState(false)
@@ -533,6 +535,7 @@ export function Profile() {
         recentlyWatched={recentlyWatched}
         watchlistFilms={watchlistFilms}
         reviewItems={reviewItems}
+        vaultSocialEntries={vaultSocialEntries}
         curatedMovieIds={localCuratedMovieIds}
         curatedNotesByMovieId={curatedNotesByMovieId}
         allDiaryFilms={allDiaryFilms}
@@ -542,8 +545,8 @@ export function Profile() {
       />
     ),
     Diario: <DiaryPanel diaryTimeline={diaryTimeline} />,
-    Vault: <VaultPanel />,
-    Watchlist: <WatchlistPanel watchlistFilms={watchlistFilms} />,
+    Vault: <VaultPanel vaultItems={vaultSocialEntries} canManage={isOwnProfile} />,
+    Watchlist: <WatchlistPanel watchlistFilms={watchlistFilms} canManage={isOwnProfile} />,
     Reseñas: <ReviewsPanel reviewItems={reviewItems} canManageReviews={canEditProfile} />,
     Listas: <ListsPanel userLists={userLists} />,
   }
@@ -609,7 +612,7 @@ export function Profile() {
             </AnimatePresence>
           </div>
           {showDesktopSidebar && (
-            <ProfileSidebar recentlyWatched={recentlyWatched} reviewItems={reviewItems} />
+            <ProfileSidebar recentlyWatched={recentlyWatched} reviewItems={reviewItems} userBadges={userBadges} />
           )}
         </div>
       </div>

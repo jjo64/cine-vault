@@ -17,23 +17,23 @@ const SANS = "'Syne', sans-serif"
 const SERIF = "'Cormorant Garamond', serif"
 
 function ForYouCard({ item }: { item: ForYouItem }) {
-  if (item.type === 'movie') {
-    const poster = item.movie.poster_path ? `https://image.tmdb.org/t/p/w342${item.movie.poster_path}` : null
+  if (item.type === 'media') {
+    const poster = item.media.poster_path ? `https://image.tmdb.org/t/p/w342${item.media.poster_path}` : null
     return (
       <article style={{ border: `1px solid ${C.border}`, background: C.surface, padding: 14, display: 'grid', gridTemplateColumns: poster ? '80px 1fr' : '1fr', gap: 14 }}>
-        {poster ? <img src={poster} alt={item.movie.title} style={{ width: 80, height: 120, objectFit: 'cover', border: `1px solid ${C.border}` }} /> : null}
+        {poster ? <img src={poster} alt={item.media.title} style={{ width: 80, height: 120, objectFit: 'cover', border: `1px solid ${C.border}` }} /> : null}
         <div>
           <div style={{ color: C.accent, fontFamily: SANS, fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase' }}>
             Película recomendada
           </div>
-          <h3 style={{ margin: '6px 0', fontFamily: SERIF, fontSize: 30, fontWeight: 400 }}>{item.movie.title}</h3>
-          <p style={{ margin: '0 0 8px', color: C.textSoft, fontFamily: SERIF, fontSize: 18 }}>{item.movie.reason}</p>
+          <h3 style={{ margin: '6px 0', fontFamily: SERIF, fontSize: 30, fontWeight: 400 }}>{item.media.title}</h3>
+          <p style={{ margin: '0 0 8px', color: C.textSoft, fontFamily: SERIF, fontSize: 18 }}>{item.media.reason}</p>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontFamily: SANS, fontSize: 11, color: C.textSoft }}>
-            <span>{item.movie.year || 'Año n/d'}</span>
+            <span>{item.media.year || 'Año n/d'}</span>
             <span>•</span>
-            <span>TMDB {item.movie.vote_average.toFixed(1)}</span>
+            <span>TMDB {item.media.vote_average?.toFixed(1) || 'N/A'}</span>
           </div>
-          <Link to={`/movie/${item.movie.id}`} style={{ display: 'inline-block', marginTop: 10, color: C.accent, textDecoration: 'none', fontFamily: SANS, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+          <Link to={`/movie/${item.media.id}`} style={{ display: 'inline-block', marginTop: 10, color: C.accent, textDecoration: 'none', fontFamily: SANS, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
             Ver detalle
           </Link>
         </div>
@@ -57,7 +57,7 @@ function ForYouCard({ item }: { item: ForYouItem }) {
         <span>•</span>
         <span>Rating {item.review.rating ?? 'n/d'}</span>
       </div>
-      <Link to={`/movie/${item.movie.tmdb_id}`} style={{ display: 'inline-block', marginTop: 10, color: C.accent, textDecoration: 'none', fontFamily: SANS, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+      <Link to={`/movie/${item.media.tmdb_id}`} style={{ display: 'inline-block', marginTop: 10, color: C.accent, textDecoration: 'none', fontFamily: SANS, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
         Ver película relacionada
       </Link>
     </article>

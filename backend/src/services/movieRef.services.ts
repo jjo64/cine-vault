@@ -5,7 +5,7 @@
  * locales, gestionando la persistencia perezosa y la integridad ante peticiones concurrentes.
  */
 
-import { Prisma } from "@prisma/client"
+import { Prisma, ReviewMediaType } from "@prisma/client"
 import { movieRefRepository } from "../repositories/MovieRefRepository.js"
 
 // --- Servicios Principales ---
@@ -18,13 +18,20 @@ import { movieRefRepository } from "../repositories/MovieRefRepository.js"
  * @returns El ID local de la película o null si no existe.
  */
 export const findMovieRefIdByCandidate = async (
-  candidate: number
+  candidate: number,
+  mediaType?: ReviewMediaType
 ): Promise<number | null> => {
   const byId = await movieRefRepository.findById(candidate)
   if (byId) return byId.id
 
-  const byTmdb = await movieRefRepository.findByTmdbId(candidate)
-  return byTmdb?.id ?? null
+  if (mediaType) {
+    const byTmdb = await movieRefRepository.findByTmdbId(candidate, mediaType)
+    return byTmdb?.id ?? null
+  } else {
+    const byTmdbAny = await movieRefRepository.findByTmdbIdOnly(candidate)
+    // Devolvemos el primero encontrado (podría haber duplicados si TMDB reusa IDs para movie/tv, pero es la mejor suposición sin mediaType)
+    return byTmdbAny[0]?.id ?? null
+  }
 }
 
 /**
@@ -35,24 +42,26 @@ export const findMovieRefIdByCandidate = async (
  * @param candidate ID de TMDB para asegurar en la base de datos local.
  * @returns El ID local único y persistente.
  */
-export const ensureMovieRefId = async (candidate: number): Promise<number> => {
-  const existing = await findMovieRefIdByCandidate(candidate)
+export const ensureMovieRefId = async (
+  candidate: number,
+  mediaType: ReviewMediaType
+): Promise<number> => {
+  const existing = await findMovieRefIdByCandidate(candidate, mediaType)
   if (existing) return existing
 
   try {
-    const created = await movieRefRepository.create(candidate)
+    const created = await movieRefRepository.create(candidate, mediaType)
     return created.id
   } catch (error) {
     /**
-     * Condición de carrera: otro proceso pudo insertar el mismo tmdb_id entre la 
-     * comprobación inicial y la inserción. Capturamos el error de restricción única
-     * y realizamos un lookup final para retornar el ID existente.
+     * Condición de carrera: otro proceso pudo insertar el mismo (tmdb_id, media_type)
+     * entre la comprobación inicial y la inserción.
      */
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
     ) {
-      const raceSafeLookup = await movieRefRepository.findByTmdbId(candidate)
+      const raceSafeLookup = await movieRefRepository.findByTmdbId(candidate, mediaType)
       if (raceSafeLookup) return raceSafeLookup.id
     }
     throw error

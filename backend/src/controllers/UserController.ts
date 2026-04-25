@@ -18,6 +18,7 @@ import type {
   SolicitudAutenticada,
 } from "../middlewares/auth.middlewares.js"
 import * as userService from "../services/user.services.js"
+import { getUserBadgesService } from "../services/badges.services.js"
 
 type IdParam = z.infer<typeof idParamSchema>
 type BuscarUsuariosQuery = z.infer<typeof buscarUsuariosQuerySchema>
@@ -154,4 +155,13 @@ export const dejarDeSeguirUsuario = async (
   const { id } = req.params as unknown as IdParam
   await userService.dejarDeSeguirUsuarioService(req.user!.user_id, id)
   res.json({ message: "Has dejado de seguir al usuario con éxito" })
+}
+
+/**
+ * Recupera el listado de logros e insignias desbloqueadas por el usuario.
+ */
+export const obtenerInsignias = async (req: Request, res: Response) => {
+  const { id } = req.params as unknown as IdParam
+  const insignias = await getUserBadgesService(id)
+  res.json(insignias)
 }

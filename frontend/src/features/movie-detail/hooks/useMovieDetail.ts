@@ -17,7 +17,7 @@ import {
   fetchMyReviews,
   type MovieDetailApi,
   fetchMyWatchlist,
-  fetchTopRatedMovies,
+  fetchSimilarMovies,
   fetchUserById,
   likeReview,
   removeFromFavorites,
@@ -125,13 +125,11 @@ export function useMovieDetail() {
         const detail = await fetchMovieDetail(slugOrId);
         if (!alive) return;
         setMovie(detail);
-        setLoading(false);
 
-        // Secondary data
         const loadSecondary = async () => {
           const [movieReviews, topRated] = await Promise.all([
             fetchMovieReviews(detail.id).catch(() => []),
-            fetchTopRatedMovies().catch(() => ({ results: [] })),
+            fetchSimilarMovies(slugOrId).catch(() => ({ results: [] })),
           ]);
 
           if (!alive) return;
@@ -189,16 +187,19 @@ export function useMovieDetail() {
 
           if (!alive) return;
 
-          const myReview = myReviews.find((r: any) => isCurrentMovieMatch(r, detail.id, movieId));
+          const myReview = myReviews.find((r: any) => isCurrentMovieMatch(r, detail.id, movieId, 'movie'));
           setMyReviewId(myReview?.id ?? null);
           setUserRating(Number(myReview?.rating ?? 0));
-          setInWatchlist(myWatchlist.some((e: any) => isCurrentMovieMatch(e, detail.id, movieId)));
-          setLiked(myFavorites.some((e: any) => isCurrentMovieMatch(e, detail.id, movieId)));
-          setInVault((myDiary.diary || []).some((e: any) => isCurrentMovieMatch(e, detail.id, movieId)));
+          setInWatchlist(myWatchlist.some((e: any) => isCurrentMovieMatch(e, detail.id, movieId, 'movie')));
+          setLiked(myFavorites.some((e: any) => isCurrentMovieMatch(e, detail.id, movieId, 'movie')));
+          setInVault((myDiary.diary || []).some((e: any) => isCurrentMovieMatch(e, detail.id, movieId, 'movie')));
         };
 
-        loadSecondary();
-        loadUserStatus();
+        await Promise.all([
+          loadSecondary(),
+          loadUserStatus(),
+        ]);
+        if (alive) setLoading(false);
 
       } catch (err) {
         if (alive) {
@@ -272,7 +273,7 @@ export function useMovieDetail() {
     try {
       if (inVault) {
         const diary = await fetchMyDiary(token);
-        const entry = (diary.diary || []).find((e: any) => isCurrentMovieMatch(e, movie.id, movieId));
+        const entry = (diary.diary || []).find((e: any) => isCurrentMovieMatch(e, movie.id, movieId, 'movie'));
         if (entry) await removeFromDiary(token, entry.id);
         setInVault(false);
         showNotice('Eliminada de tu Vault', 'info');
@@ -290,7 +291,7 @@ export function useMovieDetail() {
     if (!movie || !token) { requireAuth(); return; }
     try {
       if (inWatchlist) {
-        await removeFromWatchlist(token, movie.id);
+        await removeFromWatchlist(token, movie.id, 'movie');
         setInWatchlist(false);
         showNotice('Eliminada de Watchlist', 'info');
       } else {
@@ -307,7 +308,7 @@ export function useMovieDetail() {
     if (!movie || !token) { requireAuth(); return; }
     try {
       if (liked) {
-        await removeFromFavorites(token, movie.id);
+        await removeFromFavorites(token, movie.id, 'movie');
         setLiked(false);
         showNotice('Quitada de favoritos', 'info');
       } else {

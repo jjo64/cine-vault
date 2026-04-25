@@ -54,14 +54,15 @@ export type ActivityResponse = {
 
 export type ForYouMovieItem = {
   id: string
-  type: 'movie'
-  movie: {
+  type: 'media'
+  media: {
     id: number
     title: string
     year: number | null
     poster_path: string | null
     vote_average: number
     reason: string
+    media_type: "movie" | "tv"
   }
 }
 
@@ -80,7 +81,7 @@ export type ForYouReviewItem = {
     username: string
     avatar_url: string | null
   }
-  movie: {
+  media: {
     id: number
     tmdb_id: number
   }
@@ -110,3 +111,78 @@ export const fetchGlobalFeed = async (page = 1, limit = 10) => {
   const token = getStoredAccessToken()
   return requestJson(`/api/feed?page=${page}&limit=${limit}`, { token })
 }
+
+export type SuggestedDirector = {
+  id: number
+  name: string
+  profile_path: string | null
+  score: number
+  reason: string
+  source: string
+  movie_tmdb_ids: number[]
+}
+
+export const fetchSuggestedDirectors = async (): Promise<{ items: SuggestedDirector[] }> => {
+  const token = getStoredAccessToken()
+  return requestJson<{ items: SuggestedDirector[] }>(`/api/recommendations/directors`, { token })
+}
+
+export type TonightResponse = {
+  id: string
+  type: 'tonight'
+  media: {
+    id: number
+    title: string
+    year: number | null
+    poster_path: string | null
+    vote_average: number | null
+    media_type: 'movie'
+    reason: string
+    weather_context: string
+  }
+}
+
+export const fetchTonightMovie = async (hour?: number, weather?: string) => {
+  const token = getStoredAccessToken()
+  let params = new URLSearchParams()
+  if (hour) params.append('hour', hour.toString())
+  if (weather) params.append('weather', weather)
+  return requestJson<TonightResponse>(`/api/recommendations/tonight?${params.toString()}`, { token })
+}
+
+/**
+ * Onboarding
+ */
+
+export type OnboardingMovie = {
+  step: number
+  movie: {
+    id: number
+    title: string
+    poster_path: string | null
+    year: number | null
+    overview: string
+  }
+}
+
+export const fetchOnboardingStatus = async (): Promise<{ needs_onboarding: boolean }> => {
+  const token = getStoredAccessToken()
+  return requestJson<{ needs_onboarding: boolean }>(`/api/recommendations/onboarding/status`, { token })
+}
+
+export const fetchOnboardingMovie = async (step: number, seedId?: number): Promise<OnboardingMovie> => {
+  const token = getStoredAccessToken()
+  let url = `/api/recommendations/onboarding?step=${step}`
+  if (seedId) url += `&seedId=${seedId}`
+  return requestJson<OnboardingMovie>(url, { token })
+}
+
+export const sendOnboardingInteraction = async (movieId: number, type: string, metadata: any = {}) => {
+  const response = await authorizedFetch(`/api/recommendations/interact`, {
+    method: 'POST',
+    body: JSON.stringify({ movieId, type, metadata })
+  })
+  if (!response.ok) throw new Error("No se pudo guardar la interacción")
+  return await response.json()
+}
+

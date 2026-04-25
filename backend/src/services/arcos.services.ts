@@ -182,7 +182,7 @@ const normalizeMovies = async (
   const seenMovieIds = new Set<number>()
 
   for (const [index, movie] of movies.entries()) {
-    const movieRefId = await ensureMovieRefId(movie.movie_id)
+    const movieRefId = await ensureMovieRefId(movie.movie_id, "movie")
     if (seenMovieIds.has(movieRefId)) {
       throw new ValidationError(
         "No se permiten películas repetidas dentro del mismo arco"
@@ -344,7 +344,7 @@ export const marcarProgresoArcoService = async (
   arcoId: number,
   movieIdCandidate: number
 ) => {
-  const movieId = await ensureMovieRefId(movieIdCandidate)
+  const movieId = await ensureMovieRefId(movieIdCandidate, "movie")
 
   const arco = await arcosRepository.findPublicArcoById(arcoId)
   if (!arco) throw new NotFoundError("Arco no encontrado")

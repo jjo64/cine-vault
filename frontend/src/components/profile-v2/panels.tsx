@@ -8,10 +8,10 @@ import {
   Check,
   Clock,
   Ellipsis,
-  Eye,
   Film,
   Filter,
   Globe,
+  Heart,
   Lock,
   Pin,
   PinOff,
@@ -19,27 +19,30 @@ import {
   Plus,
   Pencil,
   SortDesc,
+  Trash,
   Trash2,
   Trophy,
   Upload,
 } from 'lucide-react'
 import { C, SANS, SERIF, textClampOneLine } from './theme'
 import { Badge, Img, SectionHeader, Stars } from './primitives'
-import { vaultMockItems, IMG } from './assets'
+import { IMG } from './assets'
 import type { DiaryTimelineItem, EnrichedMovie, ProfileStatsData, RecentlyWatchedItem, ReviewItem, UserListSummaryItem, WatchlistItem } from './models'
-import { createSlug } from '../../utils/stringUtils'
-import { deleteReview } from '../../services/movieDetailServices'
+import { deleteReview, removeFromWatchlist } from '../../services/movieDetailServices'
+import { removeVaultSocialEntry, type VaultSocialEntry } from '../../services/profileServices'
 import { getStoredAccessToken } from '../../services/authServices'
+import { createSlug } from '../../utils/stringUtils'
 
-const movieHref = (movieId: number, title: string, tmdbId: number | null) => `/movie/${tmdbId ?? movieId}-${createSlug(title)}`
+const mediaHref = (movieId: number, title: string, tmdbId: number | null, mediaType?: 'movie' | 'tv' | null) => {
+  const type = mediaType === 'tv' ? 'tv' : 'movie'
+  return `/${type}/${tmdbId ?? movieId}-${createSlug(title)}`
+}
+
 const reviewHref = (review: ReviewItem) => {
-  const username = encodeURIComponent((review.username || 'perfil').trim())
-  const titleSlug = createSlug(review.title)
-  const slugId = review.tmdbId && Number.isFinite(review.tmdbId)
-    ? `${review.tmdbId}-${titleSlug}`
-    : titleSlug
+  const type = review.mediaType === 'tv' ? 'tv' : 'movie'
+  const slug = `${review.tmdbId || review.movieId}-${createSlug(review.title)}`
   const suffix = review.reviewSequence > 1 ? `/${review.reviewSequence - 1}` : ''
-  return `/${username}/${review.mediaType}/${slugId}${suffix}`
+  return `/${review.username}/${type}/${slug}${suffix}`
 }
 
 const PROFILE_STAR_SIZES = {
@@ -50,12 +53,42 @@ const PROFILE_STAR_SIZES = {
 } as const
 import './Profile.css'
 
-function NightRec({ recommendation }: { recommendation: WatchlistItem | null }) {
+import { fetchTonightMovie } from '../../services/socialServices'
+import type { TonightResponse } from '../../services/socialServices'
+
+function NightRec() {
+  const [recommendation, setRecommendation] = useState<TonightResponse | null>(null)
+  const [loading, setLoading] = useState(true)
   const [watched, setWatched] = useState(false)
-  const runtimeLabel = typeof recommendation?.runtimeMinutes === 'number' && recommendation.runtimeMinutes > 0
-    ? `${Math.floor(recommendation.runtimeMinutes / 60)}h ${recommendation.runtimeMinutes % 60}m`
-    : 'Duración N/D'
-  const genreLabel = recommendation?.primaryGenre || 'Drama histórico'
+
+  useEffect(() => {
+    fetchTonightMovie()
+      .then((data) => {
+        setRecommendation(data)
+        setLoading(false)
+      })
+      .catch((e) => {
+        console.error(e)
+        setLoading(false)
+      })
+  }, [])
+
+  if (loading) {
+    return (
+      <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: '24px 28px', marginBottom: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', height: 120 }}>
+        <span style={{ color: C.textSoft, fontFamily: SANS, fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Clock size={14} /> Calculando sugerencia para esta noche...
+        </span>
+      </div>
+    )
+  }
+
+  const movie = recommendation?.media
+  
+  // Como la API nueva no nos devuelve runtimeMinutes de primera (dependiendo de tmdb), 
+  // mostramos el rating promedio o el "weather context"
+  const tagLabel = movie?.vote_average ? `${movie.vote_average.toFixed(1)} ★ TMDB` : (movie?.weather_context === 'rainy' ? 'Clima lluvioso' : (movie?.weather_context || 'Noche de cine'))
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -89,8 +122,8 @@ function NightRec({ recommendation }: { recommendation: WatchlistItem | null }) 
 
       <div style={{ width: 54, flexShrink: 0, aspectRatio: '2/3', borderRadius: 2, overflow: 'hidden', position: 'relative' }}>
         <Img
-          src={recommendation?.posterUrl || IMG.cinema}
-          alt={recommendation?.title || 'Recomendación'}
+          src={movie?.poster_path ? `https://image.tmdb.org/t/p/w200${movie.poster_path}` : IMG.cinema}
+          alt={movie?.title || 'Recomendación'}
           style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(0.5)' }}
         />
       </div>
@@ -100,12 +133,12 @@ function NightRec({ recommendation }: { recommendation: WatchlistItem | null }) 
           Esta noche, sin excusas
         </span>
         <div className="profile-night-rec-title" style={{ fontFamily: SERIF, fontWeight: 400, lineHeight: 1.2, color: C.text }}>
-          {recommendation?.title || 'Sin recomendación'}
+          {movie?.title || 'No hay sugerencias'}
         </div>
         <div style={{ fontSize: 12, color: C.textSoft, marginTop: 4, fontFamily: SANS }}>
-          {recommendation
-            ? `${recommendation.director} · ${recommendation.year || 'Año desconocido'} · ${runtimeLabel} · ${genreLabel}`
-            : 'Agrega películas a tu watchlist para tener recomendación automática.'}
+          {movie
+            ? `${movie.year || 'Año desconocido'} · ${tagLabel} · ${movie.reason}`
+            : 'Agrega películas o actividad para tener recomendación automática.'}
         </div>
       </div>
 
@@ -140,6 +173,7 @@ function NightRec({ recommendation }: { recommendation: WatchlistItem | null }) 
   )
 }
 
+
 // FilmCard horizontal compacta solo para móvil en Resumen
 function FilmCardMobile({ film, delay = 0 }: { film: RecentlyWatchedItem; delay?: number }) {
   const navigate = useNavigate()
@@ -148,14 +182,14 @@ function FilmCardMobile({ film, delay = 0 }: { film: RecentlyWatchedItem; delay?
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay }}
-      onClick={() => navigate(movieHref(film.movieId, film.title, film.tmdbId))}
+      onClick={() => navigate(mediaHref(film.movieId, film.title, film.tmdbId, (film as any).mediaType))}
       role="link"
       tabIndex={0}
       aria-label={`Ver película ${film.title}`}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault()
-          navigate(movieHref(film.movieId, film.title, film.tmdbId))
+          navigate(mediaHref(film.movieId, film.title, film.tmdbId, (film as any).mediaType))
         }
       }}
       style={{
@@ -199,14 +233,14 @@ function FilmCard({ film, delay = 0 }: { film: RecentlyWatchedItem; delay?: numb
       transition={{ duration: 0.5, delay }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      onClick={() => navigate(movieHref(film.movieId, film.title, film.tmdbId))}
+      onClick={() => navigate(mediaHref(film.movieId, film.title, film.tmdbId, film.mediaType))}
       role="link"
       tabIndex={0}
       aria-label={`Ver película ${film.title}`}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault()
-          navigate(movieHref(film.movieId, film.title, film.tmdbId))
+          navigate(mediaHref(film.movieId, film.title, film.tmdbId, (film as any).mediaType))
         }
       }}
       style={{ cursor: 'pointer' }}
@@ -260,12 +294,14 @@ function FilmCard({ film, delay = 0 }: { film: RecentlyWatchedItem; delay?: numb
 }
 
 // VaultCard compacta horizontal para móvil en Resumen
-function VaultCardMobile({ item, delay = 0 }: { item: (typeof vaultMockItems)[number]; delay?: number }) {
+function VaultCardMobile({ item, delay = 0, onRemove, canManage = false }: { item: VaultSocialEntry; delay?: number; onRemove?: (id: number) => void; canManage?: boolean }) {
+  const navigate = useNavigate()
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.4, delay }}
+      onClick={() => item.movie_id && navigate(mediaHref(item.movie_id, item.title, item.tmdb_id))}
       style={{
         background: C.surface,
         border: `1px solid ${C.border}`,
@@ -276,40 +312,38 @@ function VaultCardMobile({ item, delay = 0 }: { item: (typeof vaultMockItems)[nu
         padding: '10px 12px',
         overflow: 'hidden',
         width: '100%',
+        position: 'relative',
       }}
     >
-      {/* thumbnail fijo */}
-      < div style={{ width: 64, height: 40, flexShrink: 0, position: 'relative', overflow: 'hidden', borderRadius: 1 }}>
+      <div style={{ width: 64, height: 40, flexShrink: 0, position: 'relative', overflow: 'hidden', borderRadius: 1 }}>
         <Img
-          src={item.img}
+          src={item.movie_info?.poster_path ? `https://image.tmdb.org/t/p/w200${item.movie_info.poster_path}` : (item.cover_url || IMG.grain)}
           alt={item.title}
-          style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(0.4) brightness(0.6)' }}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(0.5) brightness(0.6)' }}
         />
-        <div style={{
-          position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: 'rgba(0,0,0,0.3)',
-        }}>
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)' }}>
           <Play size={10} fill="white" color="white" />
         </div>
-      </div >
-      <div style={{ flex: 1, minWidth: 0, textAlign: 'left', overflow: 'hidden' }}>
-        <div style={{ fontFamily: SERIF, fontSize: 15, color: C.text, lineHeight: 1.4, marginBottom: 4, textAlign: 'left', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', whiteSpace: 'normal', height: 'auto' }}>
-          {item.title}
-        </div>
-        <div style={{ fontSize: 11, color: C.textSoft, fontFamily: SANS, display: 'flex', gap: 10 }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Clock size={9} />{item.duration}</span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Eye size={9} />{item.views}</span>
-        </div>
       </div>
-      <div style={{ flexShrink: 0, marginLeft: 8 }}>
-        <Badge>{item.type}</Badge>
+      <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+        <div style={{ fontFamily: SERIF, fontSize: 14, color: C.text, lineHeight: 1.3, marginBottom: 2, ...textClampOneLine }}>{item.title}</div>
+        <div style={{ fontSize: 10, color: C.textSoft, fontFamily: SANS }}>{item.entry_type} · {item.duration_label || 'Lectura'}</div>
       </div>
-    </motion.div >
+      {canManage && onRemove && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onRemove(item.id) }}
+          style={{ padding: 4, background: 'transparent', border: 'none', cursor: 'pointer', color: C.textMuted }}
+        >
+          <Trash size={12} />
+        </button>
+      )}
+    </motion.div>
   )
 }
 
-function VaultCard({ item, delay = 0 }: { item: (typeof vaultMockItems)[number]; delay?: number }) {
+function VaultCard({ item, delay = 0, onRemove, canManage = false }: { item: VaultSocialEntry; delay?: number; onRemove?: (id: number) => void; canManage?: boolean }) {
   const [hovered, setHovered] = useState(false)
+  const navigate = useNavigate()
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -317,6 +351,7 @@ function VaultCard({ item, delay = 0 }: { item: (typeof vaultMockItems)[number];
       transition={{ duration: 0.5, delay }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onClick={() => item.movie_id && navigate(mediaHref(item.movie_id, item.title, item.tmdb_id))}
       style={{
         background: C.surface,
         border: `1px solid ${hovered ? C.accentDim : C.border}`,
@@ -324,11 +359,12 @@ function VaultCard({ item, delay = 0 }: { item: (typeof vaultMockItems)[number];
         transform: hovered ? 'translateY(-3px)' : 'none',
         transition: 'border-color 0.3s, transform 0.3s',
         overflow: 'hidden',
+        position: 'relative',
       }}
     >
       <div style={{ aspectRatio: '16/9', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Img
-          src={item.img}
+          src={item.movie_info?.poster_path ? `https://image.tmdb.org/t/p/w500${item.movie_info.poster_path}` : (item.cover_url || IMG.grain)}
           alt={item.title}
           style={{
             position: 'absolute',
@@ -341,7 +377,7 @@ function VaultCard({ item, delay = 0 }: { item: (typeof vaultMockItems)[number];
           }}
         />
         <div style={{ position: 'absolute', top: 10, left: 10 }}>
-          <Badge>{item.type}</Badge>
+          <Badge>{item.entry_type}</Badge>
         </div>
         <div
           style={{
@@ -361,12 +397,20 @@ function VaultCard({ item, delay = 0 }: { item: (typeof vaultMockItems)[number];
         >
           <Play size={12} fill="white" color="white" style={{ marginLeft: 2 }} />
         </div>
+        {canManage && onRemove && (
+           <button
+             onClick={(e) => { e.stopPropagation(); onRemove(item.id) }}
+             style={{ position: 'absolute', top: 10, right: 10, width: 24, height: 24, borderRadius: '50%', background: 'rgba(0,0,0,0.5)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+           >
+             <Trash size={12} color="white" />
+           </button>
+        )}
       </div>
       <div style={{ padding: '14px 16px' }}>
         <div style={{ fontFamily: SERIF, fontSize: 17, fontWeight: 400, lineHeight: 1.3, color: C.text, marginBottom: 4 }}>{item.title}</div>
         <div style={{ fontSize: 11, color: C.textSoft, display: 'flex', gap: 12, alignItems: 'center', fontFamily: SANS }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Clock size={10} />{item.duration}</span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Eye size={10} />{item.views} vistas</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Clock size={10} />{item.duration_label || 'Lectura'}</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Heart size={10} />{item.likes_count} likes</span>
         </div>
       </div>
     </motion.div>
@@ -568,7 +612,7 @@ function WatchlistStrip({ watchlistFilms }: { watchlistFilms: WatchlistItem[] })
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: index * 0.04 }}
           style={{ flexShrink: 0, width: 80, cursor: 'pointer' }}
-          onClick={() => navigate(movieHref(film.movieId, film.title, film.tmdbId))}
+          onClick={() => navigate(mediaHref(film.movieId, film.title, film.tmdbId, film.mediaType))}
         >
           <div
             style={{ aspectRatio: '2/3', borderRadius: 1, overflow: 'hidden', marginBottom: 6, transition: 'transform 0.3s' }}
@@ -691,7 +735,7 @@ function CuratedGallery({
             transition={{ delay: i * 0.07, duration: 0.5 }}
             onMouseEnter={() => setHoveredId(film.movieId)}
             onMouseLeave={() => setHoveredId(null)}
-            onClick={() => navigate(movieHref(film.movieId, film.title, film.tmdbId))}
+            onClick={() => navigate(mediaHref(film.movieId, film.title, film.tmdbId, (film as any).mediaType))}
             style={{ cursor: 'pointer', position: 'relative', zIndex: hoveredId === film.movieId ? 20 : 1 }}
           >
             <div style={{
@@ -756,6 +800,7 @@ export function OverviewPanel({
   recentlyWatched,
   watchlistFilms,
   reviewItems,
+  vaultSocialEntries = [],
   curatedMovieIds,
   curatedNotesByMovieId,
   allDiaryFilms,
@@ -767,6 +812,7 @@ export function OverviewPanel({
   recentlyWatched: RecentlyWatchedItem[]
   watchlistFilms: WatchlistItem[]
   reviewItems: ReviewItem[]
+  vaultSocialEntries?: VaultSocialEntry[]
   curatedMovieIds: number[]
   curatedNotesByMovieId: Record<number, string>
   allDiaryFilms: RecentlyWatchedItem[]
@@ -775,12 +821,11 @@ export function OverviewPanel({
   onJumpToTab: (tab: 'Vault' | 'Watchlist' | 'Reseñas' | 'Diario') => void
 }) {
   void _stats
-  const recommendation = watchlistFilms[0] || null
   const curatedGallery = buildCuratedGallery(recentlyWatched, watchlistFilms, curatedMovieIds, allDiaryFilms)
   return (
     <div>
       <CuratedGallery films={curatedGallery} curatedNotesByMovieId={curatedNotesByMovieId} canEdit={canEditCurated} onCurate={onCurateGallery} />
-      <NightRec recommendation={recommendation} />
+      <NightRec />
 
       <SectionHeader title="Vistas recientemente" link="Ver historial" onLinkClick={() => onJumpToTab('Diario')} />
       <div className="profile-mobile-only profile-mobile-only-flex" style={{ flexDirection: 'column', gap: 10, marginBottom: 48 }}>
@@ -796,13 +841,13 @@ export function OverviewPanel({
 
       <SectionHeader title="Mi Vault" link="Ver todo" onLinkClick={() => onJumpToTab('Vault')} />
       <div className="profile-mobile-only profile-mobile-only-flex" style={{ flexDirection: 'column', gap: 8, marginBottom: 48 }}>
-        {vaultMockItems.slice(0, 3).map((item, index) => (
-          <VaultCardMobile key={item.id} item={item} delay={index * 0.08} />
+        {vaultSocialEntries.slice(0, 3).map((item, index) => (
+          <VaultCardMobile key={item.id} item={item} delay={index * 0.08} canManage={canEditCurated} />
         ))}
       </div>
       <div className="profile-desktop-grid profile-grid-3" style={{ marginBottom: 48 }}>
-        {vaultMockItems.slice(0, 3).map((item, index) => (
-          <VaultCard key={item.id} item={item} delay={index * 0.08} />
+        {vaultSocialEntries.slice(0, 3).map((item, index) => (
+          <VaultCard key={item.id} item={item} delay={index * 0.08} canManage={canEditCurated} />
         ))}
       </div>
 
@@ -829,9 +874,26 @@ export function OverviewPanel({
 
 const VAULT_FILTERS = ['Todo', 'Reflexion', 'Edit', 'Critica', 'Recomendacion']
 
-export function VaultPanel() {
+export function VaultPanel({ vaultItems: initialItems = [], canManage = false }: { vaultItems?: VaultSocialEntry[]; canManage?: boolean }) {
   const [filter, setFilter] = useState('Todo')
-  const filtered = filter === 'Todo' ? vaultMockItems : vaultMockItems.filter((item) => item.type === filter)
+  const [localItems, setLocalItems] = useState(initialItems)
+
+  useEffect(() => {
+    setLocalItems(initialItems)
+  }, [initialItems])
+
+  const filtered = filter === 'Todo' ? localItems : localItems.filter((item) => item.entry_type.toLowerCase() === filter.toLowerCase())
+
+  const handleDeleteEntry = async (id: number) => {
+    const token = getStoredAccessToken()
+    if (!token) return
+    try {
+      await removeVaultSocialEntry(token, id)
+      setLocalItems(prev => prev.filter(item => item.id !== id))
+    } catch (err) {
+      console.error('Error deleting vault entry:', err)
+    }
+  }
 
   return (
     <div>
@@ -846,7 +908,7 @@ export function VaultPanel() {
         }}
       >
         <div className="profile-panel-header" style={{ fontFamily: SERIF, color: C.text }}>
-          Mi Vault <em className="profile-panel-header-em" style={{ fontStyle: 'italic', color: C.textSoft }}>— {vaultMockItems.length} publicaciones</em>
+          Mi Vault <em className="profile-panel-header-em" style={{ fontStyle: 'italic', color: C.textSoft }}>— {localItems.length} publicaciones</em>
         </div>
         <button
           style={{
@@ -893,19 +955,33 @@ export function VaultPanel() {
         ))}
       </div>
 
-      <div className="profile-grid-3">
+      <div className="profile-desktop-grid profile-grid-3">
         {filtered.map((item, index) => (
-          <VaultCard key={item.id} item={item} delay={index * 0.06} />
+          <VaultCard key={item.id} item={item} delay={index * 0.06} canManage={canManage} onRemove={handleDeleteEntry} />
         ))}
       </div>
     </div>
   )
 }
 
-export function WatchlistPanel({ watchlistFilms }: { watchlistFilms: WatchlistItem[] }) {
+export function WatchlistPanel({ watchlistFilms: initialFilms, canManage = false }: { watchlistFilms: WatchlistItem[]; canManage?: boolean }) {
   const navigate = useNavigate()
-  const [watched, setWatched] = useState<number[]>([])
-  const toggle = (id: number) => setWatched((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
+  const [films, setFilms] = useState(initialFilms)
+
+  useEffect(() => {
+    setFilms(initialFilms)
+  }, [initialFilms])
+
+  const handleDelete = async (id: number) => {
+    const token = getStoredAccessToken()
+    if (!token) return
+    try {
+      await removeFromWatchlist(token, id)
+      setFilms(prev => prev.filter(f => f.movieId !== id))
+    } catch (err) {
+      console.error(err)
+    }
+  }
 
   return (
     <div>
@@ -920,7 +996,7 @@ export function WatchlistPanel({ watchlistFilms }: { watchlistFilms: WatchlistIt
         }}
       >
         <div className="profile-panel-header" style={{ fontFamily: SERIF, color: C.text }}>
-          Watchlist <em className="profile-panel-header-em" style={{ fontStyle: 'italic', color: C.textSoft }}>— {watchlistFilms.length} películas</em>
+          Watchlist <em className="profile-panel-header-em" style={{ fontStyle: 'italic', color: C.textSoft }}>— {films.length} películas</em>
         </div>
         <div className="profile-panel-actions-inline">
           <button
@@ -963,15 +1039,14 @@ export function WatchlistPanel({ watchlistFilms }: { watchlistFilms: WatchlistIt
       </div>
 
       <div className="profile-mobile-only profile-mobile-only-flex" style={{ flexDirection: 'column', gap: 0 }}>
-        {watchlistFilms.map((film, index) => {
-          const isWatched = watched.includes(film.movieId)
+        {films.map((film, index) => {
           return (
             <motion.div
               key={film.movieId}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.03 }}
-              onClick={() => navigate(movieHref(film.movieId, film.title, film.tmdbId))}
+              onClick={() => navigate(mediaHref(film.movieId, film.title, film.tmdbId, film.mediaType))}
               style={{
                 cursor: 'pointer',
                 display: 'flex',
@@ -985,43 +1060,41 @@ export function WatchlistPanel({ watchlistFilms }: { watchlistFilms: WatchlistIt
                 <Img
                   src={film.posterUrl}
                   alt={film.title}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', filter: isWatched ? 'grayscale(1) brightness(0.4)' : 'saturate(0.7)', transition: 'filter 0.3s' }}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(0.7)', transition: 'filter 0.3s' }}
                 />
-                {film.priority === 'alta' && !isWatched && (
-                  <div style={{ position: 'absolute', top: 4, right: 4, width: 5, height: 5, borderRadius: '50%', background: C.accent }} />
-                )}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontFamily: SERIF, fontSize: 14, color: isWatched ? C.textMuted : C.text, lineHeight: 1.3, marginBottom: 2, ...textClampOneLine }}>
+                <div style={{ fontFamily: SERIF, fontSize: 14, color: C.text, lineHeight: 1.3, marginBottom: 2, ...textClampOneLine }}>
                   {film.title}
                 </div>
                 <div style={{ fontSize: 11, color: C.textSoft, fontFamily: SANS }}>{film.year || '—'} · {film.director}</div>
               </div>
-              <button
-                onClick={(e) => { e.stopPropagation(); toggle(film.movieId) }}
-                style={{
-                  flexShrink: 0,
-                  width: 28,
-                  height: 28,
-                  borderRadius: '50%',
-                  border: `1px solid ${isWatched ? C.accent : C.border}`,
-                  background: isWatched ? C.accent : 'transparent',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'all 0.2s',
-                }}
-              >
-                {isWatched && <Check size={12} color={C.bg} />}
-              </button>
+              {canManage && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleDelete(film.movieId) }}
+                  style={{
+                    flexShrink: 0,
+                    width: 28,
+                    height: 28,
+                    borderRadius: '50%',
+                    border: `1px solid ${C.border}`,
+                    background: 'transparent',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  <Trash size={12} color={C.textMuted} />
+                </button>
+              )}
             </motion.div>
           )
         })}
       </div>
       <div className="profile-desktop-grid profile-grid-auto">
-        {watchlistFilms.map((film, index) => {
-          const isWatched = watched.includes(film.movieId)
+        {films.map((film, index) => {
           return (
             <motion.div
               key={film.movieId}
@@ -1029,31 +1102,24 @@ export function WatchlistPanel({ watchlistFilms }: { watchlistFilms: WatchlistIt
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.04 }}
               style={{ cursor: 'pointer', position: 'relative' }}
-              onClick={() => navigate(movieHref(film.movieId, film.title, film.tmdbId))}
+              onClick={() => navigate(mediaHref(film.movieId, film.title, film.tmdbId, film.mediaType))}
             >
               <div style={{ aspectRatio: '2/3', borderRadius: 2, overflow: 'hidden', marginBottom: 10, position: 'relative' }}>
                 <Img
                   src={film.posterUrl}
                   alt={film.title}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', filter: isWatched ? 'grayscale(1) brightness(0.4)' : 'saturate(0.7)', transition: 'filter 0.3s' }}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(0.7)', transition: 'filter 0.3s' }}
                 />
-                {film.priority === 'alta' && !isWatched && (
-                  <div style={{ position: 'absolute', top: 6, right: 6 }}>
-                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: C.accent }} />
-                  </div>
+                {canManage && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDelete(film.movieId) }}
+                    style={{ position: 'absolute', top: 8, right: 8, width: 24, height: 24, borderRadius: '50%', background: 'rgba(0,0,0,0.5)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    <Trash size={12} color="white" />
+                  </button>
                 )}
-                <button
-                  onClick={(e) => { e.stopPropagation(); toggle(film.movieId) }}
-                  style={{ position: 'absolute', inset: 0, background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                >
-                  {isWatched && (
-                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: C.accent, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Check size={14} color={C.bg} />
-                    </div>
-                  )}
-                </button>
               </div>
-              <div style={{ fontSize: 12, color: isWatched ? C.textMuted : C.text, fontFamily: SANS, lineHeight: 1.3, marginBottom: 2, ...textClampOneLine }}>
+              <div style={{ fontSize: 12, color: C.text, fontFamily: SANS, lineHeight: 1.3, marginBottom: 2, ...textClampOneLine }}>
                 {film.title}
               </div>
               <div style={{ fontSize: 11, color: C.textSoft, fontFamily: SANS }}>{film.year || 'Año desconocido'}</div>
@@ -1090,6 +1156,7 @@ export function HistoryPanel({ recentlyWatched }: { recentlyWatched: RecentlyWat
 }
 
 export function DiaryPanel({ diaryTimeline }: { diaryTimeline: DiaryTimelineItem[] }) {
+  const navigate = useNavigate()
 
   return (
     <div>
@@ -1140,14 +1207,16 @@ export function DiaryPanel({ diaryTimeline }: { diaryTimeline: DiaryTimelineItem
 
             <div style={{ paddingLeft: 36 }}>
               <div
+                onMouseEnter={(e) => (e.currentTarget.style.borderColor = C.accentDim)}
+                onMouseLeave={(e) => (e.currentTarget.style.borderColor = C.border)}
+                onClick={() => navigate(mediaHref(entry.movieId, entry.title, entry.tmdbId || 0, entry.mediaType))}
                 style={{
                   background: C.surface,
                   border: `1px solid ${C.border}`,
                   padding: '20px 24px',
                   transition: 'border-color 0.2s',
+                  cursor: 'pointer',
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.borderColor = C.accentDim)}
-                onMouseLeave={(e) => (e.currentTarget.style.borderColor = C.border)}
               >
                 <div style={{ display: 'flex', gap: 18, alignItems: 'flex-start' }}>
                   <div style={{ width: 54, flexShrink: 0, aspectRatio: '2/3', borderRadius: 1, overflow: 'hidden' }}>
@@ -1675,36 +1744,53 @@ function GenreSidebar({ recentlyWatched, reviewItems }: { recentlyWatched: Recen
   )
 }
 
-function AchievementsSidebar() {
+function AchievementsSidebar({ userBadges = [] }: { userBadges?: any[] }) {
+  if (!userBadges || userBadges.length === 0) return null
+
   return (
-    <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: '20px 24px' }}>
+    <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: '20px 24px', marginBottom: 16 }}>
       <div style={{ fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.textSoft, fontFamily: SANS, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
         <Trophy size={12} color={C.gold} /> Logros recientes
       </div>
-      {[
-        { icon: '🎞️', title: 'Maratonista', desc: '5 películas en una semana' },
-        { icon: '✍️', title: 'Crítica en desarrollo', desc: '50 reseñas escritas' },
-        { icon: '🕯️', title: 'Ritual nocturno', desc: '7 noches seguidas' },
-      ].map((badge) => (
-        <div key={badge.title} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
-          <span style={{ fontSize: 20, lineHeight: 1 }}>{badge.icon}</span>
-          <div>
-            <div style={{ fontSize: 12, color: C.text, fontFamily: SANS, marginBottom: 2 }}>{badge.title}</div>
-            <div style={{ fontSize: 11, color: C.textSoft, fontFamily: SANS }}>{badge.desc}</div>
+      {userBadges.slice(0, 5).map((ub) => {
+        const badge = ub.badges
+        return (
+          <div key={ub.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
+            <div style={{ width: 24, height: 24, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {badge.icon_url?.startsWith('http') ? (
+                <img 
+                  src={badge.icon_url} 
+                  alt="" 
+                  style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'brightness(0.9) saturate(0.8)' }} 
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).style.display = 'none';
+                    if (e.currentTarget.parentElement) {
+                      e.currentTarget.parentElement.innerText = '🏆';
+                    }
+                  }}
+                />
+              ) : (
+                <span style={{ fontSize: 20, lineHeight: 1 }}>{badge.icon_url || '🏆'}</span>
+              )}
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: C.text, fontFamily: SANS, marginBottom: 2 }}>{badge.name}</div>
+              <div style={{ fontSize: 11, color: C.textSoft, fontFamily: SANS }}>{badge.description}</div>
+            </div>
           </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
 
-export function ProfileSidebar({ recentlyWatched, reviewItems }: { recentlyWatched: RecentlyWatchedItem[]; reviewItems: ReviewItem[] }) {
+export function ProfileSidebar({ recentlyWatched, reviewItems, userBadges }: { recentlyWatched: RecentlyWatchedItem[]; reviewItems: ReviewItem[]; userBadges?: any[] }) {
   return (
     <aside className="profile-desktop-only">
       <div style={{ position: 'sticky', top: 60 }}>
         <ActivityStats />
         <GenreSidebar recentlyWatched={recentlyWatched} reviewItems={reviewItems} />
-        <AchievementsSidebar />
+        <AchievementsSidebar userBadges={userBadges} />
       </div>
     </aside>
   )

@@ -19,6 +19,11 @@ import {
 } from 'lucide-react'
 import { authorizedJson, getCurrentUser, logoutCurrentUser } from '../services/authServices'
 import { getMyLists } from '../services/listsServices'
+import { fetchForYouFeed, fetchTonightMovie, fetchOnboardingStatus, fetchSuggestedDirectors } from '../services/socialServices'
+import type { ForYouMovieItem, TonightResponse, SuggestedDirector } from '../services/socialServices'
+import { fetchArcos } from '../services/arcosServices'
+import type { ArcoSummary } from '../services/arcosServices'
+import OnboardingModal from './onboarding/OnboardingModal'
 import { createSlug } from '../utils/stringUtils'
 import './HomeLogged.css'
 
@@ -76,15 +81,7 @@ type FollowingUser = {
   avatar_url?: string | null
 }
 
-type DirectorAutopsy = {
-  person_id: number
-  name: string
-  profile_path: string | null
-  nationality: string
-  statistics?: {
-    total_movies?: number
-  }
-}
+// Deleted hardcoded DirectorAutopsy type since we use SuggestedDirector now
 
 type MentirasRanking = {
   shame?: Array<{
@@ -185,7 +182,7 @@ const C = {
 const SERIF = "'Cormorant Garamond', serif"
 const SANS = "'Syne', sans-serif"
 
-const DIRECTOR_IDS = [5655, 12453, 6384, 13757, 4405, 6648]
+// Removed hardcoded DIRECTOR_IDS
 
 const ZONES: { id: ZoneId; symbol: string; name: string; subtitle: string; desc: string }[] = [
   { id: 'entrada', symbol: '◈', name: 'La Entrada', subtitle: 'Descubrimiento · Reto nocturno · Feed', desc: 'Tu portal diario al cine' },
@@ -301,8 +298,12 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
   const [lists, setLists] = useState<UserListSummary[]>([])
   const [followingActivity, setFollowingActivity] = useState<FollowingActivityItem[]>([])
   const [followingReviews, setFollowingReviews] = useState<FollowingReviewItem[]>([])
-  const [directors, setDirectors] = useState<DirectorAutopsy[]>([])
+  const [directors, setDirectors] = useState<SuggestedDirector[]>([])
+  const [arcos, setArcos] = useState<ArcoSummary[]>([])
   const [mentiras, setMentiras] = useState<MentirasRanking>({})
+  const [forYouMovies, setForYouMovies] = useState<ForYouMovieItem[]>([])
+  const [tonightMovie, setTonightMovie] = useState<TonightResponse | null>(null)
+  const [needsOnboarding, setNeedsOnboarding] = useState(false)
   const [metaByTmdb, setMetaByTmdb] = useState<Record<number, MovieMeta>>({})
   const [searchValue, setSearchValue] = useState('')
   const [watchedTonight, setWatchedTonight] = useState(false)
@@ -336,7 +337,7 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
         const me = await getCurrentUser()
         if (!active) return
 
-        const [diaryRes, watchlistRes, reviewsRes, vaultRes, listsRes, followingRes, mentirasRes, directorsRes] = await Promise.allSettled([
+        const [diaryRes, watchlistRes, reviewsRes, vaultRes, listsRes, followingRes, mentirasRes, directorsRes, forYouRes, tonightRes, onboardingRes, arcosRes] = await Promise.allSettled([
           authorizedJson<{ diary?: DiaryEntry[] }>('/api/diary'),
           authorizedJson<WatchlistEntry[]>('/api/watchlist'),
           authorizedJson<ReviewEntry[]>('/api/reviews'),
@@ -344,9 +345,11 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
           getMyLists(),
           fetch(`${API_URL}/api/users/${me.id}/following`).then((res) => (res.ok ? res.json() : [] as FollowingUser[])),
           fetch(`${API_URL}/api/mentiras/ranking`).then((res) => (res.ok ? res.json() : {} as MentirasRanking)),
-          Promise.all(
-            DIRECTOR_IDS.map((id) => fetch(`${API_URL}/api/directors/${id}/autopsy`).then((res) => (res.ok ? res.json() : null)).catch(() => null))
-          ),
+          fetchSuggestedDirectors().then((res) => res.items),
+          fetchForYouFeed(1),
+          fetchTonightMovie(),
+          fetchOnboardingStatus(),
+          fetchArcos()
         ])
 
         if (!active) return
@@ -368,8 +371,25 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
           setMentiras(mentirasRes.value || {})
         }
 
+        if (forYouRes.status === 'fulfilled') {
+          const movies = (forYouRes.value.items || []).filter((i: any) => i.type === 'media') as ForYouMovieItem[]
+          setForYouMovies(movies)
+        }
+        
+        if (tonightRes.status === 'fulfilled') {
+          setTonightMovie(tonightRes.value || null)
+        }
+
+        if (onboardingRes.status === 'fulfilled') {
+          setNeedsOnboarding(onboardingRes.value.needs_onboarding)
+        }
+
         if (directorsRes.status === 'fulfilled') {
-          setDirectors((directorsRes.value || []).filter((item): item is DirectorAutopsy => Boolean(item)))
+          setDirectors(directorsRes.value || [])
+        }
+
+        if (arcosRes.status === 'fulfilled') {
+          setArcos(arcosRes.value || [])
         }
 
         const followingUsers = followingData.slice(0, 6)
@@ -502,49 +522,39 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
   }, [username])
 
   const tonightFilm = useMemo(() => {
-    const candidate = watchlist[0] || diary[0] || null
-    if (!candidate) return null
-    const tmdbId = candidate.tmdb_id ?? null
-    const meta = tmdbId ? metaByTmdb[tmdbId] : null
-    const title = candidate.movie_info?.title || meta?.title || `Pelicula ${candidate.movie_id}`
+    if (!tonightMovie || !tonightMovie.media) return null
+    
+    const media = tonightMovie.media
     return {
-      movieId: candidate.movie_id,
-      tmdbId,
-      title,
-      year: meta?.year || null,
-      director: meta?.director || 'Desconocido',
-      duration: meta?.runtimeLabel || 'Duracion N/D',
-      synopsis: meta?.overview || 'Una recomendacion basada en tu historial reciente y tus patrones de watchlist.',
+      movieId: media.id,
+      tmdbId: media.id,
+      title: media.title || 'Esta Noche',
+      year: media.year || null,
+      director: 'CineVault Engine',
+      duration: 'Calculada',
+      synopsis: media.reason || 'Recomendación especial calculada para ti esta noche.',
       points: 40,
-      genres: meta?.genres?.length ? meta.genres : ['Drama', 'Autor'],
-      posterUrl: meta?.posterUrl || toPoster(candidate.movie_info?.poster_path),
-      backdropUrl: meta?.backdropUrl || meta?.posterUrl || toPoster(candidate.movie_info?.poster_path),
+      genres: media.weather_context === 'rainy' ? ['Lluvia', 'Misterio'] : ['Esta noche', 'Descubrimiento'],
+      posterUrl: media.poster_path ? `https://image.tmdb.org/t/p/w500${media.poster_path}` : '/no-poster.svg',
+      backdropUrl: media.poster_path ? `https://image.tmdb.org/t/p/w1280${media.poster_path}` : '/no-poster.svg',
     }
-  }, [watchlist, diary, metaByTmdb])
+  }, [tonightMovie])
 
   const becauseYouWatched = useMemo(() => {
-    const base = [...watchlist, ...diary]
-    const seen = new Set<number>()
-    const result: Array<{ movieId: number; tmdbId: number | null; title: string; director: string; rating: number; posterUrl: string }> = []
-
-    for (const item of base) {
-      if (seen.has(item.movie_id)) continue
-      seen.add(item.movie_id)
-      const tmdbId = item.tmdb_id ?? null
-      const meta = tmdbId ? metaByTmdb[tmdbId] : null
-      result.push({
-        movieId: item.movie_id,
+    return forYouMovies.slice(0, 8).map((item) => {
+      const tmdbId = item.media.id
+      const meta = metaByTmdb[tmdbId]
+      return {
+        movieId: item.media.id, // For TMDB standard we map movie ID here safely
         tmdbId,
-        title: item.movie_info?.title || meta?.title || `Pelicula ${item.movie_id}`,
-        director: meta?.director || 'Desconocido',
-        rating: 4 + ((result.length % 3) * 0.2),
-        posterUrl: meta?.posterUrl || toPoster(item.movie_info?.poster_path),
-      })
-      if (result.length === 8) break
-    }
-
-    return result
-  }, [watchlist, diary, metaByTmdb])
+        title: item.media.title,
+        director: meta?.director || 'Autor sugerido',
+        rating: Math.max(1, (item.media.vote_average || 0) / 2),
+        posterUrl: `https://image.tmdb.org/t/p/w300${item.media.poster_path}`,
+        reason: item.media.reason || 'Recomendación personalizada'
+      }
+    })
+  }, [forYouMovies, metaByTmdb])
 
   const feedRapido = useMemo(() => {
     return followingReviews.map((review, index) => {
@@ -618,13 +628,12 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
 
   const directorCards = useMemo(() => {
     return directors
-      .filter((director) => (director.statistics?.total_movies || 0) > 0)
       .slice(0, 6)
       .map((director) => ({
-      id: director.person_id,
+      id: director.id,
       name: director.name,
-      nationality: director.nationality || 'N/D',
-      films: director.statistics?.total_movies || 0,
+      nationality: 'Descubrimiento afín',
+      films: director.score,
       img: director.profile_path ? toPoster(director.profile_path) : null,
     }))
   }, [directors])
@@ -782,9 +791,6 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
                 </div>
                 <div style={{ fontFamily: SANS, fontSize: 12, color: C.text, lineHeight: 1.3, marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'left' }}>{film.title}</div>
                 <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 12, color: C.textSoft, textAlign: 'left', marginTop: 1 }}>{film.director}</div>
-                <div style={{ display: 'flex', gap: 2, marginTop: 4 }}>
-                  {[1, 2, 3, 4, 5].map((s) => <span key={s} style={{ fontSize: 9, color: s <= Math.round(film.rating) ? C.gold : C.textMuted }}>★</span>)}
-                </div>
               </motion.div>
             </Link>
           ))}
@@ -1027,19 +1033,39 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
 
       <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }} style={{ marginBottom: 56 }}>
         <SectionLabel link="Abrir arcos" linkHref="/arcos">Arcos editoriales</SectionLabel>
-        <Link to="/arcos" style={{ textDecoration: 'none', display: 'block' }}>
-          <motion.div whileHover={{ y: -3 }} transition={{ duration: 0.2 }} style={{ background: C.surface, border: `1px solid ${C.border}`, borderLeft: `3px solid ${C.accent}`, padding: '20px 22px' }}>
-            <div style={{ fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.accent, fontFamily: SANS, marginBottom: 8 }}>
-              Ruta de formación
-            </div>
-            <div style={{ fontFamily: SERIF, fontSize: 26, color: C.text, marginBottom: 10, lineHeight: 1.1 }}>
-              Descubre y completa Arcos
-            </div>
-            <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 16, color: C.textSoft, lineHeight: 1.6 }}>
-              Secuencias curatoriales pensadas para ver cine con contexto y progresión.
-            </div>
-          </motion.div>
-        </Link>
+        {arcos.length > 0 ? (
+          <div className="hl-vault-grid">
+            {arcos.slice(0, 3).map((arco) => (
+              <Link key={arco.id} to={`/arcos/${arco.slug}`} style={{ textDecoration: 'none', display: 'block' }}>
+                <motion.div whileHover={{ y: -3 }} transition={{ duration: 0.2 }} style={{ background: C.surface, border: `1px solid ${C.border}`, borderLeft: `3px solid ${C.accent}`, padding: '20px 22px', height: '100%', boxSizing: 'border-box' }}>
+                  <div style={{ fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.accent, fontFamily: SANS, marginBottom: 8 }}>
+                    {arco.level}
+                  </div>
+                  <div style={{ fontFamily: SERIF, fontSize: 18, color: C.text, marginBottom: 10, lineHeight: 1.1 }}>
+                    {arco.title}
+                  </div>
+                  <div style={{ fontFamily: SANS, fontSize: 11, color: C.textSoft, lineHeight: 1.5 }}>
+                    {arco.usersCompleted || 0} cinéfilos completaron este reto.
+                  </div>
+                </motion.div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <Link to="/arcos" style={{ textDecoration: 'none', display: 'block' }}>
+            <motion.div whileHover={{ y: -3 }} transition={{ duration: 0.2 }} style={{ background: C.surface, border: `1px solid ${C.border}`, borderLeft: `3px solid ${C.accent}`, padding: '20px 22px' }}>
+              <div style={{ fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.accent, fontFamily: SANS, marginBottom: 8 }}>
+                Ruta de formación
+              </div>
+              <div style={{ fontFamily: SERIF, fontSize: 26, color: C.text, marginBottom: 10, lineHeight: 1.1 }}>
+                Descubre y completa Arcos
+              </div>
+              <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 16, color: C.textSoft, lineHeight: 1.6 }}>
+                Secuencias curatoriales pensadas para ver cine con contexto y progresión.
+              </div>
+            </motion.div>
+          </Link>
+        )}
       </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }} style={{ marginBottom: 56 }}>
@@ -1169,6 +1195,10 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
             {activeZone === 'sala' ? renderSala() : null}
             {activeZone === 'vitrina' ? renderVitrina() : null}
           </AnimatePresence>
+
+          {needsOnboarding && (
+            <OnboardingModal onComplete={() => setNeedsOnboarding(false)} />
+          )}
 
           <div style={{ marginTop: 32, display: 'flex', justifyContent: 'flex-end' }}>
             <button

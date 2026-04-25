@@ -43,7 +43,7 @@ export const agregarFavoritoService = (
   userId: number,
   data: AgregarFavoritoDTO
 ) =>
-  ensureMovieRefId(data.movieId).then((movieId) =>
+  ensureMovieRefId(data.movieId, (data as any).media_type || "movie").then((movieId) =>
     favoritiesRepository.create(userId, { ...data, movieId })
   )
 
@@ -53,13 +53,14 @@ export const agregarFavoritoService = (
  */
 export const eliminarFavoritoService = async (
   userId: number,
-  movieId: number
+  movieId: number,
+  mediaType?: any
 ) => {
-  const resolvedMovieId = await findMovieRefIdByCandidate(movieId)
-  if (!resolvedMovieId) throw new NotFoundError("Favorito no encontrado")
+  const resolvedMovieId = await findMovieRefIdByCandidate(movieId, mediaType)
+  if (!resolvedMovieId) return // Ya no existe la referencia, se considera borrado
 
   const favorito = await favoritiesRepository.findFirst(userId, resolvedMovieId)
-  if (!favorito) throw new NotFoundError("Favorito no encontrado")
-  
+  if (!favorito) return // No era favorito, se considera éxito al borrar
+
   await favoritiesRepository.delete(favorito.id)
 }

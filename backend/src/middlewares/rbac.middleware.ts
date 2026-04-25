@@ -1,25 +1,27 @@
+/**
+ * @file rbac.middleware.ts
+ * @description Capa de autorización basada en roles (RBAC) y membresías.
+ * Implementa una estrategia de autorización de alto rendimiento utilizando Redis como 
+ * caché de segundo nivel para roles y niveles de suscripción, minimizando la carga 
+ * sobre la base de datos principal y permitiendo cambios de permisos casi instantáneos.
+ */
+
 import { Response, NextFunction, Request } from "express"
 import { tienePermiso, Permiso } from "../config/permisos.js"
 import { ForbiddenError } from "../errors/AppErrors.js"
 import { prisma } from "../lib/prisma.js"
 import { redis } from "../config/redis.js"
 
-/* ==========================================================================
-   MIDDLEWARES DE AUTORIZACIÓN (RBAC)
-   --------------------------------------------------------------------------
-   Tanto el rol como la membresía se leen desde Redis (TTL 2 min) para que
-   cambios de plan o rol se reflejen casi instantáneamente sin query a DB
-   en cada request.
+// Configuración de la caché de autorización (2 minutos de persistencia)
+const TTL_AUTORIZACION = 120
 
-   Cuando cambia el rol o membresía de un usuario, invalidar:
-     await invalidarCacheRol(userId)
-     await invalidarCacheMembresia(userId)
-   ========================================================================== */
-
-// ---------------------------------------------------------------------------
-// HELPERS — obtener rol y membresía con caché Redis
-// ---------------------------------------------------------------------------
-
+/**
+ * Recupera el rol y la membresía del usuario, priorizando el almacenamiento en Redis.
+ * En caso de cache-miss, consulta la base de datos y repuebla la caché.
+ * 
+ * @param userId - Identificador único del usuario.
+ * @returns Objeto con el rol técnico y el nivel de membresía.
+ */
 const obtenerRolYMembresia = async (
   userId: number
 ): Promise<{ role: string; membresia: string }> => {
@@ -27,7 +29,7 @@ const obtenerRolYMembresia = async (
   const membresiaKey = `membresia:${userId}`
 
   try {
-    // Intentar leer ambos de Redis en paralelo
+    // Intento de recuperación paralela desde caché
     const [cachedRol, cachedMembresia] = await Promise.all([
       redis.get(rolKey),
       redis.get(membresiaKey),
@@ -37,7 +39,7 @@ const obtenerRolYMembresia = async (
       return { role: cachedRol, membresia: cachedMembresia }
     }
 
-    // Cache miss en alguno — consultar DB
+    // Fallback a base de datos si la caché ha expirado o está vacía
     const usuario = await prisma.users.findUnique({
       where: { id: userId },
       select: { role: true, membership: true },
@@ -46,15 +48,15 @@ const obtenerRolYMembresia = async (
     const role = usuario?.role ?? "user"
     const membresia = usuario?.membership ?? "free"
 
-    // Cachear ambos por 2 minutos en paralelo
+    // Repoblación de caché con expiración corta (2 min)
     await Promise.all([
-      redis.setex(rolKey, 120, role),
-      redis.setex(membresiaKey, 120, membresia),
+      redis.setex(rolKey, TTL_AUTORIZACION, role),
+      redis.setex(membresiaKey, TTL_AUTORIZACION, membresia),
     ])
 
     return { role, membresia }
   } catch {
-    // Si Redis falla, ir directo a DB sin romper la app
+    // Resiliencia: Si Redis no está disponible, operamos directamente contra DB
     const usuario = await prisma.users.findUnique({
       where: { id: userId },
       select: { role: true, membership: true },
@@ -66,32 +68,23 @@ const obtenerRolYMembresia = async (
   }
 }
 
-// ---------------------------------------------------------------------------
-// EXPORTS — invalidar caché de rol y membresía
-// ---------------------------------------------------------------------------
-
-/**
- * Llamar cuando el admin cambia el rol de un usuario.
- * El próximo request ya verá el nuevo rol sin necesidad de cerrar sesión.
+/** 
+ * Elimina la caché de rol del usuario. 
+ * Debe invocarse tras una reasignación administrativa de privilegios.
  */
 export const invalidarCacheRol = async (userId: number) => {
   await redis.del(`rol:${userId}`)
 }
 
-/**
- * Llamar cuando cambia el plan de un usuario:
- *   - Se activa una suscripción nueva
- *   - Se cancela o expira una suscripción
- *   - El admin cambia la membresía manualmente
+/** 
+ * Elimina la caché de membresía del usuario.
+ * Debe invocarse tras un cambio en el plan de suscripción o pago.
  */
 export const invalidarCacheMembresia = async (userId: number) => {
   await redis.del(`membresia:${userId}`)
 }
 
-/**
- * Invalidar tanto rol como membresía de una vez.
- * Útil cuando se hace un cambio completo del usuario.
- */
+/** Realiza una invalidación completa del estado de autorización del usuario */
 export const invalidarCacheUsuario = async (userId: number) => {
   await Promise.all([
     redis.del(`rol:${userId}`),
@@ -99,14 +92,11 @@ export const invalidarCacheUsuario = async (userId: number) => {
   ])
 }
 
-// ---------------------------------------------------------------------------
-// MIDDLEWARE 1 — verificar permiso específico
-// ---------------------------------------------------------------------------
-
 /**
- * Verifica que el usuario tenga un permiso específico.
- * Lee rol y membresía desde Redis — cambios se reflejan en ~2 minutos máximo,
- * o inmediatamente si se invalida el caché al hacer el cambio.
+ * Middleware: Verificación de Permiso Atómico.
+ * Comprueba si el rol y la membresía actual permiten realizar una acción específica.
+ * 
+ * @param permiso - Identificador del permiso requerido (ej: 'POST_REVIEWS').
  */
 export const verificarPermiso = (permiso: Permiso) => {
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -116,11 +106,11 @@ export const verificarPermiso = (permiso: Permiso) => {
 
       if (!tienePermiso(role, permiso, membresia)) {
         throw new ForbiddenError(
-          "No tenés permisos suficientes para realizar esta acción"
+          "Permisos insuficientes: Su rol o nivel de membresía no autorizan esta operación"
         )
       }
 
-      // Inyectar en req.user para que estén disponibles en el controller
+      // Enriquecimiento del objeto user para la capa de controladores
       req.user!.role = role as "admin" | "editor" | "user"
       req.user!.membership = membresia
 
@@ -131,13 +121,9 @@ export const verificarPermiso = (permiso: Permiso) => {
   }
 }
 
-// ---------------------------------------------------------------------------
-// MIDDLEWARE 2 — verificar rol directamente
-// ---------------------------------------------------------------------------
-
 /**
- * Verifica que el usuario tenga uno de los roles especificados.
- * También lee el rol desde Redis para que cambios sean inmediatos.
+ * Middleware: Verificación por Rol Directo.
+ * Permite el acceso únicamente si el usuario ostenta uno de los roles autorizados.
  */
 export const verificarRol = (...roles: string[]) => {
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -147,7 +133,7 @@ export const verificarRol = (...roles: string[]) => {
 
       if (!roles.includes(role)) {
         return next(
-          new ForbiddenError("No tenés el rol necesario para esta acción")
+          new ForbiddenError("Acceso restringido: Esta sección requiere un rol de mayor jerarquía")
         )
       }
 
@@ -159,13 +145,13 @@ export const verificarRol = (...roles: string[]) => {
   }
 }
 
-// ---------------------------------------------------------------------------
-// MIDDLEWARE 3 — propietario del recurso O permiso especial
-// ---------------------------------------------------------------------------
-
 /**
- * El dueño puede actuar sobre su propio recurso.
- * Alguien con el permiso especial puede actuar sobre cualquiera.
+ * Middleware: Política de Propietario o Permiso Administrativo (Híbrido).
+ * Autoriza si el usuario es el dueño del recurso solicitado O si posee 
+ * un permiso administrativo de supervisión/edición ajena.
+ * 
+ * @param permiso - Permiso necesario para usuarios que no son dueños.
+ * @param obtenerOwnerIdFn - Función asíncrona que determina el ID del dueño del recurso.
  */
 export const verificarPropietarioOPermiso = (
   permiso: Permiso,
@@ -175,14 +161,16 @@ export const verificarPropietarioOPermiso = (
     try {
       const { user_id } = req.user!
 
+      // Verificación de propiedad (Ownership)
       const ownerId = await obtenerOwnerIdFn(req)
       if (ownerId === user_id) return next()
 
+      // Verificación subsidiaria por privilegios administrativos si no es el dueño
       const { role, membresia } = await obtenerRolYMembresia(user_id)
 
       if (!tienePermiso(role, permiso, membresia)) {
         throw new ForbiddenError(
-          "No tenés permisos para actuar sobre este recurso"
+          "Conflicto de propiedad: No es el dueño del recurso ni posee facultades administrativas"
         )
       }
 

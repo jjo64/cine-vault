@@ -23,7 +23,7 @@ export type RichDiaryEntry = {
   movie_id: number
   watched_date: string | null
   tmdb_id: number | null
-  movie_info?: { title: string; poster_path: string | null } | null
+  movie_info?: { title: string; poster_path: string | null; media_type?: string | null } | null
   review?: {
     movie_id: number
     rating: number | null
@@ -35,7 +35,7 @@ export type RichDiaryEntry = {
 export type RichWatchlistEntry = {
   movie_id: number
   tmdb_id: number | null
-  movie_info?: { title: string; poster_path: string | null } | null
+  movie_info?: { title: string; poster_path: string | null; media_type?: string | null } | null
   rank_position?: number | null
   added_at?: string | null
 }
@@ -118,6 +118,7 @@ export type CuratedGalleryItemData = {
   order_index: number
   note: string | null
   tmdb_id: number | null
+  media_type?: string | null
 }
 
 type SettingsWrappedResponse<T> = {
@@ -194,6 +195,13 @@ export const fetchDiary = (userId: number, token?: string | null, isSelf?: boole
   })
 }
 
+export const fetchDiarySessions = (token?: string | null) => {
+  return apiFetch<{ sessions: any[] }>('/api/diary/sessions', {
+    token,
+    defaultValue: { sessions: [] },
+  })
+}
+
 export const fetchWatchlist = (userId: number, token?: string | null, isSelf?: boolean) =>
   apiFetch<RichWatchlistEntry[]>(isSelf ? '/api/watchlist' : `/api/watchlist/${userId}`, {
     token: isSelf ? token : undefined,
@@ -236,6 +244,11 @@ export const fetchFollowers = (userId: number) =>
 
 export const fetchFollowing = (userId: number) =>
   apiFetch<FollowUserEntry[]>(`/api/users/${userId}/following`, {
+    defaultValue: [],
+  })
+
+export const fetchUserBadges = (userId: number) =>
+  apiFetch<any[]>(`/api/users/${userId}/badges`, {
     defaultValue: [],
   })
 
@@ -395,4 +408,18 @@ export const updateOwnerCuratedGallery = (
     method: 'PUT',
     body: { items },
     defaultValue: { ok: true, data: { items: [] } },
+  })
+
+export const removeFromVault = (token: string | null, movieId: number | string) =>
+  apiFetch<{ message: string }>(`/api/vault/${movieId}`, {
+    token,
+    method: 'DELETE',
+    defaultValue: { message: '' },
+  })
+
+export const removeVaultSocialEntry = (token: string | null, entryId: number) =>
+  apiFetch<{ message: string }>(`/api/vault/social/${entryId}`, {
+    token,
+    method: 'DELETE',
+    defaultValue: { message: '' },
   })

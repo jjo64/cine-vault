@@ -1,22 +1,27 @@
 /**
  * @file VaultRepository.ts
- * @description Repositorio encargado de gestionar la "Bóveda" (Vault) de películas 
- * y las entradas sociales (reflexiones, críticas, recomendaciones). 
- * Combina persistencia local de Prisma con hidratación de metadatos externos de TMDB.
+ * @description Repositorio maestro para la gestión de la "Bóveda" (Vault). 
+ * Administra tanto la colección física de películas como el componente editorial 
+ * ("Vault Social") donde los usuarios publican reflexiones, críticas y recomendaciones. 
+ * Combina la eficiencia de Prisma para CRUD básico con SQL nativo para JOINS complejos 
+ * e hidratación concurrente de metadatos externos de TMDB.
  */
 
 import { Prisma } from "@prisma/client"
 import { prisma } from "../lib/prisma.js"
 import { consultarTMDB } from "../helpers/fetchTMDB.js"
 
-// --- Tipos de Datos y Estructuras ---
+// --- Definiciones de Tipado y Contratos ---
 
-/**
- * Representa una entrada de la bóveda enriquecida con metadatos de TMDB.
+/** 
+ * Entrada de la bóveda hidratada para la capa de presentación. 
+ * Fusiona el registro local con arte gráfico y metadatos de TMDB.
  */
 export interface RichVaultEntry {
   movie_id: number
+  /** Identificador externo de referencia */
   tmdb_id: number | null
+  /** Datos visuales y técnicos obtenidos en tiempo real */
   movie_info: {
     title: string
     poster_path: string
@@ -25,17 +30,17 @@ export interface RichVaultEntry {
   added_at: Date | null
 }
 
-/**
- * Tipos de contenido social que el usuario puede publicar en su bóveda.
+/** 
+ * Taxonomía de contenidos editoriales permitidos en el Vault Social.
  */
 export type VaultSocialEntryType =
-  | "reflexion"
-  | "edit"
-  | "critica"
-  | "recomendacion"
+  | "reflexion"      // Pensamientos breves sobre una obra
+  | "edit"           // Contenido audiovisual o montajes vinculados
+  | "critica"        // Análisis profundo (distinto del rating rápido)
+  | "recomendacion"  // Prescripción directa a la comunidad
 
-/**
- * Fila de entrada social recuperada por SQL Raw con JOINS de referencias.
+/** 
+ * Representación de una publicación editorial proyectada desde base de datos.
  */
 export type VaultSocialEntryRow = {
   id: number
@@ -45,10 +50,13 @@ export type VaultSocialEntryRow = {
   entry_type: VaultSocialEntryType
   title: string
   content: string
+  /** Imagen de portada personalizada para el artículo o reflexión */
   cover_url: string | null
+  /** Etiqueta de tiempo estimado (ej: "Lectura 5 min") */
   duration_label: string | null
   likes_count: number
   comments_count: number
+  /** Control de visibilidad (Legacy: 0/1 mapped to boolean) */
   is_public: number
   created_at: Date
   updated_at: Date
@@ -56,19 +64,25 @@ export type VaultSocialEntryRow = {
 
 /**
  * Interfaz IVaultRepository
- * Define las capacidades de gestión de colecciones y publicaciones del usuario en la bóveda.
+ * Contrato de persistencia para la gestión de colecciones y redacción editorial.
  */
 export interface IVaultRepository {
+  /** Verifica la membresía de una película en la bóveda de un usuario */
   exists(userId: number, movieId: number): Promise<boolean>
+  /** Integra una obra a la colección permanente */
   create(userId: number, movieId: number): Promise<void>
+  /** Revoca una obra de la colección */
   deleteByMovieId(userId: number, movieId: number): Promise<void>
+  /** Genera la vista de galería enriquecida (Metadatos + Local) */
   buildRichResponse(userId: number): Promise<RichVaultEntry[]>
+  /** Listado paginado de publicaciones del diario social */
   listSocialEntries(params: {
     userId: number
     page: number
     limit: number
     includePrivate: boolean
   }): Promise<{ items: VaultSocialEntryRow[]; total: number }>
+  /** Persiste una nueva pieza editorial */
   createSocialEntry(input: {
     userId: number
     movieId: number | null
@@ -79,6 +93,7 @@ export interface IVaultRepository {
     durationLabel: string | null
     isPublic: boolean
   }): Promise<number | null>
+  /** Actualiza parcialmente una publicación existente */
   updateSocialEntry(input: {
     id: number
     userId: number
@@ -90,20 +105,19 @@ export interface IVaultRepository {
     durationLabel: string | null
     isPublic: boolean | null
   }): Promise<void>
-  getSocialEntryByIdForOwner(
-    id: number,
-    userId: number
-  ): Promise<VaultSocialEntryRow | null>
+  /** Localiza una publicación verificando la propiedad del autor */
+  getSocialEntryByIdForOwner(id: number, userId: number): Promise<VaultSocialEntryRow | null>
+  /** Elimina contenido editorial de forma permanente */
   deleteSocialEntry(id: number, userId: number): Promise<void>
 }
 
 /**
- * Clase VaultRepository
- * Implementa la persistencia de la bóveda de películas y el sistema de publicaciones sociales.
+ * Repositorio de Bóveda
+ * Implementación que unifica la gestión de colecciones y el componente social del Vault.
  */
 export class VaultRepository implements IVaultRepository {
   /**
-   * Verifica si una película ya forma parte de la bóveda de un usuario.
+   * Determina si el recurso cinematográfico ya reside en la bóveda del usuario.
    */
   async exists(userId: number, movieId: number) {
     const item = await prisma.vault.findFirst({
@@ -114,7 +128,7 @@ export class VaultRepository implements IVaultRepository {
   }
 
   /**
-   * Añade una película a la bóveda privada.
+   * Persiste la vinculación de una película con la bóveda del usuario.
    */
   async create(userId: number, movieId: number) {
     await prisma.vault.create({
@@ -123,7 +137,7 @@ export class VaultRepository implements IVaultRepository {
   }
 
   /**
-   * Elimina una película de la bóveda.
+   * Desvincula una obra de la colección.
    */
   async deleteByMovieId(userId: number, movieId: number) {
     await prisma.vault.deleteMany({
@@ -132,14 +146,20 @@ export class VaultRepository implements IVaultRepository {
   }
 
   /**
-   * Genera una lista hidratada de la bóveda consultando la API de TMDB para metadatos visuales.
-   * Utiliza concurrencia para minimizar el tiempo de espera en la red externa.
+   * Construye el mosaico visual de la bóveda del usuario.
+   * Ejecuta la hidratación de metadatos desde TMDB mediante concurrencia protegida 
+   * (Promise.allSettled) para garantizar la disponibilidad incluso ante fallos de la API externa.
+   * 
+   * @param userId - Propietario de la colección.
    */
   async buildRichResponse(userId: number): Promise<RichVaultEntry[]> {
     const entries = await prisma.vault.findMany({
       where: { user_id: userId },
       select: { movie_id: true, added_at: true },
-      orderBy: { added_at: "desc" },
+      orderBy: [
+        { added_at: "desc" },
+        { id: "desc" }
+      ],
     })
 
     if (entries.length === 0) return []
@@ -148,25 +168,39 @@ export class VaultRepository implements IVaultRepository {
 
     const movies = await prisma.movies_ref.findMany({
       where: { id: { in: movieIds } },
-      select: { id: true, tmdb_id: true },
+      select: { id: true, tmdb_id: true, media_type: true },
     })
 
+    // Consultas concurrentes a TMDB para reconstruir el contexto visual
     const tmdbResults = await Promise.allSettled(
-      movies.map((movie) =>
-        consultarTMDB(`movie/${movie.tmdb_id}`).then((data: unknown) => {
+      movies.map((movie) => {
+        const isTv = movie.media_type === "tv"
+        const endpoint = isTv ? `tv/${movie.tmdb_id}` : `movie/${movie.tmdb_id}`
+        
+        return consultarTMDB(endpoint, { append_to_response: "credits" }).then((data: unknown) => {
           const payload = data as {
             title?: string
+            name?: string
             poster_path?: string
             release_date?: string
+            first_air_date?: string
+            credits?: { crew: Array<{ job: string; name: string }> }
           }
 
+          const title = payload.title || payload.name || ""
+          const date = payload.release_date || payload.first_air_date || ""
+          const year = date ? parseInt(date.split("-")[0]) : null
+
           return {
-            title: payload.title || "",
+            title,
             poster_path: payload.poster_path || "",
-            release_date: payload.release_date || "",
+            release_date: date,
+            director: payload.credits?.crew?.find(p => p.job === "Director" || p.job === "Executive Producer")?.name || "Desconocido",
+            year,
+            media_type: movie.media_type
           }
         })
-      )
+      })
     )
 
     const tmdbMap = new Map(
@@ -187,8 +221,8 @@ export class VaultRepository implements IVaultRepository {
   }
 
   /**
-   * Lista las publicaciones sociales (reflexiones, etc) del usuario.
-   * Utiliza SQL Raw para gestionar la unión con referencias externas de películas.
+   * Recupera el feed editorial (Social Vault) del usuario.
+   * Proporciona soporte para paginación y filtrado de visibilidad (público vs privado).
    */
   async listSocialEntries(params: {
     userId: number
@@ -241,7 +275,8 @@ export class VaultRepository implements IVaultRepository {
   }
 
   /**
-   * Crea una nueva entrada en la sección social de la bóveda.
+   * Persiste una nueva adición social al Vault.
+   * Utiliza SQL nativo para garantizar el orden de inserción y recuperación inmediata de ID.
    */
   async createSocialEntry(input: {
     userId: number
@@ -276,6 +311,7 @@ export class VaultRepository implements IVaultRepository {
       )
     `)
 
+    // Obtención del puntero recién creado
     const rows = await prisma.$queryRaw<Array<{ id: number }>>(Prisma.sql`
       SELECT id
       FROM vault_social_entries
@@ -288,7 +324,8 @@ export class VaultRepository implements IVaultRepository {
   }
 
   /**
-   * Actualiza dinámicamente campos específicos de una entrada social.
+   * Realiza una actualización selectiva (Coalesce) mediante SQL CASE.
+   * Optimiza el rendimiento evitando múltiples llamadas de actualización.
    */
   async updateSocialEntry(input: {
     id: number
@@ -317,7 +354,7 @@ export class VaultRepository implements IVaultRepository {
   }
 
   /**
-   * Recupera una entrada social por su ID para el propietario.
+   * Recupera la trazabilidad completa de una publicación verificando la propiedad.
    */
   async getSocialEntryByIdForOwner(id: number, userId: number) {
     const rows = await prisma.$queryRaw<VaultSocialEntryRow[]>(Prisma.sql`
@@ -346,7 +383,7 @@ export class VaultRepository implements IVaultRepository {
   }
 
   /**
-   * Elimina un registro social (asegurando propiedad del usuario).
+   * Ejecuta la eliminación física de una entrada social.
    */
   async deleteSocialEntry(id: number, userId: number) {
     await prisma.$executeRaw(Prisma.sql`
@@ -356,4 +393,5 @@ export class VaultRepository implements IVaultRepository {
   }
 }
 
+/** Instancia maestra del repositorio de Bóveda */
 export const vaultRepository = new VaultRepository()

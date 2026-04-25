@@ -9,6 +9,7 @@ export type EnrichedMovie = {
   primaryGenre?: string | null
   curatedNote?: string | null
   rating?: number | null
+  mediaType: 'movie' | 'tv'
 }
 
 export type RecentlyWatchedItem = EnrichedMovie & {
@@ -17,16 +18,24 @@ export type RecentlyWatchedItem = EnrichedMovie & {
 }
 
 export type WatchlistItem = EnrichedMovie & {
+  runtimeMinutes: number | null
+  primaryGenre: string | null
   priority: 'alta' | 'normal'
 }
 
-export type ReviewItem = EnrichedMovie & {
+export type ReviewItem = {
   id: number
+  movieId: number
+  tmdbId: number | null
   mediaType: 'movie' | 'tv'
-  rating: number
   username: string
   createdAtIso: string
   reviewSequence: number
+  title: string
+  year: number | null
+  director: string
+  posterUrl: string
+  rating: number
   createdAtLabel: string
   text: string
   tags: string[]
@@ -84,4 +93,5 @@ export type DiaryTimelineItem = {
   moodLabel: string
   stageLabel: string
   note: string | null
+  mediaType: 'movie' | 'tv'
 }

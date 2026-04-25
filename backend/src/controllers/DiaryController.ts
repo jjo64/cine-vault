@@ -37,12 +37,28 @@ export const getDiaryUser = async (req: Request, res: Response) => {
   res.json({ diary: diario })
 }
 
-/**
- * Elimina de forma permanente una entrada del diario del usuario.
- */
 export const removeDiary = async (req: Request, res: Response) => {
   const { id } = req.params as unknown as DiaryIdParamsDTO
   await diaryService.eliminarEntradaDiarioService(req.user!.user_id, id)
   res.json({ message: "La entrada del diario ha sido eliminada con éxito" })
+}
+
+/**
+ * Recupera las sesiones del usuario autenticado.
+ */
+export const getMyDiarySessions = async (req: Request, res: Response) => {
+  const sessions = await diaryService.obtenerSesionesDiarioService(req.user!.user_id)
+  res.json({ sessions })
+}
+
+/**
+ * Crea una sesión de visionado
+ */
+export const createDiarySession = async (req: Request, res: Response) => {
+  const session = await diaryService.crearSesionDiarioService(
+    req.user!.user_id,
+    req.body
+  )
+  res.status(201).json(session)
 }
 

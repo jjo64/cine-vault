@@ -1,31 +1,40 @@
 /**
  * @file CinematographicSignatureRepository.ts
- * @description Repositorio para la gestión de la "Firma Cinematográfica" del usuario (películas clave, directores formativos, etc.).
- * Utiliza operaciones de upsert para mantener la integridad del perfil único por usuario.
+ * @description Repositorio encargado de gestionar la "Firma Cinematográfica" (Identidad Cinéfila).
+ * Persiste los pilares narrativos que definen el gusto del usuario: películas clave, 
+ * directores fundamentales, escenas inolvidables y momentos de inflexión.
+ * Implementa una lógica de actualización atómica (Upsert) para sincronizar el perfil.
  */
 
 import { prisma } from "../lib/prisma.js"
 import type { ActualizarFirmaDTO } from "../schemas/profile.js"
 
-/**
- * Estructura de datos que representa una fila de la firma cinematográfica.
+/** 
+ * Estructura de datos que representa la identidad cinematográfica en la base de datos.
+ * Cada campo se compone de un título/nombre y un detalle explicativo.
  */
 export interface FirmaRow {
+  /** Relación 1:1 con el usuario */
   user_id: number
+  /** La película que marcó un antes y un después */
   pivotal_film: string | null
   pivotal_film_detail: string | null
+  /** El director o directora que formó su visión del cine */
   formative_director: string | null
   formative_director_detail: string | null
+  /** Fragmento visual o diálogo que permanece en la memoria */
   unforgettable_scene: string | null
   unforgettable_scene_detail: string | null
+  /** Época o evento que despertó su pasión por el séptimo arte */
   cinema_turning_year: string | null
   cinema_turning_year_detail: string | null
   created_at?: Date | null
   updated_at?: Date | null
 }
 
-/**
- * Helper para generar un objeto de firma vacío (valores nulos) para nuevos perfiles.
+/** 
+ * Fábrica de firmas neutrales.
+ * Se utiliza para inicializar perfiles que aún no han definido su identidad.
  */
 const FIRMA_VACIA = (userId: number): FirmaRow => ({
   user_id: userId,
@@ -40,12 +49,16 @@ const FIRMA_VACIA = (userId: number): FirmaRow => ({
 })
 
 /**
- * Objeto cinematographicSignatureRepository
- * Provee métodos para leer y actualizar la firma de identidad del usuario.
+ * Repositorio de Firma Cinematográfica
+ * Provee la interfaz de persistencia para la capa de perfiles sociales.
  */
 export const cinematographicSignatureRepository = {
   /**
-   * Obtiene la firma de un usuario por su ID. Si no existe, devuelve una estructura vacía.
+   * Recupera la firma de identidad vinculada a una cuenta.
+   * Si el usuario no ha completado su firma, devuelve una estructura con valores nulos 
+   * para mantener la consistencia en el frontend.
+   * 
+   * @param userId - ID único del usuario.
    */
   async findByUserId(userId: number): Promise<FirmaRow> {
     const record = await prisma.cinematographic_signature.findUnique({
@@ -55,9 +68,10 @@ export const cinematographicSignatureRepository = {
   },
 
   /**
-   * Crea o actualiza la firma del usuario (Upsert).
-   * @param userId - ID del usuario propietario.
-   * @param data - Datos de la firma provenientes del DTO.
+   * Persiste o actualiza la configuración de identidad cinematográfica.
+   * 
+   * @param userId - Propietario de la firma.
+   * @param data - DTO con los campos validados de la firma.
    */
   async upsert(userId: number, data: ActualizarFirmaDTO): Promise<void> {
     await prisma.cinematographic_signature.upsert({
