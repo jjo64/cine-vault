@@ -1,7 +1,7 @@
 /**
  * @file ListsController.ts
  * @description Controlador para la gestión de Listas Personalizadas y Colecciones Públicas.
- * Permite a los usuarios crear, editar y compartir sus propias colecciones de cine, 
+ * Permite a los usuarios crear, editar y compartir sus propias colecciones de cine,
  * así como descubrir listas populares de la comunidad.
  */
 

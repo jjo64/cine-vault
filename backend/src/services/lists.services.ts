@@ -1,7 +1,7 @@
 /**
  * @file lists.services.ts
  * @description Capa de servicios para la gestión de "Colecciones" o Listas de Usuario.
- * Permite la creación de listas públicas y privadas, gestión de contenido (películas) 
+ * Permite la creación de listas públicas y privadas, gestión de contenido (películas)
  * y validación de reglas de integridad (nombres únicos por usuario, evitar duplicados).
  */
 

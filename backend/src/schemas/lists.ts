@@ -59,7 +59,10 @@ export const listIdParamsSchema = z.object({
 /** Esquema compuesto para identificar un elemento específico (película) dentro de una lista */
 export const listItemParamsSchema = z.object({
   id: z.coerce.number().int().positive("ID de lista inválido"),
-  movie_id: z.coerce.number().int().positive("Identificador de película inválido"),
+  movie_id: z.coerce
+    .number()
+    .int()
+    .positive("Identificador de película inválido"),
 })
 
 // Tipado exportado deducido de los esquemas para uso en controladores

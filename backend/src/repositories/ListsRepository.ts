@@ -1,12 +1,13 @@
 /**
  * @file ListsRepository.ts
  * @description Capa de persistencia para el sistema de Listas Personalizadas.
- * Gestiona la creación, edición y descubrimiento de colecciones de películas creadas 
- * por los usuarios. Implementa lógica de visibilidad granular (pública/privada) y 
+ * Gestiona la creación, edición y descubrimiento de colecciones de películas creadas
+ * por los usuarios. Implementa lógica de visibilidad granular (pública/privada) y
  * proporciona vistas resumidas y detalladas con hidratación de metadatos técnicos.
  */
 
 import { prisma } from "../lib/prisma.js"
+import { consultarTMDB } from "../helpers/fetchTMDB.js"
 
 // --- Tipado de la Capa de Datos ---
 
@@ -16,8 +17,12 @@ type ListEntity = {
   user_id: number
   name: string
   description: string | null
-  /** Indica si la lista es visible para la comunidad en las secciones de descubrimiento */
   is_public: boolean
+  is_official: boolean
+  is_premium: boolean
+  tags: any | null
+  glow_color: string | null
+  custom_cover: string | null
   created_at: Date
   updated_at: Date
 }
@@ -29,15 +34,21 @@ export type ListSummary = {
   name: string
   description: string | null
   is_public: boolean
+  is_official: boolean
+  is_premium: boolean
+  tags: string[] | null
+  glow_color: string | null
+  custom_cover: string | null
   created_at: Date
   updated_at: Date
-  /** Cantidad de obras contenidas en la lista */
   items_count: number
-  /** Datos básicos del autor de la lista */
+  /** URLs o paths de los posters de las primeras películas para el collage */
+  posters: (string | null)[]
   owner?: {
     id: number
     username: string
     avatar_url: string | null
+    is_verified?: boolean
   }
 }
 
@@ -64,7 +75,16 @@ export class ListsRepository {
    */
   async create(
     userId: number,
-    data: { name: string; description?: string | null; is_public?: boolean }
+    data: {
+      name: string
+      description?: string | null
+      is_public?: boolean
+      is_official?: boolean
+      is_premium?: boolean
+      tags?: string[]
+      glow_color?: string
+      custom_cover?: string
+    }
   ) {
     return prisma.user_lists.create({
       data: {
@@ -72,6 +92,11 @@ export class ListsRepository {
         name: data.name,
         description: data.description ?? null,
         is_public: data.is_public ?? false,
+        is_official: data.is_official ?? false,
+        is_premium: data.is_premium ?? false,
+        tags: data.tags ?? [],
+        glow_color: data.glow_color ?? null,
+        custom_cover: data.custom_cover ?? null,
       },
     }) as Promise<ListEntity>
   }
@@ -89,13 +114,18 @@ export class ListsRepository {
   /**
    * Recupera el catálogo de listas creadas por un usuario específico.
    * Incluye el conteo de elementos para previsualización.
-   * 
+   *
    * @param userId - ID del propietario de las listas.
    */
   async listByUser(userId: number): Promise<ListSummary[]> {
     const lists = await prisma.user_lists.findMany({
       where: { user_id: userId },
       include: {
+        items: {
+          take: 4,
+          include: { movie_ref: { select: { tmdb_id: true } } },
+          orderBy: { added_at: "desc" },
+        },
         _count: {
           select: { items: true },
         },
@@ -103,15 +133,50 @@ export class ListsRepository {
       orderBy: { updated_at: "desc" },
     })
 
-    return lists.map((list) => ({
+    const mappedLists: ListSummary[] = lists.map((list) => ({
       id: list.id,
       user_id: list.user_id,
       name: list.name,
       description: list.description,
       is_public: list.is_public,
+      is_official: list.is_official,
+      is_premium: list.is_premium,
+      tags: list.tags as string[] | null,
+      glow_color: list.glow_color,
+      custom_cover: list.custom_cover,
       created_at: list.created_at,
       updated_at: list.updated_at,
       items_count: list._count.items,
+      posters: [],
+    }))
+
+    // Hydrate posters
+    const allTmdbIds = new Set<number>()
+    lists.forEach((l) =>
+      l.items.forEach((i) => {
+        if (i.movie_ref?.tmdb_id) allTmdbIds.add(i.movie_ref.tmdb_id)
+      })
+    )
+
+    const posterMap = new Map<number, string | null>()
+    await Promise.allSettled(
+      Array.from(allTmdbIds).map(async (id) => {
+        try {
+          const data = await consultarTMDB<{ poster_path: string | null }>(
+            `movie/${id}`
+          )
+          posterMap.set(id, data.poster_path)
+        } catch (e) {
+          posterMap.set(id, null)
+        }
+      })
+    )
+
+    return mappedLists.map((l, idx) => ({
+      ...l,
+      posters: lists[idx].items.map((i) =>
+        i.movie_ref?.tmdb_id ? posterMap.get(i.movie_ref.tmdb_id) || null : null
+      ),
     }))
   }
 
@@ -142,15 +207,36 @@ export class ListsRepository {
 
     if (!list) return null
 
+    // Hydrate posters
+    const posters = await Promise.all(
+      list.items.slice(0, 4).map(async (item) => {
+        if (!item.movie_ref?.tmdb_id) return null
+        try {
+          const data = await consultarTMDB<{ poster_path: string | null }>(
+            `movie/${item.movie_ref.tmdb_id}`
+          )
+          return data.poster_path
+        } catch {
+          return null
+        }
+      })
+    )
+
     return {
       id: list.id,
       user_id: list.user_id,
       name: list.name,
       description: list.description,
       is_public: list.is_public,
+      is_official: list.is_official,
+      is_premium: list.is_premium,
+      tags: list.tags as string[] | null,
+      glow_color: list.glow_color,
+      custom_cover: list.custom_cover,
       created_at: list.created_at,
       updated_at: list.updated_at,
       items_count: list._count.items,
+      posters,
       items: list.items.map((item) => ({
         movie_id: item.movie_id,
         tmdb_id: item.movie_ref?.tmdb_id ?? null,
@@ -175,7 +261,13 @@ export class ListsRepository {
               id: true,
               username: true,
               avatar_url: true,
+              is_verified: true,
             },
+          },
+          items: {
+            take: 4,
+            include: { movie_ref: { select: { tmdb_id: true } } },
+            orderBy: { added_at: "desc" },
           },
           _count: {
             select: { items: true },
@@ -188,25 +280,63 @@ export class ListsRepository {
       prisma.user_lists.count({ where: { is_public: true } }),
     ])
 
+    const mappedItems: ListSummary[] = rows.map((list) => ({
+      id: list.id,
+      user_id: list.user_id,
+      name: list.name,
+      description: list.description,
+      is_public: list.is_public,
+      is_official: list.is_official,
+      is_premium: list.is_premium,
+      tags: list.tags as string[] | null,
+      glow_color: list.glow_color,
+      custom_cover: list.custom_cover,
+      created_at: list.created_at,
+      updated_at: list.updated_at,
+      items_count: list._count.items,
+      posters: [], // Hydrated below
+      owner: {
+        id: list.users.id,
+        username: list.users.username,
+        avatar_url: list.users.avatar_url,
+        is_verified: list.users.is_verified,
+      },
+    }))
+
+    // Hydrate posters for public lists
+    const allTmdbIds = new Set<number>()
+    rows.forEach((l) =>
+      l.items.forEach((i) => {
+        if (i.movie_ref?.tmdb_id) allTmdbIds.add(i.movie_ref.tmdb_id)
+      })
+    )
+
+    const posterMap = new Map<number, string | null>()
+    await Promise.allSettled(
+      Array.from(allTmdbIds).map(async (id) => {
+        try {
+          const data = await consultarTMDB<{ poster_path: string | null }>(
+            `movie/${id}`
+          )
+          posterMap.set(id, data.poster_path)
+        } catch (e) {
+          posterMap.set(id, null)
+        }
+      })
+    )
+
     return {
       page,
       limit,
       total,
       has_more: skip + rows.length < total,
-      items: rows.map((list) => ({
-        id: list.id,
-        user_id: list.user_id,
-        name: list.name,
-        description: list.description,
-        is_public: list.is_public,
-        created_at: list.created_at,
-        updated_at: list.updated_at,
-        items_count: list._count.items,
-        owner: {
-          id: list.users.id,
-          username: list.users.username,
-          avatar_url: list.users.avatar_url,
-        },
+      items: mappedItems.map((l, idx) => ({
+        ...l,
+        posters: rows[idx].items.map((i) =>
+          i.movie_ref?.tmdb_id
+            ? posterMap.get(i.movie_ref.tmdb_id) || null
+            : null
+        ),
       })),
     }
   }
@@ -224,6 +354,7 @@ export class ListsRepository {
             id: true,
             username: true,
             avatar_url: true,
+            is_verified: true,
           },
         },
         items: {
@@ -242,19 +373,41 @@ export class ListsRepository {
 
     if (!list) return null
 
+    // Hydrate posters
+    const posters = await Promise.all(
+      list.items.slice(0, 4).map(async (item) => {
+        if (!item.movie_ref?.tmdb_id) return null
+        try {
+          const data = await consultarTMDB<{ poster_path: string | null }>(
+            `movie/${item.movie_ref.tmdb_id}`
+          )
+          return data.poster_path
+        } catch {
+          return null
+        }
+      })
+    )
+
     return {
       id: list.id,
       user_id: list.user_id,
       name: list.name,
       description: list.description,
       is_public: list.is_public,
+      is_official: list.is_official,
+      is_premium: list.is_premium,
+      tags: list.tags as string[] | null,
+      glow_color: list.glow_color,
+      custom_cover: list.custom_cover,
       created_at: list.created_at,
       updated_at: list.updated_at,
       items_count: list._count.items,
+      posters,
       owner: {
         id: list.users.id,
         username: list.users.username,
         avatar_url: list.users.avatar_url,
+        is_verified: list.users.is_verified,
       },
       items: list.items.map((item) => ({
         movie_id: item.movie_id,
@@ -269,7 +422,16 @@ export class ListsRepository {
    */
   async update(
     listId: number,
-    data: { name?: string; description?: string | null; is_public?: boolean }
+    data: {
+      name?: string
+      description?: string | null
+      is_public?: boolean
+      is_official?: boolean
+      is_premium?: boolean
+      tags?: string[]
+      glow_color?: string
+      custom_cover?: string
+    }
   ) {
     return prisma.user_lists.update({
       where: { id: listId },
