@@ -1,8 +1,8 @@
 /**
  * @file AppErrors.ts
  * @description Jerarquía de clases de error personalizadas para CineVault.
- * Permite una gestión semántica de las excepciones en toda la API, 
- * facilitando que el middleware global de errores devuelva el código HTTP 
+ * Permite una gestión semántica de las excepciones en toda la API,
+ * facilitando que el middleware global de errores devuelva el código HTTP
  * y el mensaje apropiado al cliente.
  */
 
@@ -71,7 +71,9 @@ export class GoneError extends ApplicationError {
 
 /** Error 429 - Se ha superado el límite de peticiones permitido por el rate-limit. */
 export class TooManyRequestsError extends ApplicationError {
-  constructor(message = "Demasiadas solicitudes. Intenta nuevamente más tarde") {
+  constructor(
+    message = "Demasiadas solicitudes. Intenta nuevamente más tarde"
+  ) {
     super(message, 429, "TOO_MANY_REQUESTS")
   }
 }
