@@ -1,26 +1,26 @@
 /**
  * @file FeedRepository.ts
  * @description Motor de agregación y persistencia para el "Cine-Feed" social de la plataforma.
- * Orquestra la recuperación de múltiples flujos de actividad (reseñas, adiciones a la boveda, 
- * seguimiento) para construir una línea de tiempo cohesiva y personalizada. 
- * Gestiona además la lógica de interacción social (likes, guardados, ocultaciones) 
+ * Orquestra la recuperación de múltiples flujos de actividad (reseñas, adiciones a la boveda,
+ * seguimiento) para construir una línea de tiempo cohesiva y personalizada.
+ * Gestiona además la lógica de interacción social (likes, guardados, ocultaciones)
  * asegurando la integridad de los contadores mediante transacciones atómicas.
  */
 
 import { Prisma } from "@prisma/client"
 import { prisma } from "../lib/prisma.js"
 
-/** 
+/**
  * Clasificación de los eventos que alimentan el ecosistema social de CineVault.
  */
 type FeedItemType =
-  | "review"     // Nueva crítica o calificación
-  | "vault"      // Adición a la colección permanente (Bóveda)
-  | "watchlist"  // Registro en la lista de visionado pendiente
-  | "discovery"  // Recomendación generada por inteligencia de búsqueda
-  | "tonight"    // Visionado programado para la sesión actual
-  | "list"       // Creación o actualización de una lista curada
-  | "quote"      // Cita cinematográfica destacada
+  | "review" // Nueva crítica o calificación
+  | "vault" // Adición a la colección permanente (Bóveda)
+  | "watchlist" // Registro en la lista de visionado pendiente
+  | "discovery" // Recomendación generada por inteligencia de búsqueda
+  | "tonight" // Visionado programado para la sesión actual
+  | "list" // Creación o actualización de una lista curada
+  | "quote" // Cita cinematográfica destacada
 
 /**
  * Repositorio de Feed
@@ -30,7 +30,7 @@ export class FeedRepository {
   /**
    * Identifica el grafo de origen del feed del usuario.
    * Recupera a todos los usuarios seguidos e incluye el propio perfil del espectador.
-   * 
+   *
    * @param viewerId - Usuario que solicita la visualización del feed.
    */
   async listSourceUserIds(viewerId: number) {
@@ -44,9 +44,9 @@ export class FeedRepository {
 
   /**
    * Recupera los bloques de actividad bruta de los usuarios origen.
-   * Aplica un límite preventivo (Soft-cap) para equilibrar el rendimiento y 
+   * Aplica un límite preventivo (Soft-cap) para equilibrar el rendimiento y
    * la profundidad histórica del feed antes de su mezcla final en la capa de servicios.
-   * 
+   *
    * @param sourceUserIds - Grafo de usuarios a monitorizar.
    */
   async listFeedRows(sourceUserIds: number[]) {
@@ -181,7 +181,7 @@ export class FeedRepository {
 
   /**
    * Alterna el estado de aceptación ("Like") de una reseña.
-   * Implementa una de-normalización controlada actualizando el contador total en la tabla 
+   * Implementa una de-normalización controlada actualizando el contador total en la tabla
    * de reseñas mediante una transacción para mantener la consistencia eventual.
    */
   async setReviewLike(viewerId: number, reviewId: number, active: boolean) {

@@ -1,8 +1,8 @@
 /**
  * @file feed.services.ts
  * @description Capa de servicios para el motor del Feed Social de CineVault.
- * Orquestas la agregación de actividad entre amigos (reseñas, bóvedas, watchlists), 
- * gestiona las interacciones de usuario (likes, marcadores, ocultación) y provee 
+ * Orquestas la agregación de actividad entre amigos (reseñas, bóvedas, watchlists),
+ * gestiona las interacciones de usuario (likes, marcadores, ocultación) y provee
  * una respuesta paginada y enriquecida para la interfaz.
  */
 
@@ -77,7 +77,7 @@ export const getFriendsFeedService = async (
 
   // 1. Obtener los IDs de los usuarios seguidos
   const sourceUserIds = await feedRepository.listSourceUserIds(viewerId)
-  
+
   // 2. Recuperar registros de actividad crudos de diversas fuentes
   const { reviews, vaultEntries, watchlistEntries } =
     await feedRepository.listFeedRows(sourceUserIds)
