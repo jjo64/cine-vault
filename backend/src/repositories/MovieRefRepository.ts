@@ -10,7 +10,7 @@
 import { prisma } from "../lib/prisma.js"
 import { ReviewMediaType } from "@prisma/client"
 
-/**
+/** 
  * Interfaz IMovieRefRepository
  * Define las operaciones atómicas de localización y registro de referencias globales.
  */

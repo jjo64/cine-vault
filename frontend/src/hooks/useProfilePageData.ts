@@ -138,6 +138,11 @@ async function fetchMovieMetaMap(
   // Limitamos a un máximo razonable por lote para evitar timeouts
   const batch = normalized.slice(0, 40);
 
+  if (normalized.length === 0) return map
+
+  // Limitamos a un máximo razonable por lote para evitar timeouts
+  const batch = normalized.slice(0, 40)
+
   const entries = await Promise.allSettled(
     batch.map(async ([movieId, target]) => {
       const tmdbId = target.tmdbId as number;

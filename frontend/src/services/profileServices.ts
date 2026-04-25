@@ -300,6 +300,11 @@ export const fetchUserBadges = (userId: number) =>
     defaultValue: [],
   });
 
+export const fetchUserBadges = (userId: number) =>
+  apiFetch<any[]>(`/api/users/${userId}/badges`, {
+    defaultValue: [],
+  })
+
 export const followUser = async (targetUserId: number, token?: string | null) =>
   apiFetch<{ message: string }>(`/api/users/follow/${targetUserId}`, {
     token,

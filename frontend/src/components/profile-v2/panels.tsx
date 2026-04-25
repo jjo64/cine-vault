@@ -290,6 +290,7 @@ function NightRec() {
   );
 }
 
+
 // FilmCard horizontal compacta solo para móvil en Resumen
 function FilmCardMobile({
   film,

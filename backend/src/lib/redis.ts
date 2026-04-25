@@ -118,11 +118,7 @@ const createInMemoryRedis = (): RedisLike => {
       const arr = lists.get(key) || []
       lists.set(key, arr.slice(start, stop + 1))
     },
-    async lrange(
-      key: string,
-      start: string | number = 0,
-      stop: string | number = -1
-    ) {
+    async lrange(key: string, start: string | number = 0, stop: string | number = -1) {
       if (isExpired(key)) return []
       const arr = lists.get(key) || []
       const s = Number(start)

@@ -177,9 +177,7 @@ export function calcularPersonNameScore(
       )
     )
 
-    const strongTokenMatches = tokenScores.filter(
-      (score) => score >= 0.82
-    ).length
+    const strongTokenMatches = tokenScores.filter((score) => score >= 0.82).length
     const avgTokenScore =
       tokenScores.reduce((acc, score) => acc + score, 0) / tokenScores.length
 

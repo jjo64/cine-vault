@@ -193,9 +193,7 @@ export const mergeEnglishAndSpanishResults = (
     }
 
     const mergedLocalized = uniqueStrings([
-      ...(Array.isArray(existing.localized_titles)
-        ? existing.localized_titles
-        : []),
+      ...(Array.isArray(existing.localized_titles) ? existing.localized_titles : []),
       movie.title,
     ])
 
@@ -245,8 +243,7 @@ export const attachAlternativeTitles = (
     ...movie,
     alternative_titles: titles,
     title_es: movie.title_es || spanishFromAlt || null,
-    localized_title:
-      movie.localized_title || movie.title_es || spanishFromAlt || null,
+    localized_title: movie.localized_title || movie.title_es || spanishFromAlt || null,
     localized_titles: localizedTitles,
   }
 }

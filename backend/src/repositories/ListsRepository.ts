@@ -17,6 +17,7 @@ type ListEntity = {
   user_id: number
   name: string
   description: string | null
+  /** Indica si la lista es visible para la comunidad en las secciones de descubrimiento */
   is_public: boolean
   is_official: boolean
   is_premium: boolean
@@ -41,6 +42,7 @@ export type ListSummary = {
   custom_cover: string | null
   created_at: Date
   updated_at: Date
+  /** Cantidad de obras contenidas en la lista */
   items_count: number
   /** URLs o paths de los posters de las primeras películas para el collage */
   posters: (string | null)[]
