@@ -1,7 +1,7 @@
 /**
  * @file reviews.utils.ts
  * @description Utilidades de procesamiento y normalización para el ecosistema de reseñas.
- * Contiene la lógica para el cálculo de promedios, redondeo de calificaciones 
+ * Contiene la lógica para el cálculo de promedios, redondeo de calificaciones
  * y estimación de tiempos de lectura para críticas largas.
  */
 
@@ -40,9 +40,9 @@ const computeReadingTime = (content: string | undefined) => {
 
 /**
  * Normaliza los datos de entrada de una reseña antes de su persistencia.
- * Calcula el rating global automáticamente si se proporcionan ratings detallados 
+ * Calcula el rating global automáticamente si se proporcionan ratings detallados
  * pero falta el general.
- * 
+ *
  * @param data - Datos parciales de creación o actualización de reseña.
  * @returns Payload normalizado y listo para Prisma.
  */
@@ -59,8 +59,8 @@ export const normalizeReviewPayload = (
   ].filter((n): n is number => typeof n === "number")
 
   let rating = maybeRoundHalf(data.rating)
-  
-  // Inteligencia de negocio: Si el usuario dio estrellas a apartados técnicos 
+
+  // Inteligencia de negocio: Si el usuario dio estrellas a apartados técnicos
   // pero no una nota general, la calculamos nosotros.
   if ((rating === undefined || rating === null) && ratings.length > 0) {
     const avg = ratings.reduce((acc, n) => acc + n, 0) / ratings.length

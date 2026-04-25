@@ -27,7 +27,7 @@ const resendClient = apiKey ? new Resend(apiKey) : null
 /**
  * Función interna de bajo nivel para el despacho de correos.
  * Maneja la lógica de simulación y las excepciones del proveedor externo.
- * 
+ *
  * @param payload - Datos del correo a enviar.
  * @throws Error si no hay API Key y no está activado el modo simulación.
  */
@@ -62,7 +62,9 @@ const sendEmail = async ({ to, subject, html, text, from }: EmailPayload) => {
     result.error
   ) {
     const err = result.error as { message?: string }
-    throw new Error(err.message || "Resend rechazó el envío del correo electrónico")
+    throw new Error(
+      err.message || "Resend rechazó el envío del correo electrónico"
+    )
   }
 
   return result

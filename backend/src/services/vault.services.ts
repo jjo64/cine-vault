@@ -1,8 +1,8 @@
 /**
  * @file vault.services.ts
- * @description Capa de servicios para la gestión del "Vault" (videoteca personal) y 
+ * @description Capa de servicios para la gestión del "Vault" (videoteca personal) y
  * el ecosistema de micro-blogging social de CineVault.
- * Coordina la persistencia de colecciones, la creación de contenido enriquecido (reviews, 
+ * Coordina la persistencia de colecciones, la creación de contenido enriquecido (reviews,
  * edits, listas) y la integración con metadatos externos de TMDB.
  */
 
@@ -57,18 +57,23 @@ export const obtenerVaultService = (userId: number) =>
 /**
  * Añade una película a la videoteca personal del usuario.
  * Garantiza la integridad referencial mediante el uso de movie_ref.
- * 
+ *
  * @throws ConflictError si la película ya reside en el vault del usuario.
  */
 export const agregarVaultService = async (
   userId: number,
   data: AgregarVaultDTO
 ) => {
-  const movieId = await ensureMovieRefId(data.movie_id, data.media_type || "movie")
+  const movieId = await ensureMovieRefId(
+    data.movie_id,
+    data.media_type || "movie"
+  )
   const yaExiste = await vaultRepository.exists(userId, movieId)
 
   if (yaExiste) {
-    throw new ConflictError(`La obra ${data.movie_id} ya se encuentra en su videoteca personal`)
+    throw new ConflictError(
+      `La obra ${data.movie_id} ya se encuentra en su videoteca personal`
+    )
   }
 
   await vaultRepository.create(userId, movieId)
@@ -89,7 +94,7 @@ export const eliminarVaultService = async (
 // --- Servicios de Contenido Social (Vault Social) ---
 
 /**
- * Obtiene el feed social de un usuario (reflexiones, edits, etc.) con paginación 
+ * Obtiene el feed social de un usuario (reflexiones, edits, etc.) con paginación
  * y enriquecimiento de metadatos desde TMDB.
  */
 export const obtenerVaultSocialService = async (
@@ -162,7 +167,9 @@ export const crearVaultSocialEntryService = async (
   userId: number,
   data: CreateVaultSocialEntryDTO
 ) => {
-  const movieId = data.movie_id ? await ensureMovieRefId(data.movie_id, data.media_type || "movie") : null
+  const movieId = data.movie_id
+    ? await ensureMovieRefId(data.movie_id, data.media_type || "movie")
+    : null
   const id = await vaultRepository.createSocialEntry({
     userId,
     movieId,
@@ -174,10 +181,14 @@ export const crearVaultSocialEntryService = async (
     isPublic: Boolean(data.is_public),
   })
 
-  if (!id) throw new ValidationError("Error de infraestructura al crear el registro social")
+  if (!id)
+    throw new ValidationError(
+      "Error de infraestructura al crear el registro social"
+    )
 
   const created = await vaultRepository.getSocialEntryByIdForOwner(id, userId)
-  if (!created) throw new NotFoundError("La entrada recién creada no pudo ser verificada")
+  if (!created)
+    throw new NotFoundError("La entrada recién creada no pudo ser verificada")
 
   return {
     id: created.id,
@@ -204,9 +215,12 @@ export const actualizarVaultSocialEntryService = async (
     entryId,
     userId
   )
-  if (!current) throw new NotFoundError("Contenido no encontrado o sin permisos de edición")
+  if (!current)
+    throw new NotFoundError("Contenido no encontrado o sin permisos de edición")
 
-  const movieId = data.movie_id ? await ensureMovieRefId(data.movie_id, data.media_type || "movie") : null
+  const movieId = data.movie_id
+    ? await ensureMovieRefId(data.movie_id, data.media_type || "movie")
+    : null
 
   await vaultRepository.updateSocialEntry({
     id: entryId,
@@ -224,7 +238,8 @@ export const actualizarVaultSocialEntryService = async (
     entryId,
     userId
   )
-  if (!updated) throw new NotFoundError("No se pudo recuperar el registro actualizado")
+  if (!updated)
+    throw new NotFoundError("No se pudo recuperar el registro actualizado")
 
   return {
     id: updated.id,
@@ -250,7 +265,8 @@ export const eliminarVaultSocialEntryService = async (
     entryId,
     userId
   )
-  if (!current) throw new NotFoundError("Registro no encontrado o permisos insuficientes")
-  
+  if (!current)
+    throw new NotFoundError("Registro no encontrado o permisos insuficientes")
+
   await vaultRepository.deleteSocialEntry(entryId, userId)
 }

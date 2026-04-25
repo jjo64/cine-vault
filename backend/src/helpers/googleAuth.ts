@@ -1,8 +1,8 @@
 /**
  * @file googleAuth.ts
  * @description Módulo de soporte para el flujo de autenticación mediante Google OAuth 2.0.
- * Gestiona la resolución dinámica de URLs de retorno (callbacks), la persistencia 
- * del estado mediante mutación de cadenas en base64 y la validación de dominios 
+ * Gestiona la resolución dinámica de URLs de retorno (callbacks), la persistencia
+ * del estado mediante mutación de cadenas en base64 y la validación de dominios
  * permitidos para prevenir vulnerabilidades de redirección abierta (Open Redirect).
  */
 
@@ -47,7 +47,7 @@ export const getAllowedGoogleCallbacks = () => {
 
 /**
  * Genera un parámetro 'state' de OAuth que codifica la URL de retorno deseada.
- * 
+ *
  * @param callbackUrl - URL a la que el frontend espera volver tras el login.
  * @returns Cadena opaca prefijada con codificación base64url.
  */
@@ -79,7 +79,7 @@ export const readCallbackFromState = (state: unknown) => {
  * Orquestador que resuelve cuál es la URL de callback válida para la petición actual.
  * Prioriza el estado codificado seguido de los parámetros de consulta explícitos.
  * Siempre valida el resultado contra la lista blanca de seguridad.
- * 
+ *
  * @param req - Objeto de petición de Express.
  * @returns URL de callback normalizada y validada.
  */
@@ -94,7 +94,7 @@ export const resolveGoogleCallback = (req: Request) => {
     fromState || fromQuery || getDefaultGoogleCallback()
   )
   const allowlist = getAllowedGoogleCallbacks()
-  
+
   if (allowlist.has(candidate)) return candidate
 
   // Fallback de seguridad al callback predeterminado del sistema

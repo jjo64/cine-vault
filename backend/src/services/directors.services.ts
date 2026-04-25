@@ -1,7 +1,7 @@
 /**
  * @file directors.services.ts
  * @description Capa de servicios para la analítica avanzada de directores ("Autopsia de Director").
- * Procesa créditos de TMDB para generar estadísticas de carrera, cronologías de producción 
+ * Procesa créditos de TMDB para generar estadísticas de carrera, cronologías de producción
  * y métricas de desempeño crítico a lo largo del tiempo.
  */
 
@@ -68,9 +68,9 @@ type DirectorTimelineItem = {
 }
 
 /**
- * Ejecuta una "Autopsia de Director": un análisis exhaustivo de la filmografía 
+ * Ejecuta una "Autopsia de Director": un análisis exhaustivo de la filmografía
  * de una personalidad de TMDB, calculando medias, hitos y actividad anual.
- * 
+ *
  * @param tmdbPersonId ID único de la persona en TMDB.
  * @returns Perfil detallado con estadísticas agregadas y cronología de carrera.
  */
@@ -204,14 +204,18 @@ export const obtenerDirectorAutopsyService = async (tmdbPersonId: number) => {
  * Obtiene la información biográfica y básica de una persona desde TMDB.
  */
 export const obtenerPersonaService = async (tmdbPersonId: number) => {
-  const person = await consultarTMDB<TmdbPersonResponse>(`person/${tmdbPersonId}`, {
-    language: "es-ES",
-    append_to_response: "translations",
-  })
+  const person = await consultarTMDB<TmdbPersonResponse>(
+    `person/${tmdbPersonId}`,
+    {
+      language: "es-ES",
+      append_to_response: "translations",
+    }
+  )
 
   const translations = person.translations?.translations
   const biographyEs =
-    biografiaValida(person.biography) || buscarBiografiaPorIdioma(translations, "es")
+    biografiaValida(person.biography) ||
+    buscarBiografiaPorIdioma(translations, "es")
   const biographyEn = buscarBiografiaPorIdioma(translations, "en")
 
   return {

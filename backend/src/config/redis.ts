@@ -1,7 +1,7 @@
 /**
  * @file redis.ts
  * @description Configuración y helpers para la gestión de caché mediante Redis.
- * Centraliza la lógica de persistencia temporal para reducir la carga en la 
+ * Centraliza la lógica de persistencia temporal para reducir la carga en la
  * base de datos principal (Prisma) y en las APIs externas (TMDB).
  */
 
@@ -26,7 +26,7 @@ const TTL_DEFAULT = 300 // 5 minutos por defecto
 /**
  * Obtiene un valor de la caché o lo genera mediante una función fábrica si no existe.
  * Implementa el patrón "Stale-While-Revalidate" básico mediante persistencia directa.
- * 
+ *
  * @param key - Clave única del recurso en Redis.
  * @param fn - Función asíncrona que recupera los datos originales si no hay caché.
  * @param ttl - Tiempo de vida en segundos (Time To Live).
@@ -37,14 +37,24 @@ export const getOSet = async <T>(
   fn: () => Promise<T>,
   ttl: number = TTL_DEFAULT
 ): Promise<T> => {
-  const cached = await redis.get(key)
-  if (cached) {
-    return JSON.parse(cached) as T
+  try {
+    const cached = await redis.get(key)
+    if (cached) {
+      return JSON.parse(cached) as T
+    }
+  } catch (error) {
+    console.error(`[Redis] Error de lectura para la clave ${key}:`, error)
   }
 
   const resultado = await fn()
-  // Establece el valor con expiración automática.
-  await redis.setex(key, ttl, JSON.stringify(resultado))
+
+  try {
+    // Establece el valor con expiración automática.
+    await redis.setex(key, ttl, JSON.stringify(resultado))
+  } catch (error) {
+    console.error(`[Redis] Error de escritura para la clave ${key}:`, error)
+  }
+
   return resultado
 }
 
@@ -85,9 +95,9 @@ export const CACHE_KEYS = {
  * Tiempos de expiración recomendados por tipo de recurso.
  */
 export const CACHE_TTL = {
-  perfil: 600,       // 10 minutos
-  listas: 300,       // 5 minutos
-  busqueda: 7200,    // 2 horas
+  perfil: 600, // 10 minutos
+  listas: 300, // 5 minutos
+  busqueda: 7200, // 2 horas
 }
 
 export { redis } from "../lib/redis.js"

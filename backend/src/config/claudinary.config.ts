@@ -1,7 +1,7 @@
 /**
  * @file claudinary.config.ts
  * @description Configuración centralizada de Cloudinary para CineVault.
- * Gestiona la conexión con el servicio de almacenamiento en la nube para 
+ * Gestiona la conexión con el servicio de almacenamiento en la nube para
  * avatares, posters y capturas de los usuarios.
  */
 

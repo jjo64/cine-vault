@@ -1,7 +1,7 @@
 /**
  * @file settings.services.ts
  * @description Capa de servicios para la configuración de cuentas y personalización avanzada.
- * Gestiona la seguridad (cambio de password), identidad visual (avatares vía Cloudinary), 
+ * Gestiona la seguridad (cambio de password), identidad visual (avatares vía Cloudinary),
  * preferencias de perfil y la curación de contenido personal (firma y galería).
  */
 
@@ -45,7 +45,7 @@ export const actualizarPerfilService = async (
 
 /**
  * Gestiona el cambio seguro de contraseña.
- * Valida la identidad del usuario mediante la verificación de la contraseña actual 
+ * Valida la identidad del usuario mediante la verificación de la contraseña actual
  * antes de proceder al cifrado y persistencia de la nueva clave.
  */
 export const actualizarAuthService = async (
@@ -60,7 +60,9 @@ export const actualizarAuthService = async (
     usuario.password
   )
   if (!passwordValida) {
-    throw new UnauthorizedError("La contraseña actual proporcionada es incorrecta")
+    throw new UnauthorizedError(
+      "La contraseña actual proporcionada es incorrecta"
+    )
   }
 
   const hashedPassword = await hashearContrasena(data.password_nueva)
@@ -69,9 +71,9 @@ export const actualizarAuthService = async (
 
 /**
  * Procesa la carga y actualización del avatar del usuario.
- * Realiza validaciones de seguridad sobre el formato MIME y tamaño del archivo 
+ * Realiza validaciones de seguridad sobre el formato MIME y tamaño del archivo
  * antes de delegar el almacenamiento persistente a Cloudinary.
- * 
+ *
  * @param userId ID del usuario.
  * @param data Objeto con la imagen en formato base64.
  * @returns URL segura de la imagen alojada.
@@ -83,7 +85,9 @@ export const actualizarAvatarService = async (
   // Validación de firma MIME para evitar subidas de archivos maliciosos
   const match = data.avatar.match(/^data:(.+);base64,/)
   if (!match || !FORMATOS_AVATAR_PERMITIDOS.includes(match[1])) {
-    throw new ValidationError("Formato de imagen no permitido. Utilice JPG, PNG o WEBP")
+    throw new ValidationError(
+      "Formato de imagen no permitido. Utilice JPG, PNG o WEBP"
+    )
   }
 
   // Validación de peso: estimación del tamaño real desde base64 (~75% de la longitud de cadena)
@@ -108,7 +112,7 @@ export const actualizarAvatarService = async (
 export const eliminarCuentaService = async (userId: number) => {
   const usuario = await settingsRepository.findById(userId)
   if (!usuario) throw new NotFoundError("Usuario no encontrado")
-  
+
   await userRepository.deleteById(userId)
 }
 
@@ -143,7 +147,7 @@ export const obtenerGaleriaCuradaService = async (userId: number) => {
 }
 
 /**
- * Actualiza la galería curada, garantizando que todos los elementos existan en la 
+ * Actualiza la galería curada, garantizando que todos los elementos existan en la
  * base de datos de referencia (movies_ref) para mantener la integridad referencial.
  */
 export const actualizarGaleriaCuradaService = async (
@@ -154,7 +158,9 @@ export const actualizarGaleriaCuradaService = async (
   const found = await curatedGalleryRepository.existMovieIds(uniqueMovieIds)
 
   if (found.length !== uniqueMovieIds.length) {
-    throw new ValidationError("Una o más películas seleccionadas no están registradas en el sistema")
+    throw new ValidationError(
+      "Una o más películas seleccionadas no están registradas en el sistema"
+    )
   }
 
   await curatedGalleryRepository.replace(userId, data)

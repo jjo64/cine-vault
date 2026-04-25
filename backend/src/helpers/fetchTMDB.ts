@@ -1,9 +1,11 @@
 /**
  * @file fetchTMDB.ts
  * @description Helper especializado para orquestar la integración con la API de The Movie Database (TMDB).
- * Centraliza la configuración de cabeceras, gestión de errores de red y la 
+ * Centraliza la configuración de cabeceras, gestión de errores de red y la
  * normalización de parámetros de idioma para asegurar una experiencia consistente en español.
  */
+
+import { NotFoundError } from "../errors/AppErrors.js"
 
 /** Opciones de configuración para las peticiones a la API externa */
 type TMDBFetchOptions = {
@@ -15,7 +17,7 @@ type TMDBFetchOptions = {
 
 /**
  * Realiza una petición parametrizada a los servicios de TMDB.
- * 
+ *
  * @template T - Tipo esperado de la respuesta JSON decodificada.
  * @param endpoint - Ruta del recurso (ej: "movie/popular"). No debe incluir "/3/".
  * @param params - Diccionario de parámetros de consulta (query strings).
@@ -38,7 +40,7 @@ export const consultarTMDB = async <T = unknown>(
   )
 
   const normalizedParams = new URLSearchParams()
-  
+
   // Inyección automática de idioma si es necesario
   if (includeDefaultLanguage && !hasExplicitLanguage && defaultLanguage) {
     normalizedParams.set("language", defaultLanguage)
@@ -53,7 +55,7 @@ export const consultarTMDB = async <T = unknown>(
   }
 
   const url = `https://api.themoviedb.org/3/${endpoint}?${normalizedParams.toString()}`
-  
+
   /** Configuración de la petición: Se utiliza Bearer Auth con la API Key del entorno */
   const opcionesRequest = {
     method: "GET",
@@ -66,7 +68,16 @@ export const consultarTMDB = async <T = unknown>(
   const respuesta = await fetch(url, opcionesRequest)
 
   if (!respuesta.ok) {
-    const error: any = new Error(`Error en bridge de TMDB [Estado: ${respuesta.status}] - Endpoint: ${endpoint}`)
+    // Mapeo semántico de errores para que la API responda con el status correcto
+    if (respuesta.status === 404) {
+      throw new NotFoundError(
+        `Recurso no encontrado en TMDB (Endpoint: ${endpoint})`
+      )
+    }
+
+    const error: any = new Error(
+      `Error en bridge de TMDB [Estado: ${respuesta.status}] - Endpoint: ${endpoint}`
+    )
     error.status = respuesta.status
     throw error
   }

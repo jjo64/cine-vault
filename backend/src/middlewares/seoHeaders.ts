@@ -34,7 +34,7 @@ const isPrivatePath = (pathname: string) =>
 
 /**
  * Middleware para la orquestación de cabeceras de visibilidad y rendimiento.
- * 
+ *
  * @param req - Objeto de petición.
  * @param res - Objeto de respuesta donde se inyectan los headers.
  * @param next - Continuación de la cadena.

@@ -1,7 +1,7 @@
 /**
  * @file diary.services.ts
  * @description Capa de servicios para la gestión del "Diario de Visionado" (Letterboxd-style).
- * Implementa la lógica de registro cronológico de películas, validación de duplicados 
+ * Implementa la lógica de registro cronológico de películas, validación de duplicados
  * diarios y orquestación de caché para optimizar la carga del feed personal.
  */
 
@@ -38,23 +38,24 @@ const invalidateCacheForDiary = async (userId: number, movieId: number) => {
 }
 
 /**
- * Implementa la regla de negocio de evitar múltiples registros de la misma 
+ * Implementa la regla de negocio de evitar múltiples registros de la misma
  * película por el mismo usuario en el mismo día natural.
  */
 const crearDiarioUnicoPorDia = async (
   userId: number,
   data: CrearEntradaDiarioDTO
 ) => {
-  const mediaType = (data.media_type as ReviewMediaType) || ReviewMediaType.movie
+  const mediaType =
+    (data.media_type as ReviewMediaType) || ReviewMediaType.movie
   const movieId = await ensureMovieRefId(data.movie_id, mediaType)
   const watchedDate = normalizarFecha(data.watched_date)
-  
+
   const existente = await diaryRepository.findByUserMovieDate(
     userId,
     movieId,
     watchedDate
   )
-  
+
   if (existente) {
     throw new ConflictError("Ya registraste esta película en ese día")
   }
@@ -67,10 +68,13 @@ const crearDiarioUnicoPorDia = async (
   })
 
   await invalidateCacheForDiary(userId, movieId)
-  
+
   // Gamificación: Verificar si el usuario ha ganado insignias tras este registro
-  checkAndAwardAutomaticBadges(userId).catch(err => {
-    console.error("[Gamificación] Error al procesar insignias post-diario:", err)
+  checkAndAwardAutomaticBadges(userId).catch((err) => {
+    console.error(
+      "[Gamificación] Error al procesar insignias post-diario:",
+      err
+    )
   })
 
   return entry
@@ -87,7 +91,7 @@ export const obtenerDiarioService = async (userId: number) => {
     await getCache<
       Awaited<ReturnType<typeof diaryRepository.buildRichResponse>>
     >(cacheKey)
-    
+
   if (cached) return cached
 
   const diario = await diaryRepository.buildRichResponse(userId)
@@ -114,7 +118,7 @@ export const eliminarEntradaDiarioService = async (
 ) => {
   const entrada = await diaryRepository.findById(entradaId)
   if (!entrada) throw new NotFoundError("Entrada no encontrada")
-  
+
   if (entrada.user_id !== userId) {
     throw new ForbiddenError("No tienes permiso para eliminar esta entrada")
   }
@@ -137,21 +141,25 @@ export const crearSesionDiarioService = async (userId: number, data: any) => {
   // Asegurar que las referencias de película existen
   const resolvedEntries = await Promise.all(
     data.entries.map(async (entry: any) => {
-      const tmdbId = typeof entry === 'number' ? entry : (entry.tmdbId || entry.movie_id)
-      const mediaType = typeof entry === 'object' ? (entry.mediaType || entry.media_type || 'movie') : 'movie'
+      const tmdbId =
+        typeof entry === "number" ? entry : entry.tmdbId || entry.movie_id
+      const mediaType =
+        typeof entry === "object"
+          ? entry.mediaType || entry.media_type || "movie"
+          : "movie"
       const movieRefId = await ensureMovieRefId(tmdbId, mediaType)
       return {
         movie_id: movieRefId,
-        media_type: mediaType
+        media_type: mediaType,
       }
     })
   )
-  
+
   const created = await diaryRepository.createSession(userId, {
     ...data,
-    entries: resolvedEntries
+    entries: resolvedEntries,
   })
-  
+
   // Limpiar cachés relevantes (feed, historial)
   await invalidateKeys([diarioCacheKey(userId)])
   return created

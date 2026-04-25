@@ -2,7 +2,7 @@
  * @file unifiedSearch.services.ts
  * @description Motor de búsqueda unificada y ranking inteligente de CineVault.
  * Implementa una arquitectura de búsqueda híbrida que combina resultados de TMDB,
- * detección de intención de usuario (NLP ligero), métricas sociales locales 
+ * detección de intención de usuario (NLP ligero), métricas sociales locales
  * y un sistema jerárquico de "Boosting" para priorizar resultados relevantes.
  */
 
@@ -1084,7 +1084,7 @@ export const runSmartUnifiedSearch = async ({
 }
 
 /**
- * Obtiene el detalle exhaustivo de una serie de TV, incluyendo créditos, temporadas 
+ * Obtiene el detalle exhaustivo de una serie de TV, incluyendo créditos, temporadas
  * y metadatos extendidos, con una capa de persistencia en caché.
  */
 export const obtenerDetalleTVService = async (id: string) => {

@@ -10,7 +10,7 @@ import { prisma } from "../lib/prisma.js"
 /**
  * Elimina de forma persistente a los usuarios que no han completado el proceso
  * de verificación de correo electrónico tras un periodo de gracia de 24 horas.
- * 
+ *
  * @note Esta tarea previene la acumulación de registros "fantasma" en la tabla `users`.
  */
 export const limpiarUsuariosNoVerificados = async () => {
@@ -30,7 +30,7 @@ export const limpiarUsuariosNoVerificados = async () => {
       )
     }
   } catch (error) {
-    // Si la limpieza falla, omitimos el error para no interrumpir el hilo principal; 
+    // Si la limpieza falla, omitimos el error para no interrumpir el hilo principal;
     // se reintentará en el siguiente ciclo programado.
     console.error("Error crítico en job de limpieza de usuarios:", error)
   }

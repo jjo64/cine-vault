@@ -13,11 +13,13 @@ import bcrypt from "bcrypt"
 const RAW_ENCRYPTION_KEY = process.env.TWO_FACTOR_ENCRYPTION_KEY || ""
 
 if (!RAW_ENCRYPTION_KEY) {
-  throw new Error("CRÍTICO: La variable TWO_FACTOR_ENCRYPTION_KEY no está configurada")
+  throw new Error(
+    "CRÍTICO: La variable TWO_FACTOR_ENCRYPTION_KEY no está configurada"
+  )
 }
 
 /**
- * Derivación de una clave de 32 bytes mediante SHA-256 para asegurar compatibilidad 
+ * Derivación de una clave de 32 bytes mediante SHA-256 para asegurar compatibilidad
  * con AES-256 independientemente de la longitud de la variable de entorno.
  */
 const ENCRYPTION_KEY = crypto
@@ -35,7 +37,7 @@ const IV_LENGTH = 16 // Longitud estándar para el vector de inicialización AES
 
 /**
  * Hashea una contraseña utilizando bcrypt con un factor de coste de 10 rondas.
- * 
+ *
  * @param password - Contraseña en texto plano a encriptar.
  * @returns Promesa que resuelve en el hash generado.
  */
@@ -43,7 +45,7 @@ export const hashearContrasena = (password: string) => bcrypt.hash(password, 10)
 
 /**
  * Valida una contraseña contra un hash almacenado.
- * 
+ *
  * @param password - Contraseña proporcionada por el usuario.
  * @param hash - Hash almacenado en la base de datos.
  * @returns Promesa que resuelve en un booleano indicando el resultado.
@@ -59,7 +61,7 @@ export const compararContrasena = (password: string, hash: string) =>
 
 /**
  * Inicializa una instancia de TOTP configurada para CineVault.
- * 
+ *
  * @param secreto - Clave secreta del usuario en formato Base32.
  * @returns Instancia configurada para validación y generación de URIs.
  */
@@ -76,7 +78,7 @@ export const crearTOTP = (secreto: string) =>
  * Encripta un texto plano (habitualmente el secreto 2FA) mediante AES-256-CBC.
  * Añade una capa de seguridad extra de modo que si la base de datos se ve comprometida,
  * los secretos 2FA sigan protegidos.
- * 
+ *
  * @param texto - Información sensible a proteger.
  * @returns Cadena formateada como "iv:encriptado" en hexadecimal.
  */
@@ -90,7 +92,7 @@ export const encriptarSecreto = (texto: string) => {
 /**
  * Desencripta una cadena generada por encriptarSecreto.
  * Soporta retrocompatibilidad con secretos antiguos almacenados en texto plano.
- * 
+ *
  * @param texto - Cadena encriptada ("iv:encriptado").
  * @returns El texto original desencriptado.
  * @throws Error si el formato de la cadena es inválido.

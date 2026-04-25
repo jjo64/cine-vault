@@ -1,7 +1,7 @@
 /**
  * @file auth.middlewares.ts
  * @description Middleware central de seguridad para el control de acceso.
- * Implementa la verificación de identidad mediante JSON Web Tokens (JWT), 
+ * Implementa la verificación de identidad mediante JSON Web Tokens (JWT),
  * soportando tanto cabeceras Authorization (Bearer) como cookies de sesión seguras.
  */
 
@@ -36,7 +36,7 @@ declare module "express-serve-static-core" {
   }
 }
 
-/** 
+/**
  * Alias semántico para peticiones que han pasado la barrera de autenticación.
  * Facilita el tipado en controladores y servicios.
  */
@@ -44,7 +44,7 @@ export type SolicitudAutenticada = Request
 
 /**
  * Middleware que intercepta peticiones y valida la presencia de una sesión activa.
- * 
+ *
  * @throws {UnauthorizedError} Si el token no está presente, es inválido o ha expirado.
  * @param req - Petición entrante.
  * @param res - Respuesta Express.
@@ -62,18 +62,24 @@ export const middlewareAutenticacion = (
   const token = bearerToken || cookieToken
 
   if (!token) {
-    throw new UnauthorizedError("Identidad no proporcionada: Se requiere un token de acceso válido")
+    throw new UnauthorizedError(
+      "Identidad no proporcionada: Se requiere un token de acceso válido"
+    )
   }
 
   try {
     // Verificación criptográfica del token
     const payload = jwt.verify(token, process.env.JWT_SECRET!) as PayloadAcceso
-    
+
     // Inyección de la identidad en el objeto request para acceso compartido
     req.user = payload
     next()
   } catch {
     // Captura de expiraciones o manipulaciones del token
-    next(new UnauthorizedError("La sesión ha expirado o el token proporcionado es inválido"))
+    next(
+      new UnauthorizedError(
+        "La sesión ha expirado o el token proporcionado es inválido"
+      )
+    )
   }
 }

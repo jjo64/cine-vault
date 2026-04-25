@@ -1,8 +1,8 @@
 /**
  * @file redis.ts
  * @description Fábrica y cliente centralizado para Redis.
- * Proporciona una abstracción (RedisLike) que permite alternar entre un cliente 
- * real (ioredis) para producción y una implementación en memoria (Mock) 
+ * Proporciona una abstracción (RedisLike) que permite alternar entre un cliente
+ * real (ioredis) para producción y una implementación en memoria (Mock)
  * para entornos de test, asegurando el aislamiento de las pruebas.
  */
 
@@ -118,7 +118,11 @@ const createInMemoryRedis = (): RedisLike => {
       const arr = lists.get(key) || []
       lists.set(key, arr.slice(start, stop + 1))
     },
-    async lrange(key: string, start: string | number = 0, stop: string | number = -1) {
+    async lrange(
+      key: string,
+      start: string | number = 0,
+      stop: string | number = -1
+    ) {
       if (isExpired(key)) return []
       const arr = lists.get(key) || []
       const s = Number(start)
@@ -133,7 +137,7 @@ const createInMemoryRedis = (): RedisLike => {
 }
 
 /**
- * Fábrica de clientes. 
+ * Fábrica de clientes.
  * Devuelve el Mock en modo test o la instancia real en desarrollo/producción.
  */
 const buildRedisClient = (): RedisLike => {

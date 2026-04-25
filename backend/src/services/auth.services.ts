@@ -1,7 +1,7 @@
 /**
  * @file auth.services.ts
- * @description Servicio central de autenticación y seguridad de CineVault. 
- * Gestiona el ciclo de vida de los usuarios (registro, verificación), la emisión y rotación 
+ * @description Servicio central de autenticación y seguridad de CineVault.
+ * Gestiona el ciclo de vida de los usuarios (registro, verificación), la emisión y rotación
  * de tokens JWT, seguridad multi-factor (2FA/TOTP) y gestión de sesiones persistentes.
  */
 
@@ -284,7 +284,7 @@ export const iniciarSesionService = async (
 }
 
 /**
- * Gestiona el registro de nuevos usuarios, incluyendo la validación de datos 
+ * Gestiona el registro de nuevos usuarios, incluyendo la validación de datos
  * y la emisión del correo de verificación.
  */
 export const registrarService = async (body: unknown) => {
@@ -577,7 +577,9 @@ export const verificar2FAService = async (
   if (delta === null) {
     const recoveryResult = await consumeRecoveryCodeIfValid(usuario.id, codigo)
     if (!recoveryResult.consumed) {
-      console.warn(`[2FA] Fallo de verificación para usuario ${usuario.id}. Código: ${codigo}`)
+      console.warn(
+        `[2FA] Fallo de verificación para usuario ${usuario.id}. Código: ${codigo}`
+      )
       throw new UnauthorizedError("Código incorrecto")
     }
     usedRecoveryCode = true

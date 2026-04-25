@@ -1,7 +1,7 @@
 /**
  * @file tokens.ts
  * @description Gestión centralizada de tokens JWT y configuración de cookies de seguridad.
- * Implementa la lógica de autenticación de doble token (Access + Refresh) y 
+ * Implementa la lógica de autenticación de doble token (Access + Refresh) y
  * la persistencia de sesiones en base de datos mediante hashing SHA-256.
  */
 
@@ -54,7 +54,12 @@ export const TRUSTED_DEVICE_COOKIE_OPTIONS = {
 }
 
 // Opciones de limpieza de cookies (Logout)
-export const COOKIE_CLEAR_OPTIONS = { httpOnly: true, secure: IS_PRODUCTION, sameSite: COOKIE_SAME_SITE, path: "/" }
+export const COOKIE_CLEAR_OPTIONS = {
+  httpOnly: true,
+  secure: IS_PRODUCTION,
+  sameSite: COOKIE_SAME_SITE,
+  path: "/",
+}
 export const ACCESS_COOKIE_CLEAR_OPTIONS = { ...COOKIE_CLEAR_OPTIONS }
 export const TRUSTED_DEVICE_COOKIE_CLEAR_OPTIONS = { ...COOKIE_CLEAR_OPTIONS }
 
@@ -66,7 +71,7 @@ export const TRUSTED_DEVICE_COOKIE_CLEAR_OPTIONS = { ...COOKIE_CLEAR_OPTIONS }
 
 /**
  * Crea un token de acceso firmado digitalmente.
- * 
+ *
  * @param idUsuario - Identificador único del usuario.
  * @param rol - Rol administrativo asignado.
  * @param isVerified - Estado de verificación de la cuenta.
@@ -90,7 +95,7 @@ export const crearTokenAcceso = (
 /**
  * Genera un Refresh Token, crea una sesión en DB y devuelve el token.
  * Se guarda el HASH del token en DB para mayor seguridad (Slow lookup).
- * 
+ *
  * @param idUsuario - ID del usuario solicitante.
  * @returns Objeto con el token en texto plano y el ID de sesión.
  */
@@ -117,7 +122,7 @@ export const crearTokenRefresco = async (idUsuario: number) => {
 
 /**
  * Valida un Refresh Token y verifica su vigencia en la base de datos.
- * 
+ *
  * @param token - Token de refresco recibido por el cliente.
  * @returns Payload de la sesión si es válido.
  * @throws Error si el token es inválido o la sesión ha sido revocada explícitamente.

@@ -1,8 +1,8 @@
 /**
  * @file payments.services.ts
  * @description Capa de servicios para la gestión de monetización y suscripciones mediante Stripe.
- * Implementa el flujo de pagos (Checkout), gestión de suscripciones (Billing Portal), 
- * procesamiento de orquestación de webhooks para sincronización de estados y 
+ * Implementa el flujo de pagos (Checkout), gestión de suscripciones (Billing Portal),
+ * procesamiento de orquestación de webhooks para sincronización de estados y
  * lógica de idempotencia mediante Redis.
  */
 
@@ -46,7 +46,7 @@ const mapStripeStatus = (
 
 /**
  * Genera una sesión de Stripe Checkout para iniciar una nueva suscripción.
- * 
+ *
  * @param userId ID del usuario que realiza la compra.
  * @param plan Identificador del nivel de suscripción deseado ('pro' o 'vip').
  * @returns URL de redirección a la pasarela segura de Stripe.
@@ -115,9 +115,9 @@ export async function createPortalSessionService(
 
 /**
  * Procesa eventos asíncronos enviados por los Webhooks de Stripe.
- * Implementa una capa de idempotencia mediante Redis para evitar el procesamiento 
+ * Implementa una capa de idempotencia mediante Redis para evitar el procesamiento
  * doble de eventos (event_id check durante 24h).
- * 
+ *
  * @param rawBody Cuerpo crudo de la petición (necesario para validación de firma).
  * @param signature Firma digital de Stripe recibida en los encabezados.
  */

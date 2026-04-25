@@ -1,7 +1,7 @@
 /**
  * @file arcos.services.ts
  * @description Capa de servicios para la gestión de "Arcos" (Rutas de aprendizaje/visionado).
- * Coordina la lógica de negocio entre la persistencia (ArcosRepository), el enriquecimiento 
+ * Coordina la lógica de negocio entre la persistencia (ArcosRepository), el enriquecimiento
  * de metadatos (TMDB) y la validación de integridad de colecciones.
  */
 

@@ -25,7 +25,11 @@ export const deleteReviewAdmin = async (id: number) => {
  * ---------------------------------------------------------------------------
  */
 
-export const createNews = async (data: { title: string; content: string; category?: news_category }) => {
+export const createNews = async (data: {
+  title: string
+  content: string
+  category?: news_category
+}) => {
   return await prisma.news.create({ data })
 }
 
@@ -53,7 +57,11 @@ export const getReportsAdmin = async () => {
   })
 }
 
-export const resolveReportAdmin = async (id: number, status: reports_status, adminId: number) => {
+export const resolveReportAdmin = async (
+  id: number,
+  status: reports_status,
+  adminId: number
+) => {
   const reporte = await prisma.reports.update({
     where: { id },
     data: { status },

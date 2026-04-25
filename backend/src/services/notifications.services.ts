@@ -1,7 +1,7 @@
 /**
  * @file notifications.services.ts
  * @description Capa de servicios para el sistema de notificaciones en tiempo real de CineVault.
- * Gestiona la persistencia en base de datos, la emisión vía WebSockets (Socket.IO) 
+ * Gestiona la persistencia en base de datos, la emisión vía WebSockets (Socket.IO)
  * y el encolado en Redis para entrega de notificaciones pendientes (offline).
  */
 
@@ -18,9 +18,9 @@ const queueKey = (userId: number) => `notif:queue:${userId}`
 
 /**
  * Crea una notificación y orquestas su entrega inmediata o diferida.
- * Intenta emitir por Socket.IO; si el usuario no tiene conexión activa, 
+ * Intenta emitir por Socket.IO; si el usuario no tiene conexión activa,
  * encola la notificación en Redis para su posterior entrega.
- * 
+ *
  * @param params Objeto con el destinatario, remitente y tipo de notificación.
  * @returns La instancia de notificación creada y persistida.
  */
@@ -43,7 +43,7 @@ export const emitirNotificacionService = async ({
   })
 
   const socketId = usuariosConectados.get(user_id)
-  
+
   if (socketId) {
     // Entrega inmediata por WebSockets
     io.to(socketId).emit("nueva_notificacion", notificacion)

@@ -3,8 +3,8 @@
  * @description Definición centralizada del sistema de Control de Acceso Basado en Roles (RBAC).
  * Este archivo orquestra la relación entre los roles de usuario (admin, editor, user)
  * y los niveles de membresía (free, vip, pro) con permisos granulares.
- * 
- * @note La arquitectura permite la coexistencia de roles administrativos con 
+ *
+ * @note La arquitectura permite la coexistencia de roles administrativos con
  * niveles de suscripción Premium sin conflictos de lógica.
  */
 
@@ -17,7 +17,7 @@ export const PERMISOS = {
 
   // Gestión de Reportes (Comunidad)
   GESTIONAR_REPORTES: "gestionar_reportes", // Resolver o rechazar reportes activos
-  VER_REPORTES: "ver_reportes",           // Acceso de solo lectura a la cola de reportes
+  VER_REPORTES: "ver_reportes", // Acceso de solo lectura a la cola de reportes
 
   // Contenido Editorial
   GESTIONAR_NOTICIAS: "gestionar_noticias", // Creación, edición y borrado de noticias oficiales
@@ -67,12 +67,8 @@ const PERMISOS_POR_ROL: Record<string, Permiso[]> = {
  */
 const PERMISOS_POR_MEMBRESIA: Record<string, Permiso[]> = {
   free: [],
-  vip: [
-    PERMISOS.EXHIBIR_PELICULAS,
-  ],
-  pro: [
-    PERMISOS.EXHIBIR_PELICULAS,
-  ],
+  vip: [PERMISOS.EXHIBIR_PELICULAS],
+  pro: [PERMISOS.EXHIBIR_PELICULAS],
 }
 
 /**
@@ -93,7 +89,7 @@ export const LIMITES_MEMBRESIA: Record<string, Record<string, number>> = {
 
 /**
  * Determina si un usuario posee un permiso específico basándose en su rol y membresía.
- * 
+ *
  * @param rol - El rol administrativo del usuario (admin, editor, user).
  * @param permiso - El permiso que se desea validar.
  * @param membresia - (Opcional) El nivel de suscripción del usuario.

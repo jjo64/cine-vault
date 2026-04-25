@@ -1,8 +1,8 @@
 /**
  * @file rbac.middleware.ts
  * @description Capa de autorización basada en roles (RBAC) y membresías.
- * Implementa una estrategia de autorización de alto rendimiento utilizando Redis como 
- * caché de segundo nivel para roles y niveles de suscripción, minimizando la carga 
+ * Implementa una estrategia de autorización de alto rendimiento utilizando Redis como
+ * caché de segundo nivel para roles y niveles de suscripción, minimizando la carga
  * sobre la base de datos principal y permitiendo cambios de permisos casi instantáneos.
  */
 
@@ -18,7 +18,7 @@ const TTL_AUTORIZACION = 120
 /**
  * Recupera el rol y la membresía del usuario, priorizando el almacenamiento en Redis.
  * En caso de cache-miss, consulta la base de datos y repuebla la caché.
- * 
+ *
  * @param userId - Identificador único del usuario.
  * @returns Objeto con el rol técnico y el nivel de membresía.
  */
@@ -68,15 +68,15 @@ const obtenerRolYMembresia = async (
   }
 }
 
-/** 
- * Elimina la caché de rol del usuario. 
+/**
+ * Elimina la caché de rol del usuario.
  * Debe invocarse tras una reasignación administrativa de privilegios.
  */
 export const invalidarCacheRol = async (userId: number) => {
   await redis.del(`rol:${userId}`)
 }
 
-/** 
+/**
  * Elimina la caché de membresía del usuario.
  * Debe invocarse tras un cambio en el plan de suscripción o pago.
  */
@@ -95,7 +95,7 @@ export const invalidarCacheUsuario = async (userId: number) => {
 /**
  * Middleware: Verificación de Permiso Atómico.
  * Comprueba si el rol y la membresía actual permiten realizar una acción específica.
- * 
+ *
  * @param permiso - Identificador del permiso requerido (ej: 'POST_REVIEWS').
  */
 export const verificarPermiso = (permiso: Permiso) => {
@@ -133,7 +133,9 @@ export const verificarRol = (...roles: string[]) => {
 
       if (!roles.includes(role)) {
         return next(
-          new ForbiddenError("Acceso restringido: Esta sección requiere un rol de mayor jerarquía")
+          new ForbiddenError(
+            "Acceso restringido: Esta sección requiere un rol de mayor jerarquía"
+          )
         )
       }
 
@@ -147,9 +149,9 @@ export const verificarRol = (...roles: string[]) => {
 
 /**
  * Middleware: Política de Propietario o Permiso Administrativo (Híbrido).
- * Autoriza si el usuario es el dueño del recurso solicitado O si posee 
+ * Autoriza si el usuario es el dueño del recurso solicitado O si posee
  * un permiso administrativo de supervisión/edición ajena.
- * 
+ *
  * @param permiso - Permiso necesario para usuarios que no son dueños.
  * @param obtenerOwnerIdFn - Función asíncrona que determina el ID del dueño del recurso.
  */

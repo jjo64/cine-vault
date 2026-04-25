@@ -1,8 +1,8 @@
 /**
  * @file error.middlewares.ts
  * @description Orquestador centralizado para la gestión de excepciones y errores asíncronos.
- * Implementa una arquitectura de captura de errores que estandariza las respuestas 
- * de la API, garantizando que el cliente reciba códigos HTTP semánticos y 
+ * Implementa una arquitectura de captura de errores que estandariza las respuestas
+ * de la API, garantizando que el cliente reciba códigos HTTP semánticos y
  * mensajes estructurados (JSON), evitando fugas de información técnica (stack traces).
  */
 
@@ -12,12 +12,12 @@ import { ApplicationError } from "../errors/AppErrors.js"
 /**
  * Manejador global de errores de Express.
  * Debe registrarse como el ÚLTIMO middleware en la cadena de ejecución.
- * 
+ *
  * Intercepta:
  * 1. Excepciones personalizadas (ApplicationError).
  * 2. Errores de librerías externas (JWT, Multer, etc.).
  * 3. Errores inesperados de sintaxis o lógica (Internal Server Error).
- * 
+ *
  * @param err - Objeto de error capturado.
  * @param res - Objeto de respuesta para estandarizar el JSON de salida.
  */
@@ -49,11 +49,12 @@ export const manejadorErrores = (
 
   // Caso 3: Error genérico no capturado (Fallo estructural o de infraestructura)
   console.error("[MONITORIZACIÓN] Error no controlado detectado:", err)
-  
+
   return res.status(500).json({
     error: {
       code: "INTERNAL_ERROR",
-      message: "Se ha producido un error interno y el equipo técnico ha sido notificado",
+      message:
+        "Se ha producido un error interno y el equipo técnico ha sido notificado",
     },
   })
 }
@@ -62,7 +63,7 @@ export const manejadorErrores = (
  * High-Order Function (Encapsulador) para controladores asíncronos.
  * Elimina la necesidad de bloques try/catch repetitivos en la capa de controladores,
  * delegando automáticamente cualquier rechazo de promesa al manejadorErrores global.
- * 
+ *
  * @param fn - Función controladora asíncrona (Controller).
  * @returns Función middleware compatible con Express.
  */

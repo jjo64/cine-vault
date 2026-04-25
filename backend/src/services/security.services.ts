@@ -1,7 +1,7 @@
 /**
  * @file security.services.ts
  * @description Capa de servicios de seguridad auxiliar y detección de comportamientos anómalos.
- * Implementa mecanismos de defensa proactiva contra ráfagas de tráfico (Spike Detection) 
+ * Implementa mecanismos de defensa proactiva contra ráfagas de tráfico (Spike Detection)
  * y control de spam en interacciones sociales mediante el uso de Redis como almacenamiento volátil.
  */
 
@@ -12,7 +12,7 @@ import { redis } from "../lib/redis.js"
 /**
  * Detecta incrementos súbitos y anómalos de tráfico (spikes) provenientes de una misma IP.
  * Se utiliza para identificar potenciales ataques de denegación de servicio (DoS) o scrapers agresivos.
- * 
+ *
  * @param ip Dirección IP del cliente a evaluar.
  * @returns true si se ha superado el umbral de peticiones en la ventana temporal.
  */
@@ -32,9 +32,9 @@ export const checkIPSpike = async (ip: string) => {
 // --- Servicios de Moderación Automática ---
 
 /**
- * Evalúa si un comentario es una repetición exacta (spam) dentro de las últimas 
+ * Evalúa si un comentario es una repetición exacta (spam) dentro de las últimas
  * interacciones del usuario.
- * 
+ *
  * @param userId ID del usuario que emite el comentario.
  * @param comment Texto del comentario a validar.
  * @returns true si el comentario se considera duplicado/spam.

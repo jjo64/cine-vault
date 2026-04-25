@@ -1,7 +1,7 @@
 /**
  * @file prisma.ts
  * @description Punto de entrada para el cliente de base de datos Prisma.
- * Configura el adaptador específico para MariaDB y exporta una instancia 
+ * Configura el adaptador específico para MariaDB y exporta una instancia
  * compartida (Singleton) del PrismaClient para todo el backend.
  */
 

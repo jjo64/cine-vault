@@ -7,9 +7,9 @@
 
 /**
  * Genera un slug basado en el título y el año de lanzamiento.
- * Realiza limpieza de diacríticos, eliminación de caracteres especiales 
+ * Realiza limpieza de diacríticos, eliminación de caracteres especiales
  * y sustitución de espacios por guiones.
- * 
+ *
  * @param title - Título original de la película.
  * @param year - Año de estreno para garantizar unicidad.
  * @returns Cadena formateada como "titulo-normalizado-1999".
