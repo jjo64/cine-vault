@@ -1,13 +1,13 @@
 /**
  * @file reports.ts
  * @description Esquemas de validación Zod para el sistema de Reportes y Denuncias.
- * Define las reglas de integridad para el listado administrativo de reportes, 
+ * Define las reglas de integridad para el listado administrativo de reportes,
  * el filtrado por estado y la resolución por parte del equipo de moderación.
  */
 
 import { z } from "zod"
 
-/** 
+/**
  * Esquema para la consulta administrativa de reportes.
  * Permite paginación y filtrado por estado de resolución o ID de reseña específica.
  */
@@ -23,10 +23,13 @@ export const listReportsQuerySchema = z.object({
 
 /** Esquema para validar el acceso a un reporte específico mediante su ID */
 export const reportIdParamsSchema = z.object({
-  id: z.coerce.number().int().positive("El identificador del reporte es inválido"),
+  id: z.coerce
+    .number()
+    .int()
+    .positive("El identificador del reporte es inválido"),
 })
 
-/** 
+/**
  * Esquema para la resolución de un reporte por un moderador.
  * Requiere el nuevo estado y permite adjuntar una nota técnica sobre la decisión tomada.
  */

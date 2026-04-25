@@ -7,7 +7,7 @@
 
 import { z } from "zod"
 
-/** 
+/**
  * Esquema para la actualización parcial del perfil de usuario.
  * Valida el formato del nombre de usuario (solo alfanumérico y guion bajo),
  * la validez del correo electrónico y la extensión de la biografía.
@@ -23,7 +23,10 @@ export const actualizarPerfilSchema = z
         "El nombre de usuario solo puede contener letras, números y guiones bajos"
       )
       .optional(),
-    email: z.string().email("El formato del correo electrónico no es válido").optional(),
+    email: z
+      .string()
+      .email("El formato del correo electrónico no es válido")
+      .optional(),
     bio: z
       .string()
       .max(280, "La biografía no puede superar los 280 caracteres")
@@ -34,22 +37,28 @@ export const actualizarPerfilSchema = z
       data.username !== undefined ||
       data.email !== undefined ||
       data.bio !== undefined,
-    { message: "Debe proporcionar al menos un campo (usuario, email o bio) para la actualización" }
+    {
+      message:
+        "Debe proporcionar al menos un campo (usuario, email o bio) para la actualización",
+    }
   )
 
-/** 
+/**
  * Esquema para el cambio seguro de contraseña.
- * Garantiza que se conozca la contraseña actual y que la nueva cumpla con los 
+ * Garantiza que se conozca la contraseña actual y que la nueva cumpla con los
  * requisitos mínimos, además de forzar la coincidencia con la confirmación.
  */
 export const actualizarAuthSchema = z
   .object({
-    password_actual: z.string().min(1, "La contraseña actual es requerida para validar la identidad"),
+    password_actual: z
+      .string()
+      .min(1, "La contraseña actual es requerida para validar la identidad"),
     password_nueva: z
       .string()
       .min(8, "La nueva contraseña debe tener al menos 8 caracteres")
       .refine((val) => val.trim().length > 0, {
-        message: "La contraseña no puede consistir únicamente en espacios en blanco",
+        message:
+          "La contraseña no puede consistir únicamente en espacios en blanco",
       }),
     password_confirmacion: z
       .string()
@@ -60,12 +69,14 @@ export const actualizarAuthSchema = z
     path: ["password_confirmacion"],
   })
 
-/** 
+/**
  * Esquema para la actualización de la imagen de perfil.
  * Valida que se proporcione una cadena (habitualmente en base64 o una URL válida).
  */
 export const actualizarAvatarSchema = z.object({
-  avatar: z.string().min(1, "No se ha proporcionado una imagen de avatar válida"),
+  avatar: z
+    .string()
+    .min(1, "No se ha proporcionado una imagen de avatar válida"),
 })
 
 // Tipado exportado deducido

@@ -7,7 +7,7 @@
 
 import { z } from "zod"
 
-/** 
+/**
  * Esquema para validar el acceso al análisis descriptivo de un director.
  * Requiere el ID único proporcionado habitualmente por TMDB o el sistema interno.
  */

@@ -3,7 +3,7 @@
  * @description Rutas para la consulta de información de películas.
  * Integra la API de TMDB con una capa de caché Redis para optimizar el rendimiento.
  * Gestiona el descubrimiento de estrenos, rankings y el detalle profundo de títulos.
- * 
+ *
  * @note Las peticiones son delegadas a MoviesController tras la refactorización en Fase 5.
  * @note Fase 6: Validación Final [x]
  */

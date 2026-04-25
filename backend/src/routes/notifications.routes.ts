@@ -1,7 +1,7 @@
 /**
  * @file notifications.routes.ts
  * @description Definición de rutas para el sistema de Notificaciones.
- * Permite gestionar el flujo de alertas sociales (likes, follows, comentarios) 
+ * Permite gestionar el flujo de alertas sociales (likes, follows, comentarios)
  * y mantener al usuario actualizado sobre la actividad de su red.
  */
 

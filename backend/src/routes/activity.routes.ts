@@ -1,10 +1,10 @@
 /**
  * @file activity.routes.ts
  * @description Definición de rutas para el sistema de Actividad y Social Feed.
- * Permite a los usuarios visualizar un flujo de eventos (reseñas, entradas de diario, 
+ * Permite a los usuarios visualizar un flujo de eventos (reseñas, entradas de diario,
  * adiciones al vault) de sus amigos o de su propia actividad.
- * 
- * @note Este archivo contiene actualmente lógica de negocio pesada que será 
+ *
+ * @note Este archivo contiene actualmente lógica de negocio pesada que será
  * delegada a un servicio dedicado en la Fase 5 para cumplir con SOLID.
  */
 

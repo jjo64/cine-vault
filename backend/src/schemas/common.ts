@@ -1,7 +1,7 @@
 /**
  * @file common.ts
  * @description Esquemas de validación Zod de propósito general y reutilizables.
- * Centraliza las reglas de integridad para parámetros comunes como identificadores 
+ * Centraliza las reglas de integridad para parámetros comunes como identificadores
  * numéricos (IDs) y tokens de seguridad, promoviendo la consistencia en la API.
  */
 
@@ -26,7 +26,9 @@ export const idUserParamSchema = z.object({ id_user: idPositivo })
 export const movieIdAltParamSchema = z.object({ movie_id: idPositivo })
 
 /** Esquema genérico para la validación de tokens recibidos por URL */
-export const tokenParamSchema = z.object({ token: z.string().min(1, "El token es requerido") })
+export const tokenParamSchema = z.object({
+  token: z.string().min(1, "El token es requerido"),
+})
 
 // Definición de tipos exportados para su uso en controladores y servicios
 export type IdParam = z.infer<typeof idParamSchema>

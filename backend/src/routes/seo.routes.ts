@@ -3,7 +3,7 @@
  * @description Rutas para la gestión de SEO y visibilidad en motores de búsqueda.
  * Responsable de entregar dinámicamente el Sitemap XML y el archivo Robots.txt.
  * Incluye lógica de redirección para normalizar URLs de películas con slugs.
- * 
+ *
  * @note Las peticiones son delegadas a SeoController tras la estandarización en Fase 5.
  */
 
