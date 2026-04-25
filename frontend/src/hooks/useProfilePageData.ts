@@ -368,8 +368,8 @@ export function useProfilePageData(userParam?: string) {
         nextWatchlist.forEach(seedFromEntry)
 
         const ids: MovieMetaTarget[] = [
-          ...nextDiary.map((item) => ({ movieId: item.movie_id, tmdbId: item.tmdb_id, mediaType: (item.movie_info?.media_type as any) || (item.media_type as any) || 'movie' })),
-          ...nextWatchlist.map((item) => ({ movieId: item.movie_id, tmdbId: item.tmdb_id, mediaType: (item.movie_info?.media_type as any) || (item.media_type as any) || 'movie' })),
+          ...nextDiary.map((item) => ({ movieId: item.movie_id, tmdbId: item.tmdb_id, mediaType: (item.movie_info?.media_type as any) || 'movie' })),
+          ...nextWatchlist.map((item) => ({ movieId: item.movie_id, tmdbId: item.tmdb_id, mediaType: (item.movie_info?.media_type as any) || 'movie' })),
           ...nextReviews.map((item) => ({
             movieId: item.movie_id,
             tmdbId: item.tmdb_id ?? item.movies_ref?.tmdb_id ?? tmdbByMovieId.get(item.movie_id) ?? null,

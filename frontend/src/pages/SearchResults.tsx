@@ -22,7 +22,7 @@ import {
   fetchMyWatchlist, 
   fetchMyDiary 
 } from '../services/movieDetailServices'
-import { getCurrentUser, getStoredAccessToken, type AuthUser } from '../services/authServices'
+import { getStoredAccessToken } from '../services/authServices'
 import { searchMovies, searchUsers, type SearchMovieResult, type SearchPersonPanel, type SearchUserResult } from '../services/searchServices'
 import './SearchResults.css'
 
@@ -356,7 +356,7 @@ function SkeletonPill({ width = 64 }: { width?: number }) {
   )
 }
 
-function FilmResultItem({ item, delay, isDetailsLoading, user, initialVaulted, initialWatchlisted }: { item: FilmResult; delay: number; isDetailsLoading: boolean; user: AuthUser | null; initialVaulted: boolean; initialWatchlisted: boolean }) {
+function FilmResultItem({ item, delay, isDetailsLoading, initialVaulted, initialWatchlisted }: { item: FilmResult; delay: number; isDetailsLoading: boolean; initialVaulted: boolean; initialWatchlisted: boolean }) {
   const [hov, setHov] = useState(false)
   const [vaulted, setVaulted] = useState(initialVaulted)
   const [bookmarked, setBookmarked] = useState(initialWatchlisted)
@@ -626,7 +626,6 @@ export function Search() {
   const [isSearching, setIsSearching] = useState(false)
   const [showFilters, setShowFilters] = useState(true)
   const [isFiltersOpen, setIsFiltersOpen] = useState(false)
-  const [user, setUser] = useState<AuthUser | null>(null)
   const [myWatchlist, setMyWatchlist] = useState<number[]>([])
   const [myDiary, setMyDiary] = useState<number[]>([])
   const [enrichedFilms, setEnrichedFilms] = useState<Record<number, FilmDetails>>({})
@@ -643,7 +642,6 @@ export function Search() {
     const token = getStoredAccessToken()
     if (!token) return
 
-    getCurrentUser().then(setUser).catch(() => setUser(null))
     fetchMyWatchlist(token).then(list => setMyWatchlist(list.map(i => i.movie_id))).catch(() => {})
     fetchMyDiary(token).then(res => setMyDiary((res.diary || []).map(i => i.movie_id))).catch(() => {})
   }, [])
@@ -995,7 +993,6 @@ export function Search() {
                             item={mergedFilm} 
                             delay={i * 0.05} 
                             isDetailsLoading={loadingFilmDetails[mergedFilm.id]} 
-                            user={user}
                             initialVaulted={myDiary.includes(mergedFilm.id)}
                             initialWatchlisted={myWatchlist.includes(mergedFilm.id)}
                           />
@@ -1024,7 +1021,6 @@ export function Search() {
                         item={mergedFilm} 
                         delay={i * 0.05} 
                         isDetailsLoading={Boolean(loadingFilmDetails[film.id])} 
-                        user={user}
                         initialVaulted={myDiary.includes(film.id)}
                         initialWatchlisted={myWatchlist.includes(film.id)}
                       />
@@ -1048,7 +1044,6 @@ export function Search() {
                         item={mergedFilm} 
                         delay={i * 0.05} 
                         isDetailsLoading={Boolean(loadingFilmDetails[film.id])} 
-                        user={user}
                         initialVaulted={myDiary.includes(film.id)}
                         initialWatchlisted={myWatchlist.includes(film.id)}
                       />

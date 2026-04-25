@@ -8,10 +8,10 @@ import {
   Check,
   Clock,
   Ellipsis,
-  Eye,
   Film,
   Filter,
   Globe,
+  Heart,
   Lock,
   Pin,
   PinOff,
@@ -19,20 +19,19 @@ import {
   Plus,
   Pencil,
   SortDesc,
+  Trash,
   Trash2,
   Trophy,
   Upload,
 } from 'lucide-react'
 import { C, SANS, SERIF, textClampOneLine } from './theme'
 import { Badge, Img, SectionHeader, Stars } from './primitives'
-import { vaultMockItems, IMG } from './assets'
+import { IMG } from './assets'
 import type { DiaryTimelineItem, EnrichedMovie, ProfileStatsData, RecentlyWatchedItem, ReviewItem, UserListSummaryItem, WatchlistItem } from './models'
-import { deleteReview, removeFromWatchlist, removeFromFavorites } from '../../services/movieDetailServices'
-import { removeFromVault, removeVaultSocialEntry, type VaultSocialEntry } from '../../services/profileServices'
+import { deleteReview, removeFromWatchlist } from '../../services/movieDetailServices'
+import { removeVaultSocialEntry, type VaultSocialEntry } from '../../services/profileServices'
 import { getStoredAccessToken } from '../../services/authServices'
 import { createSlug } from '../../utils/stringUtils'
-import { deleteReview } from '../../services/movieDetailServices'
-import { getStoredAccessToken } from '../../services/authServices'
 
 const mediaHref = (movieId: number, title: string, tmdbId: number | null, mediaType?: 'movie' | 'tv' | null) => {
   const type = mediaType === 'tv' ? 'tv' : 'movie'
@@ -1061,7 +1060,7 @@ export function WatchlistPanel({ watchlistFilms: initialFilms, canManage = false
                 <Img
                   src={film.posterUrl}
                   alt={film.title}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', saturate: 0.7, transition: 'filter 0.3s' }}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(0.7)', transition: 'filter 0.3s' }}
                 />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -1109,7 +1108,7 @@ export function WatchlistPanel({ watchlistFilms: initialFilms, canManage = false
                 <Img
                   src={film.posterUrl}
                   alt={film.title}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', saturate: 0.7, transition: 'filter 0.3s' }}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(0.7)', transition: 'filter 0.3s' }}
                 />
                 {canManage && (
                   <button
@@ -1157,6 +1156,7 @@ export function HistoryPanel({ recentlyWatched }: { recentlyWatched: RecentlyWat
 }
 
 export function DiaryPanel({ diaryTimeline }: { diaryTimeline: DiaryTimelineItem[] }) {
+  const navigate = useNavigate()
 
   return (
     <div>

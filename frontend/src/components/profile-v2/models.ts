@@ -1,6 +1,6 @@
 export type EnrichedMovie = {
   movieId: number
-  tmdbId: number
+  tmdbId: number | null
   title: string
   year: number | null
   director: string

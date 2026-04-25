@@ -75,20 +75,6 @@ function GrainOverlay() {
   );
 }
 
-// ─── MOCK DATA ───────────────────────────────────────────────
-const I = {
-  fog:      'https://images.unsplash.com/photo-1563941433-b6a094653ed2?w=300&q=80',
-  filmNoir: 'https://images.unsplash.com/photo-1706460400799-bd339797d306?w=300&q=80',
-  night:    'https://images.unsplash.com/photo-1670782128814-c5a55b68f50d?w=300&q=80',
-  italy:    'https://images.unsplash.com/photo-1753731622675-56904104f4a9?w=300&q=80',
-  hongKong: 'https://images.unsplash.com/photo-1742695760180-92c9a73ffdf2?w=300&q=80',
-  forest:   'https://images.unsplash.com/photo-1759360383439-c3fdf352f1b6?w=300&q=80',
-  grain:    'https://images.unsplash.com/photo-1698159929266-28e8e8ef6b33?w=300&q=80',
-  misty:    'https://images.unsplash.com/photo-1763713441172-37ed2f89b256?w=300&q=80',
-  desolate: 'https://images.unsplash.com/photo-1691573252567-6c1be35aae79?w=300&q=80',
-  projector:'https://images.unsplash.com/photo-1762541693135-fb989de961e1?w=300&q=80',
-};
-
 // Mock data removed in favor of dynamic fetch
 
 // ─── SESSION BADGE ───────────────────────────────────────────
