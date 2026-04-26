@@ -83,13 +83,8 @@ if (!process.env.API_KEY_TMDB)
  * 1. Middlewares de Optimización y Seguridad Base
  */
 app.use(compression()) // Comprime las respuestas HTTP para mejorar el rendimiento
-app.use(
-  express.static(publicPath, {
-    maxAge: "1y", // Cache agresiva para archivos estáticos del frontend
-    etag: true,
-    index: false,
-  })
-)
+// El middleware de archivos estáticos se registrará después de las rutas de la API
+// para evitar colisiones y asegurar que las peticiones /api/* siempre lleguen a los controladores.
 app.use(
   helmet({
     contentSecurityPolicy: false, // Se configura manualmente abajo para mayor granularidad
@@ -228,7 +223,29 @@ app.use("/api/reports", rutasReports)
 app.use("/api/persons", rutasPersons)
 
 /**
- * 7. Middleware Centralizado de Manejo de Errores (SIEMPRE AL FINAL)
+ * 7. Servido de Archivos Estáticos y SPA Catch-all
+ * Se registra al final para que las rutas de la API tengan prioridad.
+ */
+if (process.env.NODE_ENV === "production" || process.env.SERVE_STATIC === "true") {
+  app.use(
+    express.static(publicPath, {
+      maxAge: "1y",
+      etag: true,
+      index: false,
+    })
+  )
+
+  // SPA Catch-all: Envía index.html para cualquier ruta que no sea de la API o sitemap
+  app.use((req, res, next) => {
+    if (req.path.startsWith("/api") || req.path.includes(".")) {
+      return next()
+    }
+    res.sendFile(path.join(publicPath, "index.html"))
+  })
+}
+
+/**
+ * 8. Middleware Centralizado de Manejo de Errores (SIEMPRE AL FINAL)
  */
 app.use(manejadorErrores)
 

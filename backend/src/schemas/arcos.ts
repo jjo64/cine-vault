@@ -9,10 +9,14 @@ import { z } from "zod"
 
 /** Esquema para validar IDs recibidos como parámetros de ruta */
 export const arcoIdParamsSchema = z.object({
-  id: z.coerce
-    .number({ error: "id debe ser un número" })
-    .int("id debe ser un entero")
-    .positive("id debe ser positivo"),
+  id: z.preprocess((val) => {
+    if (typeof val === "string") {
+      const parts = val.split("-");
+      const num = parseInt(parts[0], 10);
+      return isNaN(num) ? val : num;
+    }
+    return val;
+  }, z.coerce.number().int().positive()),
 })
 
 /** Esquema para el registro de progreso individual en una película del arco */

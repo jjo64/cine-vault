@@ -22,7 +22,8 @@ import {
   getCurrentUser,
   logoutCurrentUser,
 } from "../services/authServices";
-import { getMyLists } from "../services/listsServices";
+import { getMyLists, getPublicLists } from "../services/listsServices";
+import type { UserListSummary as ApiListSummary } from "../services/listsServices";
 import {
   fetchForYouFeed,
   fetchTonightMovie,
@@ -379,6 +380,7 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
   const [reviews, setReviews] = useState<ReviewEntry[]>([]);
   const [vault, setVault] = useState<VaultEntry[]>([]);
   const [lists, setLists] = useState<UserListSummary[]>([]);
+  const [publicLists, setPublicLists] = useState<ApiListSummary[]>([]);
   const [followingActivity, setFollowingActivity] = useState<
     FollowingActivityItem[]
   >([]);
@@ -432,6 +434,7 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
           reviewsRes,
           vaultRes,
           listsRes,
+          publicListsRes,
           followingRes,
           mentirasRes,
           directorsRes,
@@ -445,6 +448,7 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
           authorizedJson<ReviewEntry[]>("/api/reviews"),
           authorizedJson<VaultEntry[]>("/api/vault"),
           getMyLists(),
+          getPublicLists(1, 12),
           fetch(`${API_URL}/api/users/${me.id}/following`).then((res) =>
             res.ok ? res.json() : ([] as FollowingUser[]),
           ),
@@ -470,6 +474,10 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
           vaultRes.status === "fulfilled" ? vaultRes.value || [] : [];
         const listsData =
           listsRes.status === "fulfilled" ? listsRes.value || [] : [];
+        const publicListsData =
+          publicListsRes.status === "fulfilled"
+            ? publicListsRes.value?.items || []
+            : [];
         const followingData =
           followingRes.status === "fulfilled"
             ? Array.isArray(followingRes.value)
@@ -482,6 +490,7 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
         setReviews(reviewsData);
         setVault(vaultData);
         setLists(Array.isArray(listsData) ? listsData : []);
+        setPublicLists(Array.isArray(publicListsData) ? publicListsData : []);
 
         if (mentirasRes.status === "fulfilled") {
           setMentiras(mentirasRes.value || {});
@@ -840,13 +849,32 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
   }, [directors]);
 
   const communityLists = useMemo(() => {
+    // Use real public lists from API first, fall back to own lists + mentiras
+    if (publicLists.length > 0) {
+      return publicLists.slice(0, 3).map((list) => {
+        const firstPoster = list.posters?.[0];
+        const posterImg = firstPoster
+          ? `https://image.tmdb.org/t/p/w500${firstPoster}`
+          : "/no-poster.svg";
+        return {
+          id: list.id,
+          title: list.name,
+          count: list.items_count || 0,
+          user: list.owner ? `@${list.owner.username}` : "@comunidad",
+          img: list.custom_cover || posterImg,
+          href: `/lists/${list.id}`,
+        };
+      });
+    }
+
+    // Fallback: own lists
     const own = lists.slice(0, 2).map((list) => ({
       id: list.id,
       title: list.name,
       count: list.items_count || list.itemsCount || 0,
       user: `@${greetingName.toLowerCase()}`,
       img: "/no-poster.svg",
-      href: "/lists",
+      href: `/lists/${list.id}`,
     }));
 
     const shame = (mentiras.shame || []).slice(0, 1).map((item) => ({
@@ -858,17 +886,8 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
       href: "/mentiras",
     }));
 
-    const complete = (mentiras.completed || []).slice(0, 1).map((item) => ({
-      id: 2000 + item.id,
-      title: `Top completadas: ${item.title}`,
-      count: item.finishRate || 0,
-      user: "@cinevault",
-      img: item.poster || "/no-poster.svg",
-      href: "/mentiras",
-    }));
-
-    return [...own, ...shame, ...complete].slice(0, 3);
-  }, [lists, mentiras, greetingName]);
+    return [...own, ...shame].slice(0, 3);
+  }, [lists, publicLists, mentiras, greetingName]);
 
   const hasData =
     tonightFilm || becauseYouWatched.length > 0 || feedRapido.length > 0;
@@ -2155,7 +2174,7 @@ export default function HomeLogged({ username }: HomeLoggedProps) {
             {arcos.slice(0, 3).map((arco) => (
               <Link
                 key={arco.id}
-                to={`/arcos/${arco.slug}`}
+                to={`/arcos/${arco.id}-${arco.slug}`}
                 style={{ textDecoration: "none", display: "block" }}
               >
                 <motion.div

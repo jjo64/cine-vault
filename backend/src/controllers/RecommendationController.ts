@@ -21,16 +21,23 @@ export const getForYou = async (req: Request, res: Response) => {
   const page = Math.max(1, toNumber(req.query.page, 1))
   const limit = Math.min(50, Math.max(1, toNumber(req.query.limit, 20)))
 
-  const { items, total, has_more } =
-    await RecommendationService.getPersonalizedFeed(viewerId, page, limit)
+  console.log(`[RecommendationController] getForYou para usuario ${viewerId} (Página: ${page})`)
 
-  res.json({
-    page,
-    limit,
-    total,
-    has_more,
-    items,
-  })
+  try {
+    const { items, total, has_more } =
+      await RecommendationService.getPersonalizedFeed(viewerId, page, limit)
+
+    res.json({
+      page,
+      limit,
+      total,
+      has_more,
+      items,
+    })
+  } catch (error) {
+    console.error(`[RecommendationController] Error en getForYou para usuario ${viewerId}:`, error)
+    throw error
+  }
 }
 
 /**
@@ -43,6 +50,7 @@ export const getSuggestedDirectors = async (req: Request, res: Response) => {
   // Si no se pasa userId, usamos el del usuario autenticado
   const targetUserId = Number.isFinite(queryUserId) ? queryUserId : viewerId
 
+  console.log(`[RecommendationController] getSuggestedDirectors para usuario ${targetUserId}`)
   const items = await RecommendationService.getSuggestedDirectors(targetUserId)
 
   res.json({ items })
@@ -57,13 +65,19 @@ export const getTonight = async (req: Request, res: Response) => {
   const weather =
     typeof req.query.weather === "string" ? req.query.weather : "clear"
 
-  const item = await RecommendationService.getTonightMovie(
-    viewerId,
-    localHour,
-    weather
-  )
+  console.log(`[RecommendationController] getTonight para usuario ${viewerId} (Clima: ${weather}, Hora: ${localHour})`)
 
-  res.json(item)
+  try {
+    const item = await RecommendationService.getTonightMovie(
+      viewerId,
+      localHour,
+      weather
+    )
+    res.json(item)
+  } catch (error) {
+    console.error(`[RecommendationController] Error en getTonight para usuario ${viewerId}:`, error)
+    throw error
+  }
 }
 
 /**
@@ -71,11 +85,18 @@ export const getTonight = async (req: Request, res: Response) => {
  */
 export const checkStatus = async (req: Request, res: Response) => {
   const viewerId = req.user!.user_id
-  const profile = await prisma.user_taste_profiles.findUnique({
-    where: { user_id: viewerId },
-  })
+  console.log(`[RecommendationController] checkStatus para usuario ${viewerId}`)
+  
+  try {
+    const profile = await prisma.user_taste_profiles.findUnique({
+      where: { user_id: viewerId },
+    })
 
-  res.json({ needs_onboarding: !profile })
+    res.json({ needs_onboarding: !profile })
+  } catch (error) {
+    console.error(`[RecommendationController] Error en checkStatus para usuario ${viewerId}:`, error)
+    throw error
+  }
 }
 
 /**
@@ -85,6 +106,8 @@ export const getOnboarding = async (req: Request, res: Response) => {
   const viewerId = req.user!.user_id
   const step = toNumber(req.query.step, 0)
   const seedId = req.query.seedId ? toNumber(req.query.seedId, 0) : undefined
+
+  console.log(`[RecommendationController] getOnboarding para usuario ${viewerId} (Step: ${step})`)
 
   const data = await RecommendationService.getOnboardingMovies(
     viewerId,
@@ -104,6 +127,8 @@ export const postInteraction = async (req: Request, res: Response) => {
   if (!movieId || !type) {
     return res.status(400).json({ error: "movieId y type son requeridos" })
   }
+
+  console.log(`[RecommendationController] postInteraction para usuario ${viewerId} (Tipo: ${type}, Movie: ${movieId})`)
 
   const result = await RecommendationService.saveExplicitInteraction(
     viewerId,

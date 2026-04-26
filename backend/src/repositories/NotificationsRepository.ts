@@ -58,8 +58,9 @@ export class NotificationsRepository implements INotificationsRepository {
     type: notifications_type
     metadata?: any
   }) {
+    const { metadata: _metadata, ...persistedData } = data
     return prisma.notifications.create({
-      data,
+      data: persistedData,
       include: {
         sender: {
           select: { id: true, username: true, avatar_url: true },

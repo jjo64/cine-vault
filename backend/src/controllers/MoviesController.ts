@@ -78,26 +78,35 @@ export const getDetail = async (req: Request, res: Response) => {
 
   // 1. Resolución de Slug a ID si es necesario
   if (isNaN(movieId)) {
-    const resolvedId = await getOSet(
-      `tmdb:slug:${idOrSlug}`,
-      () => MovieService.resolveMovieIdFromSlug(idOrSlug),
+    console.log(`[MoviesController] Resolviendo slug: ${idOrSlug}`)
+    movieId = await MovieService.resolveMovieIdFromSlug(idOrSlug)
+    if (!movieId) {
+      console.warn(`[MoviesController] No se pudo resolver el slug: ${idOrSlug}`)
+      return res.status(404).json({ message: "Película no encontrada (Slug no resuelto)" })
+    }
+  }
+
+  console.log(`[MoviesController] Obteniendo detalle para ID: ${movieId}`)
+
+  // 2. Obtención de metadatos expandidos
+  try {
+    const detalle = await getOSet(
+      `tmdb:movie:${movieId}`,
+      () => MovieService.getMovieDetails(movieId),
       TTL_DETALLE
     )
 
-    if (!resolvedId) {
-      return res.status(404).json({ message: "Referencia no encontrada." })
+    if (!detalle) {
+      console.warn(`[MoviesController] TMDB no devolvió datos para ID: ${movieId}`)
+      return res.status(404).json({ message: "La película no existe en TMDB" })
     }
-    movieId = resolvedId as number
+
+    res.status(200).json(detalle)
+  } catch (error: any) {
+    console.error(`[MoviesController] ERROR CRÍTICO para ID ${movieId}:`, error)
+    // Propagar al manejador global pero con contexto
+    throw error
   }
-
-  // 2. Obtención de metadatos expandidos
-  const detalle = await getOSet(
-    `tmdb:movie:${movieId}`,
-    () => MovieService.getMovieDetails(movieId),
-    TTL_DETALLE
-  )
-
-  res.json(detalle)
 }
 
 /**

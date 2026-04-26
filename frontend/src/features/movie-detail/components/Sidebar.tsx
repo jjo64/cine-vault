@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { ExternalLink } from "lucide-react";
+import { generatePersonSlug } from "../../../utils/slugUtils";
 import { C, SERIF, SANS } from "../constants";
 import type { MovieDetailApi } from "../../../services/movieDetailServices";
 import type { SimilarFilm } from "../types";
@@ -105,7 +106,7 @@ export function Sidebar({ movie, similar, directorObj }: SidebarProps) {
               </span>
               {directorObj ? (
                 <Link
-                  to={`/person/${directorObj.id}`}
+                  to={`/person/${generatePersonSlug(directorObj.id, directorObj.name)}`}
                   className="md-sidebar-value"
                   style={{
                     fontFamily: SERIF,

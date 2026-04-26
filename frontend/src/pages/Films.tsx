@@ -7,7 +7,8 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence } from "framer-motion";
+// import { generatePersonSlug } from "../utils/slugUtils";
 import {
   Search,
   X,
