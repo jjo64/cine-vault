@@ -48,6 +48,11 @@ const BUTTONS = [
   },
 ];
 
+const mapOnboardingType = (type: string) => {
+  if (type === "love" || type === "like") return "like_onboarding";
+  return "skip_onboarding";
+};
+
 export default function OnboardingModal({
   onComplete,
 }: {
@@ -84,7 +89,8 @@ export default function OnboardingModal({
     const nextStep = step + 1;
 
     try {
-      await sendOnboardingInteraction(movie.id, type, { step });
+      const interactionType = mapOnboardingType(type);
+      await sendOnboardingInteraction(movie.id, interactionType, { step });
 
       let newSeed = lastSeedId;
       if (["like", "love"].includes(type)) {

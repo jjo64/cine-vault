@@ -691,23 +691,71 @@ export const saveExplicitInteraction = async (
   type: string, // 'like_onboarding', 'skip_onboarding', 'tonight_accept', 'tonight_reject'
   metadata: any = {}
 ) => {
-  // 1. Registrar interacción
-  const interaction = await prisma.explicit_interactions.create({
-    data: {
+  const normalizedMovieId = Number(movieId)
+  if (!Number.isFinite(normalizedMovieId)) {
+    throw new Error("movieId invalido")
+  }
+
+  // Compatibilidad con clientes legacy del onboarding.
+  const normalizeType = (raw: string) => {
+    switch ((raw || "").toLowerCase()) {
+      case "love":
+      case "like":
+      case "like_onboarding":
+        return "like_onboarding"
+      case "tonight_accept":
+        return "tonight_accept"
+      case "hate":
+      case "dislike":
+      case "neutral":
+      case "skip":
+      case "skip_onboarding":
+        return "skip_onboarding"
+      case "tonight_reject":
+        return "tonight_reject"
+      default:
+        return "skip_onboarding"
+    }
+  }
+
+  const normalizedType = normalizeType(type)
+
+  // 1. Registrar interacción. Si falla por drift de esquema en producción,
+  // no bloqueamos la experiencia del usuario.
+  let interaction: any
+  try {
+    interaction = await prisma.explicit_interactions.create({
+      data: {
+        user_id: userId,
+        movie_id: normalizedMovieId,
+        interaction_type: normalizedType,
+        metadata,
+      },
+    })
+  } catch (error) {
+    console.error("Error guardando explicit_interaction:", error)
+    interaction = {
+      id: 0,
       user_id: userId,
-      movie_id: movieId,
-      interaction_type: type,
-      metadata: JSON.stringify(metadata),
-    },
-  })
+      movie_id: normalizedMovieId,
+      interaction_type: normalizedType,
+      metadata,
+      created_at: new Date().toISOString(),
+      degraded: true,
+    }
+  }
 
   // 2. Actualizar taste profile según el tipo de interacción
-  const isPositive = ["like_onboarding", "tonight_accept"].includes(type)
-  const isNegative = ["tonight_reject"].includes(type)
+  const isPositive = ["like_onboarding", "tonight_accept"].includes(
+    normalizedType
+  )
+  const isNegative = ["skip_onboarding", "tonight_reject"].includes(
+    normalizedType
+  )
 
   if (isPositive || isNegative) {
     try {
-      const movieData = (await consultarTMDB(`movie/${movieId}`)) as any
+      const movieData = (await consultarTMDB(`movie/${normalizedMovieId}`)) as any
       const genres: { id: number; name: string }[] = movieData.genres ?? []
 
       const profile = await prisma.user_taste_profiles.findUnique({ where: { user_id: userId } })
@@ -720,9 +768,13 @@ export const saveExplicitInteraction = async (
       for (const g of genres) {
         if (isPositive) {
           // Boost positivo
-          vector[g.name] = Math.min(3.0, (vector[g.name] ?? 0) + (type === "tonight_accept" ? 0.2 : 0.1))
+          vector[g.name] = Math.min(
+            3.0,
+            (vector[g.name] ?? 0) +
+              (normalizedType === "tonight_accept" ? 0.2 : 0.1)
+          )
         } else {
-          // Penalización negativa (tonight_reject)
+          // Penalización negativa (skip_onboarding)
           vector[g.name] = Math.max(-1.0, (vector[g.name] ?? 0) - 0.15)
         }
       }
