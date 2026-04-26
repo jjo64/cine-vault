@@ -200,6 +200,11 @@ export async function authorizedJson<T>(
 }
 
 export async function getCurrentUser(): Promise<AuthUser> {
+  const token = getStoredAccessToken();
+  if (!token) {
+    throw new Error("Usuario no autorizado");
+  }
+
   // Important: user presence checks should not silently refresh a logged-out session.
   const res = await authorizedFetch(
     "/api/auth/verify",

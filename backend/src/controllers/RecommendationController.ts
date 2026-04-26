@@ -88,11 +88,32 @@ export const checkStatus = async (req: Request, res: Response) => {
   console.log(`[RecommendationController] checkStatus para usuario ${viewerId}`)
   
   try {
-    const profile = await prisma.user_taste_profiles.findUnique({
-      where: { user_id: viewerId },
-    })
+    const [profile, user, diaryCount, watchlistCount, vaultCount, reviewCount, listCount] =
+      await Promise.all([
+        prisma.user_taste_profiles.findUnique({ where: { user_id: viewerId } }),
+        prisma.users.findUnique({
+          where: { id: viewerId },
+          select: { created_at: true },
+        }),
+        prisma.diary_entries.count({ where: { user_id: viewerId } }),
+        prisma.watchlist.count({ where: { user_id: viewerId } }),
+        prisma.vault.count({ where: { user_id: viewerId } }),
+        prisma.reviews.count({ where: { user_id: viewerId } }),
+        prisma.user_lists.count({ where: { user_id: viewerId } }),
+      ])
 
-    res.json({ needs_onboarding: !profile })
+    const footprintCount =
+      diaryCount + watchlistCount + vaultCount + reviewCount + listCount
+
+    const createdAt = user?.created_at
+    const accountAgeHours = createdAt
+      ? (Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60)
+      : Number.POSITIVE_INFINITY
+
+    // Solo mostrar onboarding a cuentas nuevas, sin perfil y sin huella previa.
+    const needsOnboarding = !profile && footprintCount === 0 && accountAgeHours <= 72
+
+    res.json({ needs_onboarding: needsOnboarding })
   } catch (error) {
     console.error(`[RecommendationController] Error en checkStatus para usuario ${viewerId}:`, error)
     throw error
@@ -123,8 +144,9 @@ export const getOnboarding = async (req: Request, res: Response) => {
 export const postInteraction = async (req: Request, res: Response) => {
   const viewerId = req.user!.user_id
   const { movieId, type, metadata } = req.body
+  const normalizedMovieId = Number(movieId)
 
-  if (!movieId || !type) {
+  if (!Number.isFinite(normalizedMovieId) || !type) {
     return res.status(400).json({ error: "movieId y type son requeridos" })
   }
 
@@ -132,7 +154,7 @@ export const postInteraction = async (req: Request, res: Response) => {
 
   const result = await RecommendationService.saveExplicitInteraction(
     viewerId,
-    movieId,
+    normalizedMovieId,
     type,
     metadata
   )

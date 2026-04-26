@@ -13,6 +13,7 @@ import helmet from "helmet"
 import cookieParser from "cookie-parser"
 import compression from "compression"
 import path from "path"
+import fs from "fs"
 import { fileURLToPath } from "url"
 import cron from "node-cron"
 import { createServer } from "http"
@@ -226,7 +227,11 @@ app.use("/api/persons", rutasPersons)
  * 7. Servido de Archivos Estáticos y SPA Catch-all
  * Se registra al final para que las rutas de la API tengan prioridad.
  */
-if (process.env.NODE_ENV === "production" || process.env.SERVE_STATIC === "true") {
+const shouldServeStatic =
+  process.env.NODE_ENV === "production" || process.env.SERVE_STATIC === "true"
+const hasFrontendDist = fs.existsSync(path.join(publicPath, "index.html"))
+
+if (shouldServeStatic && hasFrontendDist) {
   app.use(
     express.static(publicPath, {
       maxAge: "1y",
@@ -242,6 +247,10 @@ if (process.env.NODE_ENV === "production" || process.env.SERVE_STATIC === "true"
     }
     res.sendFile(path.join(publicPath, "index.html"))
   })
+} else if (shouldServeStatic && !hasFrontendDist) {
+  console.warn(
+    `[Static] Se omitio el servido SPA porque no existe index.html en ${publicPath}`
+  )
 }
 
 /**

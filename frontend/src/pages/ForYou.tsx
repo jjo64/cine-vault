@@ -2045,15 +2045,8 @@ export function ForYou() {
         setProfile(prof);
         setWatchlist(wl);
 
-        // A user is considered "New" if:
-        // 1. Explicitly needs onboarding (no taste profile)
-        // 2. OR has absolutely no cinematic footprint (count sum is 0)
-        const interactionCount =
-          (prof._count?.reviews || 0) +
-          (prof._count?.diary_entries || 0) +
-          (prof._count?.watchlist || 0);
-
-        setIsNewUser(onboarding.needs_onboarding || interactionCount === 0);
+        // El backend decide de forma centralizada si debe mostrarse onboarding.
+        setIsNewUser(onboarding.needs_onboarding);
       }
 
       const tonight = await fetchTonightMovie().catch(() => null);
