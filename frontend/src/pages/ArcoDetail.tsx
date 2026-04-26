@@ -247,7 +247,7 @@ const mapFilms = (detail: ApiArcoDetail) =>
 
 export function ArcoDetail() {
   const { id } = useParams<{ id: string }>();
-  const arcoId = Number(id);
+  const arcoId = id ? parseInt(id.split("-")[0], 10) : NaN;
 
   const [detail, setDetail] = useState<ApiArcoDetail | null>(null);
   const [films, setFilms] = useState<ArcoFilm[]>([]);

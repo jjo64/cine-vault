@@ -123,6 +123,14 @@ export class ListsRepository {
     const lists = await prisma.user_lists.findMany({
       where: { user_id: userId },
       include: {
+        users: {
+          select: {
+            id: true,
+            username: true,
+            avatar_url: true,
+            is_verified: true,
+          },
+        },
         items: {
           take: 4,
           include: { movie_ref: { select: { tmdb_id: true } } },
@@ -150,6 +158,12 @@ export class ListsRepository {
       updated_at: list.updated_at,
       items_count: list._count.items,
       posters: [],
+      owner: {
+        id: list.users.id,
+        username: list.users.username,
+        avatar_url: list.users.avatar_url,
+        is_verified: list.users.is_verified,
+      },
     }))
 
     // Hydrate posters

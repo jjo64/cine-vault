@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { generatePersonSlug } from "../../../utils/slugUtils";
 import { C, SANS, SERIF, TMDB_BASE, SIZES } from "../constants";
 import { SectionLabel } from "./SectionLabel";
 import { Img } from "./Img";
@@ -110,7 +111,7 @@ export function CastCrew({ cast, crew }: CastCrewProps) {
             transition={{ duration: 0.25 }}
           >
             <Link
-              to={`/person/${person.id}`}
+              to={`/person/${generatePersonSlug(person.id, person.name)}`}
               style={{ textDecoration: "none" }}
             >
               <motion.div
@@ -151,7 +152,7 @@ export function CastCrew({ cast, crew }: CastCrewProps) {
               </motion.div>
             </Link>
             <Link
-              to={`/person/${person.id}`}
+              to={`/person/${generatePersonSlug(person.id, person.name)}`}
               style={{
                 fontSize: 12,
                 fontFamily: SANS,

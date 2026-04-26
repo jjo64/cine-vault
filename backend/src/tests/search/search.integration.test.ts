@@ -20,6 +20,12 @@ vi.mock("../../helpers/fetchTMDB.js", () => ({
 
 vi.mock("../../config/redis.js", () => ({
   getOSet: getOSetMock,
+  redis: {
+    get: vi.fn(),
+    setex: vi.fn(),
+    del: vi.fn(),
+    keys: vi.fn(),
+  },
 }))
 
 vi.mock("../../services/security.services.js", () => ({

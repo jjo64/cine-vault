@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { generatePersonSlug } from "../../../../utils/slugUtils";
 import { motion, useScroll, useTransform } from "framer-motion";
 import {
   Bookmark,
@@ -333,7 +334,7 @@ export function Hero({
               <span>{directorLabel}</span>{" "}
               {director ? (
                 <Link
-                  to={`/person/${director.id}`}
+                  to={`/person/${generatePersonSlug(director.id, director.name)}`}
                   style={{ color: "#D4AF7A", textDecoration: "none" }}
                 >
                   {director.name}

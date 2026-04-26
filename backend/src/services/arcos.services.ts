@@ -224,7 +224,8 @@ export const obtenerArcosService = async () => {
   try {
     const rows = await arcosRepository.listPublicArcos()
     return rows.map(mapArcoSummary)
-  } catch {
+  } catch (error) {
+    console.error("Error en obtenerArcosService:", error);
     return ARCOS_FALLBACK
   }
 }

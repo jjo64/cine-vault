@@ -14,7 +14,8 @@ import {
  * Obtiene la información biográfica detallada de una persona.
  */
 export const personInformation = async (req: Request, res: Response) => {
-  const personId = Number(req.params.id)
+  const idOrSlug = req.params.id as string
+  const personId = parseInt(idOrSlug.split("-")[0])
   const datos = await obtenerPersonaService(personId)
   res.status(200).json(datos)
 }
@@ -26,7 +27,8 @@ export const personInformationCombined = async (
   req: Request,
   res: Response
 ) => {
-  const personId = Number(req.params.id)
+  const idOrSlug = req.params.id as string
+  const personId = parseInt(idOrSlug.split("-")[0])
   const datos = await obtenerCreditosCombinadosPersonaService(personId)
   res.status(200).json(datos)
 }

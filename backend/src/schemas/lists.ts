@@ -48,17 +48,31 @@ export const addMovieToListSchema = z.object({
 /** Esquema para la consulta paginada de listas públicas en la plataforma */
 export const listPublicListsQuerySchema = z.object({
   page: z.coerce.number().int().positive().optional().default(1),
-  limit: z.coerce.number().int().min(1).max(30).optional().default(12),
+  limit: z.coerce.number().int().min(1).max(50).optional().default(12),
 })
 
 /** Esquema para identificar una lista específica mediante su ID en la URL */
 export const listIdParamsSchema = z.object({
-  id: z.coerce.number().int().positive("ID de lista inválido"),
+  id: z.preprocess((val) => {
+    if (typeof val === "string") {
+      const parts = val.split("-");
+      const num = parseInt(parts[0], 10);
+      return isNaN(num) ? val : num;
+    }
+    return val;
+  }, z.coerce.number().int().positive("ID de lista inválido")),
 })
 
 /** Esquema compuesto para identificar un elemento específico (película) dentro de una lista */
 export const listItemParamsSchema = z.object({
-  id: z.coerce.number().int().positive("ID de lista inválido"),
+  id: z.preprocess((val) => {
+    if (typeof val === "string") {
+      const parts = val.split("-");
+      const num = parseInt(parts[0], 10);
+      return isNaN(num) ? val : num;
+    }
+    return val;
+  }, z.coerce.number().int().positive("ID de lista inválido")),
   movie_id: z.coerce
     .number()
     .int()
