@@ -88,7 +88,10 @@ const curatedFallbackDirectors = [
   { name: "Chantal Akerman", reason: "Cine de observación y riesgo formal" },
   { name: "Andrei Tarkovsky", reason: "Poesía visual y tempo contemplativo" },
   { name: "Agnès Varda", reason: "Mirada íntima y documental sensible" },
-  { name: "Apichatpong Weerasethakul", reason: "Narrativas hipnóticas y sensoriales" },
+  {
+    name: "Apichatpong Weerasethakul",
+    reason: "Narrativas hipnóticas y sensoriales",
+  },
 ]
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -184,19 +187,25 @@ export const getPersonalizedFeed = async (
       where: { user_id: viewerId },
       orderBy: { added_at: "desc" },
       take: 12,
-      include: { movies_ref: { select: { id: true, tmdb_id: true, media_type: true } } },
+      include: {
+        movies_ref: { select: { id: true, tmdb_id: true, media_type: true } },
+      },
     }),
     prisma.diary_entries.findMany({
       where: { user_id: viewerId },
       orderBy: { watched_date: "desc" },
       take: 12,
-      include: { movies_ref: { select: { id: true, tmdb_id: true, media_type: true } } },
+      include: {
+        movies_ref: { select: { id: true, tmdb_id: true, media_type: true } },
+      },
     }),
     prisma.reviews.findMany({
       where: { user_id: viewerId },
       orderBy: { created_at: "desc" },
       take: 12,
-      include: { movies_ref: { select: { id: true, tmdb_id: true, media_type: true } } },
+      include: {
+        movies_ref: { select: { id: true, tmdb_id: true, media_type: true } },
+      },
     }),
   ])
 
