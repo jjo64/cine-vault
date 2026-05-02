@@ -31,7 +31,8 @@ jobs:
       - name: Build de la imagen (Local)
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ./backend
+          file: ./backend/Dockerfile
           push: false # NO la subimos todavía, primero queremos ver si es segura.
           load: true  # La deja lista en la PC de GitHub para el siguiente paso.
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test
