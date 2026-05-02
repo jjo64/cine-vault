@@ -23,7 +23,9 @@ RUN apk add --no-cache tini
 WORKDIR /app
 
 COPY --chown=node:node --from=builder /app/package*.json ./
-RUN npm install --omit=dev
+COPY --chown=node:node --from=builder /app/prisma ./prisma
+RUN npm install --omit=dev --ignore-scripts
+RUN npx prisma generate
 COPY --chown=node:node --from=builder /app/dist ./dist
 USER node
 
