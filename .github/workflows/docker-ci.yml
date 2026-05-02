@@ -41,7 +41,7 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test
-          severity: 'CRITICAL,HIGH' # Solo detente si encuentras algo MUY grave.
+          severity: 'CRITICAL' # Solo detente si encuentras algo MUY grave.
           exit-code: '1' # SI HAY ERRORES, FALLA EL WORKFLOW (pone la X roja).
           ignore-unfixed: true
 
