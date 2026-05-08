@@ -149,12 +149,14 @@ src/features/<nombre-del-feature>/
 ### Reglas de estructura
 
 **Decidir si `store/` es necesario:**
-- Hay server state que 2+ componentes necesitan leer → **crear store**
-- Todo el estado lo usa un solo componente → **no crear store, usar useState + hook**
+- Hay server state que 2+ componentes en distintas rutas/features necesitan leer → **crear store**
+- Todo el estado lo usa un solo componente o sub-componentes de la misma vista → **no crear store, usar useState + hook en el feature**
+- No crear stores para datos efímeros de una sola página.
 
 **Decidir si `shared/` es necesario:**
-- Hay helpers inline que ya se usan en otros features (`Grain`, `SafeImg`) → mover a `src/components/shared/`
-- Hay helpers que solo usa este módulo → `src/features/<nombre>/components/shared/`
+- Hay componentes inline que se repiten en múltiples páginas (`Navbar`, `Grain`, `SafeImg`, `Img`) → mover a **`src/components/shared/`** o **`src/components/layout/`**.
+- Hay componentes que solo usa este feature → `src/features/<nombre>/components/shared/`.
+- No duplicar componentes globales dentro de las carpetas de feature.
 
 **Decidir si `constants.ts` es necesario:**
 - El archivo tiene la paleta `C{}` inline → **siempre crear constants.ts**

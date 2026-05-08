@@ -266,7 +266,8 @@ Al revisar el código de un refactor, rechazar si:
 | Importar desde `../../features/otro-feature/` | Viola el aislamiento feature-based |
 | `console.log` sin eliminar | Código de debug en producción |
 | Componente +200 líneas sin justificación | Necesita otra ronda de descomposición |
-| Server state en `useState` local cuando hay store | Usar `useHomeStore` o el store del feature |
-| Prop drilling de datos de API más de 1 nivel | Los componentes deben leer del store directamente |
+| Server state en `useState` local cuando hay store | Usar el store del feature si los datos se comparten; si no, `useState` en hook es aceptable |
+| Prop drilling de datos de API más de 1 nivel | Los componentes deben leer del store (si existe) o usar composición |
 | Store con lógica de fetch dentro | El store solo tiene estado; el fetch va en el hook `useXData` |
+| Duplicar componentes globales en cada feature | Mover a `src/components/shared/` |
 | Mutación directa del estado del store | Usar los actions del store (`setData`, `setReviews`, etc.) |
