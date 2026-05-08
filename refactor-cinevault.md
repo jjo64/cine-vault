@@ -577,5 +577,8 @@ SANS = "'Syne', sans-serif"            → var(--cv-font-sans)
 ### Lecciones de la Fase 2 (HomeLogged)
 - **VerbatimModuleSyntax**: Obligatorio usar `import type` para todos los tipos/interfaces. `tsc` fallará el build si no se cumple.
 - **Orquestación de Servicios**: En componentes con carga masiva, consolidar en un solo `useData` hook usando `Promise.allSettled`.
+- **Verificación de Endpoints**: SIEMPRE verificar las rutas reales en `backend/src/routes` antes de implementarlas en el frontend. No asumir que los nombres de las funciones coinciden con los paths.
+- **Estructuras de Respuesta**: Validar si el backend devuelve un array directo o un objeto con `items`/`diary`. Un error común es intentar hacer `.slice()` o `.map()` sobre un objeto de paginación.
+- **Extracción Robusta**: Al consumir servicios de recomendación complejos, verificar si el objeto deseado está anidado (ej. `res.value.media`).
 - **Descomposición por Zonas**: Para componentes de >1000 líneas, usar el patrón de "Zonas" (Carpeta `zones/` dentro de `components/`) para aislar la lógica visual.
 - **Validación Final**: Siempre ejecutar `npm run build` en el frontend antes de dar por terminado un refactor. `tsc --noEmit` a veces no captura todo si la configuración de versiones difiere entre `npx` y local.
