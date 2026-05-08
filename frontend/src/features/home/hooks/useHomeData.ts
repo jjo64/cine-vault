@@ -42,98 +42,89 @@ export const useHomeData = (username: string) => {
           vaultRes, 
           listsRes, 
           publicListsRes, 
-          followingRes, 
+          activityRes, 
           directorsRes, 
           arcosRes, 
-          mentirasRes
+          mentirasRes,
+          onboardingRes,
+          tonightRes,
+          forYouRes
         ] = await Promise.allSettled([
-          authorizedJson<DiaryEntry[]>("/api/diary"),
+          authorizedJson<any>("/api/diary"),
           authorizedJson<WatchlistEntry[]>("/api/watchlist"),
           authorizedJson<ReviewEntry[]>("/api/reviews"),
           authorizedJson<VaultEntry[]>("/api/vault"),
           authorizedJson<UserListSummary[]>("/api/lists"),
-          authorizedJson<any[]>("/api/lists/public"),
-          authorizedJson<any>("/api/social/following-activity"),
-          authorizedJson<any[]>("/api/films/directors-discovery"),
+          authorizedJson<any>("/api/lists/public"),
+          authorizedJson<any>("/api/activity/feed"),
+          authorizedJson<any>("/api/recommendations/directors"),
           authorizedJson<any[]>("/api/arcos"),
           authorizedJson<MentirasRanking>("/api/mentiras/ranking"),
+          authorizedJson<any>("/api/recommendations/onboarding/status"),
+          authorizedJson<any>("/api/recommendations/tonight"),
+          authorizedJson<any>("/api/recommendations/for-you"),
         ]);
 
         if (!isMounted) return;
 
-        if (diaryRes.status === "fulfilled") setDiary((diaryRes.value as any)?.diary || diaryRes.value || []);
-        if (watchlistRes.status === "fulfilled") setWatchlist(watchlistRes.value as WatchlistEntry[] || []);
-        if (reviewsRes.status === "fulfilled") setReviews(reviewsRes.value as ReviewEntry[] || []);
-        if (vaultRes.status === "fulfilled") setVault(vaultRes.value as VaultEntry[] || []);
-        if (listsRes.status === "fulfilled") setLists(listsRes.value as UserListSummary[] || []);
-        if (publicListsRes.status === "fulfilled") setPublicLists(publicListsRes.value as any[] || []);
-        if (directorsRes.status === "fulfilled") setDirectors(directorsRes.value as any[] || []);
-        if (arcosRes.status === "fulfilled") setArcos(arcosRes.value as any[] || []);
-        if (mentirasRes.status === "fulfilled") setMentiras(mentirasRes.value as MentirasRanking || {});
+        // Extract and set core data
+        if (diaryRes.status === "fulfilled") setDiary(diaryRes.value?.diary || []);
+        if (watchlistRes.status === "fulfilled") setWatchlist(watchlistRes.value || []);
+        if (reviewsRes.status === "fulfilled") setReviews(reviewsRes.value || []);
+        if (vaultRes.status === "fulfilled") setVault(vaultRes.value || []);
+        if (listsRes.status === "fulfilled") setLists(listsRes.value || []);
+        if (publicListsRes.status === "fulfilled") setPublicLists(publicListsRes.value?.items || []);
+        if (directorsRes.status === "fulfilled") setDirectors(directorsRes.value?.items || []);
+        if (arcosRes.status === "fulfilled") setArcos(arcosRes.value || []);
+        if (mentirasRes.status === "fulfilled") setMentiras(mentirasRes.value || {});
+        if (onboardingRes.status === "fulfilled") setNeedsOnboarding(onboardingRes.value?.needs_onboarding || false);
+        if (tonightRes.status === "fulfilled" && tonightRes.value) {
+          // tonightRes.value is { id, type, media: { id, title, year, poster_path, ... } }
+          const m = tonightRes.value.media || tonightRes.value;
+          setTonightMovie({
+            title: m.title || m.name || "Sugerencia",
+            posterUrl: toPoster(m.poster_path),
+            backdropUrl: toBackdrop(m.backdrop_path),
+            year: m.year || (m.release_date ? new Date(m.release_date).getFullYear() : null),
+            director: m.director || "CineVault Choice",
+            runtimeLabel: m.runtime ? `${m.runtime} min` : "120 min",
+            genres: m.genres?.map((g: any) => g.name) || ["Drama"],
+            overview: m.overview || m.reason || "",
+          });
+        }
+        if (forYouRes.status === "fulfilled") setForYouMovies(forYouRes.value?.items || []);
 
-        if (followingRes.status === "fulfilled" && followingRes.value) {
-          const val = followingRes.value as any;
-          const acts = val.activity || [];
-          const revs = val.reviews || [];
+        if (activityRes.status === "fulfilled" && activityRes.value) {
+          const items: any[] = activityRes.value.items || [];
+          
+          // ActivityEvents: review_published, diary_entry, vault_added, watchlist_added, review_liked, follow
+          const reviewItems = items.filter(i => i.type === "review_published" || i.review);
+          const activityItems = items.filter(i => i.type !== "review_published");
 
-          setFollowingActivity(acts.map((a: any) => ({
+          setFollowingActivity(activityItems.map((a: any) => ({
             user: a.user?.username || "Usuario",
             username: a.user?.username || "",
             avatar: (a.user?.username || "U")[0].toUpperCase(),
             film: a.movie?.title || "Pelicula",
-            movieId: a.movie_id,
+            movieId: a.movie?.id || a.movie_id,
             tmdbId: a.movie?.tmdb_id,
-            rating: normalizeRating(a.rating),
+            rating: normalizeRating(a.review?.rating || a.rating),
             time: relativeLabel(a.created_at),
             posterUrl: toPoster(a.movie?.poster_path),
           })));
 
-          setFollowingReviews(revs.map((r: any) => ({
-            id: r.id,
+          setFollowingReviews(reviewItems.map((r: any) => ({
+            id: r.review?.id || r.id,
             user: r.user?.username || "Usuario",
             username: r.user?.username || "",
             avatar: (r.user?.username || "U")[0].toUpperCase(),
-            movieId: r.movie_id,
+            movieId: r.movie?.id || r.movie_id,
             tmdbId: r.movie?.tmdb_id,
-            rating: normalizeRating(r.rating),
-            text: r.content || "",
-            likes: r.likes_count || 0,
-            createdAt: r.created_at,
+            rating: normalizeRating(r.review?.rating || r.rating),
+            text: r.review?.content || r.content || "",
+            likes: r.review?.likes_count || r.likes_count || 0,
+            createdAt: r.created_at || r.review?.created_at,
           })));
-        }
-
-        // Onboarding check
-        const diaryData = diaryRes.status === "fulfilled" ? ((diaryRes.value as any)?.diary || diaryRes.value || []) : [];
-        if (diaryRes.status === "fulfilled" && diaryData.length === 0) {
-          setNeedsOnboarding(true);
-        }
-
-        // Tonight/ForYou recommendation logic
-        if (diaryRes.status === "fulfilled" && diaryData.length > 0) {
-          const last = diaryData[0];
-          const lastTmdb = last.tmdb_id || last.movie_info?.tmdb_id;
-          
-          if (lastTmdb) {
-            try {
-              const recs = await authorizedJson<any[]>(`/api/films/${lastTmdb}/recommendations`);
-              if (isMounted && recs && Array.isArray(recs) && recs.length > 0) {
-                setForYouMovies(recs.slice(0, 8));
-                const top = recs[0];
-                setTonightMovie({
-                  title: top.title,
-                  posterUrl: toPoster(top.poster_path),
-                  backdropUrl: toBackdrop(top.backdrop_path),
-                  year: top.release_date ? new Date(top.release_date).getFullYear() : null,
-                  director: "Director Desconocido",
-                  runtimeLabel: "120 min",
-                  genres: ["Drama", "Cine"],
-                  overview: top.overview,
-                });
-              }
-            } catch (err) {
-              console.error("Error fetching recs:", err);
-            }
-          }
         }
       } catch (err: any) {
         if (isMounted) setError(err.message || "Error al cargar datos");

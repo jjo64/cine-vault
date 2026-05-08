@@ -573,3 +573,9 @@ SANS = "'Syne', sans-serif"            → var(--cv-font-sans)
 - `component-refactor-checklist` — checklist de code review
 - `react-composition` — cuando hay boolean props a eliminar
 - `cinevault-context` — identidad de marca y voz de la app
+
+### Lecciones de la Fase 2 (HomeLogged)
+- **VerbatimModuleSyntax**: Obligatorio usar `import type` para todos los tipos/interfaces. `tsc` fallará el build si no se cumple.
+- **Orquestación de Servicios**: En componentes con carga masiva, consolidar en un solo `useData` hook usando `Promise.allSettled`.
+- **Descomposición por Zonas**: Para componentes de >1000 líneas, usar el patrón de "Zonas" (Carpeta `zones/` dentro de `components/`) para aislar la lógica visual.
+- **Validación Final**: Siempre ejecutar `npm run build` en el frontend antes de dar por terminado un refactor. `tsc --noEmit` a veces no captura todo si la configuración de versiones difiere entre `npx` y local.

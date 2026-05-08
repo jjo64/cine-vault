@@ -230,7 +230,8 @@ Usar este template al abrir el Pull Request:
 [Descripción de 2-3 líneas]
 
 ### Archivos creados
-- `src/features/.../hooks/useX.ts` — [qué hace]
+- [x] HomeLogged.tsx -> `src/features/home/`
+hooks/useX.ts` — [qué hace]
 - `src/features/.../components/X.tsx` — [qué hace]
 
 ### Archivos modificados
