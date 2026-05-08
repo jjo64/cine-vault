@@ -1,6 +1,6 @@
 import React from "react";
 import { Flame, Trophy, Star } from "lucide-react";
-import { C, SERIF } from "../../constants";
+import { C, SERIF, SANS } from "../../constants";
 import styles from "../HomeLogged.module.css";
 
 interface GreetingBarProps {

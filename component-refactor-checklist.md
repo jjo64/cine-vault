@@ -277,8 +277,44 @@ Al revisar el código de un refactor, rechazar si:
 
 ### ⚠️ Lecciones Aprendidas Críticas (Update 2026-05-08)
 
+- **Consistencia Visual 1:1**: Siempre mantener una copia exacta del componente original como única fuente de la verdad (SSOT). No inventar ni alterar espaciados, bordes, o iconos/símbolos. Si en el original se usaba un borde dorado o un símbolo en específico (ej. `◈`), debe respetarse estrictamente en la versión refactorizada.
+- **Diferencia entre Archivos Compilados y Terminal Local**: Problemas como errores 500 o fallas de resolución de imports de Vite (`Failed to resolve import`) no siempre se capturan en un `npm run build` o `npx tsc`. Es vital revisar la terminal donde corre el servidor de desarrollo (`npm run dev`) y la consola del navegador para capturar errores de ejecución y de resolución de módulos dinámicos en caliente.
+- **Componentes Compartidos (Shared)**: Al extraer componentes base (como un componente `Img` para pósters y backdrops), revisar siempre todas las rutas relativas (`../../../..`) en los archivos que lo consumen para evitar rutas rotas en el bundler de Vite.
+- **Datos Condicionales de API vs UI Original**: Si el UI original mapeaba un campo específico para mostrar el director (ej. metadatos externos), y el nuevo endpoint no lo provee directamente (ej. usa `reason`), **no** reemplazar la UI original. En su lugar, añadir lógica al hook (ej. `useHomeData`) para enriquecer los datos (hacer fetch adicional o matching) para cumplir con el contrato visual esperado por el diseño original.
 - **Animaciones**: Migrar obligatoriamente de `framer-motion` a `motion/react`.
 - **TS Refs**: Los `Refs` pasados por props **DEBEN** aceptar `null` en su interfaz (ej. `React.RefObject<T | null>`).
 - **TS Props**: Nunca usar `any`. Si un tipo es complejo, definirlo en `types.ts` del feature.
 - **Booleano**: Usar `!!` para props que esperen un booleano si el origen es una expresión o string.
 - **Validación Estricta**: Ejecutar siempre `npx tsc -p tsconfig.app.json --noEmit` antes de finalizar.
+
+---
+
+## Flujo Estándar de Commits y Merge (Español)
+
+Una vez verificada al 100% la refactorización (Visual 1:1, Consola limpia, TypeScript validado), seguimos el siguiente flujo estricto:
+
+1. **Commit en la rama actual (rama de refactor)**:
+   ```bash
+   git add .
+   git commit -m "refactor(home): dividir HomeLoggedPage en zonas y aislar lógica en useHomeData logrando paridad 1:1"
+   ```
+
+2. **Cambiar a la rama de integración (ej. `desarrollo`)**:
+   ```bash
+   git checkout desarrollo
+   ```
+
+3. **Traer los últimos cambios por seguridad (opcional pero recomendado)**:
+   ```bash
+   git pull origin desarrollo
+   ```
+
+4. **Fusionar (Merge) la rama de refactor hacia `desarrollo`**:
+   ```bash
+   git merge refactor/<nombre-rama>
+   ```
+
+5. **Subir los cambios (Push)**:
+   ```bash
+   git push origin desarrollo
+   ```

@@ -5,12 +5,10 @@ import { Check, Trophy, ArrowRight } from "lucide-react";
 import { C, SERIF, SANS } from "../../../constants";
 import { movieHref } from "../../../utils";
 import { SectionLabel } from "../../shared/SectionLabel";
-import { SafeImg } from "../../shared/SafeImg";
-import type { MovieMeta } from "../../../types";
-import styles from "../../HomeLogged.module.css";
+import { Img } from "../../../../../components/shared/Img";
 
 interface TonightFilmProps {
-  tonightFilm: MovieMeta | null;
+  tonightFilm: any | null;
   watchedTonight: boolean;
   setWatchedTonight: React.Dispatch<React.SetStateAction<boolean>>;
 }
@@ -45,9 +43,6 @@ export const TonightFilm: React.FC<TonightFilmProps> = ({
     );
   }
 
-  // Points calculation (mocked as in original)
-  const points = 50; 
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -68,7 +63,7 @@ export const TonightFilm: React.FC<TonightFilmProps> = ({
         }}
       >
         <div style={{ position: "absolute", inset: 0 }}>
-          <SafeImg
+          <Img
             src={tonightFilm.backdropUrl}
             alt=""
             style={{
@@ -87,16 +82,54 @@ export const TonightFilm: React.FC<TonightFilmProps> = ({
                 "linear-gradient(to right, rgba(8,8,8,0.96) 34%, rgba(8,8,8,0.76) 63%, rgba(8,8,8,0.45) 86%, rgba(8,8,8,0.24) 100%)",
             }}
           />
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background:
+                "radial-gradient(circle at 0% 42%, rgba(212,175,122,0.18) 0%, rgba(212,175,122,0.05) 20%, transparent 44%)",
+            }}
+          />
         </div>
-        
-        <div className={styles.tonightInner}>
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: 340,
+            height: "100%",
+            background: `linear-gradient(90deg, rgba(212,175,122,0.16), rgba(212,175,122,0.02), transparent)`,
+            pointerEvents: "none",
+          }}
+        />
+        <div
+          style={{
+            position: "relative",
+            zIndex: 1,
+            display: "grid",
+            gridTemplateColumns: "135px 1fr 60px",
+            gap: 40,
+            padding: "36px 36px",
+            alignItems: "start",
+          }}
+        >
           <Link
-            to={movieHref(0, 0, tonightFilm.title)} // ID logic needs sync
-            className={styles.tonightPoster}
+            to={movieHref(
+              tonightFilm.movieId,
+              tonightFilm.tmdbId,
+              tonightFilm.title,
+            )}
             style={{ textDecoration: "none" }}
           >
-            <div style={{ width: "100%", height: "100%" }}>
-              <SafeImg
+            <div
+              style={{
+                aspectRatio: "2/3",
+                borderRadius: 1,
+                overflow: "hidden",
+                border: `1.5px solid ${C.border}`,
+              }}
+            >
+              <Img
                 src={tonightFilm.posterUrl}
                 alt={tonightFilm.title}
                 style={{
@@ -123,7 +156,11 @@ export const TonightFilm: React.FC<TonightFilmProps> = ({
               Recomendacion personal
             </div>
             <Link
-              to={movieHref(0, 0, tonightFilm.title)}
+              to={movieHref(
+                tonightFilm.movieId,
+                tonightFilm.tmdbId,
+                tonightFilm.title,
+              )}
               style={{ textDecoration: "none" }}
             >
               <div
@@ -162,7 +199,7 @@ export const TonightFilm: React.FC<TonightFilmProps> = ({
                 lineHeight: 1.1,
               }}
             >
-              {tonightFilm.year || "N/D"} · {tonightFilm.runtimeLabel}
+              {tonightFilm.year || "N/D"} · {tonightFilm.duration}
             </div>
             <p
               style={{
@@ -180,10 +217,10 @@ export const TonightFilm: React.FC<TonightFilmProps> = ({
                 overflow: "hidden",
               }}
             >
-              {tonightFilm.overview}
+              {tonightFilm.synopsis}
             </p>
             <div style={{ display: "flex", gap: 6, marginBottom: 18 }}>
-              {tonightFilm.genres.map((g) => (
+              {tonightFilm.genres.map((g: string) => (
                 <span
                   key={g}
                   style={{
@@ -191,8 +228,9 @@ export const TonightFilm: React.FC<TonightFilmProps> = ({
                     letterSpacing: "0.12em",
                     textTransform: "uppercase",
                     color: C.textSoft,
+                    background: "rgba(255,255,255,0.03)",
                     border: `1px solid ${C.border}`,
-                    padding: "3px 9px",
+                    padding: "4px 10px",
                     fontFamily: SANS,
                   }}
                 >
@@ -200,12 +238,19 @@ export const TonightFilm: React.FC<TonightFilmProps> = ({
                 </span>
               ))}
             </div>
-            <div className={styles.tonightMetaRow}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 20,
+                flexWrap: "wrap",
+              }}
+            >
               <button
                 onClick={() => setWatchedTonight((v) => !v)}
                 aria-pressed={watchedTonight}
                 style={{
-                  padding: "10px 24px",
+                  padding: "12px 28px",
                   background: watchedTonight ? C.accentDim : C.accent,
                   color: C.bg,
                   border: "none",
@@ -232,23 +277,28 @@ export const TonightFilm: React.FC<TonightFilmProps> = ({
                   display: "flex",
                   alignItems: "center",
                   gap: 6,
-                  color: C.gold,
+                  color: C.accent,
                   fontFamily: SANS,
                   fontSize: 11,
                 }}
               >
-                <Trophy size={12} fill={C.gold} color={C.gold} /> +
-                {points} pts esta noche
+                <Trophy size={12} fill={C.accent} color={C.accent} /> +
+                {tonightFilm.points} pts esta noche
               </div>
             </div>
           </div>
           <Link
-            to={movieHref(0, 0, tonightFilm.title)}
-            className={styles.tonightActions}
+            to={movieHref(
+              tonightFilm.movieId,
+              tonightFilm.tmdbId,
+              tonightFilm.title,
+            )}
             style={{
               textDecoration: "none",
               flexShrink: 0,
               alignSelf: "center",
+              display: "flex",
+              justifyContent: "flex-end",
             }}
           >
             <div

@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
-import { C, SERIF, SANS } from "../../constants";
+import { ChevronRight } from "lucide-react";
+import { C, SANS } from "../../constants";
 
 interface SectionLabelProps {
   children: React.ReactNode;
@@ -9,50 +9,57 @@ interface SectionLabelProps {
   linkHref?: string;
 }
 
-export const SectionLabel: React.FC<SectionLabelProps> = ({ 
-  children, 
-  link, 
-  linkHref 
+export const SectionLabel: React.FC<SectionLabelProps> = ({
+  children,
+  link,
+  linkHref,
 }) => {
   return (
     <div
       style={{
         display: "flex",
         alignItems: "center",
-        justifyContent: "space-between",
-        marginBottom: 24,
+        gap: 14,
+        marginBottom: 20,
       }}
     >
-      <h2
+      <div
         style={{
-          fontFamily: SERIF,
-          fontSize: "clamp(20px, 2.2vw, 24px)",
-          fontWeight: 400,
-          color: C.text,
-          margin: 0,
-          letterSpacing: "-0.01em",
+          fontSize: 10,
+          letterSpacing: "0.28em",
+          textTransform: "uppercase",
+          color: C.accent,
+          fontFamily: SANS,
         }}
       >
         {children}
-      </h2>
-      {link && linkHref && (
+      </div>
+      <div
+        style={{
+          flex: 1,
+          height: 1,
+          background: `linear-gradient(to right, ${C.border}, transparent)`,
+        }}
+      />
+      {link ? (
         <Link
-          to={linkHref}
+          to={linkHref || "#"}
           style={{
-            fontFamily: SANS,
             fontSize: 10,
-            letterSpacing: "0.18em",
+            letterSpacing: "0.16em",
             textTransform: "uppercase",
-            color: C.accent,
+            color: C.textSoft,
             textDecoration: "none",
+            fontFamily: SANS,
             display: "flex",
             alignItems: "center",
-            gap: 6,
+            gap: 5,
+            flexShrink: 0,
           }}
         >
-          {link} <ArrowRight size={10} />
+          {link} <ChevronRight size={11} />
         </Link>
-      )}
+      ) : null}
     </div>
   );
 };

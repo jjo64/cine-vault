@@ -4,39 +4,39 @@ export const C = {
   bg: "#080808",
   surface: "#0D0D0D",
   elevated: "#121212",
-  accent: "#D4AF37", // Oro CineVault
-  accentDim: "rgba(212, 175, 55, 0.15)",
-  gold: "#FFD700",
-  text: "#FFFFFF",
-  textSoft: "#A0A0A0",
-  textMuted: "#666666",
+  accent: "#d4af7a", // Oro CineVault más sobrio
+  accentDim: "rgba(212, 175, 122, 0.12)",
+  gold: "#c8a96e",
+  text: "#e2e2e2",
+  textSoft: "#8a8a8a",
+  textMuted: "#6e6e6e",
   border: "rgba(255, 255, 255, 0.08)",
   shadow: "0 8px 32px rgba(0,0,0,0.4)",
 };
 
-export const SERIF = "'Playfair Display', serif";
-export const SANS = "'Inter', sans-serif";
+export const SERIF = "'Cormorant Garamond', serif";
+export const SANS = "'Syne', sans-serif";
 
 export const ZONES: Zone[] = [
   {
     id: "entrada",
-    symbol: "✧",
+    symbol: "◈",
     name: "La Entrada",
-    subtitle: "Feed & Descubrimiento",
+    subtitle: "DESCUBRIMIENTO · RETO NOCTURNO · FEED",
     desc: "Tus recomendaciones personalizadas y actividad reciente de tus seguidos.",
   },
   {
     id: "sala",
-    symbol: "◈",
-    name: "La Sala",
-    subtitle: "Mi Colección",
+    symbol: "◫",
+    name: "Tu Sala",
+    subtitle: "VAULT · DIARIO · PROGRESO",
     desc: "Tu Vault personal, diario de visionado y estadísticas de la semana.",
   },
   {
     id: "vitrina",
-    symbol: "❖",
+    symbol: "◳",
     name: "La Vitrina",
-    subtitle: "Curaduría & Comunidad",
+    subtitle: "BUSCAR · DIRECTORES · LISTAS",
     desc: "Arcos editoriales, listas públicas y rankings de la comunidad.",
   },
 ];

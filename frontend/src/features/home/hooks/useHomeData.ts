@@ -6,7 +6,7 @@ import type {
   MovieMeta, FollowingActivityItem, FollowingReviewItem 
 } from "../types";
 import { 
-  toPoster, toBackdrop, normalizeRating, relativeLabel 
+  toPoster, normalizeRating, relativeLabel 
 } from "../utils";
 
 export const useHomeData = (username: string) => {
@@ -79,20 +79,60 @@ export const useHomeData = (username: string) => {
         if (mentirasRes.status === "fulfilled") setMentiras(mentirasRes.value || {});
         if (onboardingRes.status === "fulfilled") setNeedsOnboarding(onboardingRes.value?.needs_onboarding || false);
         if (tonightRes.status === "fulfilled" && tonightRes.value) {
-          // tonightRes.value is { id, type, media: { id, title, year, poster_path, ... } }
           const m = tonightRes.value.media || tonightRes.value;
           setTonightMovie({
+            movieId: m.id,
+            tmdbId: m.id,
             title: m.title || m.name || "Sugerencia",
             posterUrl: toPoster(m.poster_path),
-            backdropUrl: toBackdrop(m.backdrop_path),
+            backdropUrl: m.backdrop_path 
+              ? `https://image.tmdb.org/t/p/w1280${m.backdrop_path}` 
+              : `https://image.tmdb.org/t/p/w1280${m.poster_path}`,
             year: m.year || (m.release_date ? new Date(m.release_date).getFullYear() : null),
-            director: m.director || "CineVault Choice",
-            runtimeLabel: m.runtime ? `${m.runtime} min` : "120 min",
-            genres: m.genres?.map((g: any) => g.name) || ["Drama"],
-            overview: m.overview || m.reason || "",
+            director: "CineVault Engine",
+            duration: "Calculada",
+            genres: m.genres?.map((g: any) => g.name) || ["Esta noche", "Descubrimiento"],
+            synopsis: m.overview || m.reason || "Recomendación especial calculada para ti esta noche.",
+            points: 40,
           });
         }
-        if (forYouRes.status === "fulfilled") setForYouMovies(forYouRes.value?.items || []);
+        // Extract and set for-you movies with metadata enrichment
+        if (forYouRes.status === "fulfilled") {
+          const rawItems = forYouRes.value?.items || [];
+          const mediaItems = rawItems.filter((i: any) => i.type === "media");
+          
+          // Fetch directors for these items
+          const directorsMap: Record<number, string> = {};
+          await Promise.all(mediaItems.slice(0, 10).map(async (i: any) => {
+            try {
+              const data = await authorizedJson<any>(`/api/movies/${i.media.id}`);
+              const dir = (data.credits?.crew || []).find((c: any) => c.job === "Director")?.name;
+              if (dir) directorsMap[i.media.id] = dir;
+            } catch { /* ignore */ }
+          }));
+
+          setForYouMovies(rawItems.map((i: any) => {
+            if (i.type === "media") {
+              return {
+                id: i.media.id,
+                tmdb_id: i.media.id,
+                title: i.media.title,
+                poster_path: i.media.poster_path,
+                director: directorsMap[i.media.id] || "Autor sugerido",
+              };
+            }
+            if (i.type === "review") {
+              return {
+                id: i.media.id,
+                tmdb_id: i.media.tmdb_id,
+                title: i.media.title || "Reseña",
+                poster_path: i.media.poster_path,
+                director: `@${i.user?.username}` || "Comunidad",
+              };
+            }
+            return i;
+          }));
+        }
 
         if (activityRes.status === "fulfilled" && activityRes.value) {
           const items: any[] = activityRes.value.items || [];
@@ -118,11 +158,13 @@ export const useHomeData = (username: string) => {
             user: r.user?.username || "Usuario",
             username: r.user?.username || "",
             avatar: (r.user?.username || "U")[0].toUpperCase(),
+            film: r.movie?.title || "Película",
             movieId: r.movie?.id || r.movie_id,
             tmdbId: r.movie?.tmdb_id,
             rating: normalizeRating(r.review?.rating || r.rating),
             text: r.review?.content || r.content || "",
             likes: r.review?.likes_count || r.likes_count || 0,
+            posterUrl: toPoster(r.movie?.poster_path),
             createdAt: r.created_at || r.review?.created_at,
           })));
         }

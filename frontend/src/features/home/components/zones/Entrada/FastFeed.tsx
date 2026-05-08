@@ -5,8 +5,7 @@ import { Heart, MessageCircle, ArrowRight } from "lucide-react";
 import { C, SERIF, SANS } from "../../../constants";
 import { movieHref } from "../../../utils";
 import { SectionLabel } from "../../shared/SectionLabel";
-import { SafeImg } from "../../shared/SafeImg";
-import styles from "../../HomeLogged.module.css";
+import { Img } from "../../../../../components/shared/Img";
 
 interface FastFeedProps {
   followingReviews: any[];
@@ -40,14 +39,29 @@ export const FastFeed: React.FC<FastFeedProps> = ({
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: i * 0.1, duration: 0.5 }}
-            className={styles.feedPost}
+            style={{
+              display: "grid",
+              gridTemplateColumns: "52px 1fr auto",
+              gap: 16,
+              padding: "20px 0",
+              borderBottom: `1px solid ${C.border}`,
+              alignItems: "start",
+            }}
           >
             <Link
               to={movieHref(post.movieId, post.tmdbId, post.film)}
               style={{ textDecoration: "none" }}
             >
-              <div className={styles.feedPoster}>
-                <SafeImg
+              <div
+                style={{
+                  width: 52,
+                  height: 78,
+                  borderRadius: 1,
+                  overflow: "hidden",
+                  border: `1px solid ${C.border}`,
+                }}
+              >
+                <Img
                   src={post.posterUrl}
                   alt={post.film}
                   style={{
@@ -60,13 +74,34 @@ export const FastFeed: React.FC<FastFeedProps> = ({
               </div>
             </Link>
             <div>
-              <div className={styles.feedHeader}>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 7,
+                  alignItems: "center",
+                  marginBottom: 6,
+                }}
+              >
                 <div style={{ display: "flex", gap: 7, alignItems: "center" }}>
                   <Link
                     to={`/${encodeURIComponent(post.username)}`}
                     style={{ textDecoration: "none" }}
                   >
-                    <div className={styles.activityAvatar} style={{ width: 26, height: 26, fontSize: 12 }}>
+                    <div
+                      style={{
+                        width: 26,
+                        height: 26,
+                        borderRadius: "50%",
+                        background: C.surface,
+                        border: `1px solid ${C.border}`,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 12,
+                        color: C.accent,
+                        fontFamily: SANS,
+                      }}
+                    >
                       {post.avatar}
                     </div>
                   </Link>
@@ -82,8 +117,21 @@ export const FastFeed: React.FC<FastFeedProps> = ({
                     {post.user}
                   </Link>
                 </div>
-                <div style={{ display: "flex", gap: 5, alignItems: "center", flexWrap: "wrap" }}>
-                  <span style={{ fontFamily: SANS, fontSize: 11, color: C.textMuted }}>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 5,
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: SANS,
+                      fontSize: 11,
+                      color: C.textMuted,
+                    }}
+                  >
                     reseño
                   </span>
                   <Link
@@ -128,6 +176,10 @@ export const FastFeed: React.FC<FastFeedProps> = ({
                     cursor: "pointer",
                     transition: "color 0.18s",
                   }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = C.text)}
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.color = C.textSoft)
+                  }
                 >
                   {post.text}
                 </p>

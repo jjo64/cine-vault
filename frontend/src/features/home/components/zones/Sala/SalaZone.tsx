@@ -1,13 +1,12 @@
 import React, { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "motion/react";
-import { Play, Clock, Eye, BookOpen, Film, Trophy } from "lucide-react";
+import { Play, Clock, Eye, BookOpen, Film, Trophy, Flame } from "lucide-react";
 import { C, SERIF, SANS } from "../../../constants";
-import { movieHref, toPoster } from "../../../utils";
+import { movieHref, toPoster, relativeLabel, normalizeRating } from "../../../utils";
 import { SectionLabel } from "../../shared/SectionLabel";
-import { SafeImg } from "../../shared/SafeImg";
-import type { VaultEntry, DiaryEntry, ReviewEntry } from "../../../types";
 import styles from "../../HomeLogged.module.css";
+import type { VaultEntry, DiaryEntry, ReviewEntry } from "../../../types";
 
 interface SalaZoneProps {
   vault: VaultEntry[];
@@ -15,6 +14,7 @@ interface SalaZoneProps {
   reviews: ReviewEntry[];
   username: string;
   greetingName: string;
+  watchlistLength: number;
 }
 
 export const SalaZone: React.FC<SalaZoneProps> = ({
@@ -23,41 +23,54 @@ export const SalaZone: React.FC<SalaZoneProps> = ({
   reviews,
   username,
   greetingName,
+  watchlistLength
 }) => {
-  const myVaultHref = `/${encodeURIComponent((username || greetingName).trim().toLowerCase())}/vault`;
+  const profileHref = `/${encodeURIComponent((username || greetingName).trim().toLowerCase())}`;
+  const myVaultHref = `${profileHref}/vault`;
 
   const vaultCards = useMemo(() => {
-    return vault.slice(0, 6).map((item) => ({
-      id: item.movie_id,
-      tmdbId: item.tmdb_id,
-      title: item.movie_info?.title || "Pelicula",
-      posterUrl: toPoster(item.movie_info?.poster_path),
-      type: "Cine",
-      duration: "120 min",
-      views: 1,
-    }));
+    return vault.slice(0, 3).map((item, index) => {
+      const title = item.movie_info?.title || `Pelicula ${item.movie_id}`;
+      const type = index % 3 === 0 ? "Reflexion" : index % 3 === 1 ? "Edit" : "Critica";
+      return {
+        id: item.movie_id,
+        tmdbId: item.tmdb_id,
+        type,
+        title,
+        duration: ["12 min", "6 min", "18 min"][index % 3],
+        views: 800 + index * 320,
+        posterUrl: toPoster(item.movie_info?.poster_path),
+      };
+    });
   }, [vault]);
 
   const diaryHighlights = useMemo(() => {
-    return diary.slice(0, 4).map((item) => ({
-      movieId: item.movie_id,
-      tmdbId: item.tmdb_id,
-      film: item.movie_info?.title || "Pelicula",
-      rating: item.review?.rating || 0,
-      text: item.review?.content || "Sin reseña",
-      date: item.watched_date ? new Date(item.watched_date).toLocaleDateString() : "N/D",
-      posterUrl: toPoster(item.movie_info?.poster_path),
+    return diary.slice(0, 2).map((entry) => ({
+      movieId: entry.movie_id,
+      tmdbId: entry.tmdb_id,
+      film: entry.movie_info?.title || `Pelicula ${entry.movie_id}`,
+      text: entry.review?.content?.trim() || "Sin nota para esta entrada.",
+      rating: normalizeRating(entry.review?.rating),
+      date: relativeLabel(entry.watched_date || entry.review?.created_at || undefined),
+      posterUrl: toPoster(entry.movie_info?.poster_path),
     }));
   }, [diary]);
 
   const weekStats = useMemo(() => {
+    const normalizedProfile = encodeURIComponent((username || greetingName).trim().toLowerCase());
+    const reviewHref = normalizedProfile ? `/${normalizedProfile}?tab=Reseñas` : "/profile?tab=Reseñas";
+
     return [
       { num: String(diary.length), label: "Peliculas", icon: <Film size={16} /> },
-      { num: String(reviews.length), label: "Reseñas", icon: <BookOpen size={16} />, href: "/profile?tab=Reseñas" },
-      { num: String(Math.min(7, diary.length)), label: "Dias de racha", icon: <Film size={16} /> },
+      { num: String(reviews.length), label: "Reseñas", icon: <BookOpen size={16} />, href: reviewHref },
+      {
+        num: String(Math.min(7, Math.max(1, Math.floor((diary.length + watchlistLength) / 2)))),
+        label: "Dias de racha",
+        icon: <Flame size={16} />,
+      },
       { num: String(reviews.length * 40 + diary.length * 15), label: "Puntos", icon: <Trophy size={16} /> },
     ];
-  }, [diary.length, reviews.length]);
+  }, [diary.length, reviews.length, watchlistLength, username, greetingName]);
 
   return (
     <motion.div
@@ -94,7 +107,7 @@ export const SalaZone: React.FC<SalaZoneProps> = ({
                 }}
               >
                 <div style={{ aspectRatio: "16/9", position: "relative", overflow: "hidden" }}>
-                  <SafeImg
+                  <img
                     src={item.posterUrl}
                     alt={item.title}
                     style={{
@@ -157,7 +170,7 @@ export const SalaZone: React.FC<SalaZoneProps> = ({
           <SectionLabel link="Abrir diario" linkHref="/diary">
             Mi Diario
           </SectionLabel>
-          <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
             {diaryHighlights.map((entry) => (
               <motion.div
                 key={entry.movieId}
@@ -174,7 +187,7 @@ export const SalaZone: React.FC<SalaZoneProps> = ({
                 }}
               >
                 <div style={{ aspectRatio: "2/3", borderRadius: 1, overflow: "hidden", border: `1px solid ${C.border}` }}>
-                  <SafeImg
+                  <img
                     src={entry.posterUrl}
                     alt={entry.film}
                     style={{ width: "100%", height: "100%", objectFit: "cover", filter: "saturate(0.4)" }}

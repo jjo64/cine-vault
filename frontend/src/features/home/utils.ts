@@ -8,8 +8,9 @@ export const initials = (name: string) => {
     .slice(0, 2);
 };
 
-export const movieHref = (id: number, tmdbId: number | null | undefined, title: string) => {
-  const slug = title
+export const movieHref = (id: number | string, tmdbId: number | null | undefined, title: string | undefined) => {
+  const safeTitle = title || "movie";
+  const slug = safeTitle
     .toLowerCase()
     .replace(/[^\w\s-]/g, "")
     .replace(/\s+/g, "-");

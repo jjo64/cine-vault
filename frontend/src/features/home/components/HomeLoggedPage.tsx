@@ -7,7 +7,7 @@ import { useHomeData } from "../hooks/useHomeData";
 import { useHomeNavigation } from "../hooks/useHomeNavigation";
 import { useFeedActions } from "../hooks/useFeedActions";
 
-import { C, ZONES, SANS } from "../constants";
+import { C, ZONES, SANS, SERIF } from "../constants";
 import { toPoster } from "../utils";
 
 import { GreetingBar } from "./shared/GreetingBar";
@@ -80,7 +80,26 @@ export const HomeLoggedPage: React.FC<HomeLoggedProps> = ({ username }) => {
   }
 
   return (
-    <div className={styles.homeRoot} style={{ background: C.bg, minHeight: "100vh", color: C.text, fontFamily: SANS }}>
+    <div 
+      className={styles.homeRoot} 
+      style={{ 
+        background: C.bg, 
+        minHeight: "100vh", 
+        color: C.text, 
+        fontFamily: SANS,
+        // Inject CSS variables for the module
+        ["--color-bg" as any]: C.bg,
+        ["--color-border" as any]: C.border,
+        ["--color-accent" as any]: C.accent,
+        ["--color-accent-dim" as any]: C.accentDim,
+        ["--color-accent-glow" as any]: "rgba(212, 175, 122, 0.15)",
+        ["--color-text" as any]: C.text,
+        ["--color-text-soft" as any]: C.textSoft,
+        ["--color-text-muted" as any]: C.textMuted,
+        ["--font-serif" as any]: SERIF,
+        ["--font-sans" as any]: SANS,
+      }}
+    >
       <Grain />
 
       <div className={styles.navOffset}>
@@ -144,6 +163,7 @@ export const HomeLoggedPage: React.FC<HomeLoggedProps> = ({ username }) => {
               reviews={reviews}
               username={username}
               greetingName={greetingName}
+              watchlistLength={watchlist.length}
             />
           )}
           {activeZone === "vitrina" && (

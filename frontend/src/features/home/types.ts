@@ -77,14 +77,20 @@ export type UserListSummary = {
 };
 
 export type MovieMeta = {
+  movieId: number;
+  tmdbId: number;
   title: string;
   posterUrl: string;
   backdropUrl: string;
   year: number | null;
   director: string;
-  runtimeLabel: string;
+  duration: string;
   genres: string[];
-  overview: string | null;
+  synopsis: string;
+  points: number;
+  // Mantener por compatibilidad si es necesario, aunque se prefieren las nuevas
+  runtimeLabel?: string;
+  overview?: string | null;
 };
 
 export type FeedItem = {
@@ -119,11 +125,13 @@ export type FollowingReviewItem = {
   user: string;
   username: string;
   avatar: string;
+  film: string;
   movieId: number;
   tmdbId: number | null;
   rating: number;
   text: string;
   likes: number;
+  posterUrl: string;
   createdAt: string;
 };
 

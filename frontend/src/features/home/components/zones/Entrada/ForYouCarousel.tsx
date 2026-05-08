@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 import { C, SERIF, SANS } from "../../../constants";
 import { movieHref, toPoster } from "../../../utils";
 import { SectionLabel } from "../../shared/SectionLabel";
-import { SafeImg } from "../../shared/SafeImg";
+import { Img } from "../../../../../components/shared/Img";
 
 interface ForYouCarouselProps {
   forYouMovies: any[];
@@ -40,10 +40,10 @@ export const ForYouCarousel: React.FC<ForYouCarouselProps> = ({
           scrollbarWidth: "none",
         }}
       >
-        {forYouMovies.map((film) => (
+        {forYouMovies.slice(0, 8).map((film) => (
           <Link
             key={film.id}
-            to={movieHref(film.id, film.tmdb_id, film.title)}
+            to={movieHref(film.movieId || film.id, film.tmdb_id, film.title)}
             style={{ textDecoration: "none", flexShrink: 0, width: 130 }}
           >
             <motion.div
@@ -59,7 +59,7 @@ export const ForYouCarousel: React.FC<ForYouCarouselProps> = ({
                   border: `1px solid ${C.border}`,
                 }}
               >
-                <SafeImg
+                <Img
                   src={toPoster(film.poster_path)}
                   alt={film.title}
                   style={{
