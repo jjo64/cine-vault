@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "motion/react";
 import { Plus } from "lucide-react";
 import { C, SANS, SERIF } from "../constants";
-import { useCommunityState } from "../hooks/useCommunityState";
+import { useCommunityStore } from "../store/useCommunityStore";
 import { useCommunityData } from "../hooks/useCommunityData";
 import { useCommunitySearch } from "../hooks/useCommunitySearch";
 import { useCommunityNavigation } from "../hooks/useCommunityNavigation";
@@ -29,13 +29,12 @@ const SORT_OPTIONS = [
 ] as const;
 
 export default function CommunityDiscover() {
-  const state = useCommunityState();
-  const { refresh } = useCommunityData(state);
-  const { filteredLists, officials } = useCommunitySearch(state);
-  const navigation = useCommunityNavigation(state);
+  const { refresh } = useCommunityData();
+  const { filteredLists, officials } = useCommunitySearch();
+  const navigation = useCommunityNavigation();
 
   const { activeTab, modalOpen, setModalOpen } = navigation;
-  const { myLists, currentUser, loading, searchQuery, setSearchQuery } = state;
+  const { myLists, currentUser, loading, searchQuery, setSearchQuery } = useCommunityStore();
 
   const showOfficialRow = activeTab === "all" || activeTab === "official";
   const showEmptyMine = activeTab === "mine" && myLists.length === 0 && !loading;

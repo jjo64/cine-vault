@@ -1,10 +1,10 @@
 import { useEffect, useCallback } from "react";
+import { useCommunityStore } from "../store/useCommunityStore";
 import { getPublicLists, getMyLists } from "../../../services/listsServices";
 import { getStoredAccessToken, getCurrentUser } from "../../../services/authServices";
-import type { CommunityState } from "./useCommunityState";
 
-export function useCommunityData(state: CommunityState) {
-  const { setAllLists, setMyLists, setCurrentUser, setLoading, setError } = state;
+export function useCommunityData() {
+  const { setAllLists, setMyLists, setCurrentUser, setLoading, setError } = useCommunityStore();
 
   const fetchLists = useCallback(async () => {
     setLoading(true);

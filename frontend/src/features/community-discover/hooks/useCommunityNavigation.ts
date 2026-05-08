@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from "react";
-import type { CommunityState } from "./useCommunityState";
+import { useCommunityStore } from "../store/useCommunityStore";
 
-export function useCommunityNavigation(state: CommunityState) {
-  const { activeTab, setActiveTab, activeSort, setActiveSort, searchQuery, setSearchQuery } = state;
+export function useCommunityNavigation() {
+  const { activeTab, setActiveTab, activeSort, setActiveSort, searchQuery, setSearchQuery } = useCommunityStore();
   const [modalOpen, setModalOpen] = useState(false);
   const [showSortMenu, setShowSortMenu] = useState(false);
   const sortRef = useRef<HTMLDivElement>(null);

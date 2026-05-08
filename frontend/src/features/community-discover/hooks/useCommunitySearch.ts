@@ -1,8 +1,8 @@
 import { useMemo } from "react";
-import type { CommunityState } from "./useCommunityState";
+import { useCommunityStore } from "../store/useCommunityStore";
 
-export function useCommunitySearch(state: CommunityState) {
-  const { allLists, myLists, activeTab, activeSort, searchQuery, currentUser } = state;
+export function useCommunitySearch() {
+  const { allLists, myLists, activeTab, activeSort, searchQuery, currentUser } = useCommunityStore();
 
   const filteredLists = useMemo(() => {
     const officials = allLists.filter((l) => l.is_official);
