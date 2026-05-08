@@ -1,7 +1,7 @@
 // import TextType from './TextType';
 import { useEffect, useState } from "react";
 import Landing from "../components/Landing";
-import HomeLogged from "@/components/HomeLogged.tsx";
+import { HomeLoggedPage as HomeLogged } from "@/features/home";
 import { getCurrentUser } from "../services/authServices";
 import { SeoHead } from "../components/SeoHead";
 import { buildWebSiteSchema } from "../utils/seo/buildMovieSchema";

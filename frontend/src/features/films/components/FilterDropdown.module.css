@@ -1,0 +1,106 @@
+.container {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-soft);
+  font-family: var(--font-sans);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.trigger:hover {
+  border-color: var(--color-border);
+  color: var(--color-text);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.triggerActive {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  background: rgba(212, 175, 122, 0.08);
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  background: var(--color-elevated);
+  border: 1px solid var(--color-border);
+  minWidth: 200px;
+  z-index: 300;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+}
+
+.dropdownHeader {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dropdownTitle {
+  font-family: var(--font-sans);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.clearBtn {
+  background: none;
+  border: none;
+  color: #ff4444;
+  font-family: var(--font-sans);
+  font-size: 9px;
+  text-transform: uppercase;
+  cursor: pointer;
+  opacity: 0.8;
+}
+
+.clearBtn:hover {
+  opacity: 1;
+}
+
+.optionsList {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.option:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.optionSelected {
+  color: var(--color-accent);
+  background: rgba(212, 175, 122, 0.05);
+}

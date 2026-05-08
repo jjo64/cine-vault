@@ -1,0 +1,28 @@
+.container {
+  display: flex;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--color-border);
+  padding: 3px;
+}
+
+.button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.button:hover {
+  color: var(--color-text-soft);
+}
+
+.active {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-accent);
+}

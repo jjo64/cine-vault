@@ -1,4 +1,4 @@
-import type { ReviewMode } from "@/services/movieDetailServices";
+import type { ReviewMode } from "../../services/movieDetailServices";
 
 export type AppReview = {
   id: number;
