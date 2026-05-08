@@ -29,6 +29,22 @@ y específico para ese archivo. El flujo es siempre el mismo:
 
 ---
 
+## PASO 0.5 — CONDICIONES DE ABORTO (Abort Conditions)
+
+Antes de proceder a la Fase 1, evaluar si el componente debe ser refactorizado automáticamente o requiere intervención manual.
+
+### 🛑 Detener y pedir revisión si:
+1. **Lógica Crítica**: El componente maneja directamente autenticación (`auth`), pasarelas de pago, o WebSockets.
+2. **Dependencias Circulares**: Se detectan imports que vuelven al mismo feature o ciclos complejos de `useEffect`.
+3. **Mezcla de Estados**: El componente usa `useContext` y `Zustand` para la misma pieza de información de forma conflictiva.
+4. **Caja Negra**: Hay funciones de >100 líneas sin tipos ni comentarios que no se pueden decodificar con seguridad.
+5. **Tecnología No Soportada**: Uso de librerías de UI no estándar en CineVault.
+6. **Contrato de API Mismatch**: Si los tipos del componente no coinciden con la respuesta real del endpoint verificada en `backend/src/routes`, detener y resolver el contrato API primero antes de continuar con el refactor.
+
+*Si se detecta alguna, detener el plan y preguntar: "¿Deseas proceder con revisión manual o cancelar?"*
+
+---
+
 ## PASO 1 — DIAGNÓSTICO AUTOMÁTICO
 
 Al recibir un archivo `.tsx`, responder estas preguntas antes de proponer nada:
@@ -110,10 +126,15 @@ Según el diagnóstico, el componente cae en uno o más de estos tipos:
 
 ### Tipo E: Componente limpio, solo ajustes menores
 **Síntomas:** <150 líneas, sin tipos inline, sin fetch directo  
-**Acción:** Solo lint + pequeñas correcciones  
-**No crear estructura nueva** — no vale la pena el overhead
+**Acción:** **Mini-plan de 2 pasos** (Saltar Fases 1-6):
+1. **Fase E.1:** Cleanup de lint, tipos (import type) y constantes.
+2. **Fase E.2:** Migración visual mínima a CSS Modules si aplica.
 
 ---
+
+## ASIGNACIÓN DE FLUJO
+- **Tipo A, B, C, D**: Seguir el **Plan Completo (Fases 1 a 7)**.
+- **Tipo E**: Seguir el **Mini-Plan (Fases E.1 y E.2)**.
 
 ## PASO 3 — ESTRUCTURA OBJETIVO
 
@@ -344,9 +365,26 @@ git commit -m "refactor(<nombre>): lint, build limpio, cleanup"
 
 ---
 
+## MINI-PLAN (Solo para Tipo E)
+
+### Fase E.1 — Limpieza técnica
+- Aplicar `import type` para todas las interfaces.
+- Extraer constantes a un objeto local o a `constants.ts` si se repiten.
+- Eliminar `console.log` y props no usadas.
+
+### Fase E.2 — Estabilización visual
+- Migrar inline styles a un `.module.css` local.
+- Verificar que no haya regresiones visuales.
+- `npm run build` para confirmar.
+
+---
+
 ## PASO 5 — TESTING
 
 Generar tests **específicos para el archivo analizado**. Adaptar según qué hace el componente.
+
+**INSTRUCCIÓN CRÍTICA PARA EL AGENTE:** Los valores como `[INSERTAR ROL REAL]` se extraen del diagnóstico del PASO 1. Buscar en el componente el primer elemento con role semántico (`main`, `article`, `button`) o el texto del estado vacío/loading literal del JSX. Si no hay ninguno obvio, usar `data-testid` y agregar el atributo al componente original.
+NUNCA dejes placeholders literales entre corchetes `[]` en el código de testing final.
 
 ### Smoke test base (siempre)
 
@@ -370,22 +408,24 @@ const Wrapper = ({ children }: { children: React.ReactNode }) => (
 describe('<Nombre> — smoke tests', () => {
   it('renderiza sin crashear', () => {
     render(<<Nombre> />, { wrapper: Wrapper })
-    // Buscar algo que SIEMPRE debe aparecer en el componente
-    expect(screen.getByRole('[rol apropiado]')).toBeInTheDocument()
+    // EXTRAER VALOR REAL: ej. screen.getByRole('main') o getByText('Mi Perfil')
+    expect(screen.getByRole('[INSERTAR ROL REAL SEGÚN DIAGNÓSTICO]')).toBeInTheDocument()
   })
 
   it('muestra loading state cuando loading=true', () => {
     // Si tiene store:
     // use<Nombre>Store.setState({ loading: true })
     render(<<Nombre> />, { wrapper: Wrapper })
-    expect(screen.getByText(/[texto de loading del componente]/i)).toBeInTheDocument()
+    // EXTRAER VALOR REAL: ej. screen.getByText(/cargando/i) o un Spinner específico
+    expect(screen.getByText(/[INSERTAR TEXTO DE LOADING REAL]/i)).toBeInTheDocument()
   })
 
   it('muestra error state cuando hay error', () => {
     // Si tiene store:
     // use<Nombre>Store.setState({ loading: false, error: 'Error de prueba' })
     render(<<Nombre> />, { wrapper: Wrapper })
-    expect(screen.getByText(/[texto de error del componente]/i)).toBeInTheDocument()
+    // EXTRAER VALOR REAL: ej. screen.getByText(/error al cargar/i)
+    expect(screen.getByText(/[INSERTAR TEXTO DE ERROR REAL]/i)).toBeInTheDocument()
   })
 })
 ```
@@ -554,18 +594,20 @@ SANS = "'Syne', sans-serif"            → var(--cv-font-sans)
 > **Naming en español**: Los nombres de dominio de negocio en español (siguiendo la convención del proyecto)
 > pero los patrones técnicos en inglés: `useHomeData` (técnico) vs `greetingName` (dominio → `nombreBienvenida` OK también)
 
-### ⚠️ Reglas Adicionales de Estabilización (Update 2026-05-08)
+### ⚠️ Reglas de Estabilización y Patrones (Consolidado)
 
-- **Animaciones**: Migrar obligatoriamente de `framer-motion` a `motion/react`.
-- **TS Refs**: Los `Refs` pasados por props **DEBEN** aceptar `null` en su interfaz.
-- **TS Props**: Nunca usar `any`. Si un tipo es complejo, definirlo en `types.ts` del feature.
-- **Booleano**: Usar `!!` para props que esperen un booleano si el origen es una expresión o string.
+#### TypeScript y Tipado
+- **VerbatimModuleSyntax**: Obligatorio usar `import type` para todos los tipos/interfaces.
+- **TS Refs**: Los `Refs` pasados por props deben aceptar `null` en su interfaz.
+- **Antipatrión `any`**: Prohibido. Usar `!!` para props booleanas desde expresiones.
+- **Resolución**: Si un import falla, verificar `index.ts` del feature y `tsconfig.json`.
 
-### 💡 Lecciones Aprendidas (Pro-Tips)
-
-- **TypeScript**: Si una importación no resuelve, verifica que el `index.ts` del feature exponga el miembro y que `tsconfig.json` tenga los paths actualizados para evitar alias circular.
-- **Resolución de Módulos**: Ante errores de `Module not found`, fuerza la regeneración del caché con `rm -rf node_modules/.cache`.
-- **Animaciones**: Si `motion/react` causa layout shifts, asegura que el componente padre tenga `will-change: transform` o dimensiones fijas durante la transición.
+#### Arquitectura y Datos
+- **Orquestación**: En cargas masiva, usar `Promise.allSettled` en el hook `useData`.
+- **Zonas**: Para componentes de >1000 líneas, usar subcarpeta `zones/` para aislar lógica visual.
+- **Seguridad en Fechas**: Validar nulos antes de `new Date()`. Fallback: `val ? format(val) : '---'`.
+- **Store**: Asegurar que `useData` inyecte todas las piezas (profile, feeds, etc.) para evitar estados vacíos.
+- **Validación API**: Verificar rutas reales en `backend/src/routes` (no asumir por nombre de función).
 
 ### 🔗 Skills relacionadas
 
@@ -574,32 +616,15 @@ SANS = "'Syne', sans-serif"            → var(--cv-font-sans)
 - `react-composition` — cuando hay boolean props a eliminar
 - `cinevault-context` — identidad de marca y voz de la app
 
-### Lecciones de la Fase 2 (HomeLogged)
-- **VerbatimModuleSyntax**: Obligatorio usar `import type` para todos los tipos/interfaces. `tsc` fallará el build si no se cumple.
-- **Orquestación de Servicios**: En componentes con carga masiva, consolidar en un solo `useData` hook usando `Promise.allSettled`.
-- **Verificación de Endpoints**: SIEMPRE verificar las rutas reales en `backend/src/routes` antes de implementarlas en el frontend. No asumir que los nombres de las funciones coinciden con los paths.
-- **Estructuras de Respuesta**: Validar si el backend devuelve un array directo o un objeto con `items`/`diary`. Un error común es intentar hacer `.slice()` o `.map()` sobre un objeto de paginación.
-- **Extracción Robusta**: Al consumir servicios de recomendación complejos, verificar si el objeto deseado está anidado (ej. `res.value.media`).
-- **Descomposición por Zonas**: Para componentes de >1000 líneas, usar el patrón de "Zonas" (Carpeta `zones/` dentro de `components/`) para aislar la lógica visual.
-- **Validación Final**: Siempre ejecutar `npm run build` en el frontend antes de dar por terminado un refactor. `tsc --noEmit` a veces no captura todo si la configuración de versiones difiere entre `npx` y local.
-
-### ⚠️ Lecciones de la Fase 3 (ForYou - Modulo For You)
-
-- **Paridad Visual y CSS**: Evitar el uso de propiedades CSS inexistentes (ej. `justifyBetween`). Siempre usar `justifyContent: "space-between"`. Ante la duda, verificar con la documentación de MDN o React types.
-- **Jerarquía de Importaciones**: Al mover componentes a subcarpetas profundas (ej. `components/shared/`), recalcular cuidadosamente los niveles de `../`. Un error común es usar 5 niveles cuando se necesitan 4.
-- **Contratos de API Dinámicos**: Los servicios pueden devolver campos con nombres distintos a los esperados (ej. `needs_onboarding` vs `show`, o `media.id` vs `movie_id`). Verificar siempre el archivo de servicio (`socialServices.ts`) para confirmar el tipado real.
-- **Seguridad en Fechas**: Nunca instanciar `new Date(valor)` sin validar que el valor no sea `null` o `undefined`, especialmente en datos opcionales de la base de datos como `added_at`. Usar un fallback: `valor ? new Date(valor).toLocaleDateString() : '---'`.
-- **Store Completo**: Asegurarse de que el hook `useData` inyecte todas las piezas necesarias al store (profile, watchlist, feeds) para que los widgets tengan datos reales y no se queden en estado vacío perpetuo.
-
-### 🔄 Flujo de Trabajo Git (Mándatorio)
-
-Para mantener la integridad de la rama `desarrollo` y asegurar que no se pierdan cambios:
-
-1. **Sincronización**: Antes de empezar, `git pull origin desarrollo`.
-2. **Desarrollo**: Realizar la refactorización en partes pequeñas.
-3. **Verificación Técnica**: Ejecutar `npm run build`. NO subir código que no compile.
-4. **Commit en ESPAÑOL**: Usar mensajes descriptivos.
-   - `git add .`
-   - `git commit -m "Refactor: migración de widgets de ForYou a componentes modulares"`
-5. **Push**: `git push origin desarrollo`.
-6. **Merge**: Si se trabaja en ramas `refactor/*`, una vez verificado, mergear a `desarrollo`.
+#### Animaciones y CSS
+- **Framer Motion**: Migrar obligatoriamente a `motion/react`.
+- **CSS Values**: Prohibido `justifyBetween` (usar `justifyContent: "space-between"`). Siempre usar `var(--cv-*)`.
+- **Layout Shifts**: Usar `will-change: transform` o dimensiones fijas en padres de animaciones.
+#### Workflow Git (Mandatorio)
+1. `git checkout desarrollo` y `git pull origin desarrollo` antes de empezar.
+2. Crear rama: `git checkout -b refactor/<nombre>` para aislar el trabajo.
+3. Realizar commits parciales y descriptivos en **ESPAÑOL** por cada parte del refactor (ej. "feat: extraer hooks a useXData", "refactor: descomponer UI en subcomponentes").
+4. Verificar siempre con `npx tsc --noEmit` y `npm run build` que la refactorización está al 100% libre de errores.
+5. Push de la rama: `git push origin refactor/<nombre>`.
+6. Merge a desarrollo: `git checkout desarrollo`, `git merge refactor/<nombre>`.
+7. Subir a remoto: `git push origin desarrollo`.
