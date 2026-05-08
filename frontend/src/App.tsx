@@ -8,6 +8,7 @@ import {
 } from "./services/authServices";
 import { BottomNav } from "./components/BottomNav";
 import AuthenticatedNavbar from "./components/AuthenticatedNavbar";
+//import { ModernNavbar } from "./components/layout/ModernNavbar";
 import { getCurrentUser, type AuthUser } from "./services/authServices";
 import "./App.css";
 
@@ -58,7 +59,7 @@ const MentirasPage = lazy(() =>
 );
 const ReviewThreadPage = lazy(() => import("./pages/ReviewThread"));
 const FilmsPage = lazy(() =>
-  import("./pages/Films").then((module) => ({ default: module.Films })),
+  import("./features/films/FilmsPage").then((module) => ({ default: module.FilmsPage })),
 );
 const MembersPage = lazy(() =>
   import("./pages/Members").then((module) => ({ default: module.Members })),
@@ -169,6 +170,7 @@ function App() {
       >
         <SeoManager />
         <AuthenticatedNavbar user={user} />
+        {/* <ModernNavbar user={user} /> */}
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/feed" element={<FeedPage />} />
