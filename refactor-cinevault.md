@@ -551,8 +551,21 @@ SANS = "'Syne', sans-serif"            → var(--cv-font-sans)
 | Constante de diseño | objeto `const` o `UPPER_CASE` | `C`, `SERIF` |
 | Helper puro | camelCase | `formatDate`, `toPoster` |
 | Service function | camelCase | `getFeedPosts`, `likeReview` |
-| Nombres de dominio | español | `entradaActiva`, `usuarioActual` |
-| Patrones técnicos | inglés | `useZoneNavigation`, `setLoading` |
+> **Naming en español**: Los nombres de dominio de negocio en español (siguiendo la convención del proyecto)
+> pero los patrones técnicos en inglés: `useHomeData` (técnico) vs `greetingName` (dominio → `nombreBienvenida` OK también)
+
+### ⚠️ Reglas Adicionales de Estabilización (Update 2026-05-08)
+
+- **Animaciones**: Migrar obligatoriamente de `framer-motion` a `motion/react`.
+- **TS Refs**: Los `Refs` pasados por props **DEBEN** aceptar `null` en su interfaz.
+- **TS Props**: Nunca usar `any`. Si un tipo es complejo, definirlo en `types.ts` del feature.
+- **Booleano**: Usar `!!` para props que esperen un booleano si el origen es una expresión o string.
+
+### 💡 Lecciones Aprendidas (Pro-Tips)
+
+- **TypeScript**: Si una importación no resuelve, verifica que el `index.ts` del feature exponga el miembro y que `tsconfig.json` tenga los paths actualizados para evitar alias circular.
+- **Resolución de Módulos**: Ante errores de `Module not found`, fuerza la regeneración del caché con `rm -rf node_modules/.cache`.
+- **Animaciones**: Si `motion/react` causa layout shifts, asegura que el componente padre tenga `will-change: transform` o dimensiones fijas durante la transición.
 
 ### 🔗 Skills relacionadas
 

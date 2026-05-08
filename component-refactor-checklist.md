@@ -271,3 +271,13 @@ Al revisar el código de un refactor, rechazar si:
 | Store con lógica de fetch dentro | El store solo tiene estado; el fetch va en el hook `useXData` |
 | Duplicar componentes globales en cada feature | Mover a `src/components/shared/` |
 | Mutación directa del estado del store | Usar los actions del store (`setData`, `setReviews`, etc.) |
+
+---
+
+### ⚠️ Lecciones Aprendidas Críticas (Update 2026-05-08)
+
+- **Animaciones**: Migrar obligatoriamente de `framer-motion` a `motion/react`.
+- **TS Refs**: Los `Refs` pasados por props **DEBEN** aceptar `null` en su interfaz (ej. `React.RefObject<T | null>`).
+- **TS Props**: Nunca usar `any`. Si un tipo es complejo, definirlo en `types.ts` del feature.
+- **Booleano**: Usar `!!` para props que esperen un booleano si el origen es una expresión o string.
+- **Validación Estricta**: Ejecutar siempre `npx tsc -p tsconfig.app.json --noEmit` antes de finalizar.
