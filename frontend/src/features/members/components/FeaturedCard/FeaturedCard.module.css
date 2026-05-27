@@ -1,7 +1,7 @@
 .card {
   position: relative;
   overflow: hidden;
-  background: var(--cv-surface);
+  background: var(--color-surface);
   transition: border-color 0.3s, box-shadow 0.4s, transform 0.3s;
 }
 
@@ -74,9 +74,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--cv-font-serif);
+  font-family: var(--font-serif);
   font-size: 26px;
-  color: var(--cv-accent);
+  color: var(--color-accent);
 }
 
 .infoWrapper {
@@ -93,29 +93,30 @@
 
 .nameLink {
   text-decoration: none;
+  color: inherit;
 }
 
 .name {
-  font-family: var(--cv-font-serif);
+  font-family: var(--font-serif);
   font-size: 20px;
-  color: var(--cv-text);
+  color: var(--color-text);
   line-height: 1.15;
   margin-bottom: 2px;
 }
 
 .handle {
-  font-family: var(--cv-font-sans);
+  font-family: var(--font-sans);
   font-size: 10px;
-  color: var(--cv-accent-dim);
+  color: var(--color-accent-dim);
   letter-spacing: 0.06em;
   margin-bottom: 7px;
 }
 
 .bio {
-  font-family: var(--cv-font-serif);
+  font-family: var(--font-serif);
   font-style: italic;
   font-size: 13px;
-  color: var(--cv-text-soft);
+  color: var(--color-text-soft);
   margin: 0;
   line-height: 1.55;
   display: -webkit-box;
@@ -128,7 +129,7 @@
   flex-shrink: 0;
   padding: 9px 16px;
   cursor: pointer;
-  font-family: var(--cv-font-sans);
+  font-family: var(--font-sans);
   font-size: 9px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -139,21 +140,21 @@
 }
 
 .followBtnAdmin {
-  background: var(--cv-accent);
-  border: 1px solid var(--cv-accent);
+  background: var(--color-accent);
+  border: 1px solid var(--color-accent);
   color: #080808;
 }
 
 .followBtnEditor {
   background: rgba(212, 175, 122, 0.12);
-  border: 1px solid var(--cv-accent);
-  color: var(--cv-accent);
+  border: 1px solid var(--color-accent);
+  color: var(--color-accent);
 }
 
 .followBtnActive {
   background: transparent !important;
-  border: 1px solid var(--cv-accent-dim) !important;
-  color: var(--cv-accent) !important;
+  border: 1px solid var(--color-accent-dim) !important;
+  color: var(--color-accent) !important;
 }
 
 .statsRow {
@@ -161,7 +162,7 @@
   gap: 20px;
   margin-bottom: 0;
   padding-top: 16px;
-  border-top: 1px solid var(--cv-border);
+  border-top: 1px solid #222222;
 }
 
 .statItem {
@@ -171,22 +172,22 @@
 }
 
 .statIcon {
-  color: var(--cv-text-muted);
+  color: var(--color-text-muted);
   display: flex;
   align-items: center;
 }
 
 .statVal {
-  font-family: var(--cv-font-serif);
+  font-family: var(--font-serif);
   font-style: italic;
   font-size: 15px;
-  color: var(--cv-text);
+  color: var(--color-text);
 }
 
 .statLabel {
-  font-family: var(--cv-font-sans);
+  font-family: var(--font-sans);
   font-size: 8px;
-  color: var(--cv-text-muted);
+  color: var(--color-text-muted);
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }

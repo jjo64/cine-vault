@@ -3,7 +3,6 @@
   top: 0;
   left: 0;
   right: 0;
-  zIndex: 200;
   height: 60px;
   display: flex;
   align-items: center;
@@ -18,21 +17,21 @@
 
 .navScrolled {
   background: rgba(8, 8, 8, 0.98);
-  border-bottom-color: var(--cv-border);
+  border-bottom-color: var(--color-border);
 }
 
 .logo {
-  font-family: var(--cv-font-serif);
+  font-family: var(--font-serif);
   font-size: 20px;
   font-weight: 500;
   letter-spacing: 0.13em;
   text-transform: uppercase;
-  color: var(--cv-text);
+  color: var(--color-text);
   text-decoration: none;
 }
 
 .logoAccent {
-  color: var(--cv-accent);
+  color: var(--color-accent);
 }
 
 .links {
@@ -44,34 +43,34 @@
   font-size: 10px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--cv-text-soft);
+  color: var(--color-text-soft);
   text-decoration: none;
-  font-family: var(--cv-font-sans);
+  font-family: var(--font-sans);
   border-bottom: 1px solid transparent;
   padding-bottom: 2px;
   transition: color 0.2s;
 }
 
 .linkActive {
-  color: var(--cv-accent);
-  border-bottom-color: var(--cv-accent-dim);
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent-dim);
 }
 
 .link:not(.linkActive):hover {
-  color: var(--cv-text);
+  color: var(--color-text);
 }
 
 .profileCircle {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--cv-accent-glow), var(--cv-elevated));
-  border: 1.5px solid var(--cv-accent-dim);
+  background: linear-gradient(135deg, var(--color-accent-glow), var(--color-elevated));
+  border: 1.5px solid var(--color-accent-dim);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--cv-font-serif);
+  font-family: var(--font-serif);
   font-size: 14px;
-  color: var(--cv-accent);
+  color: var(--color-accent);
   text-decoration: none;
 }

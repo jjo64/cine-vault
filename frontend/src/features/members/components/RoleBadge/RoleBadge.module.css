@@ -22,7 +22,7 @@
 }
 
 .label {
-  font-family: var(--cv-font-sans);
+  font-family: var(--font-sans);
   font-size: 8px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -33,9 +33,9 @@
 }
 
 .labelAdmin {
-  color: var(--cv-gold);
+  color: var(--color-gold);
 }
 
 .labelEditor {
-  color: var(--cv-accent-dim);
+  color: var(--color-accent-dim);
 }

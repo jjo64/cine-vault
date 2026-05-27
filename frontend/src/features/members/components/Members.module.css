@@ -1,7 +1,7 @@
 .pageContainer {
-  background: var(--cv-bg);
+  background: var(--color-bg);
   min-height: 100vh;
-  color: var(--cv-text);
+  color: var(--color-text);
 }
 
 .pageContent {
@@ -12,7 +12,7 @@
   position: relative;
   overflow: hidden;
   padding: 48px 40px 0;
-  border-bottom: 1px solid var(--cv-border);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .gridOverlay {
@@ -48,29 +48,29 @@
 }
 
 .headerTag {
-  font-family: var(--cv-font-sans);
+  font-family: var(--font-sans);
   font-size: 9px;
   letter-spacing: 0.32em;
   text-transform: uppercase;
-  color: var(--cv-accent);
+  color: var(--color-accent);
   margin-bottom: 12px;
 }
 
 .headerTitle {
-  font-family: var(--cv-font-serif);
+  font-family: var(--font-serif);
   font-weight: 300;
   font-size: clamp(38px, 5vw, 58px);
-  color: var(--cv-text);
+  color: var(--color-text);
   margin: 0 0 10px;
   line-height: 1.0;
   letter-spacing: -0.01em;
 }
 
 .headerDescription {
-  font-family: var(--cv-font-serif);
+  font-family: var(--font-serif);
   font-style: italic;
   font-size: 16px;
-  color: var(--cv-text-soft);
+  color: var(--color-text-soft);
   margin: 0;
   line-height: 1.55;
 }
@@ -86,22 +86,22 @@
   left: 14px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--cv-text-soft);
+  color: var(--color-text-soft);
   pointer-events: none;
   transition: color 0.2s;
 }
 
 .searchIconFocused {
-  color: var(--cv-accent);
+  color: var(--color-accent);
 }
 
 .searchInput {
   width: 100%;
   padding: 12px 36px 12px 38px;
   background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--cv-border);
-  color: var(--cv-text);
-  font-family: var(--cv-font-sans);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-family: var(--font-sans);
   font-size: 12px;
   letter-spacing: 0.04em;
   outline: none;
@@ -110,8 +110,8 @@
 }
 
 .searchInputFocused {
-  border-color: var(--cv-accent-dim);
-  box-shadow: 0 0 0 3px var(--cv-accent-glow);
+  border-color: var(--color-accent-dim);
+  box-shadow: 0 0 0 3px var(--color-accent-glow);
 }
 
 .clearBtn {
@@ -122,7 +122,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--cv-text-soft);
+  color: var(--color-text-soft);
   display: flex;
   padding: 2px;
 }
@@ -130,7 +130,7 @@
 .tabsContainer {
   display: flex;
   gap: 0;
-  border-top: 1px solid var(--cv-border);
+  border-top: 1px solid var(--color-border);
 }
 
 .tabItem {
@@ -138,7 +138,7 @@
   display: flex;
   gap: 8px;
   align-items: baseline;
-  border-right: 1px solid var(--cv-border);
+  border-right: 1px solid var(--color-border);
 }
 
 .tabItemLast {
@@ -146,20 +146,20 @@
 }
 
 .tabCount {
-  font-family: var(--cv-font-serif);
+  font-family: var(--font-serif);
   font-style: italic;
   font-size: 18px;
-  color: var(--cv-text);
+  color: var(--color-text);
 }
 
 .tabCountFirst {
-  color: var(--cv-accent);
+  color: var(--color-accent);
 }
 
 .tabLabel {
-  font-family: var(--cv-font-sans);
+  font-family: var(--font-sans);
   font-size: 9px;
-  color: var(--cv-text-muted);
+  color: var(--color-text-muted);
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
@@ -176,10 +176,10 @@
 }
 
 .errorText {
-  font-family: var(--cv-font-serif);
+  font-family: var(--font-serif);
   font-style: italic;
   font-size: 20px;
-  color: var(--cv-text-soft);
+  color: var(--color-text-soft);
   margin-bottom: 12px;
 }
 
@@ -189,19 +189,19 @@
 }
 
 .noResultsText {
-  font-family: var(--cv-font-serif);
+  font-family: var(--font-serif);
   font-style: italic;
   font-size: 20px;
-  color: var(--cv-text-soft);
+  color: var(--color-text-soft);
   margin-bottom: 12px;
 }
 
 .clearQueryBtn {
   padding: 10px 24px;
   background: transparent;
-  border: 1px solid var(--cv-accent-dim);
-  color: var(--cv-accent);
-  font-family: var(--cv-font-sans);
+  border: 1px solid var(--color-accent-dim);
+  color: var(--color-accent);
+  font-family: var(--font-sans);
   font-size: 9px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -225,45 +225,45 @@
 }
 
 .sectionIndicatorAdmin {
-  background: linear-gradient(to bottom, var(--cv-accent), var(--cv-accent-dim));
+  background: linear-gradient(to bottom, var(--color-accent), var(--color-accent-dim));
 }
 
 .sectionIndicatorEditor {
-  background: linear-gradient(to bottom, var(--cv-accent-dim), rgba(180, 150, 90, 0.4));
+  background: linear-gradient(to bottom, var(--color-accent-dim), rgba(180, 150, 90, 0.4));
 }
 
 .sectionIndicatorCommunity {
-  background: linear-gradient(to bottom, var(--cv-text-soft), var(--cv-text-muted));
+  background: linear-gradient(to bottom, var(--color-text-soft), var(--color-text-muted));
 }
 
 .sectionTitle {
-  font-family: var(--cv-font-serif);
+  font-family: var(--font-serif);
   font-weight: 400;
   font-size: 28px;
-  color: var(--cv-text);
+  color: var(--color-text);
   margin: 0;
   line-height: 1;
 }
 
 .sectionSubtitle {
-  font-family: var(--cv-font-serif);
+  font-family: var(--font-serif);
   font-style: italic;
   font-size: 13px;
-  color: var(--cv-text-soft);
+  color: var(--color-text-soft);
   margin: 3px 0 0;
 }
 
 .sectionLine {
   flex: 1;
   height: 1px;
-  background: linear-gradient(to right, var(--cv-border), transparent);
+  background: linear-gradient(to right, var(--color-border), transparent);
   margin-left: 8px;
 }
 
 .sectionCount {
-  font-family: var(--cv-font-sans);
+  font-family: var(--font-sans);
   font-size: 9px;
-  color: var(--cv-text-muted);
+  color: var(--color-text-muted);
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }

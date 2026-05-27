@@ -1,8 +1,8 @@
 .card {
   position: relative;
   overflow: hidden;
-  background: var(--cv-surface);
-  border: 1px solid var(--cv-border);
+  background: var(--color-surface);
+  border: 1px solid #222222;
   transition: border-color 0.3s, box-shadow 0.35s, transform 0.3s;
   cursor: pointer;
   padding: 20px 18px 18px;
@@ -10,7 +10,7 @@
 }
 
 .card:hover {
-  border-color: var(--cv-border-hover);
+  border-color: #383838;
   transform: translateY(-4px);
 }
 
@@ -51,7 +51,7 @@
   border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
-  border: 1.5px solid var(--cv-border);
+  border: 1.5px solid #222222;
   transition: all 0.3s;
   cursor: pointer;
   display: block;
@@ -67,15 +67,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--cv-font-serif);
+  font-family: var(--font-serif);
   font-size: 20px;
-  color: var(--cv-accent);
+  color: var(--color-accent);
 }
 
 .followBtn {
   padding: 6px 12px;
   cursor: pointer;
-  font-family: var(--cv-font-sans);
+  font-family: var(--font-sans);
   font-size: 8px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -86,15 +86,15 @@
 }
 
 .followBtnNormal {
-  background: var(--cv-accent-glow);
-  border: 1px solid var(--cv-accent-dim);
-  color: var(--cv-accent);
+  background: rgba(212, 175, 122, 0.09);
+  border: 1px solid var(--color-accent-dim);
+  color: var(--color-accent);
 }
 
 .followBtnActive {
   background: transparent;
-  border: 1px solid var(--cv-border);
-  color: var(--cv-text-soft);
+  border: 1px solid #222222;
+  color: var(--color-text-soft);
 }
 
 .infoWrapper {
@@ -103,28 +103,29 @@
 
 .nameLink {
   text-decoration: none;
+  color: inherit;
 }
 
 .name {
-  font-family: var(--cv-font-serif);
+  font-family: var(--font-serif);
   font-size: 17px;
-  color: var(--cv-text);
+  color: var(--color-text);
   line-height: 1.2;
   margin-bottom: 2px;
 }
 
 .handle {
-  font-family: var(--cv-font-sans);
+  font-family: var(--font-sans);
   font-size: 9px;
-  color: var(--cv-accent-dim);
+  color: var(--color-accent-dim);
   letter-spacing: 0.06em;
 }
 
 .bio {
-  font-family: var(--cv-font-serif);
+  font-family: var(--font-serif);
   font-style: italic;
   font-size: 12.5px;
-  color: var(--cv-text-soft);
+  color: var(--color-text-soft);
   line-height: 1.6;
   margin: 0 0 12px;
   display: -webkit-box;
@@ -137,27 +138,27 @@
   display: flex;
   gap: 16px;
   padding-top: 12px;
-  border-top: 1px solid var(--cv-border);
+  border-top: 1px solid #222222;
 }
 
 .statItem {
   display: flex;
   align-items: center;
   gap: 5px;
-  color: var(--cv-text-muted);
+  color: var(--color-text-muted);
 }
 
 .statVal {
-  font-family: var(--cv-font-sans);
+  font-family: var(--font-sans);
   font-size: 9px;
   letter-spacing: 0.06em;
-  color: var(--cv-text-soft);
+  color: var(--color-text-soft);
 }
 
 .statLabel {
-  font-family: var(--cv-font-sans);
+  font-family: var(--font-sans);
   font-size: 8px;
-  color: var(--cv-text-muted);
+  color: var(--color-text-muted);
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }

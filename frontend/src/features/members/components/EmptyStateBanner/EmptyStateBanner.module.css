@@ -1,14 +1,14 @@
 .banner {
   position: relative;
   overflow: hidden;
-  border: 1px solid var(--cv-border);
-  background: var(--cv-surface);
+  border: 1px solid #222222;
+  background: var(--color-surface);
   margin-bottom: 48px;
 }
 
 .accentBar {
   height: 2px;
-  background: linear-gradient(to right, transparent 5%, var(--cv-accent) 30%, var(--cv-accent-dim) 70%, transparent 95%);
+  background: linear-gradient(to right, transparent 5%, var(--color-accent) 30%, var(--color-accent-dim) 70%, transparent 95%);
   opacity: 0.5;
 }
 
@@ -40,27 +40,27 @@
 }
 
 .tag {
-  font-family: var(--cv-font-sans);
+  font-family: var(--font-sans);
   font-size: 9px;
   letter-spacing: 0.3em;
   text-transform: uppercase;
-  color: var(--cv-accent);
+  color: var(--color-accent);
 }
 
 .title {
-  font-family: var(--cv-font-serif);
+  font-family: var(--font-serif);
   font-weight: 300;
   font-size: 32px;
-  color: var(--cv-text);
+  color: var(--color-text);
   margin: 0 0 8px;
   line-height: 1.1;
 }
 
 .description {
-  font-family: var(--cv-font-serif);
+  font-family: var(--font-serif);
   font-style: italic;
   font-size: 16px;
-  color: var(--cv-text-soft);
+  color: var(--color-text-soft);
   margin: 0 0 32px;
   line-height: 1.6;
   max-width: 520px;
@@ -72,8 +72,8 @@
 }
 
 .suggestionCard {
-  background: var(--cv-elevated);
-  border: 1px solid var(--cv-border);
+  background: var(--color-elevated);
+  border: 1px solid #222222;
   padding: 16px 14px;
   display: flex;
   flex-direction: column;
@@ -109,7 +109,7 @@
   height: 52px;
   border-radius: 50%;
   overflow: hidden;
-  border: 1.5px solid var(--cv-border);
+  border: 1.5px solid #222222;
 }
 
 .avatarWrapperNotMember {
@@ -122,30 +122,30 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--cv-font-serif);
+  font-family: var(--font-serif);
   font-size: 20px;
-  color: var(--cv-accent);
+  color: var(--color-accent);
 }
 
 .name {
-  font-family: var(--cv-font-serif);
+  font-family: var(--font-serif);
   font-size: 14px;
-  color: var(--cv-text);
+  color: var(--color-text);
   margin-top: 5px;
   line-height: 1.2;
 }
 
 .handle {
-  font-family: var(--cv-font-sans);
+  font-family: var(--font-sans);
   font-size: 9px;
-  color: var(--cv-accent-dim);
+  color: var(--color-accent-dim);
   letter-spacing: 0.05em;
 }
 
 .filmsCount {
-  font-family: var(--cv-font-sans);
+  font-family: var(--font-sans);
   font-size: 8px;
-  color: var(--cv-text-muted);
+  color: var(--color-text-muted);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -154,10 +154,10 @@
   width: 100%;
   padding: 8px 0;
   cursor: pointer;
-  background: var(--cv-accent-glow);
-  border: 1px solid var(--cv-accent-dim);
-  color: var(--cv-accent);
-  font-family: var(--cv-font-sans);
+  background: rgba(212, 175, 122, 0.09);
+  border: 1px solid var(--color-accent-dim);
+  color: var(--color-accent);
+  font-family: var(--font-sans);
   font-size: 8px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -170,6 +170,6 @@
 
 .followBtnActive {
   background: transparent;
-  border-color: var(--cv-border);
-  color: var(--cv-text-soft);
+  border-color: #222222;
+  color: var(--color-text-soft);
 }
