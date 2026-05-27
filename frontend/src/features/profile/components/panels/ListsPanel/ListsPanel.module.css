@@ -1,0 +1,146 @@
+.container {
+  text-align: left;
+}
+
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.panelHeader {
+  font-family: var(--font-serif);
+  font-size: 26px;
+  font-weight: 400;
+  color: var(--color-text);
+}
+
+.panelHeaderEm {
+  font-style: italic;
+  color: var(--color-text-soft);
+  font-size: 20px;
+}
+
+.btnNewList {
+  padding: 9px 20px;
+  background: transparent;
+  color: var(--color-accent);
+  border: 1px solid var(--color-accent-dim);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.btnNewList:hover {
+  background-color: var(--color-accent-glow);
+  border-color: var(--color-accent);
+}
+
+.emptyText {
+  color: var(--color-text-soft);
+  font-family: var(--font-serif);
+  font-style: italic;
+  text-align: left;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.listCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 0.2s, transform 0.3s;
+  text-align: left;
+}
+
+.listCard:hover {
+  border-color: var(--color-accent-dim) !important;
+}
+
+.cardHeader {
+  aspect-ratio: 16 / 7;
+  background: linear-gradient(135deg, rgba(212, 175, 122, 0.18), rgba(10, 10, 10, 0.9));
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cardHeaderTag {
+  font-family: var(--font-sans);
+  color: var(--color-accent);
+  letter-spacing: 0.14em;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.cardBody {
+  padding: 16px 20px;
+}
+
+.titleRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.listName {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--color-text);
+  line-height: 1.2;
+}
+
+.listMeta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-text-soft);
+  flex-shrink: 0;
+  margin-left: 12px;
+  padding-top: 4px;
+}
+
+.itemsCount {
+  font-size: 10px;
+  font-family: var(--font-sans);
+}
+
+.description {
+  font-size: 13px;
+  font-family: var(--font-serif);
+  font-style: italic;
+  color: var(--color-text-soft);
+  line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+  .headerRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .btnNewList {
+    width: 100%;
+    justify-content: center;
+  }
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
