@@ -13,12 +13,12 @@
   --color-accent: #d4af7a;
   --color-accent-dim: #9a7a48;
   --color-text: #e2e2e2;
-  --color-text-soft: #8a8a8a;
-  --color-text-muted: #6e6e6e;
+  --color-text-soft: #a1a1a1;
+  --color-text-muted: #b0b0b0;
   --color-gold: #c8a96e;
 
   /* Glows & Transparency */
-  --color-accent-glow: rgba(212, 175, 122, 0.15);
+  --color-accent-glow: rgba(212, 175, 122, 0.10);
   --color-accent-glow-strong: rgba(212, 175, 122, 0.18);
 
   /* Typography */
