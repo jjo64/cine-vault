@@ -1,0 +1,267 @@
+.container {
+  background: rgba(212, 175, 122, 0.03);
+  border-top: 1px solid rgba(212, 175, 122, 0.12);
+  border-bottom: 1px solid rgba(212, 175, 122, 0.12);
+  padding: 0 48px;
+}
+
+.mobileHeader {
+  display: none; /* Por defecto se oculta en desktop */
+}
+
+.signatureBar {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+}
+
+.labelCol {
+  flex-shrink: 0;
+  padding: 20px 28px 20px 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-right: 1px solid var(--color-border);
+}
+
+.labelText {
+  font-size: 8px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  font-family: var(--font-sans);
+  line-height: 2;
+}
+
+.fieldsRow {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+}
+
+.field {
+  padding: 20px 22px;
+  border-right: 1px solid var(--color-border);
+  transition: background 0.2s;
+  cursor: default;
+  background: transparent;
+  flex: 1;
+}
+
+.field:last-child {
+  border-right: none;
+}
+
+.field:hover {
+  background: rgba(212, 175, 122, 0.04);
+}
+
+.fieldHeader {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 7px;
+}
+
+.fieldLabel {
+  font-size: 8px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  font-family: var(--font-sans);
+}
+
+.fieldInputText {
+  width: 100%;
+  box-sizing: border-box;
+  resize: none;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-family: var(--font-serif);
+  font-size: 18px;
+  line-height: 1.2;
+  margin-bottom: 6px;
+  padding: 6px 8px;
+  outline: none;
+}
+
+.fieldInputText:focus {
+  border-color: var(--color-accent);
+}
+
+.fieldInputDetail {
+  width: 100%;
+  box-sizing: border-box;
+  resize: none;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-soft);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-style: italic;
+  margin-bottom: 4px;
+  padding: 6px 8px;
+  outline: none;
+}
+
+.fieldInputDetail:focus {
+  border-color: var(--color-accent);
+}
+
+.charCount {
+  font-size: 10px;
+  color: var(--color-text-muted);
+  font-family: var(--font-sans);
+  text-align: right;
+}
+
+.fieldValue {
+  font-family: var(--font-serif);
+  font-size: 19px;
+  font-weight: 400;
+  color: var(--color-text);
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+
+.fieldDetail {
+  font-size: 11px;
+  color: var(--color-text-soft);
+  font-family: var(--font-sans);
+  font-style: italic;
+}
+
+.actionCol {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 0 0 20px;
+  border-left: 1px solid var(--color-border);
+}
+
+.actionBox {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.btnPrimary {
+  padding: 7px 14px;
+  background: var(--color-accent);
+  color: var(--color-bg);
+  border: 1px solid var(--color-accent);
+  font-family: var(--font-sans);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btnPrimary:disabled {
+  background: var(--color-accent-dim);
+  border-color: var(--color-accent-dim);
+  cursor: default;
+}
+
+.btnSecondary {
+  padding: 7px 14px;
+  background: transparent;
+  color: var(--color-text-soft);
+  border: 1px solid var(--color-border);
+  font-family: var(--font-sans);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btnSecondary:hover {
+  border-color: var(--color-text-soft);
+  color: var(--color-text);
+}
+
+.btnSecondary:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Responsividad */
+@media (max-width: 1024px) {
+  .container {
+    padding: 0 20px;
+  }
+  .fieldsRow {
+    flex-wrap: wrap;
+  }
+  .field {
+    flex: 1 1 45%;
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .field:nth-child(even) {
+    border-left: 1px solid var(--color-border);
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 24px 14px;
+  }
+
+  .mobileHeader {
+    display: block;
+    font-family: var(--font-serif);
+    font-size: 16px;
+    font-style: italic;
+    color: var(--color-accent);
+    margin-bottom: 16px;
+    letter-spacing: 0.05em;
+  }
+
+  .signatureBar {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .labelCol {
+    display: none; /* Ocultamos la columna lateral en mobile */
+  }
+
+  .fieldsRow {
+    flex-direction: column;
+  }
+
+  .field {
+    padding: 12px 0;
+    border-left: none !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .field:last-child {
+    border-bottom: none;
+  }
+
+  .actionCol {
+    border-left: none;
+    padding: 16px 0 0;
+    border-top: 1px solid var(--color-border);
+    justify-content: center;
+  }
+
+  .actionBox {
+    flex-direction: row;
+    width: 100%;
+  }
+
+  .actionBox button {
+    flex: 1;
+    text-align: center;
+  }
+}

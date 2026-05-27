@@ -1,0 +1,254 @@
+.container {
+  text-align: left;
+}
+
+.header {
+  margin-bottom: 40px;
+}
+
+.title {
+  font-family: var(--font-serif);
+  font-size: 26px;
+  font-weight: 400;
+  color: var(--color-text);
+  line-height: 1.2;
+}
+
+.subtitle {
+  color: var(--color-text-soft);
+  font-style: italic;
+  font-size: 20px;
+}
+
+.introText {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  font-family: var(--font-serif);
+  font-style: italic;
+  line-height: 1.6;
+  margin-top: 8px;
+}
+
+.timelineWrapper {
+  position: relative;
+}
+
+.timelineLine {
+  position: absolute;
+  left: 148px;
+  top: 12px;
+  bottom: 40px;
+  width: 1px;
+  background: linear-gradient(
+    to bottom,
+    rgba(212, 175, 122, 0.4),
+    rgba(212, 175, 122, 0.2) 70%,
+    transparent
+  );
+}
+
+.diaryRow {
+  display: grid;
+  grid-template-columns: 148px 1fr;
+  gap: 0;
+  margin-bottom: 36px;
+  position: relative;
+}
+
+.dateCol {
+  padding-right: 28px;
+  text-align: right;
+  padding-top: 20px;
+}
+
+.dateLabel {
+  font-size: 11px;
+  color: var(--color-text-soft);
+  font-family: var(--font-sans);
+  line-height: 1.5;
+}
+
+.diaryDot {
+  position: absolute;
+  left: 141px;
+  top: 22px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-bg);
+  border: 2px solid var(--color-accent);
+  z-index: 2;
+  box-shadow: 0 0 8px var(--color-accent-glow);
+}
+
+.contentCol {
+  padding-left: 36px;
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: 20px 24px;
+  transition: border-color 0.2s;
+  cursor: pointer;
+}
+
+.card:hover {
+  border-color: var(--color-accent-dim) !important;
+}
+
+.cardFlex {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.posterWrapper {
+  width: 54px;
+  flex-shrink: 0;
+  aspect-ratio: 2 / 3;
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.posterImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(0.5);
+}
+
+.infoWrapper {
+  flex: 1;
+}
+
+.titleRow {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+.movieTitle {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  color: var(--color-text);
+  line-height: 1.2;
+}
+
+.movieMeta {
+  font-size: 11px;
+  color: var(--color-text-soft);
+  font-family: var(--font-sans);
+  margin-bottom: 12px;
+}
+
+.badgesRow {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.moodBadge {
+  font-size: 10px;
+  padding: 3px 10px;
+  border: 1px solid rgba(212, 175, 122, 0.35);
+  color: var(--color-accent);
+  font-family: var(--font-sans);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.stageBadge {
+  font-size: 10px;
+  padding: 3px 10px;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-soft);
+  font-family: var(--font-sans);
+  letter-spacing: 0.08em;
+}
+
+.noteText {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 15px;
+  color: var(--color-text-soft);
+  line-height: 1.7;
+}
+
+.addBtnRow {
+  display: grid;
+  grid-template-columns: 148px 1fr;
+  gap: 0;
+  margin-top: 8px;
+}
+
+.addBtnCol {
+  padding-left: 36px;
+}
+
+.btnAddEntry {
+  padding: 11px 24px;
+  background: transparent;
+  color: var(--color-accent);
+  border: 1px solid var(--color-accent-dim);
+  font-family: var(--font-sans);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.btnAddEntry:hover {
+  background-color: var(--color-accent-glow);
+  border-color: var(--color-accent);
+}
+
+@media (max-width: 768px) {
+  .diaryRow {
+    grid-template-columns: 70px 1fr !important;
+  }
+  
+  .timelineLine {
+    left: 62px !important;
+  }
+  
+  .diaryDot {
+    left: 56px !important;
+  }
+
+  .dateCol {
+    padding-right: 14px;
+  }
+
+  .contentCol {
+    padding-left: 14px;
+  }
+
+  .card {
+    padding: 16px 14px;
+  }
+
+  .cardFlex {
+    gap: 12px;
+  }
+
+  .addBtnRow {
+    grid-template-columns: 70px 1fr !important;
+  }
+
+  .addBtnCol {
+    padding-left: 14px;
+  }
+
+  .btnAddEntry {
+    width: 100%;
+    justify-content: center;
+  }
+}
