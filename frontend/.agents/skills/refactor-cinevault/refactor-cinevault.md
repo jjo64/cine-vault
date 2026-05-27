@@ -551,18 +551,18 @@ No. Esta es una refactorización pura.
 ```ts
 // Si el componente usa estos valores, SOLO moverlos a constants.ts
 // No cambiar ningún hex, no inventar variables nuevas
-C.bg = '#080808'        → var(--cv-bg)
-C.surface = '#111111'   → var(--cv-surface)
-C.elevated = '#1A1A1A'  → var(--cv-elevated)
-C.border = '#252525'    → var(--cv-border)
-C.accent = '#D4AF7A'    → var(--cv-accent)
-C.accentDim = '#9A7A48' → var(--cv-accent-dim)
-C.text = '#E2E2E2'      → var(--cv-text)
-C.textSoft = '#7A7A7A'  → var(--cv-text-soft)
-C.textMuted = '#3A3A3A' → var(--cv-text-muted)
-C.gold = '#C8A96E'      → var(--cv-gold)
-SERIF = "'Cormorant Garamond', serif"  → var(--cv-font-serif)
-SANS = "'Syne', sans-serif"            → var(--cv-font-sans)
+C.bg = '#080808'        → var(--color-bg)
+C.surface = '#111111'   → var(--color-surface)
+C.elevated = '#1A1A1A'  → var(--color-elevated)
+C.border = '#252525'    → var(--color-border)
+C.accent = '#D4AF7A'    → var(--color-accent)
+C.accentDim = '#9A7A48' → var(--color-accent-dim)
+C.text = '#E2E2E2'      → var(--color-text)
+C.textSoft = '#7A7A7A'  → var(--color-text-soft)
+C.textMuted = '#3A3A3A' → var(--color-text-muted)
+C.gold = '#C8A96E'      → var(--color-gold)
+SERIF = "'Cormorant Garamond', serif"  → var(--font-serif)
+SANS = "'Syne', sans-serif"            → var(--font-sans)
 ```
 
 ### 🚫 Anti-patrones prohibidos (en cualquier archivo de CineVault)
