@@ -14,6 +14,14 @@ pnpm-debug.log*
 # Scratch
 scratch/
 
+# Scripts - Agentes
+REFACTOR_REPORT.md
+QA_REPORT.md
+pipeline.sh
+agent1-system-prompt.md
+agent2-system-prompt.md
+agent3-system-prompt.md
+
 # Build & Output
 dist/
 dist-ssr/

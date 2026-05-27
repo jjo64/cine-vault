@@ -1,0 +1,128 @@
+.layout {
+  --cv-bg: #080808;
+  --cv-surface: #111111;
+  --cv-elevated: #1A1A1A;
+  --cv-border: #252525;
+  --cv-accent: #D4AF7A;
+  --cv-accent-dim: #9A7A48;
+  --cv-accent-glow: rgba(212, 175, 122, 0.10);
+  --cv-text: #FFFFFF;
+  --cv-text-soft: #B0B0B0;
+  --cv-text-muted: #888888;
+  --cv-gold: #C8A96E;
+  --cv-font-serif: 'Cormorant Garamond', serif;
+  --cv-font-sans: 'Syne', sans-serif;
+
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 20px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--cv-border);
+  background: transparent;
+  transition: background 0.2s;
+}
+
+.layout:hover {
+  background: rgba(212, 175, 122, 0.02);
+}
+
+.link {
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.avatarContainer {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid var(--cv-border);
+  transition: border-color 0.3s;
+}
+
+.layout:hover .avatarContainer {
+  border-color: var(--cv-accent-dim);
+}
+
+.avatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  filter: saturate(0.5);
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.nameLink {
+  text-decoration: none;
+}
+
+.nameText {
+  font-family: var(--cv-font-serif);
+  font-size: 24px;
+  color: var(--cv-text);
+}
+
+.badge {
+  font-family: var(--cv-font-sans);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cv-accent);
+  border: 1px solid var(--cv-accent-dim);
+  padding: 3px 8px;
+}
+
+.roleText {
+  font-family: var(--cv-font-sans);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cv-accent-dim);
+  margin-bottom: 6px;
+}
+
+.notableRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.notableLabel {
+  font-family: var(--cv-font-serif);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--cv-text-muted);
+}
+
+.notableItem {
+  font-family: var(--cv-font-serif);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--cv-text-soft);
+}
+
+.followBtn {
+  margin-left: auto;
+  padding: 6px 16px;
+  background: transparent;
+  color: var(--cv-text-soft);
+  border: 1px solid var(--cv-border);
+  font-family: var(--cv-font-sans);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.followBtn.active {
+  color: var(--cv-accent);
+  border-color: var(--cv-accent-dim);
+}
