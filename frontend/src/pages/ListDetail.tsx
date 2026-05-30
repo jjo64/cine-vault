@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowLeft, Trash, Globe, Lock, Film, Check, Edit3, X, Search, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Trash, Globe, Lock, Film, Edit3, X, Search, Plus, Trash2 } from "lucide-react";
 import { getCurrentUser, type AuthUser } from "../services/authServices";
 import {
   getPublicListDetail,
@@ -11,7 +11,6 @@ import {
   addMovieToList,
   removeMovieFromList,
   type UserListDetail,
-  type UserListItem,
 } from "../services/listsServices";
 import { searchMovies, type SearchMovieResult } from "../services/searchServices";
 import { Grain } from "../components/shared/Grain";
