@@ -45,6 +45,8 @@ import rutasFeed from "./routes/feed.routes.js"
 import rutasRecommendations from "./routes/recommendations.routes.js"
 import rutasReports from "./routes/reports.routes.js"
 import rutasPersons from "./routes/persons.routes.js"
+import rutasSubscriptions from "./routes/subscriptions.routes.js"
+import rutasStats from "./routes/stats.routes.js"
 
 // --- Middlewares de Soporte ---
 import { manejadorErrores } from "./middlewares/error.middlewares.js"
@@ -209,6 +211,8 @@ app.use("/api/vault", rutasVault)
 app.use("/api/lists", rutasListas)
 app.use("/api/reviews", rutasResenas)
 app.use("/api/payments", rutasPagos)
+app.use("/api/subscriptions", rutasSubscriptions)
+app.use("/api/stats", rutasStats)
 app.use("/api/rbac", rutasRbac)
 app.use("/api/information", rutasInformacion)
 app.use("/api/favorites", rutasFavorities)
