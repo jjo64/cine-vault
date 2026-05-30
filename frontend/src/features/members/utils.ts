@@ -14,11 +14,11 @@ export function summaryToMember(s: MemberSummary): Member {
     handle: `@${s.username}`,
     avatar: s.avatar_url ?? "",
     role,
-    bio: "",
-    filmsLogged: 0,
-    followers: 0,
-    following: 0,
-    listsCreated: 0,
+    bio: s.bio ?? "",
+    filmsLogged: s._count?.diary_entries ?? 0,
+    followers: s._count?.follows_follows_following_idTousers ?? 0,
+    following: s._count?.follows_follows_follower_idTousers ?? 0,
+    listsCreated: s._count?.user_lists ?? 0,
     glowRgb: ROLE_GLOW[role] ?? ROLE_GLOW.member,
   };
 }
@@ -30,6 +30,6 @@ export function profileToMember(p: MemberProfile, base: Member): Member {
     filmsLogged: p._count?.diary_entries ?? 0,
     followers: p._count?.follows_follows_following_idTousers ?? 0,
     following: p._count?.follows_follows_follower_idTousers ?? 0,
-    listsCreated: 0,
+    listsCreated: p._count?.user_lists ?? 0,
   };
 }

@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, Check, Plus, Lock, Globe } from "lucide-react";
+import { X, Check, Plus, Lock, Globe, Search } from "lucide-react";
 import { C, SERIF, SANS } from "../../constants";
-import { createList } from "../../../../services/listsServices";
+import { createList, addMovieToList } from "../../../../services/listsServices";
+import { searchMovies, type SearchMovieResult } from "../../../../services/searchServices";
 
 export function CreateListModal({
   open,
@@ -19,22 +20,64 @@ export function CreateListModal({
   const [step, setStep] = useState<"form" | "success">("form");
   const [loading, setLoading] = useState(false);
 
+  // Movie selection states
+  const [selectedMovies, setSelectedMovies] = useState<SearchMovieResult[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchMovieResult[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+
+  // Debounced search for movies
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const data = await searchMovies(searchQuery.trim());
+        const filtered = (data?.results || []).filter(
+          (item) => item.media_type === "movie" || item.media_type === "tv"
+        );
+        setSearchResults(filtered.slice(0, 5));
+      } catch (err) {
+        console.error("Error searching movies", err);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   async function handleCreate() {
     if (!title.trim() || loading) return;
     setLoading(true);
     try {
-      await createList({
+      // 1. Create list
+      const created = await createList({
         name: title,
         description: desc,
         is_public: privacy === "public",
         tags: [],
       });
+
+      // 2. Add selected movies to the new list
+      if (selectedMovies.length > 0) {
+        await Promise.all(
+          selectedMovies.map((movie) => addMovieToList(created.id, movie.id))
+        );
+      }
+
       setStep("success");
       setTimeout(() => {
         setStep("form");
         setTitle("");
         setDesc("");
         setPrivacy("public");
+        setSelectedMovies([]);
+        setSearchQuery("");
         setLoading(false);
         onClose();
         onRefresh();
@@ -168,7 +211,7 @@ export function CreateListModal({
                         letterSpacing: "0.1em",
                       }}
                     >
-                      Ya podés añadir películas
+                      Colección configurada con éxito
                     </p>
                   </motion.div>
                 ) : (
@@ -301,7 +344,7 @@ export function CreateListModal({
                         />
                       </div>
 
-                      <div style={{ marginBottom: 32 }}>
+                      <div style={{ marginBottom: 20 }}>
                         <label
                           style={{
                             fontFamily: SANS,
@@ -354,6 +397,177 @@ export function CreateListModal({
                           </button>
                         </div>
                       </div>
+
+                      {/* Add movies search bar */}
+                      <div style={{ marginBottom: 20 }}>
+                        <label
+                          style={{
+                            fontFamily: SANS,
+                            fontSize: 9,
+                            letterSpacing: "0.22em",
+                            textTransform: "uppercase",
+                            color: C.textSoft,
+                            display: "block",
+                            marginBottom: 8,
+                          }}
+                        >
+                          Añadir películas (Opcional)
+                        </label>
+                        <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                          <Search size={12} style={{ position: "absolute", left: 12, color: "#666" }} />
+                          <input
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Buscar películas o series..."
+                            style={{
+                              width: "100%",
+                              padding: "10px 12px 10px 32px",
+                              background: "rgba(255,255,255,0.03)",
+                              border: `1px solid ${searchQuery ? C.accentDim : C.border}`,
+                              color: C.text,
+                              fontFamily: SANS,
+                              fontSize: 12,
+                              outline: "none",
+                              boxSizing: "border-box",
+                            }}
+                          />
+                          {searchQuery && (
+                            <button
+                              type="button"
+                              onClick={() => setSearchQuery("")}
+                              style={{
+                                position: "absolute",
+                                right: 12,
+                                background: "none",
+                                border: "none",
+                                color: C.textSoft,
+                                cursor: "pointer",
+                                fontSize: 12,
+                                display: "flex",
+                                alignItems: "center",
+                              }}
+                            >
+                              <X size={12} />
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Search Results in Modal */}
+                        {searchResults.length > 0 && (
+                          <div
+                            style={{
+                              background: C.surface,
+                              border: `1px solid ${C.border}`,
+                              marginTop: 4,
+                              display: "flex",
+                              flexDirection: "column",
+                              maxHeight: 180,
+                              overflowY: "auto",
+                            }}
+                          >
+                            {searchLoading && (
+                              <div style={{ padding: "8px 12px", color: C.textSoft, fontSize: 11 }}>
+                                Buscando...
+                              </div>
+                            )}
+                            {searchResults.map((item) => (
+                              <button
+                                type="button"
+                                key={item.id}
+                                onClick={() => {
+                                  // check duplicate
+                                  if (!selectedMovies.some((m) => m.id === item.id)) {
+                                    setSelectedMovies([...selectedMovies, item]);
+                                  }
+                                  setSearchQuery("");
+                                  setSearchResults([]);
+                                }}
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 10,
+                                  padding: "6px 12px",
+                                  background: "transparent",
+                                  border: "none",
+                                  borderBottom: `1px solid ${C.border}`,
+                                  textAlign: "left",
+                                  cursor: "pointer",
+                                  color: C.text,
+                                }}
+                              >
+                                <div style={{ width: 24, height: 36, background: "#161616", overflow: "hidden", flexShrink: 0 }}>
+                                  {item.poster_path && (
+                                    <img
+                                      src={`https://image.tmdb.org/t/p/w92${item.poster_path}`}
+                                      alt=""
+                                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                    />
+                                  )}
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontSize: 12, fontWeight: 500 }}>{item.title || item.name}</div>
+                                  <div style={{ fontSize: 10, color: C.textSoft }}>
+                                    {item.media_type === "tv" ? "Serie" : "Película"}
+                                    {item.release_date || item.first_air_date ? ` (${new Date(item.release_date || item.first_air_date!).getFullYear()})` : ""}
+                                  </div>
+                                </div>
+                                <Plus size={12} color={C.textSoft} />
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Selected movies list */}
+                      {selectedMovies.length > 0 && (
+                        <div style={{ marginBottom: 24 }}>
+                          <div style={{ fontFamily: SANS, fontSize: 8, letterSpacing: "0.15em", color: C.textSoft, textTransform: "uppercase", marginBottom: 8 }}>
+                            Películas seleccionadas ({selectedMovies.length})
+                          </div>
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 6,
+                              maxHeight: 120,
+                              overflowY: "auto",
+                              paddingRight: 4,
+                            }}
+                          >
+                            {selectedMovies.map((movie) => (
+                              <div
+                                key={movie.id}
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "space-between",
+                                  padding: "6px 10px",
+                                  background: "rgba(255,255,255,0.02)",
+                                  border: `1px solid ${C.border}`,
+                                }}
+                              >
+                                <span style={{ fontSize: 12, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginRight: 10 }}>
+                                  {movie.title || movie.name}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedMovies(selectedMovies.filter((m) => m.id !== movie.id))}
+                                  style={{
+                                    background: "none",
+                                    border: "none",
+                                    color: "#ff7b7b",
+                                    cursor: "pointer",
+                                    display: "flex",
+                                    alignItems: "center",
+                                  }}
+                                >
+                                  <X size={12} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
                       <motion.button
                         onClick={handleCreate}

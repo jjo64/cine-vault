@@ -22,6 +22,15 @@ export type MemberSummary = {
   email?: string;
   role: "admin" | "editor" | "member";
   avatar_url: string | null;
+  bio?: string | null;
+  _count?: {
+    reviews: number;
+    diary_entries: number;
+    watchlist: number;
+    user_lists?: number;
+    follows_follows_follower_idTousers: number;
+    follows_follows_following_idTousers: number;
+  };
 };
 
 /** Perfil completo con contadores de actividad devuelto por GET /api/users/:id */
@@ -36,6 +45,7 @@ export type MemberProfile = {
     reviews: number;
     diary_entries: number;
     watchlist: number;
+    user_lists?: number;
     follows_follows_follower_idTousers: number; // followers count
     follows_follows_following_idTousers: number; // following count
   };

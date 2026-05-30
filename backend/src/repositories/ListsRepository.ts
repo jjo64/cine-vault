@@ -59,7 +59,13 @@ export type ListItem = {
   movie_id: number
   /** Identificador externo para fetching de arte y sinopsis */
   tmdb_id: number | null
+  media_type: string | null
   added_at: Date
+  movie_info?: {
+    title: string
+    poster_path: string | null
+    release_date: string | null
+  } | null
 }
 
 /** Vista detallada de una lista con todos sus componentes hidratados */
@@ -133,7 +139,7 @@ export class ListsRepository {
         },
         items: {
           take: 4,
-          include: { movie_ref: { select: { tmdb_id: true } } },
+          include: { movie_ref: { select: { tmdb_id: true, media_type: true } } },
           orderBy: { added_at: "desc" },
         },
         _count: {
@@ -167,32 +173,37 @@ export class ListsRepository {
     }))
 
     // Hydrate posters
-    const allTmdbIds = new Set<number>()
+    const posterKeys = new Set<string>()
     lists.forEach((l) =>
       l.items.forEach((i) => {
-        if (i.movie_ref?.tmdb_id) allTmdbIds.add(i.movie_ref.tmdb_id)
+        if (i.movie_ref?.tmdb_id) {
+          const type = i.movie_ref.media_type || "movie"
+          posterKeys.add(`${type}/${i.movie_ref.tmdb_id}`)
+        }
       })
     )
 
-    const posterMap = new Map<number, string | null>()
+    const posterMap = new Map<string, string | null>()
     await Promise.allSettled(
-      Array.from(allTmdbIds).map(async (id) => {
+      Array.from(posterKeys).map(async (key) => {
         try {
-          const data = await consultarTMDB<{ poster_path: string | null }>(
-            `movie/${id}`
-          )
-          posterMap.set(id, data.poster_path)
+          const data = await consultarTMDB<{ poster_path: string | null }>(key)
+          posterMap.set(key, data.poster_path)
         } catch (e) {
-          posterMap.set(id, null)
+          posterMap.set(key, null)
         }
       })
     )
 
     return mappedLists.map((l, idx) => ({
       ...l,
-      posters: lists[idx].items.map((i) =>
-        i.movie_ref?.tmdb_id ? posterMap.get(i.movie_ref.tmdb_id) || null : null
-      ),
+      posters: lists[idx].items.map((i) => {
+        if (i.movie_ref?.tmdb_id) {
+          const type = i.movie_ref.media_type || "movie"
+          return posterMap.get(`${type}/${i.movie_ref.tmdb_id}`) || null
+        }
+        return null
+      }),
     }))
   }
 
@@ -210,7 +221,7 @@ export class ListsRepository {
         items: {
           include: {
             movie_ref: {
-              select: { tmdb_id: true },
+              select: { tmdb_id: true, media_type: true },
             },
           },
           orderBy: { added_at: "desc" },
@@ -228,8 +239,9 @@ export class ListsRepository {
       list.items.slice(0, 4).map(async (item) => {
         if (!item.movie_ref?.tmdb_id) return null
         try {
+          const type = item.movie_ref.media_type || "movie"
           const data = await consultarTMDB<{ poster_path: string | null }>(
-            `movie/${item.movie_ref.tmdb_id}`
+            `${type}/${item.movie_ref.tmdb_id}`
           )
           return data.poster_path
         } catch {
@@ -253,11 +265,33 @@ export class ListsRepository {
       updated_at: list.updated_at,
       items_count: list._count.items,
       posters,
-      items: list.items.map((item) => ({
-        movie_id: item.movie_id,
-        tmdb_id: item.movie_ref?.tmdb_id ?? null,
-        added_at: item.added_at,
-      })),
+      items: await Promise.all(
+        list.items.map(async (item) => {
+          let movieInfo = null
+          if (item.movie_ref?.tmdb_id) {
+            try {
+              const type = item.movie_ref.media_type || "movie"
+              const data = await consultarTMDB<any>(
+                `${type}/${item.movie_ref.tmdb_id}`
+              )
+              movieInfo = {
+                title: data.title || data.name || "Sin título",
+                poster_path: data.poster_path || "",
+                release_date: data.release_date || data.first_air_date || "",
+              }
+            } catch {
+              // ignore
+            }
+          }
+          return {
+            movie_id: item.movie_id,
+            tmdb_id: item.movie_ref?.tmdb_id ?? null,
+            media_type: item.movie_ref?.media_type ?? "movie",
+            added_at: item.added_at,
+            movie_info: movieInfo,
+          }
+        })
+      ),
     }
   }
 
@@ -282,7 +316,7 @@ export class ListsRepository {
           },
           items: {
             take: 4,
-            include: { movie_ref: { select: { tmdb_id: true } } },
+            include: { movie_ref: { select: { tmdb_id: true, media_type: true } } },
             orderBy: { added_at: "desc" },
           },
           _count: {
@@ -320,23 +354,24 @@ export class ListsRepository {
     }))
 
     // Hydrate posters for public lists
-    const allTmdbIds = new Set<number>()
+    const posterKeys = new Set<string>()
     rows.forEach((l) =>
       l.items.forEach((i) => {
-        if (i.movie_ref?.tmdb_id) allTmdbIds.add(i.movie_ref.tmdb_id)
+        if (i.movie_ref?.tmdb_id) {
+          const type = i.movie_ref.media_type || "movie"
+          posterKeys.add(`${type}/${i.movie_ref.tmdb_id}`)
+        }
       })
     )
 
-    const posterMap = new Map<number, string | null>()
+    const posterMap = new Map<string, string | null>()
     await Promise.allSettled(
-      Array.from(allTmdbIds).map(async (id) => {
+      Array.from(posterKeys).map(async (key) => {
         try {
-          const data = await consultarTMDB<{ poster_path: string | null }>(
-            `movie/${id}`
-          )
-          posterMap.set(id, data.poster_path)
+          const data = await consultarTMDB<{ poster_path: string | null }>(key)
+          posterMap.set(key, data.poster_path)
         } catch (e) {
-          posterMap.set(id, null)
+          posterMap.set(key, null)
         }
       })
     )
@@ -348,11 +383,13 @@ export class ListsRepository {
       has_more: skip + rows.length < total,
       items: mappedItems.map((l, idx) => ({
         ...l,
-        posters: rows[idx].items.map((i) =>
-          i.movie_ref?.tmdb_id
-            ? posterMap.get(i.movie_ref.tmdb_id) || null
-            : null
-        ),
+        posters: rows[idx].items.map((i) => {
+          if (i.movie_ref?.tmdb_id) {
+            const type = i.movie_ref.media_type || "movie"
+            return posterMap.get(`${type}/${i.movie_ref.tmdb_id}`) || null
+          }
+          return null
+        }),
       })),
     }
   }
@@ -376,7 +413,7 @@ export class ListsRepository {
         items: {
           include: {
             movie_ref: {
-              select: { tmdb_id: true },
+              select: { tmdb_id: true, media_type: true },
             },
           },
           orderBy: { added_at: "desc" },
@@ -394,8 +431,9 @@ export class ListsRepository {
       list.items.slice(0, 4).map(async (item) => {
         if (!item.movie_ref?.tmdb_id) return null
         try {
+          const type = item.movie_ref.media_type || "movie"
           const data = await consultarTMDB<{ poster_path: string | null }>(
-            `movie/${item.movie_ref.tmdb_id}`
+            `${type}/${item.movie_ref.tmdb_id}`
           )
           return data.poster_path
         } catch {
@@ -425,11 +463,33 @@ export class ListsRepository {
         avatar_url: list.users.avatar_url,
         is_verified: list.users.is_verified,
       },
-      items: list.items.map((item) => ({
-        movie_id: item.movie_id,
-        tmdb_id: item.movie_ref?.tmdb_id ?? null,
-        added_at: item.added_at,
-      })),
+      items: await Promise.all(
+        list.items.map(async (item) => {
+          let movieInfo = null
+          if (item.movie_ref?.tmdb_id) {
+            try {
+              const type = item.movie_ref.media_type || "movie"
+              const data = await consultarTMDB<any>(
+                `${type}/${item.movie_ref.tmdb_id}`
+              )
+              movieInfo = {
+                title: data.title || data.name || "Sin título",
+                poster_path: data.poster_path || "",
+                release_date: data.release_date || data.first_air_date || "",
+              }
+            } catch {
+              // ignore
+            }
+          }
+          return {
+            movie_id: item.movie_id,
+            tmdb_id: item.movie_ref?.tmdb_id ?? null,
+            media_type: item.movie_ref?.media_type ?? "movie",
+            added_at: item.added_at,
+            movie_info: movieInfo,
+          }
+        })
+      ),
     }
   }
 

@@ -26,7 +26,13 @@ export type UserListSummary = {
 export type UserListItem = {
   movie_id: number;
   tmdb_id: number | null;
+  media_type?: string;
   added_at: string;
+  movie_info?: {
+    title: string;
+    poster_path: string | null;
+    release_date: string | null;
+  } | null;
 };
 
 export type UserListDetail = UserListSummary & {

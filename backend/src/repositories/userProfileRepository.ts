@@ -6,7 +6,7 @@
  * seguidores) y proyecciones enriquecidas para la visualización de perfiles en la plataforma.
  */
 
-import { Prisma } from "@prisma/client"
+import { Prisma, users_membership } from "@prisma/client"
 import { prisma } from "../lib/prisma.js"
 
 // --- Tipado de la Capa de Presentación Social ---
@@ -34,6 +34,7 @@ type UserPublicProfile = {
   avatar_url: string | null
   bio: string | null
   created_at: Date
+  membership: users_membership | null
   /** Estadísticas vitales de participación en la comunidad */
   _count: {
     reviews: number
@@ -53,6 +54,15 @@ type UserSummary = {
   email: string
   role: string
   avatar_url: string | null
+  bio?: string | null
+  _count?: {
+    reviews: number
+    diary_entries: number
+    watchlist: number
+    user_lists: number
+    follows_follows_follower_idTousers: number
+    follows_follows_following_idTousers: number
+  }
 }
 
 /** Resultado de búsqueda de perfiles en el motor social */
@@ -144,12 +154,14 @@ export class UserProfileRepository implements IUserProfileRepository {
         avatar_url: true,
         bio: true,
         created_at: true,
+        membership: true,
         /** Agregaciones automatizadas de Prisma para el Social Cloud */
         _count: {
           select: {
             reviews: true,
             diary_entries: true,
             watchlist: true,
+            user_lists: true,
             follows_follows_follower_idTousers: true,
             follows_follows_following_idTousers: true,
           },
@@ -170,11 +182,13 @@ export class UserProfileRepository implements IUserProfileRepository {
         avatar_url: true,
         bio: true,
         created_at: true,
+        membership: true,
         _count: {
           select: {
             reviews: true,
             diary_entries: true,
             watchlist: true,
+            user_lists: true,
             follows_follows_follower_idTousers: true,
             follows_follows_following_idTousers: true,
           },
@@ -194,6 +208,17 @@ export class UserProfileRepository implements IUserProfileRepository {
         email: true,
         role: true,
         avatar_url: true,
+        bio: true,
+        _count: {
+          select: {
+            reviews: true,
+            diary_entries: true,
+            watchlist: true,
+            user_lists: true,
+            follows_follows_follower_idTousers: true,
+            follows_follows_following_idTousers: true,
+          },
+        },
       },
     }) as Promise<UserSummary[]>
   }

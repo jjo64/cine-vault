@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { Heart, Bookmark, Lock, Film } from "lucide-react";
 import { C, SERIF, SANS, TMDB_BASE } from "../../constants";
@@ -11,6 +12,7 @@ import type { UserListSummary } from "../../types";
 const item_likes_count_mock_placeholder = 0;
 
 export function ListCard({ list, index }: { list: UserListSummary; index: number }) {
+  const navigate = useNavigate();
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
   const [hov, setHov] = useState(false);
@@ -22,6 +24,7 @@ export function ListCard({ list, index }: { list: UserListSummary; index: number
 
   return (
     <motion.div
+      onClick={() => navigate(`/lists/${list.id}`)}
       initial={{ opacity: 0, y: 18 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-40px" }}
