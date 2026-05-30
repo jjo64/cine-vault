@@ -491,6 +491,7 @@ export function useProfilePageData(userParam?: string) {
       memberSince: year,
       avatarUrl: profile?.avatar_url || IMG.avatar,
       bio,
+      membership: profile?.membership,
     };
   }, [profile]);
 

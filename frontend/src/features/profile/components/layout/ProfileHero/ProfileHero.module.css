@@ -98,6 +98,14 @@
   flex: 1;
 }
 
+.displayNameWrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
 .displayName {
   font-family: var(--font-serif);
   font-size: 44px;
@@ -105,7 +113,37 @@
   line-height: 1;
   letter-spacing: -0.01em;
   color: var(--color-text);
-  margin-bottom: 6px;
+  margin: 0;
+}
+
+.membershipBadge {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  user-select: none;
+}
+
+.membershipBadge.vip {
+  border: 1px solid var(--color-accent);
+  background: linear-gradient(135deg, rgba(212, 175, 122, 0.15) 0%, rgba(212, 175, 122, 0.02) 100%);
+  color: var(--color-accent);
+  box-shadow: 0 0 10px var(--color-accent-glow);
+}
+
+.membershipBadge.pro {
+  background: linear-gradient(135deg, #d4af7a 0%, #c8a96e 50%, #9a7a48 100%);
+  color: #080808;
+  border: 1px solid #d4af7a;
+  box-shadow: 0 0 15px rgba(212, 175, 122, 0.4);
+  font-weight: 800;
 }
 
 .metaText {

@@ -21,6 +21,7 @@ export function useVaultData(username: string | undefined) {
   const setLoadError = useVaultStore((s) => s.setLoadError);
   const setOwner = useVaultStore((s) => s.setOwner);
   const resetStore = useVaultStore((s) => s.resetStore);
+  const refreshTrigger = useVaultStore((s) => s.refreshTrigger);
 
   useEffect(() => {
     let active = true;
@@ -100,5 +101,5 @@ export function useVaultData(username: string | undefined) {
     return () => {
       active = false;
     };
-  }, [username, setVaultData, setLoading, setLoadError, setOwner, resetStore]);
+  }, [username, setVaultData, setLoading, setLoadError, setOwner, resetStore, refreshTrigger]);
 }

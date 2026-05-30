@@ -13,6 +13,7 @@ export type ProfileUser = {
   bio?: string | null;
   created_at?: string;
   is_following?: boolean;
+  membership?: string;
   _count?: {
     reviews?: number;
     diary_entries?: number;

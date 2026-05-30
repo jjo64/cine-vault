@@ -79,8 +79,15 @@ export function ProfileHero({ onToggleFollow }: ProfileHeroProps) {
           </div>
 
           <div className={styles.profileInfo}>
-            <div className={styles.displayName}>
-              {profileHeader.displayName}
+            <div className={styles.displayNameWrapper}>
+              <h1 className={styles.displayName}>
+                {profileHeader.displayName}
+              </h1>
+              {profileHeader.membership && profileHeader.membership !== "free" && (
+                <span className={`${styles.membershipBadge} ${styles[profileHeader.membership]}`}>
+                  {profileHeader.membership.toUpperCase()}
+                </span>
+              )}
             </div>
             <div className={styles.metaText}>
               @{profileHeader.username} · miembro desde {profileHeader.memberSince}

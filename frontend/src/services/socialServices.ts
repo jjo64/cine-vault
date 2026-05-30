@@ -338,6 +338,7 @@ export const sendOnboardingInteraction = async (
 ) => {
   const response = await authorizedFetch(`/api/recommendations/interact`, {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ movieId, type, metadata }),
   });
   if (!response.ok) throw new Error("No se pudo guardar la interacción");

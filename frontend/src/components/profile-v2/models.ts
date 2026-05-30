@@ -64,6 +64,7 @@ export type ProfileHeaderData = {
   memberSince: string;
   avatarUrl: string;
   bio: string;
+  membership?: string;
 };
 
 export type ProfileConnection = {

@@ -107,7 +107,7 @@ export function Navbar({
     if (item.media_type === "person") {
       navigate(`/person/${item.id}`);
     } else if (item.media_type === "tv") {
-      navigate(`/tv/${item.id}`);
+      navigate(`/tv/${item.id}-${createSlug(label)}`);
     } else {
       navigate(`/movie/${item.id}-${createSlug(label)}`);
     }

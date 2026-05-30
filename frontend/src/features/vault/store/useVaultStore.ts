@@ -11,12 +11,14 @@ export const useVaultStore = create<VaultStore>((set) => ({
   loading: true,
   loadError: null,
   activeFilter: "TODO",
+  refreshTrigger: 0,
 
   setLoading: (loading) => set({ loading }),
   setLoadError: (loadError) => set({ loadError }),
   setOwner: (isOwner) => set({ isOwner }),
   setVaultData: (user, entries) => set({ user, entries }),
   setActiveFilter: (activeFilter) => set({ activeFilter }),
+  triggerRefresh: () => set((s) => ({ refreshTrigger: s.refreshTrigger + 1 })),
   resetStore: () =>
     set({
       user: { ...initialUser },
@@ -25,5 +27,6 @@ export const useVaultStore = create<VaultStore>((set) => ({
       loading: true,
       loadError: null,
       activeFilter: "TODO",
+      refreshTrigger: 0,
     }),
 }));

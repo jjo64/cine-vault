@@ -54,6 +54,8 @@ export interface VaultStore {
   setOwner: (owner: boolean) => void;
   setVaultData: (user: VaultUser, entries: VaultEntry[]) => void;
   setActiveFilter: (filter: FilterType) => void;
+  refreshTrigger: number;
+  triggerRefresh: () => void;
   resetStore: () => void;
 }
 

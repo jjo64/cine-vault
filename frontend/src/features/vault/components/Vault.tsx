@@ -1,4 +1,5 @@
 import { useParams, Link } from "react-router-dom";
+import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import Masonry, { ResponsiveMasonry } from "react-responsive-masonry";
 import { Bookmark, ArrowLeft, Crown, Plus } from "lucide-react";
@@ -8,6 +9,7 @@ import { FILTER_MAP } from "../constants";
 import { GrainOverlay } from "./shared/GrainOverlay/GrainOverlay";
 import { SafeImg } from "./shared/SafeImg/SafeImg";
 import { EntryCard } from "./Cards/EntryCard";
+import { AddMediaModal } from "./AddMediaModal";
 import type { FilterType } from "../types";
 import styles from "./Vault.module.css";
 
@@ -16,6 +18,8 @@ export function Vault() {
 
   // Carga de datos asíncronos en el custom hook
   useVaultData(username);
+
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   // Leer estado de Zustand
   const {
@@ -26,6 +30,7 @@ export function Vault() {
     loadError,
     activeFilter,
     setActiveFilter,
+    triggerRefresh,
   } = useVaultStore();
 
   const filters: FilterType[] = [
@@ -156,16 +161,25 @@ export function Vault() {
 
       {/* Floating add button (owner only) */}
       {isOwner && (
-        <motion.button
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.5, type: "spring" }}
-          className={styles.addButton}
-          whileHover={{ scale: 1.04 }}
-          whileTap={{ scale: 0.97 }}
-        >
-          <Plus size={13} /> Agregar al vault
-        </motion.button>
+        <>
+          <motion.button
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.5, type: "spring" }}
+            className={styles.addButton}
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => setIsAddModalOpen(true)}
+          >
+            <Plus size={13} /> Agregar al vault
+          </motion.button>
+
+          <AddMediaModal
+            isOpen={isAddModalOpen}
+            onClose={() => setIsAddModalOpen(false)}
+            onSuccess={triggerRefresh}
+          />
+        </>
       )}
     </div>
   );

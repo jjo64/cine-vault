@@ -426,6 +426,7 @@ export function useProfileData(usernameParam?: string) {
           memberSince: year,
           avatarUrl: fullProfileData.avatar_url || IMG.avatar,
           bio,
+          membership: fullProfileData.membership,
         };
 
         const writtenReviews = nextReviews.filter((entry) => !isQuickRatingPlaceholder(entry.content));
