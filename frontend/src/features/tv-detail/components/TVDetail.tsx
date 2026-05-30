@@ -25,10 +25,11 @@ import { Hero } from "../../movie-detail/components/Hero";
 import { ReviewLogModal } from "../../movie-detail/components/ReviewLogModal";
 
 export function TVDetail() {
-  const { slugOrId } = useParams<{ slugOrId: string }>();
+  const { slugOrId, id } = useParams<{ slugOrId?: string; id?: string }>();
+  const identifier = slugOrId || id;
   const navigate = useNavigate();
 
-  useTVDetailData(slugOrId);
+  useTVDetailData(identifier);
   const { detail, loading, error, watchedIds, toggleEpisodeWatched } = useTVDetailStore();
 
   const {
@@ -54,7 +55,7 @@ export function TVDetail() {
     handleSaveReviewLog,
   } = useUserActions(detail?.id);
 
-  if (!slugOrId) return null;
+  if (!identifier) return null;
 
   if (loading) {
     return (

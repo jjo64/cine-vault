@@ -30,7 +30,7 @@ describe("semantic search helpers", () => {
     const analysis = analizarQuery("fight club")
 
     expect(analysis.tipo_detectado).toBe("titulo")
-    expect(analysis.queries_tmdb.buscar_personas).toBe(false)
+    expect(analysis.queries_tmdb.buscar_personas).toBe(true)
     expect(analysis.queries_tmdb.buscar_peliculas).toBe(true)
     expect(analysis.queries_tmdb.buscar_tv).toBe(true)
   })

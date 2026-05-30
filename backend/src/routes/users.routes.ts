@@ -38,6 +38,7 @@ import {
   buscarUsuariosQuerySchema,
   usernameParamSchema,
 } from "../schemas/user.js"
+import { getPosterOptions, selectPoster } from "../controllers/SubscriptionsController.js"
 
 /**
  * @swagger
@@ -212,6 +213,23 @@ router.get(
   "/:id/badges",
   validarParams(idParamSchema),
   manejadorAsincrono(obtenerInsignias)
+)
+
+/**
+ * ---------------------------------------------------------------------------
+ * BLOQUE: PÓSTERS ALTERNATIVOS (Membresía)
+ * ---------------------------------------------------------------------------
+ */
+router.get(
+  "/posters/options",
+  middlewareAutenticacion,
+  manejadorAsincrono(getPosterOptions)
+)
+
+router.patch(
+  "/posters/selection",
+  middlewareAutenticacion,
+  manejadorAsincrono(selectPoster)
 )
 
 export default router

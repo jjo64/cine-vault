@@ -8,7 +8,7 @@ import {
   LogOut,
   Settings,
   User,
-  ChevronLeft,
+  Plus,
 } from "lucide-react";
 import { useSocket } from "../context/SocketContext";
 import { logoutCurrentUser, type AuthUser } from "../services/authServices";
@@ -121,7 +121,7 @@ const AuthenticatedNavbar: React.FC<NavbarProps> = ({ user: initialUser }) => {
     if (item.media_type === "person") {
       navigate(`/person/${item.id}`);
     } else if (item.media_type === "tv") {
-      navigate(`/tv/${item.id}`);
+      navigate(`/tv/${item.id}-${createSlug(label)}`);
     } else {
       navigate(`/movie/${item.id}-${createSlug(label)}`);
     }
@@ -288,12 +288,20 @@ const AuthenticatedNavbar: React.FC<NavbarProps> = ({ user: initialUser }) => {
         </div>
 
         <button
-          className="auth-nav-back-btn"
-          onClick={() => navigate(-1)}
-          aria-label="Volver"
+          className="auth-nav-diary-btn"
+          onClick={() => {
+            if (!user) {
+              window.dispatchEvent(
+                new CustomEvent("open-auth-modal", { detail: { mode: "login" } }),
+              );
+            } else {
+              window.dispatchEvent(new CustomEvent("open-diary-search-modal"));
+            }
+          }}
+          aria-label="Añadir entrada al diario"
         >
-          <ChevronLeft size={14} />
-          VOLVER
+          <Plus size={14} />
+          + DIARIO
         </button>
 
         {user && (

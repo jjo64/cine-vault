@@ -94,6 +94,7 @@ export function ReviewLogModal({
     : "/no-poster.svg";
   const canUseCriticalMode =
     String(membership || "").toLowerCase() === "pro" ||
+    String(membership || "").toLowerCase() === "vip" ||
     String(role || "").toLowerCase() === "admin";
   const criticalLocked = mode === "CRITICO" && !canUseCriticalMode;
 
@@ -164,7 +165,7 @@ export function ReviewLogModal({
                 }}
               >
                 El modo CRITICO esta bloqueado en tu plan. Si te interesa
-                desbloquearlo, actualiza a Pro desde Settings suscripcion.
+                desbloquearlo, actualiza a VIP o PRO desde Settings suscripción.
               </div>
             )}
 
@@ -408,7 +409,7 @@ export function ReviewLogModal({
                   fontSize: 11,
                 }}
               >
-                El modo CRITICO requiere plan Pro o permisos Admin.
+                El modo CRITICO requiere plan VIP, PRO o permisos Admin.
               </div>
             )}
           </div>

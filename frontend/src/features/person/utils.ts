@@ -26,7 +26,8 @@ export function getCreditYear(item: CreditItem) {
 
 export function movieHref(item: CreditItem) {
   const title = getCreditTitle(item);
-  return `/movie/${item.id}-${createSlug(title)}`;
+  const type = item.media_type === "tv" ? "tv" : "movie";
+  return `/${type}/${item.id}-${createSlug(title)}`;
 }
 
 export function buildAwards(person: PersonDetail, knownFor: CreditItem[]) {

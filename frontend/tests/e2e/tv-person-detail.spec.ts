@@ -116,27 +116,23 @@ test('tv detail muestra secciones completas y temporadas expandibles', async ({ 
   await page.goto('/tv/1396')
 
   await expect(page.getByRole('heading', { name: 'Breaking Bad' })).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Temporadas' })).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Cast y Crew' })).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Dónde ver' })).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Series similares' })).toBeVisible()
+  await expect(page.getByText('Temporadas y episodios')).toBeVisible()
+  await expect(page.getByText('Equipo creativo')).toBeVisible()
+  await expect(page.getByText('Dónde verla')).toBeVisible()
+  await expect(page.getByText('Series que te van a gustar')).toBeVisible()
 
-  const expandButton = page.getByRole('button', { name: /ver episodios/i }).first()
-  if (await expandButton.isVisible().catch(() => false)) {
-    await expandButton.click()
-  }
-
-  await expect(page.getByText(/E1:\s*Episodio 1/i)).toBeVisible()
+  await expect(page.getByText('E01')).toBeVisible()
+  await expect(page.getByText('Episodio 1')).toBeVisible()
 })
 
 test('person detail mantiene tabs y muestra metricas nuevas', async ({ page }) => {
   await page.goto('/person/525')
 
   await expect(page.getByRole('heading', { name: 'Christopher Nolan' })).toBeVisible()
-  await expect(page.getByText('Acting credits')).toBeVisible()
-  await expect(page.getByText('Crew credits')).toBeVisible()
-  await expect(page.getByText('Known for')).toBeVisible()
+  await expect(page.getByText('Conocido por')).toBeVisible()
+  await expect(page.getByText('Filmografía')).toBeVisible()
 
-  await page.getByRole('button', { name: 'Como director o crew' }).click()
-  await expect(page.getByText('Directing')).toBeVisible()
+  await expect(page.getByRole('button', { name: /Crew \(\d+\)/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /Actor \(\d+\)/ })).toBeVisible()
+  await expect(page.getByText('The Dark Knight').first()).toBeVisible()
 })

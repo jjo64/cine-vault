@@ -47,6 +47,7 @@ export type VaultSocialEntryRow = {
   user_id: number
   movie_id: number | null
   tmdb_id: number | null
+  media_type: string | null
   entry_type: VaultSocialEntryType
   title: string
   content: string
@@ -248,6 +249,7 @@ export class VaultRepository implements IVaultRepository {
           vse.user_id,
           vse.movie_id,
           mr.tmdb_id,
+          mr.media_type,
           vse.entry_type,
           vse.title,
           vse.content,
@@ -368,6 +370,7 @@ export class VaultRepository implements IVaultRepository {
         vse.user_id,
         vse.movie_id,
         mr.tmdb_id,
+        mr.media_type,
         vse.entry_type,
         vse.title,
         vse.content,

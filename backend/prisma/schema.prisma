@@ -63,6 +63,8 @@ model movies_ref {
   vault                 vault[]
   vault_social_entries  vault_social_entries[]
   watchlist             watchlist[]
+  vault_videos          vault_videos[]
+  vault_clips           vault_clips[]
 
   @@unique([tmdb_id, media_type], name: "tmdb_media_unique")
 }
@@ -276,6 +278,10 @@ model users {
   watchlist                           watchlist[]
   user_taste_profiles                 user_taste_profiles?
   explicit_interactions               explicit_interactions[]
+  selected_poster_key                 String?                    @db.VarChar(255)
+  vault_videos                        vault_videos[]
+  vault_clips                         vault_clips[]
+  recommendation_rewards              recommendation_rewards[]
 
   @@index([is_verified, created_at])
   @@index([locked_until])
@@ -736,4 +742,60 @@ model diary_sessions {
 
   @@index([user_id], map: "idx_diary_sessions_user_id")
   @@index([user_id, date], map: "idx_diary_sessions_user_date")
+}
+
+model vault_videos {
+  id           Int              @id @default(autoincrement())
+  user_id      Int
+  movie_id     Int?
+  media_type   ReviewMediaType? @default(movie)
+  title        String           @db.VarChar(255)
+  video_url    String           @db.VarChar(500)
+  duration_sec Int?
+  cover_url    String?          @db.VarChar(500)
+  is_public    Boolean          @default(true)
+  created_at   DateTime         @default(now()) @db.Timestamp(0)
+  updated_at   DateTime         @default(now()) @updatedAt @db.Timestamp(0)
+
+  users        users            @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  movies_ref   movies_ref?      @relation(fields: [movie_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id])
+  @@index([movie_id])
+}
+
+model vault_clips {
+  id         Int              @id @default(autoincrement())
+  user_id    Int
+  movie_id   Int?
+  media_type ReviewMediaType? @default(movie)
+  title      String           @db.VarChar(255)
+  clip_url   String           @db.VarChar(500)
+  cover_url  String?          @db.VarChar(500)
+  is_public  Boolean          @default(true)
+  pinned     Boolean          @default(false)
+  created_at DateTime         @default(now()) @db.Timestamp(0)
+  updated_at DateTime         @default(now()) @updatedAt @db.Timestamp(0)
+
+  users      users            @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  movies_ref movies_ref?      @relation(fields: [movie_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id])
+  @@index([movie_id])
+}
+
+model recommendation_rewards {
+  id                Int             @id @default(autoincrement())
+  user_id           Int
+  recommendation_id String          @db.VarChar(255)
+  media_id          Int
+  media_type        ReviewMediaType @default(movie)
+  points            Decimal         @db.Decimal(10, 2)
+  multiplier        Decimal         @db.Decimal(5, 2)
+  created_at        DateTime        @default(now()) @db.Timestamp(0)
+
+  users             users           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, recommendation_id])
+  @@index([user_id])
 }

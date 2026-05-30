@@ -10,6 +10,8 @@ import {
   createCheckoutSession,
   createPortalSession,
   stripeWebhook,
+  syncCheckoutSession,
+  reactivateSubscription,
 } from "../controllers/PaymentsController.js"
 import { middlewareAutenticacion } from "../middlewares/auth.middlewares.js"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
@@ -51,6 +53,24 @@ router.post(
   "/portal-session",
   middlewareAutenticacion,
   manejadorAsincrono(createPortalSession)
+)
+
+/**
+ * Sincroniza de forma inmediata una sesión de checkout completada.
+ */
+router.post(
+  "/sync-session",
+  middlewareAutenticacion,
+  manejadorAsincrono(syncCheckoutSession)
+)
+
+/**
+ * Reactiva una suscripción cancelada dentro del periodo de gracia.
+ */
+router.post(
+  "/reactivate-subscription",
+  middlewareAutenticacion,
+  manejadorAsincrono(reactivateSubscription)
 )
 
 /**

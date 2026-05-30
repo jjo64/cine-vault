@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { Bookmark, Film, Heart, Users } from "lucide-react";
 import { C, SERIF, SANS, TMDB_BASE } from "../../constants";
@@ -14,12 +15,14 @@ export function OfficialListCard({
   list: UserListSummary;
   index: number;
 }) {
+  const navigate = useNavigate();
   const [hov, setHov] = useState(false);
   const [saved, setSaved] = useState(false);
   const glowColor = list.glow_color || "212,175,122";
 
   return (
     <motion.div
+      onClick={() => navigate(`/lists/${list.id}`)}
       initial={{ opacity: 0, x: 20 }}
       whileInView={{ opacity: 1, x: 0 }}
       viewport={{ once: true }}

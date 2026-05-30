@@ -1,0 +1,287 @@
+.pageContainer {
+  background: var(--color-bg);
+  min-height: 100vh;
+  color: var(--color-text);
+}
+
+.pageContent {
+  padding-top: 60px;
+}
+
+.headerSection {
+  position: relative;
+  overflow: hidden;
+  padding: 48px 40px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.gridOverlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(255, 255, 255, 0.013) 40px), repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(255, 255, 255, 0.008) 40px);
+}
+
+.glowBackdrop {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 200px;
+  background: radial-gradient(ellipse at 70% 100%, rgba(212, 175, 122, 0.07) 0%, transparent 55%);
+  pointer-events: none;
+}
+
+.headerInner {
+  position: relative;
+  z-index: 1;
+  max-width: 1160px;
+  margin: 0 auto;
+}
+
+.headerRow {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 40px;
+  padding-bottom: 36px;
+}
+
+.headerTag {
+  font-family: var(--font-sans);
+  font-size: 9px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  margin-bottom: 12px;
+}
+
+.headerTitle {
+  font-family: var(--font-serif);
+  font-weight: 300;
+  font-size: clamp(38px, 5vw, 58px);
+  color: var(--color-text);
+  margin: 0 0 10px;
+  line-height: 1.0;
+  letter-spacing: -0.01em;
+}
+
+.headerDescription {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 16px;
+  color: var(--color-text-soft);
+  margin: 0;
+  line-height: 1.55;
+}
+
+.searchWrapper {
+  position: relative;
+  width: 280px;
+  flex-shrink: 0;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-soft);
+  pointer-events: none;
+  transition: color 0.2s;
+}
+
+.searchIconFocused {
+  color: var(--color-accent);
+}
+
+.searchInput {
+  width: 100%;
+  padding: 12px 36px 12px 38px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.searchInputFocused {
+  border-color: var(--color-accent-dim);
+  box-shadow: 0 0 0 3px var(--color-accent-glow);
+}
+
+.clearBtn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-soft);
+  display: flex;
+  padding: 2px;
+}
+
+.tabsContainer {
+  display: flex;
+  gap: 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.tabItem {
+  padding: 12px 20px;
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  border-right: 1px solid var(--color-border);
+}
+
+.tabItemLast {
+  border-right: none;
+}
+
+.tabCount {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 18px;
+  color: var(--color-text);
+}
+
+.tabCountFirst {
+  color: var(--color-accent);
+}
+
+.tabLabel {
+  font-family: var(--font-sans);
+  font-size: 9px;
+  color: var(--color-text-muted);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.mainContent {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 40px 40px 80px;
+}
+
+.errorSection {
+  padding: 48px 0;
+  text-align: center;
+}
+
+.errorText {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 20px;
+  color: var(--color-text-soft);
+  margin-bottom: 12px;
+}
+
+.noResultsSection {
+  padding: 48px 0;
+  text-align: center;
+}
+
+.noResultsText {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 20px;
+  color: var(--color-text-soft);
+  margin-bottom: 12px;
+}
+
+.clearQueryBtn {
+  padding: 10px 24px;
+  background: transparent;
+  border: 1px solid var(--color-accent-dim);
+  color: var(--color-accent);
+  font-family: var(--font-sans);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.section {
+  margin-bottom: 52px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.sectionIndicator {
+  width: 3px;
+  height: 22px;
+}
+
+.sectionIndicatorAdmin {
+  background: linear-gradient(to bottom, var(--color-accent), var(--color-accent-dim));
+}
+
+.sectionIndicatorEditor {
+  background: linear-gradient(to bottom, var(--color-accent-dim), rgba(180, 150, 90, 0.4));
+}
+
+.sectionIndicatorCommunity {
+  background: linear-gradient(to bottom, var(--color-text-soft), var(--color-text-muted));
+}
+
+.sectionTitle {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: 28px;
+  color: var(--color-text);
+  margin: 0;
+  line-height: 1;
+}
+
+.sectionSubtitle {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--color-text-soft);
+  margin: 3px 0 0;
+}
+
+.sectionLine {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, var(--color-border), transparent);
+  margin-left: 8px;
+}
+
+.sectionCount {
+  font-family: var(--font-sans);
+  font-size: 9px;
+  color: var(--color-text-muted);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.adminsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.editorsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.communityGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}

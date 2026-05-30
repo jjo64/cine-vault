@@ -1,0 +1,370 @@
+/**
+ * @file AdvancedStats.module.css
+ * @description Estilos premium para la pantalla de estadísticas y exportador de datos.
+ */
+
+.container {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: var(--space-xl) var(--page-padding-x);
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+.backRow {
+  margin-bottom: var(--space-lg);
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-soft);
+  text-decoration: none;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  transition: color 0.2s ease;
+}
+
+.backLink:hover {
+  color: #fff;
+}
+
+.header {
+  margin-bottom: var(--space-xl);
+}
+
+.titleSerif {
+  font-family: var(--font-serif);
+  font-size: clamp(2rem, 3.5vw, 3rem);
+  font-weight: 300;
+  color: #fff;
+  line-height: 1.1;
+  margin-bottom: var(--space-xs);
+}
+
+.subtitle {
+  font-family: var(--font-sans);
+  font-size: 1.05rem;
+  color: var(--color-text-soft);
+  max-width: 600px;
+  line-height: 1.5;
+}
+
+/* Upsell Wrapper for Free */
+.upsellWrapper {
+  text-align: center;
+  max-width: 650px;
+  margin: var(--space-xl) auto 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.lockBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(139, 58, 58, 0.1);
+  border: 1px solid #8b3a3a;
+  color: #ff9999;
+  padding: 6px 14px;
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  margin-bottom: var(--space-md);
+}
+
+.premiumBtn {
+  font-family: var(--font-sans);
+  display: inline-block;
+  background: var(--color-accent);
+  color: var(--color-bg);
+  border: 1px solid var(--color-accent);
+  padding: 14px 28px;
+  font-size: 1rem;
+  font-weight: bold;
+  text-decoration: none;
+  margin: var(--space-md) 0 var(--space-xl);
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.premiumBtn:hover {
+  background: #fff;
+  border-color: #fff;
+  color: #000;
+}
+
+/* Mock Preview of stats under blur */
+.mockPreview {
+  position: relative;
+  width: 100%;
+  border: 1px solid var(--color-border);
+  background: #0e0e0e;
+  padding: var(--space-md);
+  margin-top: var(--space-md);
+  overflow: hidden;
+}
+
+.blurOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(8, 8, 8, 0.7);
+  backdrop-filter: blur(14px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  z-index: 10;
+  font-family: var(--font-sans);
+  color: #fff;
+  font-size: 1.1rem;
+}
+
+.mockGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  opacity: 0.15;
+}
+
+.mockCard {
+  background: #151515;
+  border: 1px solid var(--color-border);
+  padding: 16px;
+  text-align: left;
+}
+
+.mockCard h3 {
+  font-family: var(--font-serif);
+  font-size: 1.1rem;
+  margin-bottom: 12px;
+}
+
+.mockBar {
+  background: #252525;
+  padding: 6px;
+  margin-bottom: 6px;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+}
+
+.mockStreak {
+  font-family: var(--font-serif);
+  font-size: 2rem;
+  color: var(--color-accent);
+}
+
+/* Stats Overview Grid */
+.overviewGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-md);
+  margin-bottom: var(--space-xl);
+}
+
+.statCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: var(--space-md);
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.statIcon {
+  color: var(--color-accent);
+  margin-top: 4px;
+}
+
+.statInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.statLabel {
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  color: var(--color-text-soft);
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.statVal {
+  font-family: var(--font-serif);
+  font-size: 2rem;
+  font-weight: 300;
+  color: #fff;
+  line-height: 1.2;
+}
+
+.statDesc {
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  color: var(--color-text-soft);
+  margin-top: 4px;
+}
+
+/* Charts Rankings */
+.chartsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-md);
+  margin-bottom: var(--space-xl);
+}
+
+.chartCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+}
+
+.chartTitle {
+  font-family: var(--font-serif);
+  font-size: 1.3rem;
+  font-weight: 300;
+  color: #fff;
+  margin-bottom: var(--space-md);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 10px;
+}
+
+.rankingList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rankingItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+}
+
+.rankNum {
+  font-family: var(--font-serif);
+  font-size: 1.1rem;
+  color: var(--color-accent);
+  font-style: italic;
+  width: 24px;
+  flex-shrink: 0;
+}
+
+.timeIcon,
+.globeIcon {
+  color: var(--color-accent-dim);
+  flex-shrink: 0;
+}
+
+.rankLabel {
+  color: var(--color-text);
+  flex-grow: 1;
+}
+
+.rankCount {
+  color: var(--color-text-soft);
+  font-size: 0.85rem;
+}
+
+.emptyText {
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  color: var(--color-text-soft);
+  font-style: italic;
+}
+
+/* Export Section */
+.exportSection {
+  background: #0f0f0f;
+  border: 1px solid var(--color-border);
+  padding: var(--space-md);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  margin-top: var(--space-xl);
+}
+
+.exportHeader {
+  flex: 1;
+  min-width: 250px;
+}
+
+.exportTitle {
+  font-family: var(--font-serif);
+  font-size: 1.4rem;
+  font-weight: 300;
+  color: #fff;
+  margin-bottom: 6px;
+}
+
+.exportDesc {
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  color: var(--color-text-soft);
+  line-height: 1.4;
+}
+
+.exportActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.formatSelect {
+  background: #1c1c1c;
+  border: 1px solid var(--color-border);
+  color: #fff;
+  padding: 10px 14px;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.exportBtn {
+  font-family: var(--font-sans);
+  background: #fff;
+  color: #000;
+  border: 1px solid #fff;
+  padding: 10px 20px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.exportBtn:hover {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-bg);
+}
+
+.errorBox {
+  background: rgba(139, 58, 58, 0.15);
+  border: 1px solid #8b3a3a;
+  color: #ff9999;
+  padding: var(--space-md);
+  margin-bottom: var(--space-md);
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+}
+
+.loading {
+  font-family: var(--font-sans);
+  color: var(--color-text-soft);
+  padding: var(--space-xl) 0;
+  text-align: center;
+}

@@ -1,0 +1,138 @@
+.container {
+  min-height: 100vh;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+}
+
+.main {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: clamp(64px, 10vw, 96px) clamp(14px, 5vw, 24px) 130px;
+}
+
+.backRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 40px;
+  cursor: pointer;
+}
+
+.backBtn {
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-soft);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  min-height: 44px;
+}
+
+.pageTitle {
+  margin: 0 0 12px;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: clamp(36px, 6vw, 52px);
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--color-border);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.tabBtn {
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-soft);
+  padding: 8px 12px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.tabBtnActive {
+  border: 1px solid var(--color-accent-dim);
+  background: var(--color-accent-glow);
+  color: var(--color-accent);
+}
+
+.errorMsg {
+  color: #ff9d9d;
+  margin-bottom: 10px;
+  font-size: 12px;
+}
+
+.successMsg {
+  color: var(--color-accent);
+  margin-bottom: 10px;
+  font-size: 12px;
+}
+
+.bottomBar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 140;
+  border-top: 1px solid var(--color-border);
+  background: rgba(8, 8, 8, 0.96);
+  backdrop-filter: blur(8px);
+  padding: 10px 14px;
+  display: flex;
+  justify-content: center;
+}
+
+.saveBtn {
+  border: 1px solid var(--color-accent-dim);
+  background: transparent;
+  color: var(--color-text-soft);
+  padding: 10px 14px;
+  min-width: 220px;
+  cursor: default;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-family: var(--font-sans);
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.saveBtnActive {
+  background: var(--color-accent-glow);
+  color: var(--color-accent);
+  cursor: pointer;
+}
+
+.loadingContainer {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: var(--color-bg);
+  color: var(--color-text-soft);
+  font-family: var(--font-serif);
+}
+
+@media (max-width: 768px) {
+  .main {
+    padding: 90px 14px 120px;
+  }
+}

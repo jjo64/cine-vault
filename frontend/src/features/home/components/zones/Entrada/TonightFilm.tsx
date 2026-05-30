@@ -118,6 +118,7 @@ export const TonightFilm: React.FC<TonightFilmProps> = ({
               tonightFilm.movieId,
               tonightFilm.tmdbId,
               tonightFilm.title,
+              tonightFilm.mediaType,
             )}
             style={{ textDecoration: "none" }}
           >
@@ -160,6 +161,7 @@ export const TonightFilm: React.FC<TonightFilmProps> = ({
                 tonightFilm.movieId,
                 tonightFilm.tmdbId,
                 tonightFilm.title,
+                tonightFilm.mediaType,
               )}
               style={{ textDecoration: "none" }}
             >
@@ -292,6 +294,7 @@ export const TonightFilm: React.FC<TonightFilmProps> = ({
               tonightFilm.movieId,
               tonightFilm.tmdbId,
               tonightFilm.title,
+              tonightFilm.mediaType,
             )}
             style={{
               textDecoration: "none",

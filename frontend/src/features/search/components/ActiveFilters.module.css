@@ -1,0 +1,43 @@
+.container {
+  --cv-bg: #080808;
+  --cv-surface: #111111;
+  --cv-elevated: #1A1A1A;
+  --cv-border: #252525;
+  --cv-accent: #D4AF7A;
+  --cv-accent-dim: #9A7A48;
+  --cv-accent-glow: rgba(212, 175, 122, 0.10);
+  --cv-text: #FFFFFF;
+  --cv-text-soft: #B0B0B0;
+  --cv-text-muted: #888888;
+  --cv-gold: #C8A96E;
+  --cv-font-serif: 'Cormorant Garamond', serif;
+  --cv-font-sans: 'Syne', sans-serif;
+
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: var(--cv-accent-glow);
+  border: 1px solid var(--cv-accent-dim);
+  font-family: var(--cv-font-sans);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--cv-accent);
+}
+
+.removeBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--cv-accent-dim);
+  padding: 0;
+  display: flex;
+  line-height: 1;
+}

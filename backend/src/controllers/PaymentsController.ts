@@ -10,6 +10,8 @@ import {
   createCheckoutSessionService,
   createPortalSessionService,
   processWebhookEventService,
+  syncCheckoutSessionService,
+  reactivateSubscriptionService,
 } from "../services/payments.services.js"
 
 /**
@@ -32,10 +34,35 @@ export const createPortalSession = async (req: Request, res: Response) => {
 }
 
 /**
+ * Sincroniza y activa de forma inmediata el plan de una sesión de checkout completada.
+ */
+export const syncCheckoutSession = async (req: Request, res: Response) => {
+  const userId = req.user!.user_id
+  const { sessionId } = req.body
+
+  if (!sessionId) {
+    res.status(400).json({ error: "sessionId es requerido" })
+    return
+  }
+
+  const result = await syncCheckoutSessionService(Number(userId), sessionId)
+  res.json(result)
+}
+
+/**
  * Punto de entrada para los eventos asíncronos (Webhooks) de Stripe.
  */
 export const stripeWebhook = async (req: Request, res: Response) => {
   const sig = req.headers["stripe-signature"] as string
   await processWebhookEventService(req.body as unknown as Buffer, sig)
   res.json({ received: true })
+}
+
+/**
+ * Reactiva una suscripción cancelada dentro del periodo de gracia.
+ */
+export const reactivateSubscription = async (req: Request, res: Response) => {
+  const userId = req.user!.user_id
+  await reactivateSubscriptionService(Number(userId))
+  res.json({ message: "Suscripción reactivada correctamente" })
 }

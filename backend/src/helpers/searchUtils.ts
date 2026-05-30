@@ -189,6 +189,18 @@ export function calcularPersonNameScore(
     }
   }
 
+  if (queryTokens.length === 1 && nameTokens.length > 0) {
+    const mejorToken = Math.max(
+      ...nameTokens.map(
+        (nameToken) =>
+          1 -
+          levenshtein(queryTokens[0], nameToken) /
+            Math.max(queryTokens[0].length, nameToken.length)
+      )
+    )
+    return mejorToken * 0.88
+  }
+
   return fullSim
 }
 
@@ -218,9 +230,10 @@ export function analizarQuery(raw: string): QueryAnalizado {
 
   let tipo: SearchIntent = "titulo"
   const queries_tmdb: QueryAnalizado["queries_tmdb"] = {
-    buscar_personas: false,
+    buscar_personas: true,
     buscar_peliculas: true,
     buscar_tv: true,
+    termino_persona: raw,
     termino_pelicula: raw,
     termino_tv: raw,
   }
@@ -229,14 +242,8 @@ export function analizarQuery(raw: string): QueryAnalizado {
   if (tokens.length <= 2 && (hasTwoCapitalizedWords || hasPersonContext)) {
     tipo = "persona"
     estrategia.push(
-      "Estructura de nombre detectada: priorizar búsqueda de personas"
+      "Estructura de nombre detectada: priorizar búsqueda de personas (manteniendo catálogo activo)"
     )
-    queries_tmdb.buscar_personas = true
-    queries_tmdb.buscar_peliculas = false
-    queries_tmdb.buscar_tv = false
-    queries_tmdb.termino_persona = raw
-    delete queries_tmdb.termino_pelicula
-    delete queries_tmdb.termino_tv
   } else if (
     hasSingleLongToken ||
     (tokens.length >= 3 && tokensImprobables.length >= 2) ||
@@ -246,12 +253,6 @@ export function analizarQuery(raw: string): QueryAnalizado {
     estrategia.push(
       "Consulta ambigua/mixta detectada: consulta total de entidades"
     )
-    queries_tmdb.buscar_personas = true
-    queries_tmdb.buscar_peliculas = true
-    queries_tmdb.buscar_tv = true
-    queries_tmdb.termino_persona = raw
-    queries_tmdb.termino_pelicula = raw
-    queries_tmdb.termino_tv = raw
   } else {
     estrategia.push("Consulta de tipo título/contextual: búsqueda en catálogo")
   }

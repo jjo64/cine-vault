@@ -125,6 +125,7 @@ beforeEach(() => {
                 name: "Quentin Tarantino",
                 known_for_department: "Acting",
                 profile_path: "/paul.jpg",
+                popularity: 50,
                 known_for: [
                   { id: 101, title: "Aftersun", poster_path: "/aftersun.jpg" },
                 ],
@@ -178,7 +179,7 @@ beforeEach(() => {
         return { titles: [{ iso_3166_1: "ES", title: "Otro Match" }] }
       }
 
-      if (endpoint === "person/900/movie_credits") {
+      if (endpoint === "person/900/combined_credits") {
         return {
           cast: [createMovieResult(101, "Aftersun", 10)],
           crew: [],
@@ -204,7 +205,7 @@ describe("search integration", () => {
         endpoint === "search/person" &&
         String(params?.query || "").toLowerCase() === "fight club"
     )
-    expect(personCalls.length).toBe(0)
+    expect(personCalls.length).toBe(1)
   })
 
   it("expande peliculas por personas en query mixta", async () => {
@@ -215,7 +216,7 @@ describe("search integration", () => {
     expect(res.status).toBe(200)
     expect(Array.isArray(res.body.results)).toBe(true)
     const personCreditCalls = consultarTMDBMock.mock.calls.filter(
-      ([endpoint]) => endpoint === "person/900/movie_credits"
+      ([endpoint]) => endpoint === "person/900/combined_credits"
     )
     expect(personCreditCalls.length).toBeGreaterThan(0)
     expect(Array.isArray(res.body.people_results)).toBe(true)

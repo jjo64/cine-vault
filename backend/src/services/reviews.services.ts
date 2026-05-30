@@ -68,7 +68,11 @@ const canUseCriticalMode = (
 ) => {
   const normalizedMembership = String(membership || "").toLowerCase()
   const normalizedRole = String(role || "").toLowerCase()
-  return normalizedMembership === "pro" || normalizedRole === "admin"
+  return (
+    normalizedMembership === "pro" ||
+    normalizedMembership === "vip" ||
+    normalizedRole === "admin"
+  )
 }
 
 /**

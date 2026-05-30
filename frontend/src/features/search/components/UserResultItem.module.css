@@ -1,0 +1,89 @@
+.layout {
+  --cv-bg: #080808;
+  --cv-surface: #111111;
+  --cv-elevated: #1A1A1A;
+  --cv-border: #252525;
+  --cv-accent: #D4AF7A;
+  --cv-accent-dim: #9A7A48;
+  --cv-accent-glow: rgba(212, 175, 122, 0.10);
+  --cv-text: #FFFFFF;
+  --cv-text-soft: #B0B0B0;
+  --cv-text-muted: #888888;
+  --cv-gold: #C8A96E;
+  --cv-font-serif: 'Cormorant Garamond', serif;
+  --cv-font-sans: 'Syne', sans-serif;
+
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--cv-border);
+  background: transparent;
+  transition: background 0.2s;
+}
+
+.layout:hover {
+  background: rgba(212, 175, 122, 0.02);
+}
+
+.link {
+  text-decoration: none;
+}
+
+.avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(212, 175, 122, 0.15);
+  border: 1px solid var(--cv-accent-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--cv-font-serif);
+  font-size: 20px;
+  color: var(--cv-accent);
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.usernameLink {
+  font-family: var(--cv-font-sans);
+  font-size: 14px;
+  color: var(--cv-text);
+  text-decoration: none;
+}
+
+.handleText {
+  font-family: var(--cv-font-sans);
+  font-size: 11px;
+  color: var(--cv-text-soft);
+}
+
+.badge {
+  font-family: var(--cv-font-sans);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cv-text-soft);
+  border: 1px solid var(--cv-border);
+  padding: 2px 7px;
+}
+
+.bioText {
+  font-family: var(--cv-font-serif);
+  font-style: italic;
+  font-size: 15px;
+  color: var(--cv-text-soft);
+}
+
+.filmsText {
+  font-family: var(--cv-font-sans);
+  font-size: 11px;
+  color: var(--cv-text-muted);
+  margin-top: 4px;
+}

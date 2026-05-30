@@ -127,3 +127,41 @@ export type CreateVaultSocialEntryDTO = z.infer<
 export type UpdateVaultSocialEntryDTO = z.infer<
   typeof updateVaultSocialEntrySchema
 >
+
+export const crearVideoSchema = z.object({
+  title: z.string().trim().min(1).max(255),
+  movie_id: z.coerce.number().int().positive().optional(),
+  media_type: z.enum(["movie", "tv"]).optional().default("movie"),
+  video_url: z.string().url().max(500),
+  duration_sec: z.coerce.number().int().positive().optional(),
+  cover_url: z.string().max(500).optional(),
+  is_public: z.boolean().optional().default(true),
+})
+
+export const videoIdParamsSchema = z.object({
+  id: z.coerce.number().int().positive(),
+})
+
+export const crearClipSchema = z.object({
+  title: z.string().trim().min(1).max(255),
+  movie_id: z.coerce.number().int().positive().optional(),
+  media_type: z.enum(["movie", "tv"]).optional().default("movie"),
+  clip_url: z.string().url().max(500),
+  cover_url: z.string().max(500).optional(),
+  is_public: z.boolean().optional().default(true),
+})
+
+export const clipIdParamsSchema = z.object({
+  id: z.coerce.number().int().positive(),
+})
+
+export const pinClipSchema = z.object({
+  pinned: z.boolean(),
+})
+
+export const completeRecommendationSchema = z.object({
+  recommendation_id: z.string().min(1),
+  media_id: z.coerce.number().int().positive(),
+  media_type: z.enum(["movie", "tv"]),
+})
+

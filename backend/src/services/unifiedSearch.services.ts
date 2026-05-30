@@ -29,7 +29,7 @@ import { checkIPSpike } from "../services/security.services.js"
 export const TTL_BUSQUEDA = 60 * 60 * 2
 const SEARCH_PAGE_SIZE = 20
 const FIRST_PAGE_CANDIDATE_PAGES = ["1", "2", "3"]
-export const SEARCH_CACHE_VERSION = "v20"
+export const SEARCH_CACHE_VERSION = "v22"
 
 const getEnvNumber = (name: string, fallback: number) => {
   const raw = process.env[name]
@@ -119,17 +119,26 @@ const getMatchStrength = (
   return 0
 }
 
-const toTitleCandidates = (movie: AnyRecord) => {
-  const localized = Array.isArray(movie.localized_titles)
-    ? movie.localized_titles
+const toTitleCandidates = (item: AnyRecord) => {
+  const localized = Array.isArray(item.localized_titles)
+    ? item.localized_titles
+    : []
+  const localizedNames = Array.isArray(item.localized_names)
+    ? item.localized_names
     : []
   return [
-    movie.title,
-    movie.title_en,
-    movie.original_title,
-    movie.title_es,
-    movie.localized_title,
+    item.title,
+    item.title_en,
+    item.original_title,
+    item.title_es,
+    item.localized_title,
+    item.name,
+    item.name_en,
+    item.original_name,
+    item.name_es,
+    item.localized_name,
     ...localized,
+    ...localizedNames,
   ]
     .map((value) => normalizeQuery(value || "").toLowerCase())
     .filter(Boolean)
@@ -205,7 +214,7 @@ export const buildMovieSearchCacheKey = (
  * Clave de caché para los créditos (filmografía) de una persona específica.
  */
 const buildPersonCreditsCacheKey = (personId: number) =>
-  `tmdb:search:${SEARCH_CACHE_VERSION}:person-credits:${personId}`
+  `tmdb:search:${SEARCH_CACHE_VERSION}:person-combined-credits:${personId}`
 
 /**
  * Ejecuta una búsqueda de películas con ranking optimizado por relevancia de título.
@@ -332,6 +341,211 @@ export const runRankedMovieSearch = async ({
   }
 }
 
+/**
+ * Realiza una búsqueda de series de TV con ranking optimizado por relevancia de nombre.
+ * Combina resultados en inglés y español para mayor cobertura.
+ */
+export const runRankedTVSearch = async ({
+  query,
+  page,
+}: {
+  query: string
+  page: string
+}) => {
+  const normalizedQuery = normalizeQuery(query)
+  const currentPage = Math.max(1, Number(page || "1") || 1)
+  const candidatePages =
+    currentPage === 1 ? FIRST_PAGE_CANDIDATE_PAGES : [String(currentPage)]
+
+  const pagePayloads: Array<{
+    primaryData: AnyRecord
+    spanishData: AnyRecord
+  }> = await pMap(
+    candidatePages,
+    async (candidatePage) => {
+      const [primaryData, spanishData]: AnyRecord[] = await Promise.all([
+        consultarTMDB(
+          "search/tv",
+          {
+            query: normalizedQuery,
+            page: candidatePage,
+          },
+          { includeDefaultLanguage: false }
+        ),
+        consultarTMDB(
+          "search/tv",
+          {
+            query: normalizedQuery,
+            page: candidatePage,
+            language: "es-ES",
+          },
+          { includeDefaultLanguage: false }
+        ),
+      ])
+
+      return { primaryData, spanishData }
+    },
+    { concurrency: 2 }
+  )
+
+  const primaryResults = pagePayloads.flatMap((payload) =>
+    Array.isArray(payload.primaryData?.results)
+      ? payload.primaryData.results
+      : []
+  )
+  const spanishResults = pagePayloads.flatMap((payload) =>
+    Array.isArray(payload.spanishData?.results)
+      ? payload.spanishData.results
+      : []
+  )
+
+  const byId = new Map<number, AnyRecord>()
+  const merged: AnyRecord[] = []
+
+  for (const tv of primaryResults) {
+    if (!tv?.id) continue
+    const normalizedTv = {
+      ...tv,
+      name_en: tv.name || tv.name_en || null,
+      name_es: null,
+      localized_name: null,
+      localized_names: [],
+    }
+    byId.set(tv.id, normalizedTv)
+    merged.push(normalizedTv)
+  }
+
+  const uniqueStrings = (values: string[]) => Array.from(new Set(values.filter(Boolean)))
+
+  for (const tv of spanishResults) {
+    if (!tv?.id) continue
+    const existing = byId.get(tv.id)
+    if (!existing) {
+      const normalizedTv = {
+        ...tv,
+        name_en: null,
+        name_es: tv.name || null,
+        localized_name: tv.name || null,
+        localized_names: tv.name ? [tv.name] : [],
+      }
+      byId.set(tv.id, normalizedTv)
+      merged.push(normalizedTv)
+      continue
+    }
+
+    const mergedNames = uniqueStrings([
+      ...(existing.localized_names || []),
+      tv.name,
+    ])
+
+    Object.assign(existing, {
+      name: existing.name_en || existing.name || tv.name || existing.original_name,
+      name_en: existing.name_en || tv.original_name || existing.original_name || null,
+      name_es: tv.name || existing.name_es || null,
+      localized_name: tv.name || existing.localized_name || null,
+      localized_names: mergedNames,
+      overview: existing.overview || tv.overview || null,
+      poster_path: existing.poster_path || tv.poster_path || null,
+    })
+    byId.set(tv.id, existing)
+  }
+
+  const rankedResults = await pMap(
+    merged,
+    async (tv: AnyRecord) => {
+      const [credits, titles]: AnyRecord[] = await Promise.all([
+        consultarTMDB(
+          `tv/${tv.id}/credits`,
+          { language: "en-US" },
+          { includeDefaultLanguage: false }
+        ).catch(() => ({ crew: [], cast: [] })),
+        consultarTMDB(
+          `tv/${tv.id}/alternative_titles`,
+          {},
+          { includeDefaultLanguage: false }
+        ).catch(() => ({ results: [] })),
+      ])
+
+      const director = credits.crew?.find(
+        (person: AnyRecord) => person.job === "Director" || person.job === "Executive Producer" || person.job === "Creator"
+      )?.name
+
+      const alternativeTitlesList = Array.isArray(titles.results)
+        ? titles.results.map((t: AnyRecord) => t.title)
+        : []
+
+      const allNames = uniqueStrings([
+        ...(tv.localized_names || []),
+        tv.name,
+        tv.original_name,
+        tv.name_es,
+        tv.name_en,
+        ...alternativeTitlesList,
+      ])
+
+      return {
+        ...tv,
+        director,
+        localized_names: allNames,
+      }
+    },
+    { concurrency: 3 }
+  )
+
+  return {
+    results: rankedResults,
+    total_pages: Math.max(
+      Number(pagePayloads[0]?.primaryData?.total_pages || 1),
+      Number(pagePayloads[0]?.spanishData?.total_pages || 1)
+    ),
+    total_results: Math.max(
+      Number(pagePayloads[0]?.primaryData?.total_results || rankedResults.length),
+      Number(pagePayloads[0]?.spanishData?.total_results || rankedResults.length)
+    ),
+    page: currentPage,
+  }
+}
+
+/**
+ * Calcula la relevancia de una serie de TV respecto a la consulta.
+ */
+export const rankTVByQuery = (tv: AnyRecord, rawQuery: string) => {
+  const query = normalizeQuery(rawQuery).toLowerCase()
+  if (!query) return 0
+
+  const candidates = (tv.localized_names || [tv.name, tv.original_name])
+    .map((name: string) => normalizeQuery(name).toLowerCase())
+    .filter(Boolean)
+
+  let bestScore = 0
+  for (const candidate of candidates) {
+    let strength = 0
+    if (candidate === query) strength = 100
+    else if (candidate.startsWith(query)) strength = 70
+    else if (candidate.includes(query)) strength = 40
+    else {
+      const queryTokens = query.split(/\s+/).filter(Boolean)
+      if (queryTokens.length > 1 && queryTokens.every((t) => candidate.includes(t))) {
+        strength = 25
+      }
+    }
+
+    if (strength > 0) {
+      const isOriginal = normalizeQuery(tv.original_name).toLowerCase() === candidate
+      const baseWeight = isOriginal ? 2000 : 3000
+      const currentScore = baseWeight + strength
+      if (currentScore > bestScore) {
+        bestScore = currentScore
+      }
+    }
+  }
+
+  bestScore += Number(tv.popularity || 0) * 0.01
+  bestScore += Number(tv.vote_count || 0) * 0.0001
+
+  return bestScore
+}
+
 const collectPersonCandidates = (
   query: string,
   queryTokens: string[],
@@ -428,7 +642,7 @@ const fetchCreditsForPerson = async (person: PersonCandidate) =>
     buildPersonCreditsCacheKey(person.id),
     () =>
       consultarTMDB(
-        `person/${person.id}/movie_credits`,
+        `person/${person.id}/combined_credits`,
         { language: "en-US" },
         { includeDefaultLanguage: false }
       ),
@@ -452,14 +666,14 @@ const mergeMovieFromPersonCredit = (
     map.set(movieCredit.id, {
       movie: {
         id: movieCredit.id,
-        title: movieCredit.title || movieCredit.original_title || "Sin título",
-        original_title: movieCredit.original_title || null,
+        title: movieCredit.title || movieCredit.name || movieCredit.original_title || movieCredit.original_name || "Sin título",
+        original_title: movieCredit.original_title || movieCredit.original_name || null,
         overview: movieCredit.overview || null,
-        release_date: movieCredit.release_date || null,
+        release_date: movieCredit.release_date || movieCredit.first_air_date || null,
         poster_path: movieCredit.poster_path || null,
         popularity: Number(movieCredit.popularity || 0),
         vote_count: Number(movieCredit.vote_count || 0),
-        media_type: "movie",
+        media_type: movieCredit.media_type || "movie",
       },
       hasTitleSource: false,
       hasTokenSource: false,
@@ -547,30 +761,46 @@ const runPersonMovieMatches = async (
 ): Promise<Map<number, MovieAggregate>> => {
   const map = new Map<number, MovieAggregate>()
 
+  // Solo expandimos para personas "mega conocidas" (popularity >= 5)
+  const famousCandidates = candidates.filter(
+    (person) => Number(person.popularity || 0) >= 5
+  )
+
   await pMap(
-    candidates,
+    famousCandidates,
     async (person) => {
       const credits: AnyRecord = await fetchCreditsForPerson(person)
 
-      const directedMovies = Array.isArray(credits?.crew)
+      const directed = Array.isArray(credits?.crew)
         ? credits.crew
-            .filter((item: AnyRecord) => item?.job === "Director")
-            .slice(0, 20)
+            .filter((item: AnyRecord) => item?.job === "Director" || item?.job === "Executive Producer" || item?.job === "Creator")
+            .map((item: AnyRecord) => ({ ...item, roleType: "director" as PersonRole }))
         : []
-      const actedMovies = Array.isArray(credits?.cast)
-        ? credits.cast.slice(0, 20)
+      const acted = Array.isArray(credits?.cast)
+        ? credits.cast.map((item: AnyRecord) => ({ ...item, roleType: "actor" as PersonRole }))
         : []
 
-      for (const movie of directedMovies) {
+      // Deduplicar créditos por ID (ej: cuando actúan y producen la misma película)
+      const uniqueCredits = new Map<number, AnyRecord>()
+      for (const credit of [...directed, ...acted]) {
+        const existing = uniqueCredits.get(credit.id)
+        if (!existing || (credit.roleType === "director" && existing.roleType !== "director")) {
+          uniqueCredits.set(credit.id, credit)
+        }
+      }
+
+      const combined = Array.from(uniqueCredits.values())
+      combined.sort((a, b) => Number(b.vote_count || 0) - Number(a.vote_count || 0))
+
+      const topCredits = combined.slice(0, 5)
+
+      for (const credit of topCredits) {
         mergeMovieFromPersonCredit(
           map,
-          movie,
-          "director",
+          credit,
+          credit.roleType,
           person.personNameScore
         )
-      }
-      for (const movie of actedMovies) {
-        mergeMovieFromPersonCredit(map, movie, "actor", person.personNameScore)
       }
     },
     { concurrency: 2 }
@@ -605,13 +835,21 @@ const localSignalScore = (counts?: {
   return vault + reviews + watchlist
 }
 
-const tmdbRatingSignalScore = (movie: AnyRecord) => {
-  const voteCount = Number(movie?.vote_count || 0)
-  const voteAverage = Number(movie?.vote_average || 0)
+const tmdbRatingSignalScore = (item: AnyRecord) => {
+  const voteCount = Number(item?.vote_count || 0)
+  const voteAverage = Number(item?.vote_average || 0)
+
+  // Bayesian Weighted Rating con m = 50 y C = 6.5
+  const m = 50
+  const C = 6.5
+  const wr =
+    voteCount + m > 0
+      ? (voteCount / (voteCount + m)) * voteAverage +
+        (m / (voteCount + m)) * C
+      : C
 
   const voteCountBoost = Math.log10(voteCount + 1) * VOTE_COUNT_BOOST_WEIGHT
-  const voteAverageBoost =
-    Math.max(0, Math.min(voteAverage, 10)) * VOTE_AVERAGE_BOOST_WEIGHT
+  const voteAverageBoost = wr * VOTE_AVERAGE_BOOST_WEIGHT
 
   return {
     voteCountBoost,
@@ -681,11 +919,10 @@ export const runSmartUnifiedSearch = async ({
         )
       : Promise.resolve(EMPTY_SEARCH_PAYLOAD),
     queries_tmdb.buscar_tv
-      ? consultarTMDB(
-          "search/tv",
-          { query: queries_tmdb.termino_tv || normalizedQuery, page },
-          { includeDefaultLanguage: false }
-        )
+      ? runRankedTVSearch({
+          query: queries_tmdb.termino_tv || normalizedQuery,
+          page,
+        })
       : Promise.resolve(EMPTY_SEARCH_PAYLOAD),
   ])
 
@@ -801,26 +1038,34 @@ export const runSmartUnifiedSearch = async ({
     }
   }
 
-  const localCountsMap = await enriquecerConDatosLocalesService(
-    Array.from(movieMap.keys())
-  )
+  const tvCandidates = extractTmdbResults(tvData)
+  const allIds = [
+    ...Array.from(movieMap.keys()),
+    ...tvCandidates.map((tv: AnyRecord) => Number(tv.id)).filter(Number.isFinite),
+  ]
+  const localCountsMap = await enriquecerConDatosLocalesService(allIds)
 
   let rankedMovies = Array.from(movieMap.values()).map((entry) => {
     const localCounts = localCountsMap.get(Number(entry.movie.id))
+    const isTV = entry.movie.media_type === "tv"
 
-    const titleRank = rankMovieByQuery(entry.movie, normalizedQuery)
-    const titleSourceBoost = entry.hasTitleSource ? TITLE_SOURCE_BOOST : 0
-    const tokenSourceBoost = entry.hasTokenSource ? TOKEN_SOURCE_BOOST : 0
-    const exactTitleBoost = hasExactTitleMatch(entry.movie, normalizedQuery)
-      ? TITLE_EXACT_BOOST
-      : 0
+    const titleRank = isTV
+      ? rankTVByQuery(entry.movie, normalizedQuery)
+      : rankMovieByQuery(entry.movie, normalizedQuery)
+    const titleSourceBoost = isTV
+      ? (getMatchStrength(entry.movie.name || entry.movie.original_name, normalizedQuery) >= 70 ? TV_SOURCE_BOOST : 0)
+      : (entry.hasTitleSource ? TITLE_SOURCE_BOOST : 0)
+    const tokenSourceBoost = !isTV && entry.hasTokenSource ? TOKEN_SOURCE_BOOST : 0
+    const exactTitleBoost = isTV
+      ? (hasExactTVNameMatch(entry.movie, normalizedQuery) ? TV_EXACT_BOOST : 0)
+      : (hasExactTitleMatch(entry.movie, normalizedQuery) ? TITLE_EXACT_BOOST : 0)
     const exactTokenBoost =
-      tokens.length > 1 && hasExactTokenTitleMatch(entry.movie, tokens)
+      !isTV && tokens.length > 1 && hasExactTokenTitleMatch(entry.movie, tokens)
         ? 3200
         : 0
-    const fuzzyBoost = hasFuzzyTokenTitleMatch(entry.movie, tokens) ? 900 : 0
+    const fuzzyBoost = !isTV && hasFuzzyTokenTitleMatch(entry.movie, tokens) ? 900 : 0
     const contextualTokenBoost =
-      entry.tokenMatches > 0 ? entry.tokenMatches * 550 : 0
+      !isTV && entry.tokenMatches > 0 ? entry.tokenMatches * 550 : 0
     const personBoost = entry.personRoleScore * personIntentMultiplier
     const personNameScore = Number(entry.personNameScore || 0)
     const roleThreshold =
@@ -858,7 +1103,7 @@ export const runSmartUnifiedSearch = async ({
 
     return {
       ...entry.movie,
-      media_type: "movie",
+      media_type: entry.movie.media_type || "movie",
       _smart_rank: score,
       ...(includeDebug
         ? {
@@ -889,19 +1134,47 @@ export const runSmartUnifiedSearch = async ({
     }
   })
 
-  let rankedTV = extractTmdbResults(tvData).map((tv: AnyRecord) => {
-    let score = getMatchStrength(tv.name, normalizedQuery)
-    score += Number(tv.popularity || 0) * 0.02
-    const hasExact = hasExactTVNameMatch(tv, normalizedQuery)
-    if (hasExact) score += TV_EXACT_BOOST
-    else score -= TV_NON_EXACT_PENALTY
-    if (getMatchStrength(tv.name || tv.original_name, normalizedQuery) >= 70)
-      score += TV_SOURCE_BOOST
+  let rankedTV = tvCandidates.map((tv: AnyRecord) => {
+    const localCounts = localCountsMap.get(Number(tv.id))
+
+    const titleRank = rankTVByQuery(tv, normalizedQuery)
+    const titleSourceBoost = getMatchStrength(tv.name || tv.original_name, normalizedQuery) >= 70 ? TV_SOURCE_BOOST : 0
+    const exactTitleBoost = hasExactTVNameMatch(tv, normalizedQuery) ? TV_EXACT_BOOST : 0
+    const nonExactPenalty = !exactTitleBoost ? TV_NON_EXACT_PENALTY : 0
+
+    const localBoost = localSignalScore(localCounts)
+    const tmdbSignal = tmdbRatingSignalScore(tv)
+
+    const score =
+      titleRank +
+      titleSourceBoost +
+      exactTitleBoost +
+      localBoost +
+      tmdbSignal.total -
+      nonExactPenalty
 
     return {
       ...tv,
       media_type: "tv",
       _smart_rank: score,
+      ...(includeDebug
+        ? {
+            _score_debug: {
+              title_rank: titleRank,
+              title_source_boost: titleSourceBoost,
+              exact_title_boost: exactTitleBoost,
+              non_exact_penalty: nonExactPenalty,
+              local_boost: localBoost,
+              vote_count_boost: tmdbSignal.voteCountBoost,
+              vote_average_boost: tmdbSignal.voteAverageBoost,
+              local_counts: {
+                vault_count: localCounts?.vault_count || 0,
+                review_count: localCounts?.review_count || 0,
+                watchlist_count: localCounts?.watchlist_count || 0,
+              },
+            },
+          }
+        : {}),
     }
   })
 
@@ -920,11 +1193,10 @@ export const runSmartUnifiedSearch = async ({
             { query: token, page: "1" },
             { includeDefaultLanguage: false }
           ),
-          consultarTMDB(
-            "search/tv",
-            { query: token, page: "1" },
-            { includeDefaultLanguage: false }
-          ),
+          runRankedTVSearch({
+            query: token,
+            page: "1",
+          }),
         ])
         return { moviePayload, tvPayload }
       },
@@ -963,16 +1235,22 @@ export const runSmartUnifiedSearch = async ({
       }
     }
 
-    rankedMovies = Array.from(fallbackById.values()).map((movie) => ({
-      ...movie,
-      _smart_rank: rankMovieByQuery(movie, normalizedQuery),
-    }))
-    rankedTV = Array.from(fallbackTVById.values()).map((tv) => ({
-      ...tv,
-      _smart_rank:
-        getMatchStrength(tv.name, normalizedQuery) +
-        Number(tv.popularity || 0) * 0.02,
-    }))
+    rankedMovies = Array.from(fallbackById.values()).map((movie) => {
+      const titleRank = rankMovieByQuery(movie, normalizedQuery)
+      const tmdbSignal = tmdbRatingSignalScore(movie)
+      return {
+        ...movie,
+        _smart_rank: titleRank + tmdbSignal.total,
+      }
+    })
+    rankedTV = Array.from(fallbackTVById.values()).map((tv) => {
+      const titleRank = rankTVByQuery(tv, normalizedQuery)
+      const tmdbSignal = tmdbRatingSignalScore(tv)
+      return {
+        ...tv,
+        _smart_rank: titleRank + tmdbSignal.total,
+      }
+    })
   } else {
     rankedTV.sort(
       (a: AnyRecord, b: AnyRecord) =>
@@ -1026,13 +1304,21 @@ export const runSmartUnifiedSearch = async ({
     }
   }
 
-  let mergedMainResults = [...rankedMovies, ...rankedTV].sort(
+  const uniqueMerged = new Map<string, AnyRecord>()
+  for (const item of [...rankedMovies, ...rankedTV]) {
+    const key = `${item.media_type || "movie"}-${item.id}`
+    const existing = uniqueMerged.get(key)
+    if (!existing || (item._smart_rank || 0) > (existing._smart_rank || 0)) {
+      uniqueMerged.set(key, item)
+    }
+  }
+  let mergedMainResults = Array.from(uniqueMerged.values()).sort(
     (a, b) => Number(b._smart_rank || 0) - Number(a._smart_rank || 0)
   )
 
   if (currentPage === 1) {
     const hasExactMovieMatch = rankedMovies.some((movie: AnyRecord) =>
-      hasExactTitleMatch(movie, normalizedQuery)
+      movie.media_type === "movie" && hasExactTitleMatch(movie, normalizedQuery)
     )
     const exactTVMatches = rankedTV
       .filter((tv: AnyRecord) => hasExactTVNameMatch(tv, normalizedQuery))

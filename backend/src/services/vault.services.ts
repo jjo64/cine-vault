@@ -117,10 +117,11 @@ export const obtenerVaultSocialService = async (
   const tmdbPayloads = await Promise.allSettled(
     items.map((item) => {
       if (!item.tmdb_id) return Promise.resolve(null)
-      return consultarTMDB(`movie/${item.tmdb_id}`).then((data) => {
-        const payload = data as { title?: string; poster_path?: string }
+      const type = item.media_type === "tv" ? "tv" : "movie"
+      return consultarTMDB(`${type}/${item.tmdb_id}`).then((data) => {
+        const payload = data as { title?: string; name?: string; poster_path?: string }
         return {
-          title: payload.title || null,
+          title: payload.title || payload.name || null,
           poster_path: payload.poster_path || null,
         }
       })
@@ -136,6 +137,7 @@ export const obtenerVaultSocialService = async (
       user_id: item.user_id,
       movie_id: item.movie_id,
       tmdb_id: item.tmdb_id,
+      media_type: item.media_type || "movie",
       entry_type: item.entry_type,
       card_type: mapSocialCardType(item.entry_type),
       title: item.title,

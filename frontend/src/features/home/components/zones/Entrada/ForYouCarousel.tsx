@@ -43,7 +43,7 @@ export const ForYouCarousel: React.FC<ForYouCarouselProps> = ({
         {forYouMovies.slice(0, 8).map((film) => (
           <Link
             key={film.id}
-            to={movieHref(film.movieId || film.id, film.tmdb_id, film.title)}
+            to={movieHref(film.movieId || film.id, film.tmdb_id, film.title, film.mediaType)}
             style={{ textDecoration: "none", flexShrink: 0, width: 130 }}
           >
             <motion.div

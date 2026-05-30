@@ -417,7 +417,7 @@ function Navbar() {
       return;
     }
     if (item.media_type === "tv") {
-      navigate(`/tv/${item.id}`);
+      navigate(`/tv/${item.id}-${createSlug(label)}`);
       return;
     }
     navigate(`/movie/${item.id}-${createSlug(label)}`);

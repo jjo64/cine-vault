@@ -32,7 +32,18 @@ import {
   updateVaultSocialEntrySchema,
   vaultSocialEntryIdParamsSchema,
   vaultSocialUserParamsSchema,
+  crearVideoSchema,
+  videoIdParamsSchema,
+  crearClipSchema,
+  clipIdParamsSchema,
+  pinClipSchema,
 } from "../schemas/vault.js"
+import {
+  addVideo,
+  deleteVideo,
+  addClip,
+  pinClip,
+} from "../controllers/VaultMediaController.js"
 
 /**
  * @swagger
@@ -119,6 +130,40 @@ router.delete(
   middlewareAutenticacion,
   validarParams(vaultSocialEntryIdParamsSchema),
   manejadorAsincrono(deleteVaultSocialEntry)
+)
+
+/**
+ * ---------------------------------------------------------------------------
+ * BLOQUE: MULTIMEDIA DEL VAULT (Membresía)
+ * ---------------------------------------------------------------------------
+ */
+router.post(
+  "/media/videos",
+  middlewareAutenticacion,
+  validarBody(crearVideoSchema),
+  manejadorAsincrono(addVideo)
+)
+
+router.delete(
+  "/media/videos/:id",
+  middlewareAutenticacion,
+  validarParams(videoIdParamsSchema),
+  manejadorAsincrono(deleteVideo)
+)
+
+router.post(
+  "/media/clips",
+  middlewareAutenticacion,
+  validarBody(crearClipSchema),
+  manejadorAsincrono(addClip)
+)
+
+router.patch(
+  "/media/clips/:id/pin",
+  middlewareAutenticacion,
+  validarParams(clipIdParamsSchema),
+  validarBody(pinClipSchema),
+  manejadorAsincrono(pinClip)
 )
 
 /**

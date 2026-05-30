@@ -94,6 +94,7 @@ export const useHomeData = (username: string) => {
             genres: m.genres?.map((g: any) => g.name) || ["Esta noche", "Descubrimiento"],
             synopsis: m.overview || m.reason || "Recomendación especial calculada para ti esta noche.",
             points: 40,
+            mediaType: m.media_type || "movie",
           });
         }
         // Extract and set for-you movies with metadata enrichment
@@ -118,6 +119,7 @@ export const useHomeData = (username: string) => {
                 tmdb_id: i.media.id,
                 title: i.media.title,
                 poster_path: i.media.poster_path,
+                mediaType: i.media.media_type || "movie",
                 director: directorsMap[i.media.id] || "Autor sugerido",
               };
             }
@@ -127,6 +129,7 @@ export const useHomeData = (username: string) => {
                 tmdb_id: i.media.tmdb_id,
                 title: i.media.title || "Reseña",
                 poster_path: i.media.poster_path,
+                mediaType: i.media.media_type || "movie",
                 director: `@${i.user?.username}` || "Comunidad",
               };
             }
@@ -148,6 +151,7 @@ export const useHomeData = (username: string) => {
             film: a.movie?.title || "Pelicula",
             movieId: a.movie?.id || a.movie_id,
             tmdbId: a.movie?.tmdb_id,
+            mediaType: a.movie?.media_type || a.media_type || "movie",
             rating: normalizeRating(a.review?.rating || a.rating),
             time: relativeLabel(a.created_at),
             posterUrl: toPoster(a.movie?.poster_path),
@@ -161,6 +165,7 @@ export const useHomeData = (username: string) => {
             film: r.movie?.title || "Película",
             movieId: r.movie?.id || r.movie_id,
             tmdbId: r.movie?.tmdb_id,
+            mediaType: r.movie?.media_type || r.media_type || "movie",
             rating: normalizeRating(r.review?.rating || r.rating),
             text: r.review?.content || r.content || "",
             likes: r.review?.likes_count || r.likes_count || 0,

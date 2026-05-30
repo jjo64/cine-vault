@@ -1,0 +1,41 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid transparent;
+  gap: 5px;
+  padding: 3px 8px;
+}
+
+.badgeLg {
+  gap: 6px;
+  padding: 5px 11px;
+}
+
+.badgeAdmin {
+  background: rgba(212, 175, 122, 0.14);
+  border-color: rgba(212, 175, 122, 0.45);
+}
+
+.badgeEditor {
+  background: rgba(180, 150, 90, 0.10);
+  border-color: rgba(180, 150, 90, 0.30);
+}
+
+.label {
+  font-family: var(--font-sans);
+  font-size: 8px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.badgeLg .label {
+  font-size: 9px;
+}
+
+.labelAdmin {
+  color: var(--color-gold);
+}
+
+.labelEditor {
+  color: var(--color-accent-dim);
+}

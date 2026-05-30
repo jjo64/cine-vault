@@ -10,11 +10,12 @@ import "dotenv/config"
 import Stripe from "stripe"
 import { NotFoundError, ValidationError } from "../errors/AppErrors.js"
 import { redis } from "../lib/redis.js"
+import { prisma } from "../lib/prisma.js"
 import { paymentsRepository } from "../repositories/PaymentsRepository.js"
 
 // --- Configuración e Inicialización de Stripe ---
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string)
+export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string)
 
 /**
  * Tabla de equivalencia de planes comerciales con identificadores de Stripe.
@@ -29,7 +30,7 @@ const IDS_PRECIOS = {
 /**
  * Mapea los estados de suscripción de Stripe a los estados internos del dominio de CineVault.
  */
-const mapStripeStatus = (
+export const mapStripeStatus = (
   status: Stripe.Subscription.Status
 ): "active" | "cancelled" | "expired" => {
   if (status === "canceled") return "cancelled"
@@ -72,13 +73,13 @@ export async function createCheckoutSessionService(
       },
     ],
     customer_email: usuario.email,
-    success_url: `${process.env.FRONTEND_URL}/success`,
+    success_url: `${process.env.FRONTEND_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${process.env.FRONTEND_URL}/cancel`,
     metadata: {
       userId: usuario.id.toString(),
       plan,
     },
-    payment_intent_data: {
+    subscription_data: {
       metadata: {
         userId: usuario.id.toString(),
         plan,
@@ -108,10 +109,36 @@ export async function createPortalSessionService(
 
   const portal = await stripe.billingPortal.sessions.create({
     customer: customerId,
-    return_url: `${process.env.FRONTEND_URL}/account`,
+    return_url: `${process.env.FRONTEND_URL}/cancel`,
   })
   return portal.url
 }
+
+/**
+ * Reactiva una suscripción cancelada que aún está en su período de gracia.
+ */
+export async function reactivateSubscriptionService(
+  userId: number
+): Promise<void> {
+  const sub = await paymentsRepository.findSubscriptionByUser(userId)
+  if (!sub) throw new NotFoundError("No tienes una suscripción activa")
+
+  if (sub.status !== "cancelled") {
+    throw new ValidationError("La suscripción no está en período de gracia / cancelada")
+  }
+
+  const stripeSubId = sub.provider_subscription_id
+  if (!stripeSubId) throw new ValidationError("Suscripción sin ID de Stripe")
+
+  // Reactivar en Stripe quitando el flag de cancel_at_period_end
+  await stripe.subscriptions.update(stripeSubId, {
+    cancel_at_period_end: false,
+  })
+
+  // Sincronizar en DB local
+  await paymentsRepository.updateSubscriptionStatus(stripeSubId, "active")
+}
+
 
 /**
  * Procesa eventos asíncronos enviados por los Webhooks de Stripe.
@@ -242,7 +269,10 @@ export async function processWebhookEventService(
       const endDate = subscription.current_period_end
         ? new Date(subscription.current_period_end * 1000)
         : undefined
-      const status = mapStripeStatus(subscription.status)
+      let status = mapStripeStatus(subscription.status)
+      if (subscription.cancel_at_period_end && status === "active") {
+        status = "cancelled"
+      }
       await paymentsRepository.updateSubscriptionStatus(
         subscription.id,
         status,
@@ -263,4 +293,51 @@ export async function processWebhookEventService(
     default:
       console.log(`Evento Stripe no manejado: ${event.type}`)
   }
+}
+
+/**
+ * Sincroniza inmediatamente una sesión de pago de Stripe.
+ * Utilizado por el frontend para activar la suscripción en tiempo real sin depender únicamente del webhook.
+ */
+export async function syncCheckoutSessionService(
+  userId: number,
+  sessionId: string
+): Promise<{ status: string; membership: string }> {
+  const session = await stripe.checkout.sessions.retrieve(sessionId)
+  if (!session) throw new NotFoundError("Sesión no encontrada")
+
+  if (Number(session.metadata?.userId) !== userId) {
+    throw new ValidationError("La sesión no pertenece al usuario autenticado")
+  }
+
+  if (session.status !== "complete" && session.payment_status !== "paid") {
+    return { status: "pending", membership: "free" }
+  }
+
+  const plan = session.metadata?.plan as "vip" | "pro"
+  const stripeSubId = session.subscription as string
+
+  // Verificar si la suscripción ya está en la base de datos
+  const existingSub = await prisma.subscriptions.findFirst({
+    where: { provider_subscription_id: stripeSubId },
+  })
+
+  if (!existingSub) {
+    const hoy = new Date()
+    const finSuscripcion = new Date()
+    finSuscripcion.setMonth(finSuscripcion.getMonth() + 1)
+
+    await paymentsRepository.checkoutCompleted({
+      userId,
+      plan,
+      startDate: hoy,
+      endDate: finSuscripcion,
+      stripeSubscriptionId: stripeSubId,
+      amountTotal: (session.amount_total ?? 0) / 100,
+      currency: session.currency ?? "eur",
+      providerPaymentId: (session.payment_intent as string) || "paid_session",
+    })
+  }
+
+  return { status: "success", membership: plan }
 }

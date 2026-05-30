@@ -194,7 +194,7 @@ export const obtenerSiguiendoService = async (id: number) => {
  * Obtiene el catálogo completo de usuarios registrados (Uso Administrativo/General).
  */
 export const obtenerUsuariosService = async () => {
-  return userRepository.findAll()
+  return userProfileRepository.findAll()
 }
 
 /**
