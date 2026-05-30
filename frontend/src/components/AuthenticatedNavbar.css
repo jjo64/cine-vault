@@ -126,7 +126,7 @@
   align-items: center;
 }
 
-.auth-nav-back-btn {
+.auth-nav-diary-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -142,8 +142,8 @@
   transition: color 0.2s ease;
 }
 
-.auth-nav-back-btn:hover {
-  color: var(--auth-nav-text);
+.auth-nav-diary-btn:hover {
+  color: var(--auth-nav-accent);
 }
 
 .auth-nav-icon-btn {
@@ -356,7 +356,7 @@
     height: 56px;
   }
 
-  .auth-nav-back-btn {
+  .auth-nav-diary-btn {
     display: none;
   }
 
