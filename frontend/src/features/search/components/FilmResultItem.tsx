@@ -79,6 +79,9 @@ export function FilmResultItem({
           <Link to={href} className={styles.titleLink}>
             <span className={styles.titleText}>{item.title}</span>
           </Link>
+          <span className={styles.mediaTypeBadge}>
+            {item.mediaType === "tv" ? "Serie" : "Película"}
+          </span>
           {item.year ? <span className={styles.yearText}>{item.year}</span> : null}
         </div>
 

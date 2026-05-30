@@ -355,7 +355,7 @@ export function SearchResults() {
                       </div>
                     )}
 
-                    <div className={styles.sectionHeader}>Películas</div>
+                    <div className={styles.sectionHeader}>Películas y Series</div>
                     {pageFilms.map((film: FilmResult, i: number) => {
                       const details = enrichedFilms[film.id];
                       const mergedFilm: FilmResult = {
