@@ -88,19 +88,33 @@ export const checkStatus = async (req: Request, res: Response) => {
   console.log(`[RecommendationController] checkStatus para usuario ${viewerId}`)
   
   try {
-    const [profile, user, diaryCount, watchlistCount, vaultCount, reviewCount, listCount] =
-      await Promise.all([
-        prisma.user_taste_profiles.findUnique({ where: { user_id: viewerId } }),
-        prisma.users.findUnique({
-          where: { id: viewerId },
-          select: { created_at: true },
-        }),
-        prisma.diary_entries.count({ where: { user_id: viewerId } }),
-        prisma.watchlist.count({ where: { user_id: viewerId } }),
-        prisma.vault.count({ where: { user_id: viewerId } }),
-        prisma.reviews.count({ where: { user_id: viewerId } }),
-        prisma.user_lists.count({ where: { user_id: viewerId } }),
-      ])
+    const [
+      profile,
+      user,
+      diaryCount,
+      watchlistCount,
+      vaultCount,
+      reviewCount,
+      listCount,
+      onboardingInteractionsCount,
+    ] = await Promise.all([
+      prisma.user_taste_profiles.findUnique({ where: { user_id: viewerId } }),
+      prisma.users.findUnique({
+        where: { id: viewerId },
+        select: { created_at: true },
+      }),
+      prisma.diary_entries.count({ where: { user_id: viewerId } }),
+      prisma.watchlist.count({ where: { user_id: viewerId } }),
+      prisma.vault.count({ where: { user_id: viewerId } }),
+      prisma.reviews.count({ where: { user_id: viewerId } }),
+      prisma.user_lists.count({ where: { user_id: viewerId } }),
+      prisma.explicit_interactions.count({
+        where: {
+          user_id: viewerId,
+          interaction_type: { in: ["like_onboarding", "skip_onboarding"] },
+        },
+      }),
+    ])
 
     const footprintCount =
       diaryCount + watchlistCount + vaultCount + reviewCount + listCount
@@ -110,8 +124,12 @@ export const checkStatus = async (req: Request, res: Response) => {
       ? (Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60)
       : Number.POSITIVE_INFINITY
 
-    // Solo mostrar onboarding a cuentas nuevas, sin perfil y sin huella previa.
-    const needsOnboarding = !profile && footprintCount === 0 && accountAgeHours <= 72
+    // El onboarding es requerido si la cuenta es nueva, no tiene huella previa,
+    // y no ha realizado al menos 3 valoraciones en el onboarding.
+    const needsOnboarding =
+      onboardingInteractionsCount < 3 &&
+      footprintCount === 0 &&
+      accountAgeHours <= 72
 
     res.json({ needs_onboarding: needsOnboarding })
   } catch (error) {
@@ -157,6 +175,15 @@ export const postInteraction = async (req: Request, res: Response) => {
     normalizedMovieId,
     type,
     metadata
+  )
+  res.json(result)
+}
+
+export const completeRecommendation = async (req: Request, res: Response) => {
+  const viewerId = req.user!.user_id
+  const result = await RecommendationService.completeRecommendationService(
+    viewerId,
+    req.body
   )
   res.json(result)
 }

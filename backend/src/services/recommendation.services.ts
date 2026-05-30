@@ -24,6 +24,7 @@
 
 import { consultarTMDB } from "../helpers/fetchTMDB.js"
 import { prisma } from "../lib/prisma.js"
+import { getEntitlements } from "../config/entitlements.js"
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  MAPA TMDB genre_id → nombre en inglés (coincide con las claves del affinity_vector)
@@ -85,11 +86,13 @@ export type RecommendationItem =
     }
 
 const curatedFallbackDirectors = [
-  { name: "Chantal Akerman", reason: "Cine de observación y riesgo formal" },
-  { name: "Andrei Tarkovsky", reason: "Poesía visual y tempo contemplativo" },
-  { name: "Agnès Varda", reason: "Mirada íntima y documental sensible" },
+  { id: 130030, name: "Chantal Akerman", profile_path: "/6Q59Air1EjLHfq8NvvBpbTTgnWZ.jpg", reason: "Cine de observación y riesgo formal" },
+  { id: 8452, name: "Andrei Tarkovsky", profile_path: "/r8wCm6ZCVPVJBCvVqYOnz86ULHB.jpg", reason: "Poesía visual y tempo contemplativo" },
+  { id: 6817, name: "Agnès Varda", profile_path: "/8XKM6DCVcH5RsgIRh9mwVaEM0YB.jpg", reason: "Mirada íntima y documental sensible" },
   {
+    id: 69759,
     name: "Apichatpong Weerasethakul",
+    profile_path: "/zZyGqhaPNzeb88bHkYiCQHHXyhY.jpg",
     reason: "Narrativas hipnóticas y sensoriales",
   },
 ]
@@ -394,9 +397,10 @@ export const getSuggestedDirectors = async (userId: number) => {
     .slice(0, 10)
 
   if (movieSeeds.length === 0) {
-    return curatedFallbackDirectors.map((d, i) => ({
-      id: `curated-${i}`,
+    return curatedFallbackDirectors.map((d) => ({
+      id: d.id,
       name: d.name,
+      profile_path: d.profile_path,
       score: 0,
       reason: d.reason,
       source: "editorial",
@@ -804,4 +808,51 @@ export const saveExplicitInteraction = async (
   }
 
   return interaction
+}
+
+export const completeRecommendationService = async (
+  userId: number,
+  data: {
+    recommendation_id: string
+    media_id: number
+    media_type: "movie" | "tv"
+  }
+) => {
+  // Idempotency check
+  const existing = await prisma.recommendation_rewards.findUnique({
+    where: {
+      user_id_recommendation_id: {
+        user_id: userId,
+        recommendation_id: data.recommendation_id,
+      },
+    },
+  })
+
+  if (existing) {
+    return { ...existing, already_rewarded: true }
+  }
+
+  // Get user membership to apply multiplier
+  const user = await prisma.users.findUnique({
+    where: { id: userId },
+    select: { membership: true },
+  })
+
+  const userMembership = user?.membership || "free"
+  const multiplier = getEntitlements(userMembership).points_multiplier
+  const basePoints = 10.0
+  const points = basePoints * multiplier
+
+  const reward = await prisma.recommendation_rewards.create({
+    data: {
+      user_id: userId,
+      recommendation_id: data.recommendation_id,
+      media_id: data.media_id,
+      media_type: data.media_type as any,
+      points,
+      multiplier,
+    },
+  })
+
+  return { ...reward, already_rewarded: false }
 }

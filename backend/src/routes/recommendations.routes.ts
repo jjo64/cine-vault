@@ -15,9 +15,12 @@ import {
   checkStatus,
   getOnboarding,
   postInteraction,
+  completeRecommendation,
 } from "../controllers/RecommendationController.js"
 import { middlewareAutenticacion } from "../middlewares/auth.middlewares.js"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
+import { validarBody } from "../middlewares/validation.middleware.js"
+import { completeRecommendationSchema } from "../schemas/vault.js"
 
 const router = Router()
 
@@ -64,6 +67,13 @@ router.post(
   "/interact",
   middlewareAutenticacion,
   manejadorAsincrono(postInteraction)
+)
+
+router.post(
+  "/complete",
+  middlewareAutenticacion,
+  validarBody(completeRecommendationSchema),
+  manejadorAsincrono(completeRecommendation)
 )
 
 /**

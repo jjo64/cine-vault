@@ -82,6 +82,13 @@ export default function OnboardingModal({
     }
   };
 
+  const handleFinishEarly = () => {
+    setIsFinishing(true);
+    setTimeout(() => {
+      onComplete();
+    }, 3500); // Duration of the special animation
+  };
+
   const handleInteraction = async (type: string) => {
     if (!movie) return;
 
@@ -227,6 +234,21 @@ export default function OnboardingModal({
               </button>
             ))}
           </div>
+
+          {step >= 3 && (
+            <div className="onboarding-completion-tip">
+              <p className="recommendation-notice">
+                ✨ <strong>¡Ya podés empezar!</strong> Tenés el mínimo de 3 películas, pero te recomendamos llegar a 10 para mayor precisión.
+              </p>
+              <button
+                className="finish-early-btn"
+                onClick={handleFinishEarly}
+                disabled={loading}
+              >
+                Comenzar ya
+              </button>
+            </div>
+          )}
         </div>
       </motion.div>
 
