@@ -62,13 +62,14 @@ export const buildSitemapIndexXml = (locs: string[]) => {
   ].join("\n")
 }
 
-const buildMoviePath = (tmdbId: number, slug: string | null) => {
-  if (!slug) return `/movie/${tmdbId}`
+const buildMoviePath = (tmdbId: number, slug: string | null, mediaType: string | null) => {
+  const type = mediaType === "tv" ? "tv" : "movie"
+  if (!slug) return `/${type}/${tmdbId}`
   const normalizedSlug = slug.trim().replace(/^\/+/, "")
-  if (!normalizedSlug) return `/movie/${tmdbId}`
+  if (!normalizedSlug) return `/${type}/${tmdbId}`
   return normalizedSlug.startsWith(`${tmdbId}-`)
-    ? `/movie/${normalizedSlug}`
-    : `/movie/${tmdbId}-${normalizedSlug}`
+    ? `/${type}/${normalizedSlug}`
+    : `/${type}/${tmdbId}-${normalizedSlug}`
 }
 
 /**
@@ -84,7 +85,7 @@ export const getSitemapData = async () => {
   const [movies, users, news] = await Promise.all([
     prisma.movies_ref.findMany({
       where: { is_public: true },
-      select: { tmdb_id: true, slug: true, updated_at: true },
+      select: { tmdb_id: true, slug: true, media_type: true, updated_at: true },
       orderBy: { updated_at: "desc" },
     }),
     prisma.users.findMany({
@@ -109,7 +110,7 @@ export const getSitemapData = async () => {
       { loc: `${SITE_URL}/news`, lastmod: toIsoDate(news[0]?.created_at) },
     ],
     movieEntries: movies.map((m) => ({
-      loc: `${SITE_URL}${buildMoviePath(m.tmdb_id, m.slug)}`,
+      loc: `${SITE_URL}${buildMoviePath(m.tmdb_id, m.slug, m.media_type)}`,
       lastmod: toIsoDate(m.updated_at),
     })),
     profileEntries: users.map((u) => ({

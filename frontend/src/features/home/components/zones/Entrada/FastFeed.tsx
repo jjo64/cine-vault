@@ -49,7 +49,7 @@ export const FastFeed: React.FC<FastFeedProps> = ({
             }}
           >
             <Link
-              to={movieHref(post.movieId, post.tmdbId, post.film)}
+              to={movieHref(post.movieId, post.tmdbId, post.film, post.mediaType)}
               style={{ textDecoration: "none" }}
             >
               <div
@@ -135,7 +135,7 @@ export const FastFeed: React.FC<FastFeedProps> = ({
                     reseño
                   </span>
                   <Link
-                    to={movieHref(post.movieId, post.tmdbId, post.film)}
+                    to={movieHref(post.movieId, post.tmdbId, post.film, post.mediaType)}
                     style={{
                       fontFamily: SERIF,
                       fontStyle: "italic",
@@ -162,7 +162,7 @@ export const FastFeed: React.FC<FastFeedProps> = ({
                 </div>
               </div>
               <Link
-                to={`/${encodeURIComponent(post.username)}/movie/${post.id}`}
+                to={`/${encodeURIComponent(post.username)}/${post.mediaType === "tv" ? "tv" : "movie"}/${post.id}`}
                 style={{ textDecoration: "none" }}
               >
                 <p

@@ -42,6 +42,7 @@ export type VaultEntry = {
     title?: string;
     poster_path?: string | null;
     release_date?: string;
+    media_type?: string;
   } | null;
   added_at?: string | null;
 };
@@ -88,6 +89,7 @@ export type MovieMeta = {
   genres: string[];
   synopsis: string;
   points: number;
+  mediaType?: string;
   // Mantener por compatibilidad si es necesario, aunque se prefieren las nuevas
   runtimeLabel?: string;
   overview?: string | null;
@@ -115,6 +117,7 @@ export type FollowingActivityItem = {
   film: string;
   movieId: number;
   tmdbId: number | null;
+  mediaType?: string;
   rating: number;
   time: string;
   posterUrl: string;
@@ -128,6 +131,7 @@ export type FollowingReviewItem = {
   film: string;
   movieId: number;
   tmdbId: number | null;
+  mediaType?: string;
   rating: number;
   text: string;
   likes: number;

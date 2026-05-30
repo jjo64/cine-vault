@@ -8,13 +8,20 @@ export const initials = (name: string) => {
     .slice(0, 2);
 };
 
-export const movieHref = (id: number | string, tmdbId: number | null | undefined, title: string | undefined) => {
-  const safeTitle = title || "movie";
+export const movieHref = (
+  id: number | string,
+  tmdbId: number | null | undefined,
+  title: string | undefined,
+  mediaType?: "movie" | "tv" | string | null
+) => {
+  const type = mediaType === "tv" ? "tv" : "movie";
+  const safeTitle = title || type;
   const slug = safeTitle
     .toLowerCase()
     .replace(/[^\w\s-]/g, "")
     .replace(/\s+/g, "-");
-  return `/movie/${id}-${tmdbId}-${slug}`;
+  const resolvedId = tmdbId || id;
+  return `/${type}/${resolvedId}-${slug}`;
 };
 
 export const relativeLabel = (dateStr: string | undefined) => {
