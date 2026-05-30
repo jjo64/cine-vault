@@ -1,6 +1,6 @@
 import type { SessionEntry } from "../../services/profileServices";
 
-export type SectionKey = "perfil" | "seguridad" | "cuenta";
+export type SectionKey = "perfil" | "seguridad" | "cuenta" | "suscripcion";
 
 export type ProfileForm = {
   username: string;

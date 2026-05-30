@@ -9,6 +9,7 @@ import { GrainOverlay } from "../../../components/profile-v2/primitives";
 import PerfilSection from "./PerfilSection/PerfilSection";
 import SeguridadSection from "./SeguridadSection/SeguridadSection";
 import CuentaSection from "./CuentaSection/CuentaSection";
+import SuscripcionSection from "./SuscripcionSection/SuscripcionSection";
 import LeaveModal from "./LeaveModal/LeaveModal";
 import styles from "./Settings.module.css";
 
@@ -105,6 +106,7 @@ export function Settings() {
         {activeSection === "perfil" && <PerfilSection />}
         {activeSection === "seguridad" && <SeguridadSection />}
         {activeSection === "cuenta" && <CuentaSection />}
+        {activeSection === "suscripcion" && <SuscripcionSection />}
       </main>
 
       <div className={styles.bottomBar}>

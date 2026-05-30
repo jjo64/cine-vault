@@ -10,6 +10,7 @@ import { BottomNav } from "./components/BottomNav";
 import AuthenticatedNavbar from "./components/AuthenticatedNavbar";
 //import { ModernNavbar } from "./components/layout/ModernNavbar";
 import { getCurrentUser, type AuthUser } from "./services/authServices";
+import { GlobalDiaryModal } from "./components/GlobalDiaryModal";
 import "./App.css";
 
 const Home = lazy(() => import("./pages/Home"));
@@ -29,6 +30,8 @@ const SettingsPage = lazy(() => import("./pages/Settings.tsx"));
 const Profile = lazy(() =>
   import("./pages/Profile").then((module) => ({ default: module.Profile })),
 );
+const SuccessPage = lazy(() => import("./pages/Success"));
+const CancelPage = lazy(() => import("./pages/Cancel"));
 const ProfileIndexPage = lazy(() => import("./pages/ProfileIndex"));
 const VerifyEmailPage = lazy(() => import("./pages/VerifyEmail"));
 const NotFoundPage = lazy(() => import("./pages/NotFound"));
@@ -44,6 +47,11 @@ const ArcosPage = lazy(() =>
 const ArcoDetailPage = lazy(() =>
   import("./pages/ArcoDetail").then((module) => ({
     default: module.ArcoDetail,
+  })),
+);
+const ListDetailPage = lazy(() =>
+  import("./pages/ListDetail").then((module) => ({
+    default: module.ListDetailPage,
   })),
 );
 const DiaryPage = lazy(() =>
@@ -64,6 +72,8 @@ const FilmsPage = lazy(() =>
 const MembersPage = lazy(() =>
   import("./pages/Members").then((module) => ({ default: module.Members })),
 );
+const PricingPage = lazy(() => import("./pages/Pricing"));
+const AdvancedStatsPage = lazy(() => import("./pages/AdvancedStats"));
 
 function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -174,9 +184,12 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/feed" element={<FeedPage />} />
+          <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/stats" element={<AdvancedStatsPage />} />
+          <Route path="/success" element={<SuccessPage />} />
+          <Route path="/cancel" element={<CancelPage />} />
           <Route path="/discover" element={<FeedPage />} />
           <Route path="/movie/:slugOrId" element={<MovieDetail />} />
-          <Route path="/tv/:id" element={<TVDetail />} />
           <Route path="/tv/:slugOrId" element={<TVDetail />} />
           <Route path="/person/:id" element={<PersonPage />} />
           <Route path="/settings" element={<SettingsPage />} />
@@ -202,6 +215,7 @@ function App() {
           <Route path="/news" element={<ComingSoonPage />} />
           <Route path="/news/:id" element={<ComingSoonPage />} />
           <Route path="/lists" element={<CommunityDiscoverPage />} />
+          <Route path="/lists/:id" element={<ListDetailPage />} />
           <Route path="/members" element={<MembersPage />} />
           <Route path="/journal" element={<ComingSoonPage />} />
           <Route path="/search-results" element={<SearchResults />} />
@@ -233,6 +247,7 @@ function App() {
           />
         </Suspense>
       )}
+      <GlobalDiaryModal user={user} />
     </SocketProvider>
   );
 }
