@@ -164,7 +164,6 @@ const AuthenticatedNavbar: React.FC<NavbarProps> = ({ user: initialUser }) => {
     { label: "Films", path: "/films" },
     { label: "Lists", path: "/lists" },
     { label: "Members", path: "/members" },
-    { label: "Journal", path: "/journal" },
   ];
 
   const navLinks = user ? authenticatedLinks : guestLinks;
@@ -213,7 +212,7 @@ const AuthenticatedNavbar: React.FC<NavbarProps> = ({ user: initialUser }) => {
               onFocus={() => setIsSearchOpen(true)}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-            <button type="submit" className="auth-nav-search-btn">
+            <button type="submit" className="auth-nav-search-btn" aria-label="Buscar">
               <Search size={16} />
             </button>
           </form>
@@ -287,22 +286,18 @@ const AuthenticatedNavbar: React.FC<NavbarProps> = ({ user: initialUser }) => {
           )}
         </div>
 
-        <button
-          className="auth-nav-diary-btn"
-          onClick={() => {
-            if (!user) {
-              window.dispatchEvent(
-                new CustomEvent("open-auth-modal", { detail: { mode: "login" } }),
-              );
-            } else {
+        {user && (
+          <button
+            className="auth-nav-diary-btn"
+            onClick={() => {
               window.dispatchEvent(new CustomEvent("open-diary-search-modal"));
-            }
-          }}
-          aria-label="Añadir entrada al diario"
-        >
-          <Plus size={14} />
-          + DIARIO
-        </button>
+            }}
+            aria-label="Añadir entrada al diario"
+          >
+            <Plus size={14} />
+            + DIARIO
+          </button>
+        )}
 
         {user && (
           <div

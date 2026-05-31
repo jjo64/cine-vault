@@ -40,6 +40,7 @@ const AuthCallbackPage = lazy(() => import("./pages/AuthCallback"));
 const VaultPage = lazy(() =>
   import("./pages/Vault").then((module) => ({ default: module.Vault })),
 );
+const VaultDetailPage = lazy(() => import("./pages/VaultDetail"));
 const CommunityDiscoverPage = lazy(() => import("./pages/CommunityDiscover"));
 const ArcosPage = lazy(() =>
   import("./pages/Arcos").then((module) => ({ default: module.Arcos })),
@@ -196,6 +197,7 @@ function App() {
           <Route path="/search" element={<SearchResults />} />
           <Route path="/profile" element={<ProfileIndexPage />} />
           <Route path="/:username/vault" element={<VaultPage />} />
+          <Route path="/:username/vault/:slugId" element={<VaultDetailPage />} />
           <Route path="/vault/:username" element={<VaultPage />} />
           <Route path="/vault" element={<CommunityDiscoverPage />} />
           <Route path="/for-you" element={<ForYouPage />} />

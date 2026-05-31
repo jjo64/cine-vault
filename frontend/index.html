@@ -5,16 +5,39 @@
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="preconnect" href="https://image.tmdb.org">
-    <link rel="dns-prefetch" href="https://image.tmdb.org">
-   <link rel="preconnect" href="https://fonts.googleapis.com">
+    <!-- Orígenes preconectados y DNS-prefetch para acelerar la carga de recursos críticos -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://image.tmdb.org" crossorigin>
+    <link rel="preconnect" href="https://image.tmdb.org">
+    <link rel="preconnect" href="https://images.unsplash.com" crossorigin>
+    <link rel="preconnect" href="https://images.unsplash.com">
+    <link rel="preconnect" href="https://cine-vault-ncuh.onrender.com" crossorigin>
+    
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+    <link rel="dns-prefetch" href="https://image.tmdb.org">
+    <link rel="dns-prefetch" href="https://images.unsplash.com">
+    <link rel="dns-prefetch" href="https://cine-vault-ncuh.onrender.com">
 
+    <!-- Carga asíncrona y no bloqueante de Google Fonts -->
+    <link 
+      rel="preload" 
+      as="style" 
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Syne:wght@400;500&display=swap"
+    >
     <link 
       href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Syne:wght@400;500&display=swap" 
       rel="stylesheet"
-      media="all"
+      media="print"
+      onload="this.media='all'"
     >
+    <noscript>
+      <link 
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Syne:wght@400;500&display=swap" 
+        rel="stylesheet"
+      >
+    </noscript>
 
     <!-- Título y descripción base (react-helmet-async los sobreescribe por ruta) -->
     <title>CineVault — El diario cinematográfico que te define</title>
