@@ -7,6 +7,7 @@ import type {
   VaultSocialEntry,
 } from "./types";
 import { TMDB_IMG, I, VAULT_USER } from "./constants";
+import { createSlug } from "../../utils/stringUtils";
 
 export function toTmdbImage(path?: string | null): string {
   return path ? `${TMDB_IMG}${path}` : I.fog;
@@ -15,6 +16,7 @@ export function toTmdbImage(path?: string | null): string {
 export function fromReviewsToVault(reviews: ReviewEntry[]): VaultEntry[] {
   return reviews.slice(0, 8).map((review) => ({
     id: 1000 + review.id,
+    originalId: review.id,
     type: "review" as const,
     title: `Reseña #${review.id}`,
     film: review.movies_ref?.tmdb_id
@@ -131,6 +133,10 @@ export function fromSocialToVault(entries: VaultSocialEntry[]): VaultEntry[] {
 
     return {
       id: 5000 + entry.id,
+      originalId: entry.id,
+      mediaType: entry.media_type,
+      tmdbId: entry.tmdb_id,
+      movieSlug: entry.movie_info?.title ? createSlug(entry.movie_info.title) : "",
       type: mappedType,
       title: entry.title,
       film: entry.movie_info?.title || undefined,

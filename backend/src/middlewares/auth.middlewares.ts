@@ -83,3 +83,31 @@ export const middlewareAutenticacion = (
     )
   }
 }
+
+/**
+ * Middleware que de forma opcional valida si existe una sesión activa.
+ * Si no hay token o es inválido, continúa sin inyectar req.user.
+ */
+export const middlewareAutenticacionOpcional = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const authHeader = req.headers["authorization"]
+  const bearerToken = authHeader && authHeader.split(" ")[1]
+  const cookieToken = req.cookies?.access_token
+  const token = bearerToken || cookieToken
+
+  if (!token) {
+    return next()
+  }
+
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET!) as PayloadAcceso
+    req.user = payload
+  } catch {
+    // Ignorar tokens expirados/inválidos en auth opcional
+  }
+  next()
+}
+

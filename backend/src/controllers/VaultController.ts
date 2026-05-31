@@ -15,6 +15,7 @@ import {
   eliminarVaultService,
   obtenerVaultSocialService,
   obtenerVaultService,
+  obtenerVaultSocialEntryPorIdService,
 } from "../services/vault.services.js"
 import type {
   EliminarVaultParamsDTO,
@@ -119,4 +120,14 @@ export const deleteVaultSocialEntry = async (req: Request, res: Response) => {
   const { id } = req.params as unknown as VaultSocialEntryIdParams
   await eliminarVaultSocialEntryService(req.user!.user_id, id)
   res.json({ message: "La entrada social ha sido eliminada con éxito" })
+}
+
+/**
+ * Recupera una publicación específica del Vault.
+ */
+export const getVaultSocialEntryById = async (req: Request, res: Response) => {
+  const { id } = req.params as unknown as VaultSocialEntryIdParams
+  const viewerUserId = req.user?.user_id ?? null
+  const entry = await obtenerVaultSocialEntryPorIdService(id, viewerUserId)
+  res.json(entry)
 }

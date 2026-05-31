@@ -111,6 +111,8 @@ export interface IVaultRepository {
     id: number,
     userId: number
   ): Promise<VaultSocialEntryRow | null>
+  /** Localiza una publicación por su ID sin requerir propiedad */
+  getSocialEntryById(id: number): Promise<VaultSocialEntryRow | null>
   /** Elimina contenido editorial de forma permanente */
   deleteSocialEntry(id: number, userId: number): Promise<void>
 }
@@ -384,6 +386,36 @@ export class VaultRepository implements IVaultRepository {
       FROM vault_social_entries vse
       LEFT JOIN movies_ref mr ON mr.id = vse.movie_id
       WHERE vse.id = ${id} AND vse.user_id = ${userId}
+      LIMIT 1
+    `)
+
+    return rows[0] ?? null
+  }
+
+  /**
+   * Recupera una publicación por su ID sin validar propiedad (para lectura pública).
+   */
+  async getSocialEntryById(id: number) {
+    const rows = await prisma.$queryRaw<VaultSocialEntryRow[]>(Prisma.sql`
+      SELECT
+        vse.id,
+        vse.user_id,
+        vse.movie_id,
+        mr.tmdb_id,
+        mr.media_type,
+        vse.entry_type,
+        vse.title,
+        vse.content,
+        vse.cover_url,
+        vse.duration_label,
+        vse.likes_count,
+        vse.comments_count,
+        vse.is_public,
+        vse.created_at,
+        vse.updated_at
+      FROM vault_social_entries vse
+      LEFT JOIN movies_ref mr ON mr.id = vse.movie_id
+      WHERE vse.id = ${id}
       LIMIT 1
     `)
 

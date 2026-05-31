@@ -10,6 +10,10 @@ export type MembershipTier = "VIP" | "PRO";
 
 export interface VaultEntry {
   id: number;
+  originalId?: number;
+  mediaType?: "movie" | "tv";
+  tmdbId?: number | null;
+  movieSlug?: string;
   type: EntryType;
   title: string;
   film?: string;

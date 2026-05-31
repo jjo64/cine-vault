@@ -84,9 +84,16 @@ export type VaultSocialEntry = {
   is_public: boolean;
   created_at: string;
   updated_at: string;
+  media_type?: "movie" | "tv";
   movie_info?: {
     title?: string | null;
     poster_path?: string | null;
+  } | null;
+  film?: string;
+  users?: {
+    id: number;
+    username: string;
+    avatar_url?: string | null;
   } | null;
 };
 
@@ -510,4 +517,10 @@ export const removeVaultSocialEntry = (token: string | null, entryId: number) =>
     token,
     method: "DELETE",
     defaultValue: { message: "" },
+  });
+
+export const fetchVaultSocialEntryById = (entryId: number, token?: string | null) =>
+  apiFetch<VaultSocialEntry | null>(`/api/vault/social/entry/${entryId}`, {
+    token,
+    defaultValue: null,
   });
