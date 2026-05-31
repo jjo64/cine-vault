@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <linearGradient id="gold-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F2C94C" />
+      <stop offset="100%" stop-color="#F2994A" />
+    </linearGradient>
+    <radialGradient id="bg-grad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1A1A1A" />
+      <stop offset="100%" stop-color="#0D0D0D" />
+    </radialGradient>
+  </defs>
+  <circle cx="50" cy="50" r="45" fill="url(#bg-grad)" stroke="#252525" stroke-width="2" />
+  <!-- Museum Frame shape -->
+  <rect x="30" y="32" width="40" height="36" rx="4" fill="none" stroke="url(#gold-grad)" stroke-width="3" />
+  <!-- Sparkles -->
+  <path d="M50 42 L52 46 L56 48 L52 50 L50 54 L48 50 L44 48 L48 46 Z" fill="url(#gold-grad)" />
+  <circle cx="37" cy="39" r="2" fill="url(#gold-grad)" opacity="0.7" />
+  <circle cx="63" cy="61" r="2" fill="url(#gold-grad)" opacity="0.7" />
+</svg>

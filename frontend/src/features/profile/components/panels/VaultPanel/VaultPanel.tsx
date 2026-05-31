@@ -9,20 +9,18 @@ import { removeVaultSocialEntry } from "../../../../../services/profileServices"
 import type { VaultSocialEntry } from "../../../../../services/profileServices";
 import styles from "./VaultPanel.module.css";
 
-const mediaHref = (
-  movieId: number,
-  title: string,
-  tmdbId: number | null,
-  mediaType?: "movie" | "tv" | null,
+const vaultMediaHref = (
+  username: string,
+  item: VaultSocialEntry,
 ) => {
-  const type = mediaType === "tv" ? "tv" : "movie";
-  return `/${type}/${tmdbId ?? movieId}-${createSlug(title)}`;
+  return `/${username}/vault/${item.id}-${createSlug(item.title)}`;
 };
 
 const VAULT_FILTERS = ["Todo", "Reflexion", "Edit", "Critica", "Recomendacion"];
 
 interface VaultCardProps {
   item: VaultSocialEntry;
+  username: string;
   delay?: number;
   onRemove?: (id: number) => void;
   canManage?: boolean;
@@ -30,6 +28,7 @@ interface VaultCardProps {
 
 function VaultCard({
   item,
+  username,
   delay = 0,
   onRemove,
   canManage = false,
@@ -44,8 +43,8 @@ function VaultCard({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onClick={() =>
-        item.movie_id &&
-        navigate(mediaHref(item.movie_id, item.title, item.tmdb_id))
+        (item.movie_id || item.tmdb_id) &&
+        navigate(vaultMediaHref(username, item))
       }
       className={`${styles.vaultCard} ${hovered ? styles.vaultCardHovered : ""}`}
     >
@@ -103,11 +102,13 @@ function VaultCard({
 }
 
 interface VaultPanelProps {
+  username: string;
   vaultItems: VaultSocialEntry[];
   canManage: boolean;
 }
 
 export function VaultPanel({
+  username,
   vaultItems: initialItems = [],
   canManage = false,
 }: VaultPanelProps) {
@@ -168,6 +169,7 @@ export function VaultPanel({
           <VaultCard
             key={item.id}
             item={item}
+            username={username}
             delay={index * 0.06}
             canManage={canManage}
             onRemove={handleDeleteEntry}

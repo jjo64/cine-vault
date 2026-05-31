@@ -62,7 +62,7 @@ const router = Router()
  *     summary: Listado global de usuarios de la plataforma
  *     tags: [Usuarios]
  */
-router.get("/", middlewareAutenticacion, manejadorAsincrono(obtenerUsuarios))
+router.get("/", manejadorAsincrono(obtenerUsuarios))
 
 /**
  * Búsqueda de usuarios por username o criterios específicos.

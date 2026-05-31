@@ -25,6 +25,7 @@ export const useProfileStore = create<ProfileStore>((set) => ({
   isOwnProfile: false,
   isPublicProfile: false,
   targetUserId: null,
+  compatibilityScore: null,
 
   profileHeader: initialHeader,
   stats: initialStats,
@@ -93,5 +94,6 @@ export const useProfileStore = create<ProfileStore>((set) => ({
       isFollowing: false,
       followBusy: false,
       isCurating: false,
+      compatibilityScore: null,
     }),
 }));

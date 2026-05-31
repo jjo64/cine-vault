@@ -3,23 +3,98 @@ import { BarChart2, Film, Trophy } from "lucide-react";
 import type { RecentlyWatchedItem, ReviewItem } from "../../../types";
 import styles from "./ProfileSidebar.module.css";
 
-function ActivityStats() {
-  const monthData = [
-    { month: "Oct", count: 8 },
-    { month: "Nov", count: 14 },
-    { month: "Dic", count: 11 },
-    { month: "Ene", count: 6 },
-    { month: "Feb", count: 19 },
-    { month: "Mar", count: 12 },
+function ActivityStats({ allDiaryFilms = [] }: { allDiaryFilms?: RecentlyWatchedItem[] }) {
+  const currentYear = new Date().getFullYear();
+
+  // 1. Calculate movies watched in the current year
+  const filmsThisYear = allDiaryFilms.filter((film) => {
+    if (!film.watchedDate) return false;
+    const date = new Date(film.watchedDate);
+    return date.getFullYear() === currentYear;
+  });
+
+  const countThisYear = filmsThisYear.length;
+
+  // 2. Find best month of the current year
+  const monthsSpanish = [
+    "Enero",
+    "Febrero",
+    "Marzo",
+    "Abril",
+    "Mayo",
+    "Junio",
+    "Julio",
+    "Agosto",
+    "Septiembre",
+    "Octubre",
+    "Noviembre",
+    "Diciembre",
   ];
-  const max = Math.max(...monthData.map((m) => m.count));
+
+  const monthlyCountsThisYear = Array(12).fill(0);
+  filmsThisYear.forEach((film) => {
+    if (film.watchedDate) {
+      const month = new Date(film.watchedDate).getMonth();
+      monthlyCountsThisYear[month]++;
+    }
+  });
+
+  let bestMonthIndex = -1;
+  let maxMonthCount = 0;
+  for (let i = 0; i < 12; i++) {
+    if (monthlyCountsThisYear[i] > maxMonthCount) {
+      maxMonthCount = monthlyCountsThisYear[i];
+      bestMonthIndex = i;
+    }
+  }
+
+  const bestMonthLabel =
+    bestMonthIndex !== -1 ? monthsSpanish[bestMonthIndex] : "Ninguno";
+
+  // 3. Generate last 6 months data
+  const monthsShort = [
+    "Ene",
+    "Feb",
+    "Mar",
+    "Abr",
+    "May",
+    "Jun",
+    "Jul",
+    "Ago",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dic",
+  ];
+  const today = new Date();
+  const monthData = [];
+
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+    const mIndex = d.getMonth();
+    const yVal = d.getFullYear();
+
+    // Count films in this month and year
+    const count = allDiaryFilms.filter((film) => {
+      if (!film.watchedDate) return false;
+      const date = new Date(film.watchedDate);
+      return date.getMonth() === mIndex && date.getFullYear() === yVal;
+    }).length;
+
+    monthData.push({
+      month: monthsShort[mIndex],
+      count,
+    });
+  }
+
+  const max = Math.max(...monthData.map((m) => m.count), 1); // Avoid division by zero
 
   return (
     <div className={styles.sidebarBlock}>
       <div className={styles.blockTitleRow}>
         <BarChart2 size={13} className={styles.accentIcon} />
         <span className={styles.blockTitleText}>
-          Actividad 2025
+          Actividad {currentYear}
         </span>
       </div>
       <div className={styles.activityBarsRow}>
@@ -28,8 +103,9 @@ function ActivityStats() {
             <div
               className={styles.activityBarFill}
               style={{
-                opacity: 0.4 + (count / max) * 0.6,
+                opacity: count > 0 ? 0.4 + (count / max) * 0.6 : 0.1,
                 height: `${(count / max) * 48}px`,
+                minHeight: count > 0 ? "2px" : "0px",
               }}
             />
             <span className={styles.activityBarMonth}>
@@ -39,66 +115,121 @@ function ActivityStats() {
         ))}
       </div>
       <div className={styles.activitySummary}>
-        <span className={styles.textWhite}>70</span> películas este año · mejor
-        mes: <span className={styles.textWhite}>Febrero</span>
+        <span className={styles.textWhite}>{countThisYear}</span> película{countThisYear !== 1 ? "s" : ""} este año · mejor
+        mes: <span className={styles.textWhite}>{bestMonthLabel}</span>
       </div>
     </div>
   );
 }
 
 function GenreSidebar({
-  recentlyWatched,
+  allDiaryFilms = [],
   reviewItems,
 }: {
-  recentlyWatched: RecentlyWatchedItem[];
+  allDiaryFilms?: RecentlyWatchedItem[];
   reviewItems: ReviewItem[];
 }) {
   const radar = useMemo(() => {
-    const total = Math.max(1, recentlyWatched.length);
-    const highRated = recentlyWatched.filter((film) => film.rating >= 4).length;
-    const classics = recentlyWatched.filter(
+    const total = Math.max(1, allDiaryFilms.length);
+
+    // 1. Autor: classic films (year < 2000)
+    const classics = allDiaryFilms.filter(
       (film) => film.year !== null && film.year < 2000,
     ).length;
-    const oldCinema = recentlyWatched.filter(
-      (film) => film.year !== null && film.year < 1985,
-    ).length;
-    const reviewWeight = Math.min(1, reviewItems.length / 10);
+    const autorRatio = classics / total;
 
-    const clamp = (value: number) => Math.max(0.2, Math.min(0.95, value));
+    // 2. Drama: drama-related genres
+    const dramaCount = allDiaryFilms.filter((film) => {
+      const g = film.primaryGenre?.toLowerCase() || "";
+      return (
+        g.includes("drama") ||
+        g.includes("historia") ||
+        g.includes("romance")
+      );
+    }).length;
+    const dramaRatio = dramaCount / total;
+
+    // 3. Contemplativo: high ratings (>= 4) or slow paced/long (> 120m)
+    const contemplativoCount = allDiaryFilms.filter(
+      (film) =>
+        film.rating >= 4 ||
+        (film.runtimeMinutes && film.runtimeMinutes > 120),
+    ).length;
+    const contemplativoRatio = contemplativoCount / total;
+
+    // 4. Noir: thriller, crime, mystery or retro (year < 1985)
+    const noirCount = allDiaryFilms.filter((film) => {
+      const g = film.primaryGenre?.toLowerCase() || "";
+      const isRetro = film.year !== null && film.year < 1985;
+      const isNoirGenre =
+        g.includes("crimen") ||
+        g.includes("misterio") ||
+        g.includes("suspenso") ||
+        g.includes("thriller") ||
+        g.includes("terror");
+      return isRetro || isNoirGenre;
+    }).length;
+    const noirRatio = noirCount / total;
+
+    // 5. Sci-fi / Fantasy / Adventure / Action
+    const scifiCount = allDiaryFilms.filter((film) => {
+      const g = film.primaryGenre?.toLowerCase() || "";
+      return (
+        g.includes("ciencia") ||
+        g.includes("sci-fi") ||
+        g.includes("fantas") ||
+        g.includes("aventura") ||
+        g.includes("acci")
+      );
+    }).length;
+    const scifiRatio = scifiCount / total;
+
+    // 6. Riesgo: genre diversity (unique genres / total) or reviews weight
+    const uniqueGenres = new Set(
+      allDiaryFilms.map((film) => film.primaryGenre).filter(Boolean),
+    );
+    const genreDiversity =
+      uniqueGenres.size / Math.max(1, allDiaryFilms.length);
+    const reviewRatio = Math.min(1, reviewItems.length / Math.max(1, total));
+    const riesgoRatio = (genreDiversity + reviewRatio) / 2;
+
+    const clamp = (value: number) => Math.max(0.15, Math.min(0.95, value));
+
+    const hasFilms = allDiaryFilms.length > 0;
 
     return [
       {
         label: "Autor",
         short: "Autor",
-        value: clamp(0.35 + (classics / total) * 0.5),
+        value: clamp(hasFilms ? 0.2 + autorRatio * 0.75 : 0.45),
       },
       {
         label: "Drama",
         short: "Drama",
-        value: clamp(0.4 + reviewWeight * 0.45),
+        value: clamp(hasFilms ? 0.2 + dramaRatio * 0.75 : 0.65),
       },
       {
         label: "Contemplativo",
         short: "Cont.",
-        value: clamp(0.3 + (highRated / total) * 0.55),
+        value: clamp(hasFilms ? 0.2 + contemplativoRatio * 0.75 : 0.5),
       },
       {
         label: "Noir",
         short: "Noir",
-        value: clamp(0.2 + (oldCinema / total) * 0.45),
+        value: clamp(hasFilms ? 0.2 + noirRatio * 0.75 : 0.35),
       },
       {
         label: "Sci-fi",
         short: "Sci-fi",
-        value: clamp(0.25 + ((total % 5) / 5) * 0.35),
+        value: clamp(hasFilms ? 0.2 + scifiRatio * 0.75 : 0.4),
       },
       {
         label: "Riesgo",
         short: "Riesgo",
-        value: clamp(0.28 + Math.min(1, total / 12) * 0.42),
+        value: clamp(hasFilms ? 0.2 + riesgoRatio * 0.75 : 0.3),
       },
     ];
-  }, [recentlyWatched, reviewItems]);
+  }, [allDiaryFilms, reviewItems]);
 
   const svgSize = 200;
   const cx = svgSize / 2;
@@ -245,7 +376,7 @@ function AchievementsSidebar({ userBadges = [] }: { userBadges?: any[] }) {
         return (
           <div key={ub.id} className={styles.achievementRow}>
             <div className={styles.achievementIconWrapper}>
-              {badge.icon_url?.startsWith("http") ? (
+              {badge.icon_url?.startsWith("http") || badge.icon_url?.startsWith("/") ? (
                 <img
                   src={badge.icon_url}
                   alt=""
@@ -282,19 +413,21 @@ interface ProfileSidebarProps {
   recentlyWatched: RecentlyWatchedItem[];
   reviewItems: ReviewItem[];
   userBadges?: any[];
+  allDiaryFilms?: RecentlyWatchedItem[];
 }
 
 export function ProfileSidebar({
-  recentlyWatched,
+  recentlyWatched: _recentlyWatched,
   reviewItems,
   userBadges = [],
+  allDiaryFilms = [],
 }: ProfileSidebarProps) {
   return (
     <aside className={styles.sidebarContainer}>
       <div className={styles.stickyContent}>
-        <ActivityStats />
+        <ActivityStats allDiaryFilms={allDiaryFilms} />
         <GenreSidebar
-          recentlyWatched={recentlyWatched}
+          allDiaryFilms={allDiaryFilms}
           reviewItems={reviewItems}
         />
         <AchievementsSidebar userBadges={userBadges} />

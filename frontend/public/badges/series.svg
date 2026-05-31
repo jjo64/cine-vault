@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <linearGradient id="gold-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F2C94C" />
+      <stop offset="100%" stop-color="#F2994A" />
+    </linearGradient>
+    <radialGradient id="bg-grad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1A1A1A" />
+      <stop offset="100%" stop-color="#0D0D0D" />
+    </radialGradient>
+  </defs>
+  <circle cx="50" cy="50" r="45" fill="url(#bg-grad)" stroke="#252525" stroke-width="2" />
+  <!-- TV outline -->
+  <rect x="28" y="34" width="44" height="32" rx="3" fill="none" stroke="url(#gold-grad)" stroke-width="3" />
+  <!-- Antennas -->
+  <line x1="42" y1="26" x2="50" y2="34" stroke="url(#gold-grad)" stroke-width="2" stroke-linecap="round" />
+  <line x1="58" y1="26" x2="50" y2="34" stroke="url(#gold-grad)" stroke-width="2" stroke-linecap="round" />
+  <!-- Stand -->
+  <path d="M44 66 L42 72 H58 L56 66" fill="none" stroke="url(#gold-grad)" stroke-width="2" stroke-linejoin="round" />
+  <circle cx="64" cy="50" r="1.5" fill="url(#gold-grad)" />
+  <circle cx="64" cy="56" r="1.5" fill="url(#gold-grad)" />
+</svg>
