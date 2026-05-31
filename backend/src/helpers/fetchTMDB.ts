@@ -6,6 +6,9 @@
  */
 
 import { NotFoundError } from "../errors/AppErrors.js"
+import { getOSet } from "../config/redis.js"
+
+const ES_ENDPOINT_ESTATICO = /^(movie|tv|person)\/\d+(\/|$)/
 
 /** Opciones de configuración para las peticiones a la API externa */
 type TMDBFetchOptions = {
@@ -65,22 +68,36 @@ export const consultarTMDB = async <T = unknown>(
     },
   }
 
-  const respuesta = await fetch(url, opcionesRequest)
+  const ejecutarFetch = async () => {
+    const respuesta = await fetch(url, opcionesRequest)
 
-  if (!respuesta.ok) {
-    // Mapeo semántico de errores para que la API responda con el status correcto
-    if (respuesta.status === 404) {
-      throw new NotFoundError(
-        `Recurso no encontrado en TMDB (Endpoint: ${endpoint})`
+    if (!respuesta.ok) {
+      // Mapeo semántico de errores para que la API responda con el status correcto
+      if (respuesta.status === 404) {
+        throw new NotFoundError(
+          `Recurso no encontrado en TMDB (Endpoint: ${endpoint})`
+        )
+      }
+
+      const error: any = new Error(
+        `Error en bridge de TMDB [Estado: ${respuesta.status}] - Endpoint: ${endpoint}`
       )
+      error.status = respuesta.status
+      throw error
     }
 
-    const error: any = new Error(
-      `Error en bridge de TMDB [Estado: ${respuesta.status}] - Endpoint: ${endpoint}`
-    )
-    error.status = respuesta.status
-    throw error
+    return respuesta.json() as Promise<T>
   }
 
-  return respuesta.json() as T
+  if (ES_ENDPOINT_ESTATICO.test(endpoint)) {
+    // Ordenamos parámetros para garantizar que la clave de caché sea estable
+    const sortedParams: Record<string, string> = {}
+    Array.from(normalizedParams.keys()).sort().forEach((k) => {
+      sortedParams[k] = normalizedParams.get(k)!
+    })
+    const cacheKey = `tmdb:raw:${endpoint.replace(/\/+$/, "")}:${JSON.stringify(sortedParams)}`
+    return getOSet(cacheKey, ejecutarFetch, 43200) // 12 horas
+  }
+
+  return ejecutarFetch()
 }

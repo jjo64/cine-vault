@@ -30,7 +30,6 @@ export function SearchResults() {
 
   // 1. Carga de datos y detalles
   useSearchData(query);
-  useEnrichFilms();
 
   // 2. Estado de Zustand
   const activeTab = useSearchStore((state) => state.activeTab);
@@ -190,13 +189,17 @@ export function SearchResults() {
     ),
   );
 
-  const pageFilms = (
-    activeTab === "film"
-      ? filteredMovies
-      : activeTab === "tv"
-        ? filteredSeries
-        : filteredFilms
-  ).slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const pageFilms = useMemo(() => {
+    return (
+      activeTab === "film"
+        ? filteredMovies
+        : activeTab === "tv"
+          ? filteredSeries
+          : filteredFilms
+    ).slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  }, [activeTab, page, filteredMovies, filteredSeries, filteredFilms]);
+
+  useEnrichFilms(pageFilms);
 
   const counts = {
     all: filteredFilms.length + personResults.length + userResults.length,
