@@ -130,6 +130,8 @@ export interface IReviewsRepository {
   findByMovieId(movieId: number): Promise<Partial<reviews>[]>
   /** Localiza la opinión previa de un usuario sobre una obra */
   findByUserAndMovie(userId: number, movieId: number): Promise<reviews | null>
+  /** Localiza todas las opiniones detalladas de un usuario sobre una obra */
+  findAllDetailedByUserAndMovie(userId: number, movieRefId: number): Promise<any[]>
   /** Localiza una reseña por su ID único */
   findById(id: number): Promise<reviews | null>
   /** Calcula el impacto social (Rating/Likes) de una película */
@@ -287,6 +289,35 @@ export class ReviewsRepository implements IReviewsRepository {
 
       if (!review) return null
       return { ...review, media_type: "movie" as const }
+    }
+  }
+
+  /**
+   * Recupera todas las opiniones detalladas de un usuario sobre una obra, ordenadas ascendentemente (orden de creación).
+   */
+  async findAllDetailedByUserAndMovie(userId: number, movieRefId: number) {
+    try {
+      return await prisma.reviews.findMany({
+        where: {
+          user_id: userId,
+          movie_id: movieRefId,
+        },
+        orderBy: { created_at: "asc" },
+        select: REVIEW_THREAD_SELECT,
+      })
+    } catch (error) {
+      if (!isMissingMediaTypeColumn(error)) throw error
+
+      const reviews = await prisma.reviews.findMany({
+        where: {
+          user_id: userId,
+          movie_id: movieRefId,
+        },
+        orderBy: { created_at: "asc" },
+        select: REVIEW_THREAD_SELECT_BASE,
+      })
+
+      return reviews.map((row) => ({ ...row, media_type: "movie" as const }))
     }
   }
 

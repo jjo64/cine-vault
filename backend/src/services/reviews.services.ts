@@ -183,11 +183,6 @@ export const crearResenaService = async (
   const mediaType = (normalized.media_type as ReviewMediaType) || "movie"
   const movieId = await ensureMovieRefId(data.movie_id, mediaType)
 
-  const existente = await reviewsRepository.findByUserAndMovie(userId, movieId)
-  if (existente) {
-    throw new ConflictError("Ya tienes una reseña para esta película")
-  }
-
   const resena = await reviewsRepository.create(userId, {
     ...normalized,
     movie_id: movieId,
@@ -441,18 +436,29 @@ export const eliminarComentarioService = async (
  */
 export const obtenerResenaPorUsernameYMovieSlugService = async (
   username: string,
-  movieSlug: string
+  movieSlug: string,
+  index?: number,
+  mediaType: ReviewMediaType = "movie"
 ) => {
   const usuario = await userRepository.findByUsername(username)
   if (!usuario) throw new NotFoundError("Usuario no encontrado")
 
-  const movieRefId = await resolverMovieRefIdPorSlug(movieSlug)
-  if (!movieRefId) throw new NotFoundError("Película no encontrada")
+  const movieRefId = await resolverMovieRefIdPorSlug(movieSlug, mediaType)
+  if (!movieRefId) {
+    throw new NotFoundError(
+      mediaType === "tv" ? "Serie no encontrada" : "Película no encontrada"
+    )
+  }
 
-  const review = await reviewsRepository.findDetailedByUserAndMovie(
+  const reviews = await reviewsRepository.findAllDetailedByUserAndMovie(
     usuario.id,
     movieRefId
   )
+
+  if (reviews.length === 0) throw new NotFoundError("Reseña no encontrada")
+
+  const targetIndex = index ?? 0
+  const review = reviews[targetIndex]
 
   if (!review) throw new NotFoundError("Reseña no encontrada")
   return review

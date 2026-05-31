@@ -418,7 +418,18 @@ export const deleteReviewComment = (token: string | null, commentId: number) =>
     method: "DELETE",
   });
 
-export const fetchReviewThread = (username: string, movieSlug: string) =>
-  apiRequest<ReviewThreadApi>(
-    `/api/reviews/${encodeURIComponent(username)}/${encodeURIComponent(movieSlug)}`,
+export const fetchReviewThread = (
+  username: string,
+  movieSlug: string,
+  index?: number | string,
+  mediaType?: "movie" | "tv",
+) => {
+  const params = new URLSearchParams();
+  if (index !== undefined) params.append("index", String(index));
+  if (mediaType !== undefined) params.append("mediaType", mediaType);
+  const queryString = params.toString() ? `?${params.toString()}` : "";
+
+  return apiRequest<ReviewThreadApi>(
+    `/api/reviews/${encodeURIComponent(username)}/${encodeURIComponent(movieSlug)}${queryString}`,
   );
+};

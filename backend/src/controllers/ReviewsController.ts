@@ -56,7 +56,7 @@ export const addReview = async (req: Request, res: Response) => {
 export const removeReview = async (req: Request, res: Response) => {
   const { reviewId } = req.params as unknown as ReviewIdParams
   await reviewsService.eliminarResenaService(req.user!.user_id, reviewId)
-  res.json({ message: "La reseña ha sido eliminada con éxito" })
+  res.json({ message: "Reseña eliminada correctamente" })
 }
 
 /**
@@ -77,9 +77,14 @@ export const getReviewByUsernameAndMovieSlug = async (
 ) => {
   const { username, movieSlug } =
     req.params as unknown as UsernameMovieSlugParams
+  const index = req.query.index ? parseInt(req.query.index as string, 10) : undefined
+  const mediaType = (req.query.mediaType as any) || "movie"
+
   const review = await reviewsService.obtenerResenaPorUsernameYMovieSlugService(
     username,
-    movieSlug
+    movieSlug,
+    index,
+    mediaType
   )
   res.json(review)
 }

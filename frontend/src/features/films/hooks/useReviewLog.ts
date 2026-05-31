@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { Film } from "../types";
 import { getStoredAccessToken } from "../../../services/authServices";
 import { createReview } from "../../../services/movieDetailServices";
+import { notify } from "../../../lib/notify";
 
 export function useReviewLog() {
   const [logMovie, setLogMovie] = useState<Film | null>(null);
@@ -29,6 +30,14 @@ export function useReviewLog() {
   });
 
   const handleOpenLog = (film: Film) => {
+    const token = getStoredAccessToken();
+    if (!token) {
+      notify.unauthorized();
+      window.dispatchEvent(
+        new CustomEvent("open-auth-modal", { detail: { mode: "login" } }),
+      );
+      return;
+    }
     setLogMovie(film);
     setReviewLogForm((p) => ({ ...p, liked: film.liked || false }));
     setReviewLogOpen(true);

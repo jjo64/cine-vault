@@ -57,7 +57,7 @@ export const removeComment = async (
   await assertNotRateLimited(req.ip!)
   const { commentId } = req.params as unknown as CommentIdParams
   await reviewsService.eliminarComentarioService(req.user!.user_id, commentId)
-  res.json({ message: "El comentario ha sido eliminado correctamente" })
+  res.json({ message: "Comentario eliminado correctamente" })
 }
 
 /**

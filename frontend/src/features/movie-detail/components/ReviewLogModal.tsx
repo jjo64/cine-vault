@@ -8,6 +8,7 @@ import type { AppReview } from "../types";
 import { REVIEW_DIMENSIONS } from "../constants";
 import { Img } from "./Img";
 import { StarRating } from "./StarRating";
+import "../../../pages/MovieDetail.css";
 
 interface ReviewLogModalProps {
   open: boolean;
