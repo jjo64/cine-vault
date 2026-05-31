@@ -14,6 +14,7 @@ import { EmptyMyLists } from "./shared/EmptyMyLists";
 import { CreateListModal } from "./shared/CreateListModal";
 import { Hero } from "./Hero";
 import { FilterBar } from "./FilterBar";
+import { notify } from "../../../lib/notify";
 
 const TABS = [
   { id: "all", label: "Todas" },
@@ -39,6 +40,17 @@ export default function CommunityDiscover() {
   const showOfficialRow = activeTab === "all" || activeTab === "official";
   const showEmptyMine = activeTab === "mine" && myLists.length === 0 && !loading;
 
+  const handleOpenCreateModal = () => {
+    if (!currentUser) {
+      notify.unauthorized();
+      window.dispatchEvent(
+        new CustomEvent("open-auth-modal", { detail: { mode: "login" } }),
+      );
+      return;
+    }
+    setModalOpen(true);
+  };
+
   return (
     <div style={{ background: C.bg, minHeight: "100vh", color: C.text }}>
       <Grain />
@@ -50,7 +62,7 @@ export default function CommunityDiscover() {
         onRefresh={refresh}
       />
 
-      <Hero onOpenModal={() => setModalOpen(true)} />
+      <Hero onOpenModal={handleOpenCreateModal} />
 
       <div style={{ maxWidth: 1160, margin: "0 auto", padding: "0 40px" }}>
         <AnimatePresence>
@@ -94,7 +106,7 @@ export default function CommunityDiscover() {
           <AnimatePresence mode="wait">
             {showEmptyMine ? (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
-                <EmptyMyLists onCreateClick={() => setModalOpen(true)} />
+                <EmptyMyLists onCreateClick={handleOpenCreateModal} />
               </div>
             ) : filteredLists.length === 0 && !loading ? (
               <div style={{ padding: "60px 0", textAlign: "center" }}>
@@ -105,7 +117,7 @@ export default function CommunityDiscover() {
               <motion.div key="grid" layout style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, paddingBottom: 80 }}>
                 {filteredLists.map((list, i) => <ListCard key={list.id} list={list} index={i} />)}
                 {(activeTab === "all" || activeTab === "friends") && !searchQuery && (
-                  <motion.div onClick={() => setModalOpen(true)} whileHover={{ borderColor: C.accentDim, background: "rgba(212,175,122,0.025)" }} style={{ background: C.surface, border: `1px dashed ${C.border}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, cursor: "pointer", padding: "48px 24px", minHeight: 260 }}>
+                  <motion.div onClick={handleOpenCreateModal} whileHover={{ borderColor: C.accentDim, background: "rgba(212,175,122,0.025)" }} style={{ background: C.surface, border: `1px dashed ${C.border}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, cursor: "pointer", padding: "48px 24px", minHeight: 260 }}>
                     <div style={{ width: 44, height: 44, border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.accentDim }}><Plus size={18} /></div>
                     <div style={{ textAlign: "center" }}><p style={{ fontFamily: SERIF, fontSize: 17, color: C.textSoft, margin: "0 0 5px" }}>Curar una lista</p><p style={{ fontFamily: SANS, fontSize: 9, color: C.textMuted, textTransform: "uppercase" }}>Crear nueva colección</p></div>
                   </motion.div>

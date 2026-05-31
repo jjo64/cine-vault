@@ -2,10 +2,9 @@ import { useEffect, useRef } from "react";
 import { fetchMovieDetail } from "../../../services/movieDetailServices";
 import { useSearchStore } from "../store/useSearchStore";
 import { getDirectorFromDetail, normalizeCountryName } from "../utils";
-import type { FilmDetails } from "../types";
+import type { FilmDetails, FilmResult } from "../types";
 
-export function useEnrichFilms() {
-  const filmResults = useSearchStore((state) => state.filmResults);
+export function useEnrichFilms(visibleFilms: FilmResult[] = []) {
   const setEnrichedFilms = useSearchStore((state) => state.setEnrichedFilms);
   const setLoadingFilmDetails = useSearchStore(
     (state) => state.setLoadingFilmDetails,
@@ -15,7 +14,7 @@ export function useEnrichFilms() {
   const inflightDetailsRef = useRef<Set<number>>(new Set());
 
   useEffect(() => {
-    const movieIdsToEnrich = filmResults
+    const movieIdsToEnrich = visibleFilms
       .filter((film) => film.mediaType === "movie")
       .map((film) => film.id);
     if (movieIdsToEnrich.length === 0) return;
@@ -63,6 +62,6 @@ export function useEnrichFilms() {
     return () => {
       active = false;
     };
-  }, [filmResults, setEnrichedFilms, setLoadingFilmDetails]);
+  }, [visibleFilms, setEnrichedFilms, setLoadingFilmDetails]);
 }
 export default useEnrichFilms;

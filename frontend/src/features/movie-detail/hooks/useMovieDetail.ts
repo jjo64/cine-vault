@@ -36,6 +36,7 @@ import {
   getCurrentUser,
   getStoredAccessToken,
 } from "../../../services/authServices";
+import { notify } from "../../../lib/notify";
 import type { AppReview, Viewer, SimilarFilm } from "../types";
 import {
   parseMovieId,
@@ -305,10 +306,10 @@ export function useMovieDetail() {
 
   const requireAuth = () => {
     if (token) return true;
+    notify.unauthorized();
     window.dispatchEvent(
       new CustomEvent("open-auth-modal", { detail: { mode: "login" } }),
     );
-    showNotice("Tienes que loguearte para usar esta opción", "info");
     return false;
   };
 

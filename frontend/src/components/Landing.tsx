@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { motion, useScroll, useTransform } from "motion/react";
+import { motion } from "motion/react";
 import {
   Search,
   ChevronRight,
@@ -58,30 +58,30 @@ type ApiMovie = {
 };
 
 const IMG = {
-  hero: "https://images.unsplash.com/photo-1607421433843-a29d5013cb63?w=1600&q=85",
+  hero: "https://images.unsplash.com/photo-1607421433843-a29d5013cb63?auto=format&fit=crop&w=1600&q=75",
   cinema:
-    "https://images.unsplash.com/photo-1759230766134-e3ff1c27d20e?w=1200&q=80",
+    "https://images.unsplash.com/photo-1759230766134-e3ff1c27d20e?auto=format&fit=crop&w=600&q=75",
   woman:
-    "https://images.unsplash.com/photo-1675277456349-6ca2bf207110?w=900&q=80",
+    "https://images.unsplash.com/photo-1675277456349-6ca2bf207110?auto=format&fit=crop&w=600&q=75",
   filmReel:
-    "https://images.unsplash.com/photo-1619622637662-0104aa03a4af?w=900&q=80",
+    "https://images.unsplash.com/photo-1619622637662-0104aa03a4af?auto=format&fit=crop&w=600&q=75",
   street:
-    "https://images.unsplash.com/photo-1759829381324-f3d2b5ed7f6d?w=900&q=80",
-  fog: "https://images.unsplash.com/photo-1563941433-b6a094653ed2?w=600&q=80",
+    "https://images.unsplash.com/photo-1759829381324-f3d2b5ed7f6d?auto=format&fit=crop&w=800&q=75",
+  fog: "https://images.unsplash.com/photo-1563941433-b6a094653ed2?auto=format&fit=crop&w=64&q=75",
   nightCity:
-    "https://images.unsplash.com/photo-1670782128814-c5a55b68f50d?w=600&q=80",
+    "https://images.unsplash.com/photo-1670782128814-c5a55b68f50d?auto=format&fit=crop&w=64&q=75",
   projector:
-    "https://images.unsplash.com/photo-1762541693135-fb989de961e1?w=600&q=80",
+    "https://images.unsplash.com/photo-1762541693135-fb989de961e1?auto=format&fit=crop&w=600&q=75",
   womanPortrait:
-    "https://images.unsplash.com/photo-1761429944940-fe98ec7ba4cb?w=600&q=80",
+    "https://images.unsplash.com/photo-1761429944940-fe98ec7ba4cb?auto=format&fit=crop&w=600&q=75",
   italy:
-    "https://images.unsplash.com/photo-1753731622675-56904104f4a9?w=600&q=80",
+    "https://images.unsplash.com/photo-1753731622675-56904104f4a9?auto=format&fit=crop&w=600&q=75",
   hongKong:
-    "https://images.unsplash.com/photo-1742695760180-92c9a73ffdf2?w=600&q=80",
+    "https://images.unsplash.com/photo-1742695760180-92c9a73ffdf2?auto=format&fit=crop&w=64&q=75",
   grain:
-    "https://images.unsplash.com/photo-1698159929266-28e8e8ef6b33?w=600&q=80",
+    "https://images.unsplash.com/photo-1698159929266-28e8e8ef6b33?auto=format&fit=crop&w=600&q=75",
   mistyRoad:
-    "https://images.unsplash.com/photo-1763713441172-37ed2f89b256?w=600&q=80",
+    "https://images.unsplash.com/photo-1763713441172-37ed2f89b256?auto=format&fit=crop&w=600&q=75",
 } as const;
 
 function Img({
@@ -245,6 +245,7 @@ function FilmCardMini({
           <Img
             src={img}
             alt={title}
+            loading="lazy"
             style={{
               width: "100%",
               height: "100%",
@@ -407,7 +408,7 @@ function Navbar() {
   );
   const navLinks = viewerUsername
     ? ["Sign in", "Create account", "Films", "Lists", "Members", "Journal"]
-    : ["Sign in", "Create account", "Films", "Lists", "Members", "Journal"];
+    : ["Sign in", "Create account", "Films", "Lists", "Members"];
   const visibleNavLinks = navLinks;
 
   const navigateByType = (item: SearchMovie) => {
@@ -724,9 +725,19 @@ function Navbar() {
 }
 
 function Hero() {
-  const { scrollY } = useScroll();
-  const y = useTransform(scrollY, [0, 540], ["0%", "28%"]);
-  const scale = useTransform(scrollY, [0, 540], [1, 1.08]);
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      const progress = Math.min(1, Math.max(0, scrollY / 540));
+      const yVal = `${progress * 28}%`;
+      const scaleVal = 1 + progress * 0.08;
+      document.documentElement.style.setProperty("--hero-y", yVal);
+      document.documentElement.style.setProperty("--hero-scale", `${scaleVal}`);
+    };
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const typewriterTexts = [
     "reseñas.",
@@ -745,11 +756,20 @@ function Hero() {
         overflow: "hidden",
       }}
     >
-      <motion.div
-        style={{ y, scale, position: "absolute", inset: "-10% 0", zIndex: 0 }}
+      <div
+        style={{
+          transform: "translateY(var(--hero-y, 0%)) scale(var(--hero-scale, 1))",
+          position: "absolute",
+          inset: "-10% 0",
+          zIndex: 0,
+          willChange: "transform",
+        }}
       >
         <Img
           src={IMG.hero}
+          srcSet={`${IMG.hero.replace("w=1600", "w=600")} 600w, ${IMG.hero.replace("w=1600", "w=1200")} 1200w, ${IMG.hero} 1600w`}
+          sizes="100vw"
+          fetchPriority="high"
           alt="CineVault Hero"
           style={{
             width: "100%",
@@ -758,7 +778,7 @@ function Hero() {
             filter: "brightness(0.38) saturate(0.6)",
           }}
         />
-      </motion.div>
+      </div>
 
       <div
         style={{
@@ -1069,7 +1089,7 @@ function MovieGridSection({
               )}
               img={
                 movie.poster_path
-                  ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+                  ? `https://image.tmdb.org/t/p/w185${movie.poster_path}`
                   : IMG.fog
               }
               delay={0}
@@ -1189,6 +1209,7 @@ function HowItWorks() {
               className="pillar-img"
               src={pillar.img}
               alt=""
+              loading="lazy"
               style={{
                 position: "absolute",
                 inset: 0,
@@ -1433,6 +1454,7 @@ function NightFeature() {
             <Img
               src={IMG.street}
               alt="Cine de noche"
+              loading="lazy"
               style={{
                 width: "100%",
                 height: "100%",
@@ -1632,6 +1654,7 @@ function ReviewsSection() {
                 <Img
                   src={review.avatar}
                   alt={review.user}
+                  loading="lazy"
                   style={{
                     width: "100%",
                     height: "100%",

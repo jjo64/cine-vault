@@ -45,6 +45,7 @@ export function Profile() {
   const isOwnProfile = useProfileStore((s) => s.isOwnProfile);
   const isPublicProfile = useProfileStore((s) => s.isPublicProfile);
   const targetUserId = useProfileStore((s) => s.targetUserId);
+  const compatibilityScore = useProfileStore((s) => s.compatibilityScore);
   const profileHeader = useProfileStore((s) => s.profileHeader);
   const stats = useProfileStore((s) => s.stats);
   const recentlyWatched = useProfileStore((s) => s.recentlyWatched);
@@ -113,7 +114,13 @@ export function Profile() {
   const handleToggleFollow = async () => {
     if (!targetUserId || followBusy) return;
     const token = getStoredAccessToken();
-    if (!token) return;
+    if (!token) {
+      notify.unauthorized();
+      window.dispatchEvent(
+        new CustomEvent("open-auth-modal", { detail: { mode: "login" } }),
+      );
+      return;
+    }
 
     const previousFollowing = isFollowing;
     const previousFollowers = stats.followers;
@@ -205,6 +212,7 @@ export function Profile() {
   const panels: Record<PROFILE_TABS_TYPE, ReactNode> = {
     Resumen: (
       <OverviewPanel
+        username={profileHeader.username || username || ""}
         stats={stats}
         recentlyWatched={recentlyWatched}
         watchlistFilms={watchlistFilms}
@@ -214,6 +222,7 @@ export function Profile() {
         curatedNotesByMovieId={curatedNotesByMovieId}
         allDiaryFilms={allDiaryFilms}
         canEditCurated={canEditProfile}
+        isOwnProfile={isOwnProfile}
         onCurateGallery={handleCurateGallery}
         onJumpToTab={(tab: "Vault" | "Watchlist" | "Reseñas" | "Diario") =>
           handleTabChange(tab)
@@ -222,7 +231,11 @@ export function Profile() {
     ),
     Diario: <DiaryPanel diaryTimeline={diaryTimeline} />,
     Vault: (
-      <VaultPanel vaultItems={vaultSocialEntries} canManage={isOwnProfile} />
+      <VaultPanel
+        username={profileHeader.username || username || ""}
+        vaultItems={vaultSocialEntries}
+        canManage={isOwnProfile}
+      />
     ),
     Watchlist: (
       <WatchlistPanel
@@ -261,10 +274,9 @@ export function Profile() {
 
       <ProfileHero onToggleFollow={handleToggleFollow} />
 
-      {isPublicProfile && (
+      {isAuthenticated && isPublicProfile && (
         <CompatibilityBanner
-          reviewsCount={stats.reviews}
-          followersCount={stats.followers}
+          score={compatibilityScore}
         />
       )}
 
@@ -314,6 +326,7 @@ export function Profile() {
               recentlyWatched={recentlyWatched}
               reviewItems={reviewItems}
               userBadges={userBadges}
+              allDiaryFilms={allDiaryFilms}
             />
           )}
         </div>

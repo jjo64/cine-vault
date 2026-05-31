@@ -10,17 +10,16 @@ export default defineConfig({
     viteCompression({ algorithm: 'brotliCompress', ext: '.br', threshold: 1024 }),
     viteCompression({ algorithm: 'gzip', ext: '.gz', threshold: 1024 }),
   ],
+  esbuild: {
+    drop: ['console', 'debugger'],
+  },
   build: {
     // Mejora el reporte de Lighthouse reduciendo el tamaño de CSS y JS
     target: 'esnext',
     sourcemap: true,
-    minify: false, 
-    terserOptions: {
-      compress: {
-        drop_console: true, // Limpia la consola para ahorrar bytes en prod
-        drop_debugger: true,
-      },
-    },
+    minify: true, 
+    // terserOptions se remueve ya que usamos esbuild por defecto para minificación mas rapida
+
     rollupOptions: {
       output: {
         // Optimización de Chunks: Menos archivos pero mejor distribuidos

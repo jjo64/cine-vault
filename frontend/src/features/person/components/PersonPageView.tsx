@@ -18,6 +18,13 @@ import {
 import { GrainOverlay, Img } from "../../../components/profile-v2/primitives";
 import { CREW_FILTERS, DEPARTMENT_LABELS } from "../constants";
 import { usePersonData } from "../hooks/usePersonData";
+import { getStoredAccessToken } from "../../../services/authServices";
+import {
+  followPerson,
+  unfollowPerson,
+  checkFollowingStatus,
+} from "../../../services/personsServices";
+import { notify } from "../../../lib/notify";
 import type { CreditItem, CrewTab, RoleTab } from "../types";
 import {
   buildAwards,
@@ -44,6 +51,38 @@ export function PersonPageView() {
   const [roleTab, setRoleTab] = useState<RoleTab>("crew");
   const [crewTab, setCrewTab] = useState<CrewTab>("director");
   const [decade, setDecade] = useState("Todo");
+
+  useEffect(() => {
+    if (!person) return;
+    const token = getStoredAccessToken();
+    if (!token) return;
+    checkFollowingStatus(token, person.id)
+      .then((data) => setFollowing(data.following))
+      .catch((err) => console.error("Error checking follow status:", err));
+  }, [person]);
+
+  const handleToggleFollow = async () => {
+    const token = getStoredAccessToken();
+    if (!token) {
+      notify.unauthorized();
+      window.dispatchEvent(
+        new CustomEvent("open-auth-modal", { detail: { mode: "login" } }),
+      );
+      return;
+    }
+    if (!person) return;
+    try {
+      if (following) {
+        await unfollowPerson(token, person.id);
+        setFollowing(false);
+      } else {
+        await followPerson(token, person.id, person.name, person.profile_path);
+        setFollowing(true);
+      }
+    } catch (err) {
+      console.error("Error toggling follow status:", err);
+    }
+  };
 
   const castMovies = useMemo(
     () =>
@@ -253,7 +292,7 @@ export function PersonPageView() {
 
             <div className={styles.actionsRow}>
               <button
-                onClick={() => setFollowing((value) => !value)}
+                onClick={handleToggleFollow}
                 className={styles.followButton}
                 style={{ background: following ? "#9A7A48" : "#D4AF7A" }}
               >

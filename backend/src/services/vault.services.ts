@@ -10,7 +10,9 @@ import {
   ConflictError,
   NotFoundError,
   ValidationError,
+  ForbiddenError,
 } from "../errors/AppErrors.js"
+import { prisma } from "../lib/prisma.js"
 import { consultarTMDB } from "../helpers/fetchTMDB.js"
 import { vaultRepository } from "../repositories/VaultRepository.js"
 import type {
@@ -271,4 +273,62 @@ export const eliminarVaultSocialEntryService = async (
     throw new NotFoundError("Registro no encontrado o permisos insuficientes")
 
   await vaultRepository.deleteSocialEntry(entryId, userId)
+}
+
+/**
+ * Recupera una publicación del Vault por su ID e hidrata la información.
+ */
+export const obtenerVaultSocialEntryPorIdService = async (
+  entryId: number,
+  viewerUserId: number | null
+) => {
+  const entry = await vaultRepository.getSocialEntryById(entryId)
+  if (!entry) throw new NotFoundError("Entrada social no encontrada")
+
+  const isPublic = Boolean(entry.is_public)
+  if (!isPublic && entry.user_id !== viewerUserId) {
+    throw new ForbiddenError("No tienes permiso para ver esta entrada")
+  }
+
+  // Hidratar con metadatos de TMDB si está vinculada a una película/serie
+  let movieInfo = null
+  if (entry.tmdb_id) {
+    try {
+      const type = entry.media_type === "tv" ? "tv" : "movie"
+      const tmdbData = (await consultarTMDB(`${type}/${entry.tmdb_id}`)) as any
+      movieInfo = {
+        title: tmdbData.title || tmdbData.name || null,
+        poster_path: tmdbData.poster_path || null,
+      }
+    } catch (err) {
+      console.error("[TMDB] Error al hidratar detalles de entrada social:", err)
+    }
+  }
+
+  // Obtener detalles del autor de la entrada
+  const author = await prisma.users.findUnique({
+    where: { id: entry.user_id },
+    select: { id: true, username: true, avatar_url: true },
+  })
+
+  return {
+    id: entry.id,
+    user_id: entry.user_id,
+    movie_id: entry.movie_id,
+    tmdb_id: entry.tmdb_id,
+    media_type: entry.media_type || "movie",
+    entry_type: entry.entry_type,
+    card_type: mapSocialCardType(entry.entry_type),
+    title: entry.title,
+    content: entry.content,
+    cover_url: entry.cover_url,
+    duration_label: entry.duration_label,
+    likes_count: entry.likes_count,
+    comments_count: entry.comments_count,
+    is_public: isPublic,
+    created_at: entry.created_at.toISOString(),
+    updated_at: entry.updated_at.toISOString(),
+    movie_info: movieInfo,
+    users: author,
+  }
 }

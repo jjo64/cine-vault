@@ -26,6 +26,13 @@ const mediaHref = (
   return `/${type}/${tmdbId ?? movieId}-${createSlug(title)}`;
 };
 
+const vaultMediaHref = (
+  username: string,
+  item: VaultSocialEntry,
+) => {
+  return `/${username}/vault/${item.id}-${createSlug(item.title)}`;
+};
+
 function buildCuratedGallery(
   recentlyWatched: RecentlyWatchedItem[],
   watchlistFilms: WatchlistItem[],
@@ -242,9 +249,11 @@ function FilmCard({
 
 function VaultCardMobile({
   item,
+  username,
   delay = 0,
 }: {
   item: VaultSocialEntry;
+  username: string;
   delay?: number;
 }) {
   const navigate = useNavigate();
@@ -254,8 +263,8 @@ function VaultCardMobile({
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.4, delay }}
       onClick={() =>
-        item.movie_id &&
-        navigate(mediaHref(item.movie_id, item.title, item.tmdb_id))
+        (item.movie_id || item.tmdb_id) &&
+        navigate(vaultMediaHref(username, item))
       }
       className={styles.vaultCardMobile}
     >
@@ -287,9 +296,11 @@ function VaultCardMobile({
 
 function VaultCard({
   item,
+  username,
   delay = 0,
 }: {
   item: VaultSocialEntry;
+  username: string;
   delay?: number;
 }) {
   const [hovered, setHovered] = useState(false);
@@ -302,8 +313,8 @@ function VaultCard({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onClick={() =>
-        item.movie_id &&
-        navigate(mediaHref(item.movie_id, item.title, item.tmdb_id))
+        (item.movie_id || item.tmdb_id) &&
+        navigate(vaultMediaHref(username, item))
       }
       className={`${styles.vaultCard} ${hovered ? styles.vaultCardHovered : ""}`}
     >
@@ -486,6 +497,7 @@ function CuratedGallery({
 
 // Main Panel Component
 interface OverviewPanelProps {
+  username: string;
   stats: any;
   recentlyWatched: RecentlyWatchedItem[];
   watchlistFilms: WatchlistItem[];
@@ -495,11 +507,13 @@ interface OverviewPanelProps {
   curatedNotesByMovieId: Record<number, string>;
   allDiaryFilms: RecentlyWatchedItem[];
   canEditCurated: boolean;
+  isOwnProfile: boolean;
   onCurateGallery: () => void;
   onJumpToTab: (tab: "Vault" | "Watchlist" | "Reseñas" | "Diario") => void;
 }
 
 export function OverviewPanel({
+  username,
   stats: _stats,
   recentlyWatched,
   watchlistFilms,
@@ -509,6 +523,7 @@ export function OverviewPanel({
   curatedNotesByMovieId,
   allDiaryFilms,
   canEditCurated,
+  isOwnProfile,
   onCurateGallery,
   onJumpToTab,
 }: OverviewPanelProps) {
@@ -527,7 +542,7 @@ export function OverviewPanel({
         canEdit={canEditCurated}
         onCurate={onCurateGallery}
       />
-      <NightRec />
+      {isOwnProfile && <NightRec />}
 
       <SectionHeader
         title="Vistas recientemente"
@@ -555,6 +570,7 @@ export function OverviewPanel({
           <VaultCardMobile
             key={item.id}
             item={item}
+            username={username}
             delay={index * 0.08}
           />
         ))}
@@ -564,6 +580,7 @@ export function OverviewPanel({
           <VaultCard
             key={item.id}
             item={item}
+            username={username}
             delay={index * 0.08}
           />
         ))}

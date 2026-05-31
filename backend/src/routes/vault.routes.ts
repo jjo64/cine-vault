@@ -16,8 +16,9 @@ import {
   getVaultSocialByUser,
   removeMovieFromVault,
   updateVaultSocialEntry,
+  getVaultSocialEntryById,
 } from "../controllers/VaultController.js"
-import { middlewareAutenticacion } from "../middlewares/auth.middlewares.js"
+import { middlewareAutenticacion, middlewareAutenticacionOpcional } from "../middlewares/auth.middlewares.js"
 import { manejadorAsincrono } from "../middlewares/error.middlewares.js"
 import {
   validarBody,
@@ -105,6 +106,13 @@ router.get(
   validarParams(vaultSocialUserParamsSchema),
   validarQuery(listVaultSocialQuerySchema),
   manejadorAsincrono(getVaultSocialByUser)
+)
+
+router.get(
+  "/social/entry/:id",
+  middlewareAutenticacionOpcional,
+  validarParams(vaultSocialEntryIdParamsSchema),
+  manejadorAsincrono(getVaultSocialEntryById)
 )
 
 /**

@@ -31,6 +31,63 @@ const SEARCH_PAGE_SIZE = 20
 const FIRST_PAGE_CANDIDATE_PAGES = ["1", "2", "3"]
 export const SEARCH_CACHE_VERSION = "v22"
 
+const TMDB_GENRES_MAP: Record<number, string> = {
+  28: "Acción",
+  12: "Aventura",
+  16: "Animación",
+  35: "Comedia",
+  80: "Crimen",
+  99: "Documental",
+  18: "Drama",
+  10751: "Familiar",
+  14: "Fantasía",
+  36: "Historia (Histórica)",
+  27: "Terror (Horror)",
+  10402: "Música",
+  9648: "Misterio",
+  10749: "Romance",
+  878: "Ciencia ficción (Sci-fi)",
+  10770: "Película de TV",
+  53: "Suspense (Thriller)",
+  10752: "Bélica",
+  37: "Western",
+  // TV Specific Genres
+  10759: "Acción y Aventura",
+  10762: "Infantil",
+  10763: "Noticias",
+  10764: "Reality",
+  10765: "Ciencia ficción y Fantasía (Sci-fi)",
+  10766: "Telenovela",
+  10767: "Conversaciones",
+  10768: "Guerra y Política (Bélica)"
+}
+
+const TMDB_COUNTRIES_MAP: Record<string, string> = {
+  "US": "EE.UU.",
+  "GB": "Reino Unido",
+  "FR": "Francia",
+  "IT": "Italia",
+  "JP": "Japón",
+  "KR": "Corea del Sur",
+  "DE": "Alemania",
+  "ES": "España",
+  "AR": "Argentina",
+  "RU": "Rusia",
+  "SU": "URSS",
+  "SE": "Suecia",
+  "HK": "Hong Kong",
+  "CA": "Canadá",
+  "AU": "Australia",
+  "BR": "Brasil",
+  "MX": "México",
+  "CN": "China",
+  "IN": "India",
+  "DK": "Dinamarca",
+  "NL": "Países Bajos",
+  "PL": "Polonia",
+  "NZ": "Nueva Zelanda"
+}
+
 const getEnvNumber = (name: string, fallback: number) => {
   const raw = process.env[name]
   if (raw === undefined || raw === null || String(raw).trim() === "")
@@ -287,15 +344,25 @@ export const runRankedMovieSearch = async ({
     merged,
     async (movie: AnyRecord) => {
       const [credits, titles]: AnyRecord[] = await Promise.all([
-        consultarTMDB(
-          `movie/${movie.id}/credits`,
-          { language: "en-US" },
-          { includeDefaultLanguage: false }
+        getOSet(
+          `tmdb:movie:${movie.id}:credits`,
+          () =>
+            consultarTMDB(
+              `movie/${movie.id}/credits`,
+              { language: "en-US" },
+              { includeDefaultLanguage: false }
+            ).catch(() => ({ crew: [], cast: [] })),
+          21600
         ),
-        consultarTMDB(
-          `movie/${movie.id}/alternative_titles`,
-          {},
-          { includeDefaultLanguage: false }
+        getOSet(
+          `tmdb:movie:${movie.id}:alternative_titles`,
+          () =>
+            consultarTMDB(
+              `movie/${movie.id}/alternative_titles`,
+              {},
+              { includeDefaultLanguage: false }
+            ).catch(() => ({ titles: [] })),
+          21600
         ),
       ])
 
@@ -454,16 +521,26 @@ export const runRankedTVSearch = async ({
     merged,
     async (tv: AnyRecord) => {
       const [credits, titles]: AnyRecord[] = await Promise.all([
-        consultarTMDB(
-          `tv/${tv.id}/credits`,
-          { language: "en-US" },
-          { includeDefaultLanguage: false }
-        ).catch(() => ({ crew: [], cast: [] })),
-        consultarTMDB(
-          `tv/${tv.id}/alternative_titles`,
-          {},
-          { includeDefaultLanguage: false }
-        ).catch(() => ({ results: [] })),
+        getOSet(
+          `tmdb:tv:${tv.id}:credits`,
+          () =>
+            consultarTMDB(
+              `tv/${tv.id}/credits`,
+              { language: "en-US" },
+              { includeDefaultLanguage: false }
+            ).catch(() => ({ crew: [], cast: [] })),
+          21600
+        ),
+        getOSet(
+          `tmdb:tv:${tv.id}:alternative_titles`,
+          () =>
+            consultarTMDB(
+              `tv/${tv.id}/alternative_titles`,
+              {},
+              { includeDefaultLanguage: false }
+            ).catch(() => ({ results: [] })),
+          21600
+        ),
       ])
 
       const director = credits.crew?.find(
@@ -1339,11 +1416,40 @@ export const runSmartUnifiedSearch = async ({
 
   const start = (currentPage - 1) * SEARCH_PAGE_SIZE
   const pageSlice = mergedMainResults.slice(start, start + SEARCH_PAGE_SIZE)
-  const movieResults = pageSlice.filter((item) => item.media_type === "movie")
-  const tvResults = pageSlice.filter((item) => item.media_type === "tv")
+
+  const enrichedPageSlice = pageSlice.map((item) => {
+    let genres = item.genres
+    if (!genres && Array.isArray(item.genre_ids)) {
+      genres = item.genre_ids
+        .map((id: number) => {
+          const name = TMDB_GENRES_MAP[id]
+          return name ? { id, name } : null
+        })
+        .filter(Boolean)
+    }
+
+    let production_countries = item.production_countries
+    if (!production_countries && Array.isArray(item.origin_country)) {
+      production_countries = item.origin_country
+        .map((code: string) => {
+          const name = TMDB_COUNTRIES_MAP[code.toUpperCase()]
+          return name ? { iso_3166_1: code, name } : null
+        })
+        .filter(Boolean)
+    }
+
+    return {
+      ...item,
+      genres,
+      production_countries,
+    }
+  })
+
+  const movieResults = enrichedPageSlice.filter((item) => item.media_type === "movie")
+  const tvResults = enrichedPageSlice.filter((item) => item.media_type === "tv")
 
   return {
-    results: pageSlice,
+    results: enrichedPageSlice,
     movie_results: movieResults,
     tv_results: tvResults,
     people_results: currentPage === 1 ? personCandidates.slice(0, 3) : [],

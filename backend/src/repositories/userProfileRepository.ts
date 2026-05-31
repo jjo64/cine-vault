@@ -51,7 +51,7 @@ type UserPublicProfile = {
 type UserSummary = {
   id: number
   username: string
-  email: string
+  email?: string
   role: string
   avatar_url: string | null
   bio?: string | null
@@ -205,7 +205,6 @@ export class UserProfileRepository implements IUserProfileRepository {
       select: {
         id: true,
         username: true,
-        email: true,
         role: true,
         avatar_url: true,
         bio: true,

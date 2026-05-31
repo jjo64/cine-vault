@@ -25,6 +25,7 @@ export type EnrichedMovie = {
 export type RecentlyWatchedItem = EnrichedMovie & {
   id: number;
   rating: number;
+  watchedDate?: string | null;
 };
 
 export type WatchlistItem = EnrichedMovie & {
@@ -119,6 +120,7 @@ export interface ProfileStore {
   isOwnProfile: boolean;
   isPublicProfile: boolean;
   targetUserId: number | null;
+  compatibilityScore: number | null;
 
   // Header & Stats
   profileHeader: ProfileHeaderData;
@@ -168,6 +170,7 @@ export interface ProfileStore {
     allDiaryFilms: RecentlyWatchedItem[];
     signature: CinematicSignatureData | null;
     curatedGalleryItems: CuratedGalleryItemData[];
+    compatibilityScore: number | null;
   }) => void;
   setSignature: (signature: CinematicSignatureData | null) => void;
   setCuratedGalleryItems: (items: CuratedGalleryItemData[]) => void;

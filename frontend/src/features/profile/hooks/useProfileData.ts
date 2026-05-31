@@ -279,6 +279,10 @@ export function useProfileData(usernameParam?: string) {
           cinema_turning_year_detail: null,
         };
 
+        const viewerDiaryPromise = (authActive && !finalIsOwn)
+          ? fetchDiary(resolvedViewerId!, token, true).catch(() => ({ diary: [] as RichDiaryEntry[] }))
+          : Promise.resolve({ diary: [] as RichDiaryEntry[] });
+
         const [
           fullProfileData,
           diaryData,
@@ -290,6 +294,7 @@ export function useProfileData(usernameParam?: string) {
           curatedGalleryData,
           badgesData,
           vaultData,
+          viewerDiaryData,
         ] = await Promise.all([
           fetchUserProfile(resolvedTargetId, token),
           fetchDiary(resolvedTargetId, authToken, finalIsOwn),
@@ -317,6 +322,7 @@ export function useProfileData(usernameParam?: string) {
           fetchVaultSocial(resolvedTargetId, authToken, finalIsOwn).catch(() => ({
             items: [],
           })),
+          viewerDiaryPromise,
         ]);
 
         if (!active) return;
@@ -387,17 +393,17 @@ export function useProfileData(usernameParam?: string) {
         nextWatchlist.forEach(seedFromEntry);
 
         const ids: MovieMetaTarget[] = [
-          ...nextDiary.map((item) => ({
+          ...nextDiary.slice(0, 12).map((item) => ({
             movieId: item.movie_id,
             tmdbId: item.tmdb_id,
             mediaType: (item.movie_info?.media_type as any) || "movie",
           })),
-          ...nextWatchlist.map((item) => ({
+          ...nextWatchlist.slice(0, 20).map((item) => ({
             movieId: item.movie_id,
             tmdbId: item.tmdb_id,
             mediaType: (item.movie_info?.media_type as any) || "movie",
           })),
-          ...nextReviews.map((item) => ({
+          ...nextReviews.slice(0, 12).map((item) => ({
             movieId: item.movie_id,
             tmdbId:
               item.tmdb_id ??
@@ -593,6 +599,9 @@ export function useProfileData(usernameParam?: string) {
               (entry.movie_info?.media_type as any) ||
               fromMovieMap?.mediaType ||
               "movie",
+            watchedDate: entry.watched_date,
+            primaryGenre: fromMovieMap?.primaryGenre ?? null,
+            runtimeMinutes: fromMovieMap?.runtimeMinutes ?? null,
           };
         });
 
@@ -627,6 +636,51 @@ export function useProfileData(usernameParam?: string) {
           };
         });
 
+        let compatibilityScore: number | null = null;
+        if (authActive && !finalIsOwn) {
+          const targetDiary = diaryData?.diary || [];
+          const viewerDiary = viewerDiaryData?.diary || [];
+
+          if (targetDiary.length > 0 && viewerDiary.length > 0) {
+            // Build movie sets
+            const targetMovieIds = new Set(targetDiary.map((d) => d.movie_id));
+            const viewerMovieIds = new Set(viewerDiary.map((d) => d.movie_id));
+
+            // Jaccard similarity: intersection / union
+            const intersection = [...viewerMovieIds].filter((id) => targetMovieIds.has(id));
+            const union = new Set([...viewerMovieIds, ...targetMovieIds]);
+            const jaccardScore = union.size > 0 ? intersection.length / union.size : 0;
+
+            // Rating similarity bonus: for common movies, compare ratings
+            const targetRatingMap = new Map<number, number>();
+            for (const d of targetDiary) {
+              if (d.review?.rating != null) targetRatingMap.set(d.movie_id, Number(d.review.rating));
+            }
+            const viewerRatingMap = new Map<number, number>();
+            for (const d of viewerDiary) {
+              if (d.review?.rating != null) viewerRatingMap.set(d.movie_id, Number(d.review.rating));
+            }
+
+            let ratingBonus = 0;
+            let ratingComparisons = 0;
+            for (const movieId of intersection) {
+              const tRating = targetRatingMap.get(movieId);
+              const vRating = viewerRatingMap.get(movieId);
+              if (tRating != null && vRating != null) {
+                const diff = Math.abs(tRating - vRating); // 0 to 5
+                ratingBonus += 1 - diff / 5; // 0 to 1
+                ratingComparisons++;
+              }
+            }
+            const avgRatingSimilarity = ratingComparisons > 0 ? ratingBonus / ratingComparisons : 0.5;
+
+            // Weighted final score: 60% Jaccard + 40% rating similarity, clamped to 10–99
+            const rawScore = jaccardScore * 0.6 + avgRatingSimilarity * 0.4;
+            compatibilityScore = Math.round(Math.min(99, Math.max(10, rawScore * 100)));
+          }
+          // If no diary data for either user, leave as null (banner won't show)
+        }
+
         setProfileData({
           profileHeader,
           stats,
@@ -642,6 +696,7 @@ export function useProfileData(usernameParam?: string) {
           allDiaryFilms,
           signature: resolvedSignature,
           curatedGalleryItems: resolvedCuratedItems,
+          compatibilityScore,
         });
 
         setFollowingState(Boolean(fullProfileData.is_following), stats.followers);
