@@ -168,6 +168,7 @@ export const iniciarOAuthGoogle = (
     scope: ["profile", "email"],
     callbackURL,
     state,
+    session: false,
   } as unknown as Parameters<typeof passport.authenticate>[1]
 
   passport.authenticate("google", authOptions)(req, res, next)
@@ -185,6 +186,7 @@ export const verificarCallbackGoogle = (
   const authOptions = {
     failureRedirect: "/api/auth/google",
     callbackURL,
+    session: false,
   } as unknown as Parameters<typeof passport.authenticate>[1]
 
   passport.authenticate("google", authOptions)(req, res, next)
@@ -202,7 +204,7 @@ export const controladorCallback = async (req: Request, res: Response) => {
   res.cookie("access_token", tokenAcceso, ACCESS_COOKIE_OPTIONS)
 
   const frontendBase = process.env.FRONTEND_URL || "http://localhost:5173"
-  res.redirect(`${frontendBase}/profile`)
+  res.redirect(`${frontendBase}/auth/callback`)
 }
 
 // --- Handlers de Seguridad Avanzada (2FA y Recuperación) ---

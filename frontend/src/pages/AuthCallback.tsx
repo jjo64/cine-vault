@@ -32,7 +32,7 @@ export default function AuthCallbackPage() {
         conectarSocket(accessToken);
         notifyAuthStateChanged(true);
         notify.loginOk();
-        navigate("/profile", { replace: true });
+        navigate("/", { replace: true });
       } catch {
         if (!alive) return;
         setStatusText("No se pudo completar el login con Google.");
